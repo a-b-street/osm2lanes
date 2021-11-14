@@ -1,2 +1,6 @@
+.DS_Store
+.gradle
 .idea
+__pycache__
+kotlin/build
 venv

@@ -15,7 +15,7 @@ class DrivingSide(Enum):
 
 
 class Direction(Enum):
-    """Lane direction relative to way direction."""
+    """Lane direction relative to OpenStreetMap way direction."""
 
     FORWARD = "forward"
     BACKWARD = "backward"
@@ -27,6 +27,9 @@ class LaneType(Enum):
     SIDEWALK = "sidewalk"
     CYCLEWAY = "cycleway"
     DRIVEWAY = "driveway"
+    PARKING_LANE = "parking_lane"
+    C = "C"
+    S = "S"
 
 
 @dataclass
@@ -54,8 +57,8 @@ class Road:
         """Process road tags."""
 
         main_lanes: list[Lane] = []
-        sidewalks_right: list[Lane] = []
-        sidewalks_left: list[Lane] = []
+        sidewalk_right: list[Lane] = []
+        sidewalk_left: list[Lane] = []
         cycleway_right: list[Lane] = []
         cycleway_left: list[Lane] = []
 
@@ -66,16 +69,16 @@ class Road:
                 )
 
         if self.tags.get("sidewalk") == "both":
-            sidewalks_left = [Lane(LaneType.SIDEWALK, Direction.BACKWARD)]
-            sidewalks_right = [Lane(LaneType.SIDEWALK, Direction.FORWARD)]
+            sidewalk_left = [Lane(LaneType.SIDEWALK, Direction.BACKWARD)]
+            sidewalk_right = [Lane(LaneType.SIDEWALK, Direction.FORWARD)]
 
         if self.tags.get("cycleway:left") == "lane":
             cycleway_left = [Lane(LaneType.CYCLEWAY, Direction.FORWARD)]
 
         return (
-            sidewalks_left
+            sidewalk_left
             + cycleway_left
             + main_lanes
             + cycleway_right
-            + sidewalks_right
+            + sidewalk_right
         )
