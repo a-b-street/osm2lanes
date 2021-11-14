@@ -1,3 +1,6 @@
+/**
+ * Lane tag parsing.
+ */
 import kotlinx.serialization.*
 
 /** Bidirectional traffic practice. */
@@ -21,8 +24,8 @@ enum class LaneType(val type: String) {
     @SerialName("cycleway") CYCLEWAY("cycleway"),
     @SerialName("driveway") DRIVEWAY("driveway"),
     @SerialName("parking_lane") PARKING_LANE("parking_lane"),
-    C("C"),
-    S("S"),
+    @SerialName("no_cycleway") NO_CYCLEWAY("no_cycleway"),
+    @SerialName("no_sidewalk") NO_SIDEWALK("no_sidewalk"),
 }
 
 /** Lane specification. */
@@ -38,13 +41,24 @@ class Road(val tags: HashMap<String, String>) {
         var cyclewayLeft = arrayListOf<Lane>()
 
         if (tags.containsKey("lanes")) {
-            if (tags["oneway"] == "yes") {
-                val laneNumber: String? = tags["lanes"]
+            val laneNumber: String? = tags["lanes"]
 
-                if (laneNumber != null) {
-                    mainLanes = arrayListOf()
+            if (laneNumber != null) {
+                val number = laneNumber.toInt()
 
-                    for (i in 1..laneNumber.toInt()) {
+                mainLanes = arrayListOf()
+
+                if (tags["oneway"] == "yes") {
+                    for (i in 1..number) {
+                        mainLanes.add(Lane(LaneType.DRIVEWAY, Direction.FORWARD))
+                    }
+                } else {
+                    val half = number / 2
+
+                    for (i in 1..half) {
+                        mainLanes.add(Lane(LaneType.DRIVEWAY, Direction.BACKWARD))
+                    }
+                    for (i in half + 1..number) {
                         mainLanes.add(Lane(LaneType.DRIVEWAY, Direction.FORWARD))
                     }
                 }
@@ -53,9 +67,21 @@ class Road(val tags: HashMap<String, String>) {
         if (tags["sidewalk"] == "both") {
             sidewalkLeft = arrayListOf(Lane(LaneType.SIDEWALK, Direction.BACKWARD))
             sidewalkRight = arrayListOf(Lane(LaneType.SIDEWALK, Direction.FORWARD))
+        } else if (tags["sidewalk"] == "none") {
+            sidewalkLeft = arrayListOf(Lane(LaneType.NO_SIDEWALK, Direction.BACKWARD))
+            sidewalkRight = arrayListOf(Lane(LaneType.NO_SIDEWALK, Direction.FORWARD))
         }
         if (tags["cycleway:left"] == "lane") {
             cyclewayLeft = arrayListOf(Lane(LaneType.CYCLEWAY, Direction.FORWARD))
+        } else if (tags["cycleway:left"] == "track") {
+            cyclewayLeft = arrayListOf(Lane(LaneType.CYCLEWAY, Direction.BACKWARD),
+                Lane(LaneType.CYCLEWAY, Direction.FORWARD))
+        }
+        if (tags["cycleway:right"] == "lane") {
+            cyclewayRight = arrayListOf(Lane(LaneType.CYCLEWAY, Direction.BACKWARD))
+        } else if (tags["cycleway:right"] == "track") {
+            cyclewayRight = arrayListOf(Lane(LaneType.CYCLEWAY, Direction.BACKWARD),
+                Lane(LaneType.CYCLEWAY, Direction.FORWARD))
         }
         return sidewalkLeft + cyclewayLeft + mainLanes + cyclewayRight + sidewalkRight
     }

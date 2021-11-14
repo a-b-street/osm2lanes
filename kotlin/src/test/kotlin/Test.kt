@@ -1,3 +1,6 @@
+/**
+ * Test lane tag parsing.
+ */
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -7,6 +10,7 @@ const val TEST_FILE_PATH = "../data/tests.json"
 
 @Serializable
 data class TestCase(
+    val skip: Boolean,
     val comment: String = "",
     val way: String,
     val tags: HashMap<String, String>,
@@ -14,12 +18,19 @@ data class TestCase(
     val output: ArrayList<Lane>,
 )
 
-fun main(args: Array<String>) {
-    val jsonString: String = File(TEST_FILE_PATH).readText(Charsets.UTF_8)
-    val testSuite = Json.decodeFromString<ArrayList<TestCase>>(jsonString)
+fun main() {
+    val testSuite = Json.decodeFromString<ArrayList<TestCase>>(File(TEST_FILE_PATH).readText(Charsets.UTF_8))
 
     for (testCase in testSuite) {
-        val road = Road(testCase.tags)
-        println(road.parse() == testCase.output)
+        if (testCase.skip) {
+            continue
+        }
+        val parsed = Road(testCase.tags).parse()
+        if (parsed != testCase.output) {
+            println(parsed)
+            println(testCase.output)
+        } else {
+            println("OK")
+        }
     }
 }

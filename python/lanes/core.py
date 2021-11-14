@@ -28,8 +28,8 @@ class LaneType(Enum):
     CYCLEWAY = "cycleway"
     DRIVEWAY = "driveway"
     PARKING_LANE = "parking_lane"
-    C = "C"
-    S = "S"
+    NO_CYCLEWAY = "no_cycleway"
+    NO_SIDEWALK = "no_sidewalk"
 
 
 @dataclass
@@ -56,29 +56,57 @@ class Road:
     def parse(self) -> list[Lane]:
         """Process road tags."""
 
-        main_lanes: list[Lane] = []
-        sidewalk_right: list[Lane] = []
-        sidewalk_left: list[Lane] = []
-        cycleway_right: list[Lane] = []
-        cycleway_left: list[Lane] = []
+        lanes: list[Lane] = []
+
+        # Driveways
 
         if "lanes" in self.tags:
+
+            number: int = int(self.tags["lanes"])
+            forward_driveway: Lane = Lane(LaneType.DRIVEWAY, Direction.FORWARD)
+            backward_driveway: Lane = Lane(
+                LaneType.DRIVEWAY, Direction.BACKWARD
+            )
+
             if self.tags.get("oneway") == "yes":
-                main_lanes = [Lane(LaneType.DRIVEWAY, Direction.FORWARD)] * int(
-                    self.tags["lanes"]
+                lanes = [forward_driveway] * number
+            else:
+                half: int = int(number / 2.0)
+                lanes = [backward_driveway] * half + [forward_driveway] * (
+                    number - half
                 )
 
+        def add(new_lanes: list[Lane]) -> list[Lane]:
+            if direction == "left":
+                return new_lanes + lanes
+            if direction == "right":
+                return lanes + new_lanes
+
+        def get_direction() -> Direction:
+            return (
+                Direction.FORWARD if direction == "left" else Direction.BACKWARD
+            )
+
+        # Cycleways
+
+        for direction in "left", "right":
+            if self.tags.get(f"cycleway:{direction}") == "lane":
+                lanes = add([Lane(LaneType.CYCLEWAY, get_direction())])
+            elif self.tags.get(f"cycleway:{direction}") == "track":
+                lanes = add(
+                    [
+                        Lane(LaneType.CYCLEWAY, Direction.BACKWARD),
+                        Lane(LaneType.CYCLEWAY, Direction.FORWARD),
+                    ],
+                )
+
+        # Sidewalks
+
         if self.tags.get("sidewalk") == "both":
-            sidewalk_left = [Lane(LaneType.SIDEWALK, Direction.BACKWARD)]
-            sidewalk_right = [Lane(LaneType.SIDEWALK, Direction.FORWARD)]
+            lanes = [Lane(LaneType.SIDEWALK, Direction.BACKWARD)] + lanes
+            lanes += [Lane(LaneType.SIDEWALK, Direction.FORWARD)]
+        elif self.tags.get("sidewalk") == "none":
+            lanes = [Lane(LaneType.NO_SIDEWALK, Direction.BACKWARD)] + lanes
+            lanes += [Lane(LaneType.NO_SIDEWALK, Direction.FORWARD)]
 
-        if self.tags.get("cycleway:left") == "lane":
-            cycleway_left = [Lane(LaneType.CYCLEWAY, Direction.FORWARD)]
-
-        return (
-            sidewalk_left
-            + cycleway_left
-            + main_lanes
-            + cycleway_right
-            + sidewalk_right
-        )
+        return lanes

@@ -14,13 +14,16 @@ Tags = dict[str, str]
 TEST_FILE_PATH: Path = Path("data/tests.json")
 
 with TEST_FILE_PATH.open(encoding="utf-8") as input_file:
-    CONFIGURATIONS: list[dict[str, Any]] = json.load(input_file)
+    CONFIGURATIONS: list[dict[str, Any]] = [
+        x for x in json.load(input_file) if not x["skip"]
+    ]
 
 
 @dataclass
 class Case:
     """Lane test."""
 
+    skip: bool
     way: str
     tags: Tags
     driving_side: DrivingSide
@@ -30,6 +33,7 @@ class Case:
     def from_structure(cls, structure: dict[str, Any]) -> "Case":
         """Parse test from configuration."""
         return cls(
+            structure["skip"],
             structure["way"],
             structure["tags"],
             DrivingSide(structure["driving_side"]),
