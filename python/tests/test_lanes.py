@@ -13,7 +13,7 @@ Tags = dict[str, str]
 
 TEST_FILE_PATH: Path = Path("data/tests.json")
 
-with TEST_FILE_PATH.open() as input_file:
+with TEST_FILE_PATH.open(encoding="utf-8") as input_file:
     CONFIGURATIONS: list[dict[str, Any]] = json.load(input_file)
 
 
@@ -33,12 +33,13 @@ class Case:
             structure["way"],
             structure["tags"],
             DrivingSide(structure["driving_side"]),
-            structure["output"],
+            list(map(Lane.from_structure, structure["output"])),
         )
 
 
 @pytest.mark.parametrize("test_configuration", CONFIGURATIONS)
 def test_lanes(test_configuration: dict[str, Any]) -> None:
+    """Test lane specification generation."""
     test = Case.from_structure(test_configuration)
     road: Road = Road(test.tags)
     output: list[Lane] = road.parse()

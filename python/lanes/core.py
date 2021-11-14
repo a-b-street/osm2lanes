@@ -52,9 +52,30 @@ class Road:
 
     def parse(self) -> list[Lane]:
         """Process road tags."""
-        if "lanes" in self.tags:
-            return [Lane(LaneType.DRIVEWAY, Direction.FORWARD)] * int(
-                self.tags["lanes"]
-            )
 
-        return []
+        main_lanes: list[Lane] = []
+        sidewalks_right: list[Lane] = []
+        sidewalks_left: list[Lane] = []
+        cycleway_right: list[Lane] = []
+        cycleway_left: list[Lane] = []
+
+        if "lanes" in self.tags:
+            if self.tags.get("oneway") == "yes":
+                main_lanes = [Lane(LaneType.DRIVEWAY, Direction.FORWARD)] * int(
+                    self.tags["lanes"]
+                )
+
+        if self.tags.get("sidewalk") == "both":
+            sidewalks_left = [Lane(LaneType.SIDEWALK, Direction.BACKWARD)]
+            sidewalks_right = [Lane(LaneType.SIDEWALK, Direction.FORWARD)]
+
+        if self.tags.get("cycleway:left") == "lane":
+            cycleway_left = [Lane(LaneType.CYCLEWAY, Direction.FORWARD)]
+
+        return (
+            sidewalks_left
+            + cycleway_left
+            + main_lanes
+            + cycleway_right
+            + sidewalks_right
+        )
