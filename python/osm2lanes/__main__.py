@@ -10,7 +10,12 @@ from osm2lanes.core import Road
 
 
 def run() -> None:
-    """Command-line interface."""
+    """
+    Command-line interface.
+
+    Read OpenStreetMap tags from input JSON file and write lane specifications
+    into output JSON file.
+    """
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     parser.add_argument("input", help="input JSON file path")
     parser.add_argument("output", help="output JSON file path")
@@ -22,9 +27,7 @@ def run() -> None:
 
     with Path(arguments.output).open("w+", encoding="utf-8") as output_file:
         json.dump(
-            [lane.to_structure() for lane in Road(tags).parse()],
-            output_file,
-            indent=4,
+            [lane.to_structure() for lane in Road(tags).parse()], output_file
         )
 
 

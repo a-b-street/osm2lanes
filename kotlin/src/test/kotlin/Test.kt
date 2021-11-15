@@ -5,11 +5,13 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.io.File
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 const val TEST_FILE_PATH = "../data/tests.json"
 
 @Serializable
-data class TestCase(
+internal data class TestCase(
     val skip: Boolean,
     val comment: String = "",
     val way: String,
@@ -18,19 +20,17 @@ data class TestCase(
     val output: ArrayList<Lane>,
 )
 
-fun main() {
-    val testSuite = Json.decodeFromString<ArrayList<TestCase>>(File(TEST_FILE_PATH).readText(Charsets.UTF_8))
+/** Lane generation tests. */
+internal class LaneTest {
+    @Test
+    fun testLanes() {
+        val testSuite = Json.decodeFromString<ArrayList<TestCase>>(File(TEST_FILE_PATH).readText(Charsets.UTF_8))
 
-    for (testCase in testSuite) {
-        if (testCase.skip) {
-            continue
-        }
-        val parsed = Road(testCase.tags).parse()
-        if (parsed != testCase.output) {
-            println(parsed)
-            println(testCase.output)
-        } else {
-            println("OK")
+        for (testCase in testSuite) {
+            if (!testCase.skip) {
+                val parsed = Road(testCase.tags).parse()
+                assertEquals(testCase.output, parsed)
+            }
         }
     }
 }

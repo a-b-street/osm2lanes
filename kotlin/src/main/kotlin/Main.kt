@@ -2,6 +2,10 @@
  * Lane tag parsing.
  */
 import kotlinx.serialization.*
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.encodeToJsonElement
+import java.io.File
 
 /** Bidirectional traffic practice. */
 @Serializable
@@ -32,7 +36,9 @@ enum class LaneType(val type: String) {
 @Serializable
 data class Lane(val type: LaneType, val direction: Direction)
 
-class Road(val tags: HashMap<String, String>) {
+/** OpenStreetMap way or relation described road part. */
+class Road(private val tags: Map<String, String>) {
+
     fun parse(): List<Lane> {
         var mainLanes = arrayListOf<Lane>()
         var sidewalkRight = arrayListOf<Lane>()
@@ -85,4 +91,16 @@ class Road(val tags: HashMap<String, String>) {
         }
         return sidewalkLeft + cyclewayLeft + mainLanes + cyclewayRight + sidewalkRight
     }
+}
+
+/**
+ * Command-line interface.
+ *
+ * Read OpenStreetMap tags from input JSON file and write lane specifications into output JSON file.
+ *
+ * @param args command-line arguments: input JSON file path, output JSON file path
+ */
+fun main(args: Array<String>) {
+    val lanes = Road(Json.decodeFromString(File(args[0]).readText(Charsets.UTF_8))).parse()
+    File(args[1]).writeText(JsonArray(lanes.map{Json.encodeToJsonElement(it)}).toString())
 }
