@@ -29,7 +29,3 @@ def run() -> None:
         json.dump(
             [lane.to_structure() for lane in Road(tags).parse()], output_file
         )
-
-
-if __name__ == "__main__":
-    run()
