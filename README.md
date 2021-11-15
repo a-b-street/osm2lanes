@@ -35,3 +35,20 @@ osm2lanes ${INPUT_JSON_FILE} ${OUTPUT_JSON_FILE}
 ```shell
 pytest
 ```
+
+Kotlin
+------
+
+### Install ###
+
+Run Gradle `jar` task.
+
+### Run ###
+
+```shell
+java -jar kotlin/build/libs/osm2lanes.jar ${INPUT_JSON_FILE} ${OUTPUT_JSON_FILE}
+```
+
+### Test ###
+
+Run Gradle `test` task.
