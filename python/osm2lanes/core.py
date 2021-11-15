@@ -46,6 +46,10 @@ class Lane:
             LaneType(structure["type"]), Direction(structure["direction"])
         )
 
+    def to_structure(self) -> dict[str, str]:
+        """Serialize lane specification into structure."""
+        return {"type": self.type_.value, "direction": self.direction.value}
+
 
 @dataclass
 class Road:

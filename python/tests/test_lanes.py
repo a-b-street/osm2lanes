@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from lanes.core import DrivingSide, Lane, Road
+from osm2lanes.core import DrivingSide, Lane, Road
 
 Tags = dict[str, str]
 
