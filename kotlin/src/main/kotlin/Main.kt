@@ -23,23 +23,97 @@ enum class Direction(val direction: String) {
 
 /** Lane designation. */
 @Serializable
-enum class LaneType(val type: String) {
-    @SerialName("sidewalk") SIDEWALK("sidewalk"),
-    @SerialName("cycleway") CYCLEWAY("cycleway"),
-    @SerialName("driveway") DRIVEWAY("driveway"),
-    @SerialName("parking_lane") PARKING_LANE("parking_lane"),
-    @SerialName("no_cycleway") NO_CYCLEWAY("no_cycleway"),
-    @SerialName("no_sidewalk") NO_SIDEWALK("no_sidewalk"),
+enum class LaneType {
+    /**
+     * Part of a highway set aside for the use of pedestrians and sometimes also cyclists, separated from the
+     * carriageway (or roadway).  See OpenStreetMap wiki page
+     * [Sidewalks](https://wiki.openstreetmap.org/wiki/Sidewalks).
+     */
+    @SerialName("sidewalk") SIDEWALK,
+
+    /**
+     * Cycling infrastructure that is an inherent part of the road.  See OpenStreetMap wiki page
+     * [Key:cycleway](https://wiki.openstreetmap.org/wiki/Key:cycleway).
+     */
+    @SerialName("cycleway") CYCLEWAY,
+
+    /**
+     * Traffic lane of a highway suitable for vehicles.
+     */
+    @SerialName("driveway") DRIVEWAY,
+
+    /**
+     * Part of the road designated for parking.
+     */
+    @SerialName("parking_lane") PARKING_LANE,
+
+    @SerialName("shared_left_turn") SHARED_LEFT_TURN,
+    @SerialName("shoulder") SHOULDER,
 }
 
 /** Lane specification. */
 @Serializable
-data class Lane(val type: LaneType, val direction: Direction)
+data class Lane(val type: LaneType, val direction: Direction) {
+    override fun toString(): String {
+        return "${type}_$direction"
+    }
+}
 
-/** OpenStreetMap way or relation described road part. */
-class Road(private val tags: Map<String, String>) {
+/**
+ * OpenStreetMap way or relation described road part.
+ *
+ * @param tags associative array describing road features, see OpenStreetMap wiki page
+ *     [Tags](https://wiki.openstreetmap.org/wiki/Tags)
+ * @param drivingSide bidirectional traffic practice in the region where the road is located
+ */
+class Road(private val tags: Map<String, String>, private val drivingSide: DrivingSide) {
 
+    /**
+     * Compute lane direction based on road side and bidirectional traffic practice.
+     *
+     * @param side side of the road
+     * @param isInverted whether the result should be inverted
+     */
+    private fun getDirection(side: String, isInverted: Boolean = false): Direction {
+        if (side == "right" && drivingSide == DrivingSide.RIGHT || side == "left" && drivingSide == DrivingSide.LEFT)
+            return if (isInverted) Direction.BACKWARD else Direction.FORWARD
+
+        return if (isInverted) Direction.FORWARD else Direction.BACKWARD
+    }
+
+    /**
+     * Add new lane.
+     *
+     * @param lanes destination lanes listed from left to right
+     * @param lane new lane to add
+     * @param side new lane position: left or right
+     */
+    private fun addLane(lanes: ArrayList<Lane>, lane: Lane, side: String) {
+        if (side == "left") lanes.add(0, lane) else lanes.add(lane)
+    }
+
+    /**
+     * Add left and right lanes.
+     *
+     * @param lanes destination lanes listed from left to right
+     * @param type lane type
+     */
+    private fun addBothLanes(lanes: ArrayList<Lane>, type: LaneType) {
+        lanes.add(0, Lane(type, getDirection("left")))
+        lanes.add(Lane(type, getDirection("right")))
+    }
+
+    /**
+     * Parse road features described by tags and generate list of lane specifications from left to right.
+     *
+     * @return list of lane specifications
+     */
     fun parse(): List<Lane> {
+
+        val sides = setOf("left", "right")
+        val parkingValues = setOf("parallel", "diagonal")
+        val trackValues = setOf("track", "opposite_track")
+
         val lanes = arrayListOf<Lane>()
 
         // Driveways
@@ -84,13 +158,15 @@ class Road(private val tags: Map<String, String>) {
 
         // Sidewalks
 
-        if (tags["sidewalk"] == "both") {
-            lanes.add(0, Lane(LaneType.SIDEWALK, Direction.BACKWARD))
-            lanes.add(Lane(LaneType.SIDEWALK, Direction.FORWARD))
-        } else if (tags["sidewalk"] == "none") {
-            lanes.add(0, Lane(LaneType.NO_SIDEWALK, Direction.BACKWARD))
-            lanes.add(Lane(LaneType.NO_SIDEWALK, Direction.FORWARD))
-        }
+        if (tags["sidewalk"] == "both")
+            addBothLanes(lanes, LaneType.SIDEWALK)
+        else if (tags["sidewalk"] == "none")
+            addBothLanes(lanes, LaneType.SHOULDER)
+        else
+            for (side in sides)
+                if (tags["sidewalk"] == side)
+                    addLane(lanes, Lane(LaneType.SIDEWALK, getDirection(side)), side)
+
         return lanes
     }
 }
@@ -103,6 +179,6 @@ class Road(private val tags: Map<String, String>) {
  * @param args command-line arguments: input JSON file path, output JSON file path
  */
 fun main(args: Array<String>) {
-    val lanes = Road(Json.decodeFromString(File(args[0]).readText(Charsets.UTF_8))).parse()
-    File(args[1]).writeText(JsonArray(lanes.map{Json.encodeToJsonElement(it)}).toString())
+    val lanes = Road(Json.decodeFromString(File(args[0]).readText(Charsets.UTF_8)), DrivingSide.RIGHT).parse()
+    File(args[1]).writeText(JsonArray(lanes.map { Json.encodeToJsonElement(it) }).toString())
 }

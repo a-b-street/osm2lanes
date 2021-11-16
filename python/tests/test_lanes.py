@@ -45,6 +45,6 @@ class Case:
 def test_lanes(test_configuration: dict[str, Any]) -> None:
     """Test lane specification generation."""
     test = Case.from_structure(test_configuration)
-    road: Road = Road(test.tags)
+    road: Road = Road(test.tags, test.driving_side)
     output: list[Lane] = road.parse()
     assert output == test.output

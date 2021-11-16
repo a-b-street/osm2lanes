@@ -28,8 +28,9 @@ class LaneType(Enum):
     CYCLEWAY = "cycleway"
     DRIVEWAY = "driveway"
     PARKING_LANE = "parking_lane"
-    NO_CYCLEWAY = "no_cycleway"
-    NO_SIDEWALK = "no_sidewalk"
+
+    SHARED_LEFT_TURN = "shared_left_turn"
+    SHOULDER = "shoulder"
 
 
 @dataclass
@@ -57,8 +58,54 @@ class Road:
 
     tags: Tags
 
+    # DrivingSide bidirectional traffic practice in the region where the road is
+    # located.
+    driving_side: DrivingSide
+
+    def add_lane(self, lanes: list[Lane], lane: Lane, side: str) -> list[Lane]:
+        """Add lanes to the result list."""
+        if side == "left":
+            return [lane] + lanes
+        else:
+            return lanes + [lane]
+
+    def add_both_lanes(self, lanes: list[Lane], type_: LaneType) -> list[Lane]:
+        """Add left and right lanes."""
+        return (
+            [Lane(type_, self.get_direction("left"))]
+            + lanes
+            + [Lane(type_, self.get_direction("right"))]
+        )
+
+    def get_direction(self, side: str, is_inverted: bool = False) -> Direction:
+        """
+        Compute lane direction based on road side and bidirectional traffic
+        practice.
+
+        :param side: side of the road
+        :param is_inverted: whether the result should be inverted
+        """
+        if (
+            side == "right"
+            and self.driving_side == DrivingSide.RIGHT
+            or side == "left"
+            and self.driving_side == DrivingSide.LEFT
+        ):
+            return Direction.BACKWARD if is_inverted else Direction.FORWARD
+
+        return Direction.FORWARD if is_inverted else Direction.BACKWARD
+
     def parse(self) -> list[Lane]:
         """Process road tags."""
+        """
+        Parse road features described by tags and generate list of lane
+        specifications from left to right.
+        
+        :return: list of lane specifications
+        """
+        sides: set[str] = {"left", "right"}
+        parking_values: set[str] = {"parallel", "diagonal"}
+        track_values: set[str] = {"track", "opposite_track"}
 
         lanes: list[Lane] = []
 
@@ -107,10 +154,13 @@ class Road:
         # Sidewalks
 
         if self.tags.get("sidewalk") == "both":
-            lanes = [Lane(LaneType.SIDEWALK, Direction.BACKWARD)] + lanes
-            lanes += [Lane(LaneType.SIDEWALK, Direction.FORWARD)]
+            lanes = self.add_both_lanes(lanes, LaneType.SIDEWALK)
         elif self.tags.get("sidewalk") == "none":
-            lanes = [Lane(LaneType.NO_SIDEWALK, Direction.BACKWARD)] + lanes
-            lanes += [Lane(LaneType.NO_SIDEWALK, Direction.FORWARD)]
+            lanes = self.add_both_lanes(lanes, LaneType.SHOULDER)
+        else:
+            for side in sides:
+                if self.tags.get("sidewalk") == side:
+                    lane = Lane(LaneType.SIDEWALK, self.get_direction(side))
+                    lanes = self.add_lane(lanes, lane, side)
 
         return lanes

@@ -28,8 +28,8 @@ internal class LaneTest {
 
         for (testCase in testSuite) {
             if (!testCase.skip) {
-                val parsed = Road(testCase.tags).parse()
-                assertEquals(testCase.output, parsed)
+                val parsed = Road(testCase.tags, testCase.driving_side).parse()
+                assertEquals(testCase.output, parsed, testCase.driving_side.toString())
             }
         }
     }

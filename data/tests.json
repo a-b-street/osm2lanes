@@ -10,26 +10,11 @@
         },
         "driving_side": "right",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            }
+            {"type": "sidewalk", "direction": "backward"},
+            {"type": "cycleway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "sidewalk", "direction": "forward"}
         ]
     },
     {
@@ -44,26 +29,11 @@
         },
         "driving_side": "right",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            }
+            {"type": "sidewalk", "direction": "backward"},
+            {"type": "cycleway", "direction": "backward"},
+            {"type": "cycleway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "sidewalk", "direction": "forward"}
         ]
     },
     {
@@ -79,26 +49,11 @@
         },
         "driving_side": "right",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            }
+            {"type": "sidewalk", "direction": "backward"},
+            {"type": "cycleway", "direction": "backward"},
+            {"type": "cycleway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "sidewalk", "direction": "forward"}
         ]
     },
     {
@@ -113,46 +68,16 @@
         },
         "driving_side": "right",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "backward"
-            },
-            {
-                "type": "parking_lane",
-                "direction": "backward"
-            },
-            {
-                "type": "driveway",
-                "direction": "backward"
-            },
-            {
-                "type": "driveway",
-                "direction": "backward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
-            },
-            {
-                "type": "parking_lane",
-                "direction": "forward"
-            },
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            }
+            {"type": "sidewalk", "direction": "backward"},
+            {"type": "parking_lane", "direction": "backward"},
+            {"type": "driveway", "direction": "backward"},
+            {"type": "driveway", "direction": "backward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "cycleway", "direction": "backward"},
+            {"type": "cycleway", "direction": "forward"},
+            {"type": "parking_lane", "direction": "forward"},
+            {"type": "sidewalk", "direction": "forward"}
         ]
     },
     {
@@ -169,38 +94,14 @@
         },
         "driving_side": "right",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "backward"
-            },
-            {
-                "type": "parking_lane",
-                "direction": "backward"
-            },
-            {
-                "type": "driveway",
-                "direction": "backward"
-            },
-            {
-                "type": "no_cycleway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
-            },
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            }
+            {"type": "sidewalk", "direction": "backward"},
+            {"type": "parking_lane", "direction": "backward"},
+            {"type": "driveway", "direction": "backward"},
+            {"type": "shared_left_turn", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "cycleway", "direction": "backward"},
+            {"type": "cycleway", "direction": "forward"},
+            {"type": "sidewalk", "direction": "forward"}
         ]
     },
     {
@@ -216,30 +117,12 @@
         },
         "driving_side": "right",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "parking_lane",
-                "direction": "forward"
-            },
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            }
+            {"type": "sidewalk", "direction": "backward"},
+            {"type": "cycleway", "direction": "backward"},
+            {"type": "cycleway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "parking_lane", "direction": "forward"},
+            {"type": "sidewalk", "direction": "forward"}
         ]
     },
     {
@@ -255,30 +138,12 @@
         },
         "driving_side": "right",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "backward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
-            },
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            }
+            {"type": "sidewalk", "direction": "backward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "cycleway", "direction": "backward"},
+            {"type": "cycleway", "direction": "forward"},
+            {"type": "sidewalk", "direction": "forward"}
         ]
     },
     {
@@ -291,22 +156,10 @@
         },
         "driving_side": "left",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "backward"
-            },
-            {
-                "type": "sidewalk",
-                "direction": "backward"
-            }
+            {"type": "sidewalk", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "backward"},
+            {"type": "sidewalk", "direction": "backward"}
         ]
     },
     {
@@ -319,18 +172,9 @@
         },
         "driving_side": "left",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            }
+            {"type": "sidewalk", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"}
         ]
     },
     {
@@ -344,22 +188,10 @@
         },
         "driving_side": "left",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            }
+            {"type": "sidewalk", "direction": "forward"},
+            {"type": "cycleway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"}
         ]
     },
     {
@@ -371,26 +203,11 @@
         },
         "driving_side": "left",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "sidewalk",
-                "direction": "backward"
-            }
+            {"type": "sidewalk", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "backward"},
+            {"type": "cycleway", "direction": "backward"},
+            {"type": "sidewalk", "direction": "backward"}
         ]
     },
     {
@@ -403,26 +220,11 @@
         },
         "driving_side": "left",
         "output": [
-            {
-                "type": "sidewalk",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "backward"
-            },
-            {
-                "type": "sidewalk",
-                "direction": "backward"
-            }
+            {"type": "sidewalk", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "backward"},
+            {"type": "sidewalk", "direction": "backward"}
         ]
     },
     {
@@ -435,34 +237,13 @@
         },
         "driving_side": "right",
         "output": [
-            {
-                "type": "no_sidewalk",
-                "direction": "backward"
-            },
-            {
-                "type": "driveway",
-                "direction": "backward"
-            },
-            {
-                "type": "driveway",
-                "direction": "backward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "no_sidewalk",
-                "direction": "forward"
-            }
+            {"type": "shoulder", "direction": "backward"},
+            {"type": "driveway", "direction": "backward"},
+            {"type": "driveway", "direction": "backward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "shoulder", "direction": "forward"}
         ]
     },
     {
@@ -474,22 +255,10 @@
         },
         "driving_side": "right",
         "output": [
-            {
-                "type": "no_sidewalk",
-                "direction": "backward"
-            },
-            {
-                "type": "driveway",
-                "direction": "backward"
-            },
-            {
-                "type": "driveway",
-                "direction": "forward"
-            },
-            {
-                "type": "no_sidewalk",
-                "direction": "forward"
-            }
+            {"type": "shoulder", "direction": "backward"},
+            {"type": "driveway", "direction": "backward"},
+            {"type": "driveway", "direction": "forward"},
+            {"type": "shoulder", "direction": "forward"}
         ]
     }
 ]
