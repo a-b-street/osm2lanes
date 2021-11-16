@@ -131,11 +131,14 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
 
         // Driveways
 
+        val oneway = tags["oneway"] == "yes"
+
         // If lane number is not specified, we assume that there are two lanes: one forward and one backward (if it is
         // not a oneway road).
-        val number = tags["lanes"]?.toInt() ?: 2
+        var number = tags["lanes"]?.toInt() ?: 2
 
-        val oneway = tags["oneway"] == "yes"
+        if (number == 1 && !oneway)
+            number = 2
 
         if (oneway)
             (1..number).forEach { _ -> lanes.add(Lane(LaneType.DRIVEWAY, Direction.FORWARD)) }

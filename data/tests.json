@@ -234,7 +234,6 @@
         ]
     },
     {
-        "skip": true,
         "way": "https://www.openstreetmap.org/way/335668924",
         "tags": {
             "lanes": "1",

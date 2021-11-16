@@ -131,11 +131,14 @@ class Road:
 
         # Driveways
 
+        oneway: bool = self.tags.get("oneway") == "yes"
+
         # If lane number is not specified, we assume that there are two lanes:
         # one forward and one backward (if it is not a oneway road).
         number: int = int(self.tags["lanes"]) if "lanes" in self.tags else 2
 
-        oneway: bool = self.tags.get("oneway") == "yes"
+        if number == 1 and not oneway:
+            number = 2
 
         if oneway:
             lanes = [Lane(LaneType.DRIVEWAY, Direction.FORWARD)] * number
