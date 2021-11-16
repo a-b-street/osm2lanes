@@ -7,9 +7,9 @@ import kotlin.math.ceil
 
 /** Bidirectional traffic practice. */
 @Serializable
-enum class DrivingSide(val side: String) {
-    @SerialName("right") RIGHT("right"),
-    @SerialName("left") LEFT("left"),
+enum class DrivingSide {
+    @SerialName("right") RIGHT,
+    @SerialName("left") LEFT,
 }
 
 /**
@@ -19,9 +19,9 @@ enum class DrivingSide(val side: String) {
  * [Forward & backward, left & right](https://wiki.openstreetmap.org/wiki/Forward_%26_backward,_left_%26_right).
  */
 @Serializable
-enum class Direction(val direction: String) {
-    @SerialName("forward") FORWARD("forward"),
-    @SerialName("backward") BACKWARD("backward"),
+enum class Direction {
+    @SerialName("forward") FORWARD,
+    @SerialName("backward") BACKWARD,
 }
 
 /** Lane designation. */
