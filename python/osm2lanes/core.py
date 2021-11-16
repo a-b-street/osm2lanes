@@ -1,6 +1,7 @@
 """
 Lane tag parsing.
 """
+import math
 from dataclasses import dataclass
 from enum import Enum
 
@@ -96,7 +97,6 @@ class Road:
         return Direction.FORWARD if is_inverted else Direction.BACKWARD
 
     def parse(self) -> list[Lane]:
-        """Process road tags."""
         """
         Parse road features described by tags and generate list of lane
         specifications from left to right.
@@ -111,21 +111,26 @@ class Road:
 
         # Driveways
 
-        if "lanes" in self.tags:
+        # If lane number is not specified, we assume that there are two lanes:
+        # one forward and one backward (if it is not a oneway road).
+        number: int = int(self.tags["lanes"]) if "lanes" in self.tags else 2
 
-            number: int = int(self.tags["lanes"])
-            forward_driveway: Lane = Lane(LaneType.DRIVEWAY, Direction.FORWARD)
-            backward_driveway: Lane = Lane(
-                LaneType.DRIVEWAY, Direction.BACKWARD
+        oneway: bool = self.tags.get("oneway") == "yes"
+
+        if oneway:
+            lanes = [Lane(LaneType.DRIVEWAY, Direction.FORWARD)] * number
+        else:
+            half: int = (
+                int(number / 2.0)
+                if self.driving_side == DrivingSide.RIGHT
+                else math.ceil(number / 2.0)
             )
-
-            if self.tags.get("oneway") == "yes":
-                lanes = [forward_driveway] * number
-            else:
-                half: int = int(number / 2.0)
-                lanes = [backward_driveway] * half + [forward_driveway] * (
-                    number - half
-                )
+            lanes = [Lane(LaneType.DRIVEWAY, self.get_direction("left"))] * half
+            if self.tags.get("centre_turn_lane") == "yes":
+                lanes += [Lane(LaneType.SHARED_LEFT_TURN, Direction.FORWARD)]
+            lanes += [Lane(LaneType.DRIVEWAY, self.get_direction("right"))] * (
+                number - half
+            )
 
         def add(new_lanes: list[Lane]) -> list[Lane]:
             if direction == "left":

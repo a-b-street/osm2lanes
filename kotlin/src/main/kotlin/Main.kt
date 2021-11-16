@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.encodeToJsonElement
 import java.io.File
+import kotlin.math.ceil
 
 /** Bidirectional traffic practice. */
 @Serializable
@@ -118,27 +119,20 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
 
         // Driveways
 
-        if (tags.containsKey("lanes")) {
-            val laneNumber: String? = tags["lanes"]
+        // If lane number is not specified, we assume that there are two lanes: one forward and one backward (if it is
+        // not a oneway road).
+        val number = tags["lanes"]?.toInt() ?: 2
 
-            if (laneNumber != null) {
-                val number = laneNumber.toInt()
+        val oneway = tags["oneway"] == "yes"
 
-                if (tags["oneway"] == "yes") {
-                    for (i in 1..number) {
-                        lanes.add(Lane(LaneType.DRIVEWAY, Direction.FORWARD))
-                    }
-                } else {
-                    val half = number / 2
-
-                    for (i in 1..half) {
-                        lanes.add(Lane(LaneType.DRIVEWAY, Direction.BACKWARD))
-                    }
-                    for (i in half + 1..number) {
-                        lanes.add(Lane(LaneType.DRIVEWAY, Direction.FORWARD))
-                    }
-                }
-            }
+        if (oneway)
+            (1..number).forEach { _ -> lanes.add(Lane(LaneType.DRIVEWAY, Direction.FORWARD)) }
+        else {
+            val half = if (drivingSide == DrivingSide.RIGHT) number / 2 else ceil(number / 2.0).toInt()
+            (1..half).forEach { _ -> lanes.add(Lane(LaneType.DRIVEWAY, getDirection("left"))) }
+            if (tags["centre_turn_lane"] == "yes")
+                lanes.add(Lane(LaneType.SHARED_LEFT_TURN, Direction.FORWARD))
+            (half + 1..number).forEach { _ -> lanes.add(Lane(LaneType.DRIVEWAY, getDirection("right"))) }
         }
 
         // Cycleways
