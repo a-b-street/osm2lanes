@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.5.31")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.1")
 }
 

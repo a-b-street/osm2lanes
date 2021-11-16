@@ -69,5 +69,5 @@ pytest
 ### Run ###
 
 ```shell
-osm2lanes ${INPUT_FILE} ${OUTPUT_FILE}  # Run
+osm2lanes ${INPUT_FILE} ${OUTPUT_FILE}
 ```
