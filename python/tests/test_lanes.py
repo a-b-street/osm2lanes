@@ -15,7 +15,7 @@ TEST_FILE_PATH: Path = Path("data/tests.json")
 
 with TEST_FILE_PATH.open(encoding="utf-8") as input_file:
     CONFIGURATIONS: list[dict[str, Any]] = [
-        x for x in json.load(input_file) if not x["skip"]
+        x for x in json.load(input_file) if "skip" not in x or not x["skip"]
     ]
 
 
@@ -33,7 +33,7 @@ class Case:
     def from_structure(cls, structure: dict[str, Any]) -> "Case":
         """Parse test from configuration."""
         return cls(
-            structure["skip"],
+            structure["skip"] if "skip" in structure else False,
             structure["way"],
             structure["tags"],
             DrivingSide(structure["driving_side"]),

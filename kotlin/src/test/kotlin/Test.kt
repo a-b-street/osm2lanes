@@ -12,7 +12,7 @@ const val TEST_FILE_PATH = "../data/tests.json"
 
 @Serializable
 internal data class TestCase(
-    val skip: Boolean,
+    val skip: Boolean = false,
     val comment: String = "",
     val way: String,
     val tags: HashMap<String, String>,
