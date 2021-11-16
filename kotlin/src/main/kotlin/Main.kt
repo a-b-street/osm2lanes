@@ -137,18 +137,23 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
 
         // Cycleways
 
-        if (tags["cycleway:left"] == "lane") {
-            lanes.add(0, Lane(LaneType.CYCLEWAY, Direction.FORWARD))
-        } else if (tags["cycleway:left"] == "track") {
-            lanes.add(0, Lane(LaneType.CYCLEWAY, Direction.FORWARD))
-            lanes.add(0, Lane(LaneType.CYCLEWAY, Direction.BACKWARD))
-        }
-        if (tags["cycleway:right"] == "lane") {
-            lanes.add(Lane(LaneType.CYCLEWAY, Direction.BACKWARD))
-        } else if (tags["cycleway:right"] == "track") {
-            lanes.add(Lane(LaneType.CYCLEWAY, Direction.BACKWARD))
-            lanes.add(Lane(LaneType.CYCLEWAY, Direction.FORWARD))
-        }
+        for (side in sides)
+            if (tags["cycleway:$side"] == "lane")
+                // If road is oneway, cycleways should follow the driveway direction.
+                addLane(lanes, Lane(LaneType.CYCLEWAY, if (oneway) Direction.FORWARD else getDirection(side)), side)
+            else if (trackValues.contains(tags["cycleway:$side"])) {
+                addLane(lanes, Lane(LaneType.CYCLEWAY, getDirection(side, true)), side)
+                addLane(lanes, Lane(LaneType.CYCLEWAY, getDirection(side)), side)
+            }
+
+        // Parking lanes
+
+        if (tags["parking:lane:both"] == "parallel")
+            addBothLanes(lanes, LaneType.PARKING_LANE)
+
+        for (side in sides)
+            if (parkingValues.contains(tags["parking:lane:$side"]))
+                addLane(lanes, Lane(LaneType.PARKING_LANE, getDirection(side)), side)
 
         // Sidewalks
 

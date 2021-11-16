@@ -132,29 +132,33 @@ class Road:
                 number - half
             )
 
-        def add(new_lanes: list[Lane]) -> list[Lane]:
-            if direction == "left":
-                return new_lanes + lanes
-            if direction == "right":
-                return lanes + new_lanes
-
-        def get_direction() -> Direction:
-            return (
-                Direction.FORWARD if direction == "left" else Direction.BACKWARD
-            )
-
         # Cycleways
 
-        for direction in "left", "right":
-            if self.tags.get(f"cycleway:{direction}") == "lane":
-                lanes = add([Lane(LaneType.CYCLEWAY, get_direction())])
-            elif self.tags.get(f"cycleway:{direction}") == "track":
-                lanes = add(
-                    [
-                        Lane(LaneType.CYCLEWAY, Direction.BACKWARD),
-                        Lane(LaneType.CYCLEWAY, Direction.FORWARD),
-                    ],
+        lane: Lane
+
+        for side in sides:
+            if self.tags.get(f"cycleway:{side}") == "lane":
+                lane = Lane(
+                    LaneType.CYCLEWAY,
+                    Direction.FORWARD if oneway else self.get_direction(side),
                 )
+                lanes = self.add_lane(lanes, lane, side)
+            elif self.tags.get(f"cycleway:{side}") in track_values:
+                lane = Lane(LaneType.CYCLEWAY, self.get_direction(side, True))
+                lanes = self.add_lane(lanes, lane, side)
+
+                lane = Lane(LaneType.CYCLEWAY, self.get_direction(side))
+                lanes = self.add_lane(lanes, lane, side)
+
+        # Parking lanes
+
+        if self.tags.get("parking:lane:both") == "parallel":
+            lanes = self.add_both_lanes(lanes, LaneType.PARKING_LANE)
+
+        for side in sides:
+            if self.tags.get(f"parking:lane:{side}") in parking_values:
+                lane = Lane(LaneType.PARKING_LANE, self.get_direction(side))
+                lanes = self.add_lane(lanes, lane, side)
 
         # Sidewalks
 
