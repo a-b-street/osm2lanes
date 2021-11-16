@@ -16,7 +16,12 @@ class DrivingSide(Enum):
 
 
 class Direction(Enum):
-    """Lane direction relative to OpenStreetMap way direction."""
+    """
+    Lane direction relative to OpenStreetMap way direction.
+
+    See OpenStreetMap wiki page
+    https://wiki.openstreetmap.org/wiki/Forward_%26_backward,_left_%26_right.
+    """
 
     FORWARD = "forward"
     BACKWARD = "backward"
@@ -25,9 +30,19 @@ class Direction(Enum):
 class LaneType(Enum):
     """Lane designation."""
 
+    # Part of a highway set aside for the use of pedestrians and sometimes also
+    # cyclists, separated from the carriageway (or roadway).  See
+    # https://wiki.openstreetmap.org/wiki/Sidewalks
     SIDEWALK = "sidewalk"
+
+    # Cycling infrastructure that is an inherent part of the road.  See
+    # https://wiki.openstreetmap.org/wiki/Key:cycleway
     CYCLEWAY = "cycleway"
+
+    # Traffic lane of a highway suitable for vehicles.
     DRIVEWAY = "driveway"
+
+    # Part of the road designated for parking.
     PARKING_LANE = "parking_lane"
 
     SHARED_LEFT_TURN = "shared_left_turn"
@@ -52,11 +67,16 @@ class Lane:
         """Serialize lane specification into structure."""
         return {"type": self.type_.value, "direction": self.direction.value}
 
+    def __str__(self):
+        return f"{self.type_}_{self.direction}"
+
 
 @dataclass
 class Road:
     """OpenStreetMap way or relation described road part."""
 
+    # Tags associative array describing road features, see
+    # https://wiki.openstreetmap.org/wiki/Tags
     tags: Tags
 
     # DrivingSide bidirectional traffic practice in the region where the road is

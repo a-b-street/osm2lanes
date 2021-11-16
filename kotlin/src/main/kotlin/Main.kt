@@ -1,6 +1,3 @@
-/**
- * Lane tag parsing.
- */
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -15,7 +12,12 @@ enum class DrivingSide(val side: String) {
     @SerialName("left") LEFT("left"),
 }
 
-/** Lane direction relative to OpenStreetMap way direction. */
+/**
+ * Lane direction relative to OpenStreetMap way direction.
+ *
+ * See OpenStreetMap wiki page
+ * [Forward & backward, left & right](https://wiki.openstreetmap.org/wiki/Forward_%26_backward,_left_%26_right).
+ */
 @Serializable
 enum class Direction(val direction: String) {
     @SerialName("forward") FORWARD("forward"),
