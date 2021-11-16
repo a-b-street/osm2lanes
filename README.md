@@ -12,43 +12,62 @@ Structure
     * `tests.json`—tests, initially converted from Rust file
       `map_model/src/make/initial/lane_specs.rs` of A/B Street project.  Code is
       under Apache-2.0 License.
-  * `kotlin`—Kotlin implementation.
-  * `python`—Python 3.9 implementation.
+  * `kotlin`—[Kotlin implementation](#kotlin).
+  * `python`—[Python 3.9 implementation](#python).
 
-Python
-------
+Example
+-------
 
-### Install ###
+Input JSON file with road OpenStreetMap tags:
 
-```shell
-pip install .
+```json
+{
+    "lanes": "2",
+    "oneway": "yes",
+    "sidewalk": "both",
+    "cycleway:left": "lane"
+}
 ```
 
-### Run ###
+Output lane specifications from left to write:
 
-```shell
-osm2lanes ${INPUT_JSON_FILE} ${OUTPUT_JSON_FILE}
-```
-
-### Test ###
-
-```shell
-pytest
+```json
+[
+    {"type": "sidewalk", "direction": "backward"},
+    {"type": "cycleway", "direction": "forward"},
+    {"type": "driveway", "direction": "forward"},
+    {"type": "driveway", "direction": "forward"},
+    {"type": "sidewalk", "direction": "forward"}
+]
 ```
 
 Kotlin
 ------
 
-### Install ###
+### Install and test ###
 
-Run Gradle `jar` task.
+Install with Gradle `jar` task and test with Gradle `test` task.
 
 ### Run ###
 
 ```shell
-java -jar kotlin/build/libs/osm2lanes.jar ${INPUT_JSON_FILE} ${OUTPUT_JSON_FILE}
+java -jar kotlin/build/libs/osm2lanes.jar ${INPUT_FILE} ${OUTPUT_FILE}
 ```
 
-### Test ###
+Python
+------
 
-Run Gradle `test` task.
+### Install and test ###
+
+```shell
+cd python
+pip install .
+cd ..
+pytest
+```
+
+### Run ###
+
+```shell
+osm2lanes ${INPUT_FILE} ${OUTPUT_FILE}  # Run
+```
