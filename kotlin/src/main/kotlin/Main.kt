@@ -8,8 +8,10 @@ import kotlin.math.ceil
 /** Bidirectional traffic practice. */
 @Serializable
 enum class DrivingSide {
-    @SerialName("right") RIGHT,
-    @SerialName("left") LEFT,
+    @SerialName("right")
+    RIGHT,
+    @SerialName("left")
+    LEFT,
 }
 
 /**
@@ -20,8 +22,10 @@ enum class DrivingSide {
  */
 @Serializable
 enum class Direction {
-    @SerialName("forward") FORWARD,
-    @SerialName("backward") BACKWARD,
+    @SerialName("forward")
+    FORWARD,
+    @SerialName("backward")
+    BACKWARD,
 }
 
 /** Lane designation. */
@@ -32,26 +36,32 @@ enum class LaneType {
      * carriageway (or roadway).  See OpenStreetMap wiki page
      * [Sidewalks](https://wiki.openstreetmap.org/wiki/Sidewalks).
      */
-    @SerialName("sidewalk") SIDEWALK,
+    @SerialName("sidewalk")
+    SIDEWALK,
 
     /**
      * Cycling infrastructure that is an inherent part of the road.  See OpenStreetMap wiki page
      * [Key:cycleway](https://wiki.openstreetmap.org/wiki/Key:cycleway).
      */
-    @SerialName("cycleway") CYCLEWAY,
+    @SerialName("cycleway")
+    CYCLEWAY,
 
     /**
      * Traffic lane of a highway suitable for vehicles.
      */
-    @SerialName("driveway") DRIVEWAY,
+    @SerialName("driveway")
+    DRIVEWAY,
 
     /**
      * Part of the road designated for parking.
      */
-    @SerialName("parking_lane") PARKING_LANE,
+    @SerialName("parking_lane")
+    PARKING_LANE,
 
-    @SerialName("shared_left_turn") SHARED_LEFT_TURN,
-    @SerialName("shoulder") SHOULDER,
+    @SerialName("shared_left_turn")
+    SHARED_LEFT_TURN,
+    @SerialName("shoulder")
+    SHOULDER,
 }
 
 /** Lane specification. */
@@ -141,7 +151,7 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
 
         for (side in sides)
             if (tags["cycleway:$side"] == "lane")
-                // If road is oneway, cycleways should follow the driveway direction.
+            // If road is oneway, cycleways should follow the driveway direction.
                 addLane(lanes, Lane(LaneType.CYCLEWAY, if (oneway) Direction.FORWARD else getDirection(side)), side)
             else if (trackValues.contains(tags["cycleway:$side"])) {
                 addLane(lanes, Lane(LaneType.CYCLEWAY, getDirection(side, true)), side)
