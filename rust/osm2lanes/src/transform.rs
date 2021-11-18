@@ -1,4 +1,3 @@
-/// Purely from OSM tags, determine the lanes that a road segment has.
 use std::collections::BTreeMap;
 use std::iter;
 
@@ -6,21 +5,19 @@ use crate::{BufferType, Config, Direction, DrivingSide, LaneSpec, LaneType, Tags
 
 const HIGHWAY: &str = "highway";
 
+/// From an OpenStreetMap way's tags, determine the lanes along the road from left to right.
 pub fn get_lane_specs_ltr(tags: BTreeMap<String, String>, cfg: &Config) -> Vec<LaneSpec> {
     let tags = Tags::new(tags);
-    let fwd = |lt: LaneType| LaneSpec {
-        lt,
-        dir: Direction::Forward,
+    let fwd = |lane_type: LaneType| LaneSpec {
+        lane_type,
+        direction: Direction::Forward,
     };
-    let back = |lt: LaneType| LaneSpec {
-        lt,
-        dir: Direction::Backward,
+    let back = |lane_type: LaneType| LaneSpec {
+        lane_type,
+        direction: Direction::Backward,
     };
 
     // Easy special cases first.
-    if tags.is_any("railway", vec!["light_rail", "rail"]) {
-        return vec![fwd(LaneType::LightRail)];
-    }
     if tags.is(HIGHWAY, "steps") {
         return vec![fwd(LaneType::Sidewalk)];
     }
@@ -150,7 +147,7 @@ pub fn get_lane_specs_ltr(tags: BTreeMap<String, String>, cfg: &Config) -> Vec<L
     };
     if !fwd_bus_spec.is_empty() {
         let parts: Vec<&str> = fwd_bus_spec.split('|').collect();
-        let offset = if fwd_side[0].lt == LaneType::SharedLeftTurn {
+        let offset = if fwd_side[0].lane_type == LaneType::SharedLeftTurn {
             1
         } else {
             0
@@ -158,7 +155,7 @@ pub fn get_lane_specs_ltr(tags: BTreeMap<String, String>, cfg: &Config) -> Vec<L
         if parts.len() == fwd_side.len() - offset {
             for (idx, part) in parts.into_iter().enumerate() {
                 if part == "designated" {
-                    fwd_side[idx + offset].lt = LaneType::Bus;
+                    fwd_side[idx + offset].lane_type = LaneType::Bus;
                 }
             }
         }
@@ -171,7 +168,7 @@ pub fn get_lane_specs_ltr(tags: BTreeMap<String, String>, cfg: &Config) -> Vec<L
         if parts.len() == back_side.len() {
             for (idx, part) in parts.into_iter().enumerate() {
                 if part == "designated" {
-                    back_side[idx].lt = LaneType::Bus;
+                    back_side[idx].lane_type = LaneType::Bus;
                 }
             }
         }
@@ -242,7 +239,10 @@ pub fn get_lane_specs_ltr(tags: BTreeMap<String, String>, cfg: &Config) -> Vec<L
     {
         // TODO These shouldn't fail, but snapping is imperfect... like around
         // https://www.openstreetmap.org/way/486283205
-        if let Some(idx) = fwd_side.iter().position(|x| x.lt == LaneType::Biking) {
+        if let Some(idx) = fwd_side
+            .iter()
+            .position(|x| x.lane_type == LaneType::Biking)
+        {
             fwd_side.insert(idx, fwd(LaneType::Buffer(buffer)));
         }
     }
@@ -250,7 +250,10 @@ pub fn get_lane_specs_ltr(tags: BTreeMap<String, String>, cfg: &Config) -> Vec<L
         .get("cycleway:left:separation:left")
         .and_then(osm_separation_type)
     {
-        if let Some(idx) = back_side.iter().position(|x| x.lt == LaneType::Biking) {
+        if let Some(idx) = back_side
+            .iter()
+            .position(|x| x.lane_type == LaneType::Biking)
+        {
             back_side.insert(idx, back(LaneType::Buffer(buffer)));
         }
     }
@@ -259,7 +262,10 @@ pub fn get_lane_specs_ltr(tags: BTreeMap<String, String>, cfg: &Config) -> Vec<L
         .and_then(osm_separation_type)
     {
         // This is assuming a one-way road. That's why we're not looking at back_side.
-        if let Some(idx) = fwd_side.iter().position(|x| x.lt == LaneType::Biking) {
+        if let Some(idx) = fwd_side
+            .iter()
+            .position(|x| x.lane_type == LaneType::Biking)
+        {
             fwd_side.insert(idx + 1, fwd(LaneType::Buffer(buffer)));
         }
     }
@@ -303,11 +309,11 @@ pub fn get_lane_specs_ltr(tags: BTreeMap<String, String>, cfg: &Config) -> Vec<L
 
     let mut need_fwd_shoulder = fwd_side
         .last()
-        .map(|spec| spec.lt != LaneType::Sidewalk)
+        .map(|spec| spec.lane_type != LaneType::Sidewalk)
         .unwrap_or(true);
     let mut need_back_shoulder = back_side
         .last()
-        .map(|spec| spec.lt != LaneType::Sidewalk)
+        .map(|spec| spec.lane_type != LaneType::Sidewalk)
         .unwrap_or(true);
     if tags.is_any(HIGHWAY, vec!["motorway", "motorway_link", "construction"])
         || tags.is("foot", "no")
@@ -368,210 +374,5 @@ fn osm_separation_type(x: &String) -> Option<BufferType> {
         "parking_lane" => None,
         "barred_area" | "dashed_line" | "solid_line" => Some(BufferType::Stripes),
         _ => None,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn tags(kv: Vec<&str>) -> BTreeMap<String, String> {
-        let mut tags = BTreeMap::new();
-        for pair in kv {
-            let parts = pair.split('=').collect::<Vec<_>>();
-            tags.insert(parts[0].to_string(), parts[1].to_string());
-        }
-        tags
-    }
-
-    #[test]
-    fn test_osm_to_specs() {
-        let mut ok = true;
-        for (url, input, driving_side, expected_lt, expected_dir) in vec![
-            (
-                "https://www.openstreetmap.org/way/428294122",
-                vec![
-                    "lanes=2",
-                    "oneway=yes",
-                    "sidewalk=both",
-                    "cycleway:left=lane",
-                ],
-                DrivingSide::Right,
-                "sbdds",
-                "v^^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/8591383",
-                vec![
-                    "lanes=1",
-                    "oneway=yes",
-                    "sidewalk=both",
-                    "cycleway:left=track",
-                    "oneway:bicycle=no",
-                ],
-                DrivingSide::Right,
-                "sbbds",
-                "vv^^^",
-            ),
-            (
-                // A slight variation of the above, using cycleway:left:oneway=no, which should be
-                // equivalent
-                "https://www.openstreetmap.org/way/8591383",
-                vec![
-                    "lanes=1",
-                    "oneway=yes",
-                    "sidewalk=both",
-                    "cycleway:left=track",
-                    "cycleway:left:oneway=no",
-                ],
-                DrivingSide::Right,
-                "sbbds",
-                "vv^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/353690151",
-                vec![
-                    "lanes=4",
-                    "sidewalk=both",
-                    "parking:lane:both=parallel",
-                    "cycleway:right=track",
-                    "cycleway:right:oneway=no",
-                ],
-                DrivingSide::Right,
-                "spddddbbps",
-                "vvvv^^v^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/389654080",
-                vec![
-                    "lanes=2",
-                    "sidewalk=both",
-                    "parking:lane:left=parallel",
-                    "parking:lane:right=no_stopping",
-                    "centre_turn_lane=yes",
-                    "cycleway:right=track",
-                    "cycleway:right:oneway=no",
-                ],
-                DrivingSide::Right,
-                "spdCdbbs",
-                "vvv^^v^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/369623526",
-                vec![
-                    "lanes=1",
-                    "oneway=yes",
-                    "sidewalk=both",
-                    "parking:lane:right=diagonal",
-                    "cycleway:left=opposite_track",
-                    "oneway:bicycle=no",
-                ],
-                DrivingSide::Right,
-                "sbbdps",
-                "vv^^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/534549104",
-                vec![
-                    "lanes=2",
-                    "oneway=yes",
-                    "sidewalk=both",
-                    "cycleway:right=track",
-                    "cycleway:right:oneway=no",
-                    "oneway:bicycle=no",
-                ],
-                DrivingSide::Right,
-                "sddbbs",
-                "v^^v^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/777565028",
-                vec!["highway=residential", "oneway=no", "sidewalk=both"],
-                DrivingSide::Left,
-                "sdds",
-                "^^vv",
-            ),
-            (
-                "https://www.openstreetmap.org/way/224637155",
-                vec!["lanes=2", "oneway=yes", "sidewalk=left"],
-                DrivingSide::Left,
-                "sdd",
-                "^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/4188078",
-                vec![
-                    "lanes=2",
-                    "cycleway:left=lane",
-                    "oneway=yes",
-                    "sidewalk=left",
-                ],
-                DrivingSide::Left,
-                "sbdd",
-                "^^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/49207928",
-                vec!["cycleway:right=lane", "sidewalk=both"],
-                DrivingSide::Left,
-                "sddbs",
-                "^^vvv",
-            ),
-            // How should an odd number of lanes forward/backwards be split without any clues?
-            (
-                "https://www.openstreetmap.org/way/898731283",
-                vec!["lanes=3", "sidewalk=both"],
-                DrivingSide::Left,
-                "sddds",
-                "^^^vv",
-            ),
-            (
-                // I didn't look for a real example of this
-                "https://www.openstreetmap.org/way/898731283",
-                vec!["lanes=5", "sidewalk=none"],
-                DrivingSide::Right,
-                "SdddddS",
-                "vvv^^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/335668924",
-                vec!["lanes=1", "sidewalk=none"],
-                DrivingSide::Right,
-                "SddS",
-                "vv^^",
-            ),
-        ] {
-            let cfg = Config {
-                driving_side,
-                inferred_sidewalks: true,
-            };
-            let actual = get_lane_specs_ltr(tags(input.clone()), &cfg);
-            let actual_lt: String = actual.iter().map(|s| s.lt.to_char()).collect();
-            let actual_dir: String = actual
-                .iter()
-                .map(|s| {
-                    if s.dir == Direction::Forward {
-                        '^'
-                    } else {
-                        'v'
-                    }
-                })
-                .collect();
-            if actual_lt != expected_lt || actual_dir != expected_dir {
-                ok = false;
-                println!("For input (example from {}):", url);
-                for kv in input {
-                    println!("    {}", kv);
-                }
-                println!("Got:");
-                println!("    {}", actual_lt);
-                println!("    {}", actual_dir);
-                println!("Expected:");
-                println!("    {}", expected_lt);
-                println!("    {}", expected_dir);
-                println!();
-            }
-        }
-        assert!(ok);
     }
 }
