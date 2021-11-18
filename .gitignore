@@ -4,3 +4,5 @@
 __pycache__
 kotlin/build
 venv
+Cargo.lock
+target

@@ -1,0 +1,8 @@
+[package]
+name = "osm2lanes"
+version = "0.1.0"
+edition = "2021"
+authors = ["Dustin Carlino <dabreegster@gmail.com>"]
+
+[dependencies]
+serde = { version = "1", features=["derive"] }
