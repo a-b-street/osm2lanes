@@ -1,6 +1,6 @@
 [
     {
-        "way": "https://www.openstreetmap.org/way/428294122",
+        "way_id": 428294122,
         "tags": {
             "lanes": "2",
             "oneway": "yes",
@@ -17,7 +17,7 @@
         ]
     },
     {
-        "way": "https://www.openstreetmap.org/way/8591383",
+        "way_id": 8591383,
         "tags": {
             "lanes": "1",
             "oneway": "yes",
@@ -36,7 +36,7 @@
     },
     {
         "comment": "A slight variation of the above, using cycleway:left:oneway:no, which should be equivalent",
-        "way": "https://www.openstreetmap.org/way/8591383",
+        "way_id": 8591383,
         "tags": {
             "lanes": "1",
             "oneway": "yes",
@@ -54,7 +54,7 @@
         ]
     },
     {
-        "way": "https://www.openstreetmap.org/way/353690151",
+        "way_id": 353690151,
         "tags": {
             "lanes": "4",
             "sidewalk": "both",
@@ -77,7 +77,7 @@
         ]
     },
     {
-        "way": "https://www.openstreetmap.org/way/389654080",
+        "way_id": 389654080,
         "tags": {
             "lanes": "2",
             "sidewalk": "both",
@@ -100,7 +100,7 @@
         ]
     },
     {
-        "way": "https://www.openstreetmap.org/way/369623526",
+        "way_id": 369623526,
         "tags": {
             "lanes": "1",
             "oneway": "yes",
@@ -120,7 +120,7 @@
         ]
     },
     {
-        "way": "https://www.openstreetmap.org/way/534549104",
+        "way_id": 534549104,
         "tags": {
             "lanes": "2",
             "oneway": "yes",
@@ -140,7 +140,7 @@
         ]
     },
     {
-        "way": "https://www.openstreetmap.org/way/777565028",
+        "way_id": 777565028,
         "tags": {
             "highway": "residential",
             "oneway": "no",
@@ -155,7 +155,7 @@
         ]
     },
     {
-        "way": "https://www.openstreetmap.org/way/224637155",
+        "way_id": 224637155,
         "tags": {
             "lanes": "2",
             "oneway": "yes",
@@ -169,7 +169,7 @@
         ]
     },
     {
-        "way": "https://www.openstreetmap.org/way/4188078",
+        "way_id": 4188078,
         "tags": {
             "lanes": "2",
             "cycleway:left": "lane",
@@ -185,7 +185,7 @@
         ]
     },
     {
-        "way": "https://www.openstreetmap.org/way/49207928",
+        "way_id": 49207928,
         "tags": {
             "cycleway:right": "lane",
             "sidewalk": "both"
@@ -201,7 +201,7 @@
     },
     {
         "comment": "How should an odd number of lanes forward/backwards be split without any clues?",
-        "way": "https://www.openstreetmap.org/way/898731283",
+        "way_id": 898731283,
         "tags": {
             "lanes": "3",
             "sidewalk": "both"
@@ -217,7 +217,7 @@
     },
     {
         "comment": "I didn't look for a real example of this",
-        "way": "https://www.openstreetmap.org/way/898731283",
+        "way_id": 898731283,
         "tags": {
             "lanes": "5",
             "sidewalk": "none"
@@ -234,7 +234,7 @@
         ]
     },
     {
-        "way": "https://www.openstreetmap.org/way/335668924",
+        "way_id": 335668924,
         "tags": {
             "lanes": "1",
             "sidewalk": "none"

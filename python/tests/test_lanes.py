@@ -24,7 +24,7 @@ class Case:
     """Lane test."""
 
     skip: bool
-    way: str
+    way_id: int
     tags: Tags
     driving_side: DrivingSide
     output: list[Lane]
@@ -34,7 +34,7 @@ class Case:
         """Parse test from configuration."""
         return cls(
             structure["skip"] if "skip" in structure else False,
-            structure["way"],
+            structure["way_id"],
             structure["tags"],
             DrivingSide(structure["driving_side"]),
             list(map(Lane.from_structure, structure["output"])),
