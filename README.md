@@ -14,6 +14,7 @@ Structure
       under Apache-2.0 License.
   * `kotlin`—[Kotlin implementation](#kotlin).
   * `python`—[Python 3.9 implementation](#python).
+  * `rust`—[Rust implementation](#rust).
 
 Example
 -------
@@ -70,4 +71,22 @@ pytest
 
 ```shell
 osm2lanes ${INPUT_FILE} ${OUTPUT_FILE}
+```
+
+Rust
+------
+
+### Install and test ###
+
+After [installing rust](https://www.rust-lang.org/tools/install), run:
+
+```shell
+cd rust/osm2lanes
+cargo test
+```
+
+### Run ###
+
+```shell
+cargo run -- ${INPUT_FILE} ${OUTPUT_FILE}
 ```
