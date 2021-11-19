@@ -130,7 +130,7 @@ mod tests {
     #[derive(Deserialize)]
     struct TestCase {
         /// The URL to the OSM way
-        way: String,
+        way_id: u32,
         tags: BTreeMap<String, String>,
         driving_side: DrivingSide,
         output: Vec<LaneSpec>,
@@ -153,7 +153,8 @@ mod tests {
             let actual = get_lane_specs_ltr(test.tags.clone(), &cfg);
             if actual != test.output {
                 ok = false;
-                println!("For input (example from {}):", test.way);
+                println!("For input (example from https://www.openstreetmap.org/way/{}):",
+                    test.way_id);
                 for (k, v) in test.tags {
                     println!("    {} = {}", k, v);
                 }

@@ -14,7 +14,7 @@ const val TEST_FILE_PATH = "../data/tests.json"
 internal data class TestCase(
     val skip: Boolean = false,
     val comment: String = "",
-    val way: String,
+    val way_id: Int,
     val tags: HashMap<String, String>,
     val driving_side: DrivingSide,
     val output: ArrayList<Lane>,
