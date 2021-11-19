@@ -130,7 +130,7 @@ mod tests {
     #[derive(Deserialize)]
     struct TestCase {
         /// The URL to the OSM way
-        way_id: u32,
+        way_id: i64,
         tags: BTreeMap<String, String>,
         driving_side: DrivingSide,
         output: Vec<LaneSpec>,
