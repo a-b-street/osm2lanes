@@ -153,8 +153,10 @@ mod tests {
             let actual = get_lane_specs_ltr(test.tags.clone(), &cfg);
             if actual != test.output {
                 ok = false;
-                println!("For input (example from https://www.openstreetmap.org/way/{}):",
-                    test.way_id);
+                println!(
+                    "For input (example from https://www.openstreetmap.org/way/{}):",
+                    test.way_id
+                );
                 for (k, v) in test.tags {
                     println!("    {} = {}", k, v);
                 }
