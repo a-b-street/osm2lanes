@@ -15,6 +15,7 @@ mod transform;
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LaneSpec {
+    #[serde(rename = "type")]
     pub lane_type: LaneType,
     pub direction: Direction,
 }
@@ -23,19 +24,25 @@ pub struct LaneSpec {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum LaneType {
     /// A general-purpose lane for any vehicles
+    #[serde(rename = "driveway")]
     Driving,
     /// On-street parking. May be diagonal, perpendicular, or parallel.
+    #[serde(rename = "parking_lane")]
     Parking,
     /// A dedicated space for pedestrians, separated from the road by a curb.
+    #[serde(rename = "sidewalk")]
     Sidewalk,
     /// Some roads without any sidewalks still have pedestrian traffic. This type represents the
     /// shoulder of the road, where people are usually forced to walk.
+    #[serde(rename = "shoulder")]
     Shoulder,
     /// A marked bike lane. May be separated from the rest of the road by some type of buffer.
+    #[serde(rename = "cycleway")]
     Biking,
     /// A bus-only lane
     Bus,
     /// A shared center turn lane
+    #[serde(rename = "shared_left_turn")]
     SharedLeftTurn,
     /// Some lane that's under construction
     Construction,
@@ -65,7 +72,9 @@ pub enum BufferType {
 /// face? If there's bidirectional movement on a sidewalk, does a value make sense?
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Direction {
+    #[serde(rename = "forward")]
     Forward,
+    #[serde(rename = "backward")]
     Backward,
 }
 
@@ -78,9 +87,11 @@ pub struct Config {
 }
 
 /// Do vehicles travel on the right or left side of a road?
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum DrivingSide {
+    #[serde(rename = "right")]
     Right,
+    #[serde(rename = "left")]
     Left,
 }
 
@@ -113,204 +124,66 @@ impl Tags {
 mod tests {
     use super::*;
 
+    use std::fs::File;
+    use std::io::BufReader;
+
+    #[derive(Deserialize)]
+    struct TestCase {
+        /// The URL to the OSM way
+        way: String,
+        tags: BTreeMap<String, String>,
+        driving_side: DrivingSide,
+        output: Vec<LaneSpec>,
+    }
+
     #[test]
-    fn test_osm_to_specs() {
+    fn test_from_data() {
+        // TODO This is brittle, depends on running the test from the right directory. Use
+        // include_str?
+        let tests: Vec<TestCase> =
+            serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
+                .unwrap();
+
         let mut ok = true;
-        for (url, input, driving_side, expected_lt, expected_dir) in vec![
-            (
-                "https://www.openstreetmap.org/way/428294122",
-                vec![
-                    "lanes=2",
-                    "oneway=yes",
-                    "sidewalk=both",
-                    "cycleway:left=lane",
-                ],
-                DrivingSide::Right,
-                "sbdds",
-                "v^^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/8591383",
-                vec![
-                    "lanes=1",
-                    "oneway=yes",
-                    "sidewalk=both",
-                    "cycleway:left=track",
-                    "oneway:bicycle=no",
-                ],
-                DrivingSide::Right,
-                "sbbds",
-                "vv^^^",
-            ),
-            (
-                // A slight variation of the above, using cycleway:left:oneway=no, which should be
-                // equivalent
-                "https://www.openstreetmap.org/way/8591383",
-                vec![
-                    "lanes=1",
-                    "oneway=yes",
-                    "sidewalk=both",
-                    "cycleway:left=track",
-                    "cycleway:left:oneway=no",
-                ],
-                DrivingSide::Right,
-                "sbbds",
-                "vv^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/353690151",
-                vec![
-                    "lanes=4",
-                    "sidewalk=both",
-                    "parking:lane:both=parallel",
-                    "cycleway:right=track",
-                    "cycleway:right:oneway=no",
-                ],
-                DrivingSide::Right,
-                "spddddbbps",
-                "vvvv^^v^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/389654080",
-                vec![
-                    "lanes=2",
-                    "sidewalk=both",
-                    "parking:lane:left=parallel",
-                    "parking:lane:right=no_stopping",
-                    "centre_turn_lane=yes",
-                    "cycleway:right=track",
-                    "cycleway:right:oneway=no",
-                ],
-                DrivingSide::Right,
-                "spdCdbbs",
-                "vvv^^v^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/369623526",
-                vec![
-                    "lanes=1",
-                    "oneway=yes",
-                    "sidewalk=both",
-                    "parking:lane:right=diagonal",
-                    "cycleway:left=opposite_track",
-                    "oneway:bicycle=no",
-                ],
-                DrivingSide::Right,
-                "sbbdps",
-                "vv^^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/534549104",
-                vec![
-                    "lanes=2",
-                    "oneway=yes",
-                    "sidewalk=both",
-                    "cycleway:right=track",
-                    "cycleway:right:oneway=no",
-                    "oneway:bicycle=no",
-                ],
-                DrivingSide::Right,
-                "sddbbs",
-                "v^^v^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/777565028",
-                vec!["highway=residential", "oneway=no", "sidewalk=both"],
-                DrivingSide::Left,
-                "sdds",
-                "^^vv",
-            ),
-            (
-                "https://www.openstreetmap.org/way/224637155",
-                vec!["lanes=2", "oneway=yes", "sidewalk=left"],
-                DrivingSide::Left,
-                "sdd",
-                "^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/4188078",
-                vec![
-                    "lanes=2",
-                    "cycleway:left=lane",
-                    "oneway=yes",
-                    "sidewalk=left",
-                ],
-                DrivingSide::Left,
-                "sbdd",
-                "^^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/49207928",
-                vec!["cycleway:right=lane", "sidewalk=both"],
-                DrivingSide::Left,
-                "sddbs",
-                "^^vvv",
-            ),
-            // How should an odd number of lanes forward/backwards be split without any clues?
-            (
-                "https://www.openstreetmap.org/way/898731283",
-                vec!["lanes=3", "sidewalk=both"],
-                DrivingSide::Left,
-                "sddds",
-                "^^^vv",
-            ),
-            (
-                // I didn't look for a real example of this
-                "https://www.openstreetmap.org/way/898731283",
-                vec!["lanes=5", "sidewalk=none"],
-                DrivingSide::Right,
-                "SdddddS",
-                "vvv^^^^",
-            ),
-            (
-                "https://www.openstreetmap.org/way/335668924",
-                vec!["lanes=1", "sidewalk=none"],
-                DrivingSide::Right,
-                "SddS",
-                "vv^^",
-            ),
-        ] {
+        for test in tests {
             let cfg = Config {
-                driving_side,
+                driving_side: test.driving_side,
                 inferred_sidewalks: true,
             };
-            let actual = get_lane_specs_ltr(tags(input.clone()), &cfg);
-            let actual_lt: String = actual.iter().map(|s| s.lane_type.to_char()).collect();
-            let actual_dir: String = actual
-                .iter()
-                .map(|s| {
-                    if s.direction == Direction::Forward {
-                        '^'
-                    } else {
-                        'v'
-                    }
-                })
-                .collect();
-            if actual_lt != expected_lt || actual_dir != expected_dir {
+            let actual = get_lane_specs_ltr(test.tags.clone(), &cfg);
+            if actual != test.output {
                 ok = false;
-                println!("For input (example from {}):", url);
-                for kv in input {
-                    println!("    {}", kv);
+                println!("For input (example from {}):", test.way);
+                for (k, v) in test.tags {
+                    println!("    {} = {}", k, v);
                 }
                 println!("Got:");
-                println!("    {}", actual_lt);
-                println!("    {}", actual_dir);
+                println!("    {}", stringify_lane_types(&actual));
+                println!("    {}", stringify_directions(&actual));
                 println!("Expected:");
-                println!("    {}", expected_lt);
-                println!("    {}", expected_dir);
+                println!("    {}", stringify_lane_types(&test.output));
+                println!("    {}", stringify_directions(&test.output));
                 println!();
             }
         }
         assert!(ok);
     }
 
-    fn tags(kv: Vec<&str>) -> BTreeMap<String, String> {
-        let mut tags = BTreeMap::new();
-        for pair in kv {
-            let parts = pair.split('=').collect::<Vec<_>>();
-            tags.insert(parts[0].to_string(), parts[1].to_string());
-        }
-        tags
+    fn stringify_lane_types(lanes: &[LaneSpec]) -> String {
+        lanes.iter().map(|s| s.lane_type.to_char()).collect()
+    }
+
+    fn stringify_directions(lanes: &[LaneSpec]) -> String {
+        lanes
+            .iter()
+            .map(|s| {
+                if s.direction == Direction::Forward {
+                    '^'
+                } else {
+                    'v'
+                }
+            })
+            .collect()
     }
 
     impl LaneType {
@@ -326,22 +199,6 @@ mod tests {
                 LaneType::SharedLeftTurn => 'C',
                 LaneType::Construction => 'x',
                 LaneType::Buffer(_) => '|',
-            }
-        }
-
-        /// The inverse of `to_char`. Always picks one buffer type. Panics on invalid input.
-        pub fn from_char(x: char) -> LaneType {
-            match x {
-                'd' => LaneType::Driving,
-                'b' => LaneType::Biking,
-                'B' => LaneType::Bus,
-                'p' => LaneType::Parking,
-                's' => LaneType::Sidewalk,
-                'S' => LaneType::Shoulder,
-                'C' => LaneType::SharedLeftTurn,
-                'x' => LaneType::Construction,
-                '|' => LaneType::Buffer(BufferType::FlexPosts),
-                _ => panic!("from_char({}) undefined", x),
             }
         }
     }
