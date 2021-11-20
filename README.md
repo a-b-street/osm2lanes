@@ -45,11 +45,18 @@ Output lane specifications from left to write:
 Kotlin
 ------
 
+### Run with Gradle ###
+
+```shell
+cd kotlin
+gradle run --args "${INPUT_FILE} ${OUTPUT_FILE}"
+```
+
 ### Install and test ###
 
-Install with Gradle `jar` task and test with Gradle `test` task.
+Create JAR file with `gradle jar` task and test with `gradle test`.
 
-### Run ###
+### Run JAR ###
 
 ```shell
 java -jar kotlin/build/libs/osm2lanes.jar ${INPUT_FILE} ${OUTPUT_FILE}
