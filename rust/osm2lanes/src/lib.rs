@@ -24,7 +24,7 @@ pub struct LaneSpec {
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum LaneType {
     /// A general-purpose lane for any vehicles
-    #[serde(rename = "driveway")]
+    #[serde(rename = "travel_lane")]
     Driving,
     /// On-street parking. May be diagonal, perpendicular, or parallel.
     #[serde(rename = "parking_lane")]

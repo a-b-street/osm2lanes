@@ -49,8 +49,8 @@ enum class LaneType {
     /**
      * Traffic lane of a highway suitable for vehicles.
      */
-    @SerialName("driveway")
-    DRIVEWAY,
+    @SerialName("travel_lane")
+    TRAVEL_LANE,
 
     /**
      * Part of the road designated for parking.
@@ -141,20 +141,20 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
             number = 2
 
         if (oneway)
-            (1..number).forEach { _ -> lanes.add(Lane(LaneType.DRIVEWAY, Direction.FORWARD)) }
+            (1..number).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL_LANE, Direction.FORWARD)) }
         else {
             val half = if (drivingSide == DrivingSide.RIGHT) number / 2 else ceil(number / 2.0).toInt()
-            (1..half).forEach { _ -> lanes.add(Lane(LaneType.DRIVEWAY, getDirection("left"))) }
+            (1..half).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL_LANE, getDirection("left"))) }
             if (tags["centre_turn_lane"] == "yes")
                 lanes.add(Lane(LaneType.SHARED_LEFT_TURN, Direction.FORWARD))
-            (half + 1..number).forEach { _ -> lanes.add(Lane(LaneType.DRIVEWAY, getDirection("right"))) }
+            (half + 1..number).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL_LANE, getDirection("right"))) }
         }
 
         // Cycleways
 
         for (side in sides)
             if (tags["cycleway:$side"] == "lane")
-            // If road is oneway, cycleways should follow the driveway direction.
+            // If road is oneway, cycleways should follow the travel lane direction.
                 addLane(lanes, Lane(LaneType.CYCLEWAY, if (oneway) Direction.FORWARD else getDirection(side)), side)
             else if (trackValues.contains(tags["cycleway:$side"])) {
                 addLane(lanes, Lane(LaneType.CYCLEWAY, getDirection(side, true)), side)

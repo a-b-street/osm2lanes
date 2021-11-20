@@ -36,8 +36,8 @@ Output lane specifications from left to write:
 [
     {"type": "sidewalk", "direction": "backward"},
     {"type": "cycleway", "direction": "forward"},
-    {"type": "driveway", "direction": "forward"},
-    {"type": "driveway", "direction": "forward"},
+    {"type": "travel_lane", "direction": "forward"},
+    {"type": "travel_lane", "direction": "forward"},
     {"type": "sidewalk", "direction": "forward"}
 ]
 ```

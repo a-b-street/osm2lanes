@@ -40,7 +40,7 @@ class LaneType(Enum):
     CYCLEWAY = "cycleway"
 
     # Traffic lane of a highway suitable for vehicles.
-    DRIVEWAY = "driveway"
+    TRAVEL_LANE = "travel_lane"
 
     # Part of the road designated for parking.
     PARKING_LANE = "parking_lane"
@@ -141,17 +141,17 @@ class Road:
             number = 2
 
         if oneway:
-            lanes = [Lane(LaneType.DRIVEWAY, Direction.FORWARD)] * number
+            lanes = [Lane(LaneType.TRAVEL_LANE, Direction.FORWARD)] * number
         else:
             half: int = (
                 int(number / 2.0)
                 if self.driving_side == DrivingSide.RIGHT
                 else math.ceil(number / 2.0)
             )
-            lanes = [Lane(LaneType.DRIVEWAY, self.get_direction("left"))] * half
+            lanes = [Lane(LaneType.TRAVEL_LANE, self.get_direction("left"))] * half
             if self.tags.get("centre_turn_lane") == "yes":
                 lanes += [Lane(LaneType.SHARED_LEFT_TURN, Direction.FORWARD)]
-            lanes += [Lane(LaneType.DRIVEWAY, self.get_direction("right"))] * (
+            lanes += [Lane(LaneType.TRAVEL_LANE, self.get_direction("right"))] * (
                 number - half
             )
 
