@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+
+    # Python
+
     - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
@@ -19,9 +22,11 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install pytest
-    - name: Test with pytest
-      run: |
-        pytest -v
+    - name: Test the Python implementation
+      run: pytest -v
+
+    # Rust
+
     - name: Install Rust
       uses: hecrj/setup-rust-action@v1
       with:
@@ -30,3 +35,12 @@ jobs:
       run: |
         cd rust/osm2lanes
         cargo test
+
+    # Kotlin
+
+    - name: Set up Kotlin
+      uses: fwilhe2/setup-kotlin@main
+    - name: Test the Kotlin implementation
+      run: |
+        cd kotlin
+        gradle test
