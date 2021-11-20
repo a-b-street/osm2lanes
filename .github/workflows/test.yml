@@ -41,4 +41,6 @@ jobs:
     - name: Set up Kotlin
       uses: fwilhe2/setup-kotlin@main
     - name: Test the Kotlin implementation
-      run: gradle test
+      run: |
+        cd kotlin
+        gradle test
