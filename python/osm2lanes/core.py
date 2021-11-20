@@ -11,7 +11,10 @@ Tags = dict[str, str]
 class DrivingSide(Enum):
     """Bidirectional traffic practice."""
 
+    # Vehicles travel on the right side of a road.
     RIGHT = "right"
+
+    # Vehicles travel on the left side of a road.
     LEFT = "left"
 
 
@@ -45,8 +48,36 @@ class LaneType(Enum):
     # Part of the road designated for parking.
     PARKING_LANE = "parking_lane"
 
+    # A shared center turn lane.
     SHARED_LEFT_TURN = "shared_left_turn"
+
+    # Some roads without any sidewalks still have pedestrian traffic.  This type
+    # represents the shoulder of the road, where people are usually forced to
+    # walk.
     SHOULDER = "shoulder"
+
+    # A bus-only lane.
+    BUS = "bus"
+
+
+class BufferType(Enum):
+    """The amount of space between the lanes."""
+
+    # Painted stripes
+    STRIPES = "stripes"
+
+    # Flex posts, wands, cones, car ticklers, bollards, other "weak" forms of
+    # protection. Usually possible to weave through them.
+    FLEX_POSTS = "flex_posts"
+
+    # Sturdier planters, with gaps
+    PLANTERS = "planters"
+
+    # Solid barrier, no gaps.
+    JERSEY_BARRIER = "jersey_barrier"
+
+    # A raised curb
+    CURB = "curb"
 
 
 @dataclass

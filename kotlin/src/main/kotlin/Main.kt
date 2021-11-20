@@ -8,8 +8,15 @@ import kotlin.math.ceil
 /** Bidirectional traffic practice. */
 @Serializable
 enum class DrivingSide {
+    /**
+     * Vehicles travel on the right side of a road.
+     */
     @SerialName("right")
     RIGHT,
+
+    /**
+     * Vehicles travel on the left side of a road.
+     */
     @SerialName("left")
     LEFT,
 }
@@ -58,10 +65,61 @@ enum class LaneType {
     @SerialName("parking_lane")
     PARKING_LANE,
 
+    /**
+     * A shared center turn lane.
+     */
     @SerialName("shared_left_turn")
     SHARED_LEFT_TURN,
+
+    /**
+     * Some roads without any sidewalks still have pedestrian traffic. This type represents the shoulder of the road,
+     * where people are usually forced to walk.
+     */
     @SerialName("shoulder")
     SHOULDER,
+
+    /**
+     * A bus-only lane.
+     */
+    @SerialName("bus")
+    BUS_LANE,
+}
+
+/**
+ * The amount of space between the lanes.
+ */
+@Serializable
+enum class BufferType {
+    /**
+     * Painted stripes
+     */
+    @SerialName("stripes")
+    STRIPES,
+
+    /**
+     * Flex posts, wands, cones, car ticklers, bollards, other "weak" forms of protection. Usually possible to weave
+     * through them.
+     */
+    @SerialName("flex_posts")
+    FLEX_POSTS,
+
+    /**
+     * Sturdier planters, with gaps
+     */
+    @SerialName("planters")
+    PLANTERS,
+
+    /**
+     * Solid barrier, no gaps.
+     */
+    @SerialName("jersey_barrier")
+    JERSEY_BARRIER,
+
+    /**
+     * A raised curb
+     */
+    @SerialName("curb")
+    CURB,
 }
 
 /** Lane specification. */
