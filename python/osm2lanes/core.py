@@ -187,7 +187,7 @@ class Road:
         parking_values: set[str] = {"parallel", "diagonal"}
         track_values: set[str] = {"track", "opposite_track"}
 
-        lanes: list[Lane] = []
+        lanes: list[Lane]
 
         # Driveways
 

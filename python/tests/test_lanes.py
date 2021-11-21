@@ -55,4 +55,4 @@ def test_lanes(test_configuration: dict[str, Any]) -> None:
 
     assert (
         output == test.output
-    ), f"\nExpected: {test.output}\nActual:   {output}\nTags:\n    {tags}"
+    ), f"\nGot:      {output}\nExpected: {test.output}\nTags:\n    {tags}"

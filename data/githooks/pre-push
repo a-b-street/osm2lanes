@@ -2,7 +2,7 @@
 
 # Python.
 
-pytest -v || { echo "FAIL"; exit 1; }
+pytest || { echo "FAIL"; exit 1; }
 
 # Rust.
 

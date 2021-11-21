@@ -54,9 +54,9 @@ gradle run --args "${INPUT_FILE} ${OUTPUT_FILE}"
 
 ### Install and test ###
 
-Create JAR file with `gradle jar` task and test with `gradle test`.
+Create JAR file with `gradle jar` and test with `gradle test`.
 
-### Run JAR ###
+### Run with Java ###
 
 ```shell
 java -jar kotlin/build/libs/osm2lanes.jar ${INPUT_FILE} ${OUTPUT_FILE}

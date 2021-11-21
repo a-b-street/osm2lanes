@@ -36,7 +36,11 @@ internal class LaneTest {
         for (testCase in testSuite) {
             if (!testCase.skip) {
                 val parsed = Road(testCase.tags, testCase.driving_side).parse()
-                assertEquals(testCase.output, parsed, testCase.driving_side.toString())
+                assertEquals(
+                    testCase.output,
+                    parsed,
+                    "Got:      " + parsed + "\nExpected: " + testCase.output + "\n"
+                )
             }
         }
     }

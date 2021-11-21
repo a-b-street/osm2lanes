@@ -34,6 +34,7 @@ enum class Direction {
      */
     @SerialName("forward")
     FORWARD,
+
     /**
      * The direction of the lane it opposite to the direction of the way.
      */

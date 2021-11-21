@@ -2,6 +2,7 @@
     {
         "way_id": 428294122,
         "tags": {
+            "bicycle": "designated",
             "lanes": "2",
             "oneway": "yes",
             "sidewalk": "both",
