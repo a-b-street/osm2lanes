@@ -29,8 +29,14 @@ enum class DrivingSide {
  */
 @Serializable
 enum class Direction {
+    /**
+     * The direction of the lane coincides with the direction of the way.
+     */
     @SerialName("forward")
     FORWARD,
+    /**
+     * The direction of the lane it opposite to the direction of the way.
+     */
     @SerialName("backward")
     BACKWARD,
 }

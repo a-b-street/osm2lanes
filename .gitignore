@@ -3,6 +3,7 @@
 .idea
 __pycache__
 kotlin/build
+python/osm2lanes.egg-info
 venv
 Cargo.lock
 target

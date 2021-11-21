@@ -26,8 +26,20 @@ class Direction(Enum):
     https://wiki.openstreetmap.org/wiki/Forward_%26_backward,_left_%26_right.
     """
 
+    # The direction of the lane coincides with the direction of the way.
     FORWARD = "forward"
+
+    # The direction of the lane it opposite to the direction of the way.
     BACKWARD = "backward"
+
+    def __str__(self):
+        if self == Direction.FORWARD:
+            return "↑"
+        if self == Direction.BACKWARD:
+            return "↓"
+
+    def __repr__(self):
+        return "v"
 
 
 class LaneType(Enum):
@@ -101,8 +113,8 @@ class Lane:
         """Serialize lane specification into structure."""
         return {"type": self.type_.value, "direction": self.direction.value}
 
-    def __str__(self):
-        return f"{self.type_}_{self.direction}"
+    def __repr__(self):
+        return f"{self.type_} {self.direction}"
 
 
 @dataclass
@@ -154,7 +166,7 @@ class Road:
         """
         Parse road features described by tags and generate list of lane
         specifications from left to right.
-        
+
         :return: list of lane specifications
         """
         sides: set[str] = {"left", "right"}

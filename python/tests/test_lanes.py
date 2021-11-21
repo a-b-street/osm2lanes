@@ -24,6 +24,7 @@ class Case:
     """Lane test."""
 
     skip: bool
+    # The OSM way unique identifier.
     way_id: int
     tags: Tags
     driving_side: DrivingSide
@@ -47,4 +48,9 @@ def test_lanes(test_configuration: dict[str, Any]) -> None:
     test = Case.from_structure(test_configuration)
     road: Road = Road(test.tags, test.driving_side)
     output: list[Lane] = road.parse()
-    assert output == test.output
+
+    tags = "\n    ".join(f"{k}={v}" for k, v in test.tags.items())
+
+    assert (
+        output == test.output
+    ), f"\nExpected: {test.output}\nActual:   {output}\nTags:\n    {tags}"
