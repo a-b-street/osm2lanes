@@ -57,7 +57,10 @@ class LaneType(Enum):
     SHOULDER = "shoulder"
 
     # A bus-only lane.
-    BUS = "bus"
+    BUS_LANE = "bus_lane"
+
+    def __str__(self):
+        return self.value
 
 
 class BufferType(Enum):
@@ -203,6 +206,11 @@ class Road:
 
                 lane = Lane(LaneType.CYCLEWAY, self.get_direction(side))
                 lanes = self.add_lane(lanes, lane, side)
+
+        # Bus lanes
+
+        if self.tags.get("busway") == "lane":
+            lanes = self.add_both_lanes(lanes, LaneType.BUS_LANE)
 
         # Parking lanes
 

@@ -1,9 +1,9 @@
+import java.io.File
+import kotlin.math.ceil
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.encodeToJsonElement
-import java.io.File
-import kotlin.math.ceil
 
 /** Bidirectional traffic practice. */
 @Serializable
@@ -218,6 +218,11 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
                 addLane(lanes, Lane(LaneType.CYCLEWAY, getDirection(side, true)), side)
                 addLane(lanes, Lane(LaneType.CYCLEWAY, getDirection(side)), side)
             }
+
+        // Bus lanes
+
+        if (tags["busway"] == "lane")
+            addBothLanes(lanes, LaneType.BUS_LANE)
 
         // Parking lanes
 
