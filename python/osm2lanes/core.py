@@ -181,18 +181,40 @@ class Road:
 
         # If lane number is not specified, we assume that there are two lanes:
         # one forward and one backward (if it is not a oneway road).
-        number: int = int(self.tags["lanes"]) if "lanes" in self.tags else 2
+        total_lane_number: int
+        travel_lane_number: int
 
-        if number == 1 and not oneway:
-            number = 2
+        if "lanes" in self.tags:
+            total_lane_number = int(self.tags["lanes"])
+
+            travel_lane_number = total_lane_number
+            if (
+                self.tags.get("busway") == "lane"
+                or self.tags.get("busway:both") == "lane"
+            ):
+                travel_lane_number -= 2
+        else:
+            travel_lane_number = 2
+
+            total_lane_number = 2
+            if (
+                self.tags.get("busway") == "lane"
+                or self.tags.get("busway:both") == "lane"
+            ):
+                total_lane_number += 2
+
+        if travel_lane_number == 1 and not oneway:
+            travel_lane_number = 2
 
         if oneway:
-            lanes = [Lane(LaneType.TRAVEL_LANE, Direction.FORWARD)] * number
+            lanes = [
+                Lane(LaneType.TRAVEL_LANE, Direction.FORWARD)
+            ] * travel_lane_number
         else:
             half: int = (
-                int(number / 2.0)
+                int(travel_lane_number / 2.0)
                 if self.driving_side == DrivingSide.RIGHT
-                else math.ceil(number / 2.0)
+                else math.ceil(travel_lane_number / 2.0)
             )
             lanes = [
                 Lane(LaneType.TRAVEL_LANE, self.get_direction("left"))
@@ -201,7 +223,7 @@ class Road:
                 lanes += [Lane(LaneType.SHARED_LEFT_TURN, Direction.FORWARD)]
             lanes += [
                 Lane(LaneType.TRAVEL_LANE, self.get_direction("right"))
-            ] * (number - half)
+            ] * (travel_lane_number - half)
 
         # Cycleways
 
@@ -223,7 +245,10 @@ class Road:
 
         # Bus lanes
 
-        if self.tags.get("busway") == "lane":
+        if (
+            self.tags.get("busway") == "lane"
+            or self.tags.get("busway:both") == "lane"
+        ):
             lanes = self.add_both_lanes(lanes, LaneType.BUS_LANE)
 
         # Parking lanes

@@ -279,5 +279,27 @@
             {"type": "bus_lane", "direction": "forward"},
             {"type": "sidewalk", "direction": "forward"}
         ]
+    },
+    {
+        "skip_kotlin": true,
+        "skip_rust": true,
+        "way_id": 13859146,
+        "tags": {
+            "busway:both": "lane",
+            "highway": "secondary",
+            "lanes": "4",
+            "maxspeed": "50",
+            "name": "Rue Gabriel Péri",
+            "ref": "D 986",
+            "source": "Microsoft Bing orbital imagery + survey",
+            "surface": "asphalt"
+        },
+        "driving_side": "right",
+        "output": [
+            {"type": "bus_lane", "direction": "backward"},
+            {"type": "travel_lane", "direction": "backward"},
+            {"type": "travel_lane", "direction": "forward"},
+            {"type": "bus_lane", "direction": "forward"}
+        ]
     }
 ]
