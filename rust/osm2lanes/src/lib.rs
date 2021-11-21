@@ -40,6 +40,7 @@ pub enum LaneType {
     #[serde(rename = "cycleway")]
     Biking,
     /// A bus-only lane
+    #[serde(rename = "bus_lane")]
     Bus,
     /// A shared center turn lane
     #[serde(rename = "shared_left_turn")]
@@ -129,7 +130,7 @@ mod tests {
 
     #[derive(Deserialize)]
     struct TestCase {
-        /// The URL to the OSM way
+        /// The OSM way unique identifier
         way_id: i64,
         tags: BTreeMap<String, String>,
         driving_side: DrivingSide,

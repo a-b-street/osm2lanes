@@ -246,5 +246,38 @@
             {"type": "travel_lane", "direction": "forward"},
             {"type": "shoulder", "direction": "forward"}
         ]
+    },
+    {
+        "skip": true,
+        "way_id": 988980354,
+        "driving_side": "right",
+        "tags": {
+            "busway": "lane",
+            "hgv": "local",
+            "highway": "primary",
+            "lanes:bus": "2",
+            "lit": "yes",
+            "maxspeed": "25 mph",
+            "name": "East 42nd Street",
+            "sidewalk": "both",
+            "surface": "asphalt",
+            "tiger:cfcc": "A41",
+            "tiger:county": "New York, NY",
+            "tiger:name_base": "42nd",
+            "tiger:name_direction_prefix": "E",
+            "tiger:name_type": "St",
+            "tiger:zip_left": "10017",
+            "tiger:zip_right": "10017",
+            "wikidata": "Q110061",
+            "wikipedia": "en:42nd Street (Manhattan)"
+        },
+        "output": [
+            {"type": "sidewalk", "direction": "backward"},
+            {"type": "bus_lane", "direction": "backward"},
+            {"type": "travel_lane", "direction": "backward"},
+            {"type": "travel_lane", "direction": "forward"},
+            {"type": "bus_lane", "direction": "forward"},
+            {"type": "sidewalk", "direction": "forward"}
+        ]
     }
 ]
