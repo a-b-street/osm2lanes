@@ -134,6 +134,7 @@ mod tests {
         tags: BTreeMap<String, String>,
         driving_side: DrivingSide,
         output: Vec<LaneSpec>,
+        skip: Option<bool>,
     }
 
     #[test]
@@ -146,6 +147,9 @@ mod tests {
 
         let mut ok = true;
         for test in tests {
+            if !test.skip.is_none() && test.skip.unwrap() {
+                continue;
+            }
             let cfg = Config {
                 driving_side: test.driving_side,
                 inferred_sidewalks: true,
