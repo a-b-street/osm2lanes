@@ -81,7 +81,7 @@ enum class LaneType {
     /**
      * A bus-only lane.
      */
-    @SerialName("bus")
+    @SerialName("bus_lane")
     BUS_LANE,
 }
 
