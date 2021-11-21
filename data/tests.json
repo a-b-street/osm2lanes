@@ -282,7 +282,6 @@
         ]
     },
     {
-        "skip_kotlin": true,
         "skip_rust": true,
         "way_id": 13859146,
         "tags": {

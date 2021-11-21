@@ -39,7 +39,7 @@ internal class LaneTest {
                 assertEquals(
                     testCase.output,
                     parsed,
-                    "Got:      " + parsed + "\nExpected: " + testCase.output + "\n"
+                    "\nGot:      " + parsed + "\nExpected: " + testCase.output + "\n"
                 )
             }
         }

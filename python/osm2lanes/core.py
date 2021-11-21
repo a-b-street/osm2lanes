@@ -193,14 +193,14 @@ class Road:
 
         oneway: bool = self.tags.get("oneway") == "yes"
 
-        # If lane number is not specified, we assume that there are two lanes:
-        # one forward and one backward (if it is not a oneway road).
         travel_lane_number: int
 
         if "lanes" in self.tags:
             total_lane_number = int(self.tags["lanes"])
             travel_lane_number = total_lane_number - self.get_extra_lanes()
         else:
+            # If lane number is not specified, we assume that there are two
+            # lanes: one forward and one backward (if it is not a oneway road).
             travel_lane_number = 2
 
         if travel_lane_number == 1 and not oneway:

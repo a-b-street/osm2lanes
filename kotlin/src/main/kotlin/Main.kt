@@ -182,6 +182,19 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
     }
 
     /**
+     * Compute the number of special lanes (e.g. bus-only lanes).
+     */
+    private fun getExtraLanes(): Int {
+        var laneCount = 0
+
+        if (tags["busway"] == "lane" || tags["busway:both"] == "lane")
+            laneCount += 2
+
+        return laneCount
+    }
+
+
+    /**
      * Parse road features described by tags and generate list of lane specifications from left to right.
      *
      * @return list of lane specifications
@@ -198,21 +211,30 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
 
         val oneway = tags["oneway"] == "yes"
 
+        var travelLaneNumber: Int
+        val totalLaneNumber = tags["lanes"]
+
         // If lane number is not specified, we assume that there are two lanes: one forward and one backward (if it is
         // not a oneway road).
-        var number = tags["lanes"]?.toInt() ?: 2
+        travelLaneNumber = if (totalLaneNumber != null) totalLaneNumber.toInt() - getExtraLanes() else 2
 
-        if (number == 1 && !oneway)
-            number = 2
+        if (travelLaneNumber == 1 && !oneway)
+            travelLaneNumber = 2
 
         if (oneway)
-            (1..number).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL_LANE, Direction.FORWARD)) }
+            (1..travelLaneNumber).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL_LANE, Direction.FORWARD)) }
         else {
-            val half = if (drivingSide == DrivingSide.RIGHT) number / 2 else ceil(number / 2.0).toInt()
+            val half =
+                if (drivingSide == DrivingSide.RIGHT) travelLaneNumber / 2 else ceil(travelLaneNumber / 2.0).toInt()
+
             (1..half).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL_LANE, getDirection("left"))) }
+
             if (tags["centre_turn_lane"] == "yes")
                 lanes.add(Lane(LaneType.SHARED_LEFT_TURN, Direction.FORWARD))
-            (half + 1..number).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL_LANE, getDirection("right"))) }
+
+            (half + 1..travelLaneNumber).forEach { _ ->
+                lanes.add(Lane(LaneType.TRAVEL_LANE, getDirection("right")))
+            }
         }
 
         // Cycleways
@@ -228,7 +250,7 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
 
         // Bus lanes
 
-        if (tags["busway"] == "lane")
+        if (tags["busway"] == "lane" || tags["busway:both"] == "lane")
             addBothLanes(lanes, LaneType.BUS_LANE)
 
         // Parking lanes
