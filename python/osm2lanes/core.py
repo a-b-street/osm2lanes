@@ -162,6 +162,20 @@ class Road:
 
         return Direction.FORWARD if is_inverted else Direction.BACKWARD
 
+    def get_extra_lanes(self) -> int:
+        """
+        Compute the number of special lanes (e.g. bus-only lanes).
+        """
+        lane_count: int = 0
+
+        if (
+            self.tags.get("busway") == "lane"
+            or self.tags.get("busway:both") == "lane"
+        ):
+            lane_count += 2
+
+        return lane_count
+
     def parse(self) -> list[Lane]:
         """
         Parse road features described by tags and generate list of lane
@@ -181,27 +195,13 @@ class Road:
 
         # If lane number is not specified, we assume that there are two lanes:
         # one forward and one backward (if it is not a oneway road).
-        total_lane_number: int
         travel_lane_number: int
 
         if "lanes" in self.tags:
             total_lane_number = int(self.tags["lanes"])
-
-            travel_lane_number = total_lane_number
-            if (
-                self.tags.get("busway") == "lane"
-                or self.tags.get("busway:both") == "lane"
-            ):
-                travel_lane_number -= 2
+            travel_lane_number = total_lane_number - self.get_extra_lanes()
         else:
             travel_lane_number = 2
-
-            total_lane_number = 2
-            if (
-                self.tags.get("busway") == "lane"
-                or self.tags.get("busway:both") == "lane"
-            ):
-                total_lane_number += 2
 
         if travel_lane_number == 1 and not oneway:
             travel_lane_number = 2
