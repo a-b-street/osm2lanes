@@ -194,12 +194,14 @@ class Road:
                 if self.driving_side == DrivingSide.RIGHT
                 else math.ceil(number / 2.0)
             )
-            lanes = [Lane(LaneType.TRAVEL_LANE, self.get_direction("left"))] * half
+            lanes = [
+                Lane(LaneType.TRAVEL_LANE, self.get_direction("left"))
+            ] * half
             if self.tags.get("centre_turn_lane") == "yes":
                 lanes += [Lane(LaneType.SHARED_LEFT_TURN, Direction.FORWARD)]
-            lanes += [Lane(LaneType.TRAVEL_LANE, self.get_direction("right"))] * (
-                number - half
-            )
+            lanes += [
+                Lane(LaneType.TRAVEL_LANE, self.get_direction("right"))
+            ] * (number - half)
 
         # Cycleways
 

@@ -248,7 +248,7 @@
         ]
     },
     {
-        "skip": true,
+        "skip_rust": true,
         "way_id": 988980354,
         "driving_side": "right",
         "tags": {

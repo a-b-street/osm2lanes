@@ -135,6 +135,7 @@ mod tests {
         tags: BTreeMap<String, String>,
         driving_side: DrivingSide,
         output: Vec<LaneSpec>,
+        #[serde(rename = "skip_rust")]
         skip: Option<bool>,
     }
 
