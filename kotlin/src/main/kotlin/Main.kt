@@ -137,6 +137,14 @@ data class Lane(val type: LaneType, val direction: Direction) {
     }
 }
 
+data class LaneUsage(
+    var is_vehicle: Boolean = false,
+    var is_psv: Boolean = false,
+    var is_left_turn: Boolean = false,
+    var is_through_turn: Boolean = false,
+    var is_right_turn: Boolean = false,
+)
+
 /**
  * OpenStreetMap way or relation described road part.
  *
@@ -195,6 +203,14 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
         return laneCount
     }
 
+    private fun parseBusLanes(representation: String, laneUsage: List<LaneUsage>) {
+        representation.split("|").forEachIndexed { i, description ->
+            if (description == "yes")
+                laneUsage[i].is_vehicle = true
+            else if (description == "no")
+                laneUsage[i].is_vehicle = false
+        }
+    }
 
     /**
      * Parse road features described by tags and generate list of lane specifications from left to right.
