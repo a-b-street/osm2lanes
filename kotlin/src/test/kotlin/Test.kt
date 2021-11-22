@@ -1,13 +1,13 @@
 /**
  * Test lane tag parsing.
  */
-import java.io.File
-import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import java.io.File
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
 const val TEST_FILE_PATH = "../data/tests.json"
 
