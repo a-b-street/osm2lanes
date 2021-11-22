@@ -189,6 +189,8 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
 
         if (tags["busway"] == "lane" || tags["busway:both"] == "lane")
             laneCount += 2
+        if (tags["busway:right"] == "lane" || tags["busway:left"] == "lane")
+            laneCount += 1
 
         return laneCount
     }
@@ -252,6 +254,9 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
 
         if (tags["busway"] == "lane" || tags["busway:both"] == "lane")
             addBothLanes(lanes, LaneType.BUS_LANE)
+        for (side in sides)
+            if (tags["busway:$side"] == "lane")
+                addLane(lanes, Lane(LaneType.BUS_LANE, getDirection(side)), side)
 
         // Parking lanes
 

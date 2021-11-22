@@ -301,5 +301,26 @@
             {"type": "travel_lane", "direction": "forward"},
             {"type": "bus_lane", "direction": "forward"}
         ]
+    },
+    {
+        "skip_rust": true,
+        "skip_python": true,
+        "way_id": 84867915,
+        "tags": {
+            "busway:right": "lane",
+            "cycleway:right": "share_busway",
+            "highway": "secondary",
+            "lanes": "2",
+            "maxspeed": "30",
+            "name": "Boulevard Raspail",
+            "name:ru": "бульвар Распай",
+            "oneway": "yes",
+            "surface": "asphalt"
+        },
+        "driving_side": "right",
+        "output": [
+            {"type": "travel_lane", "direction": "forward"},
+            {"type": "bus_lane", "direction": "forward"}
+        ]
     }
 ]
