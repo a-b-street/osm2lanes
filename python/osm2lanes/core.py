@@ -35,8 +35,9 @@ class Direction(Enum):
     def __str__(self):
         if self == Direction.FORWARD:
             return "↑"
-        if self == Direction.BACKWARD:
-            return "↓"
+
+        # self == Direction.BACKWARD:
+        return "↓"
 
     def __repr__(self):
         return "v"
@@ -129,12 +130,13 @@ class Road:
     # located.
     driving_side: DrivingSide
 
-    def add_lane(self, lanes: list[Lane], lane: Lane, side: str) -> list[Lane]:
+    @staticmethod
+    def add_lane(lanes: list[Lane], lane: Lane, side: str) -> list[Lane]:
         """Add lanes to the result list."""
         if side == "left":
             return [lane] + lanes
-        else:
-            return lanes + [lane]
+
+        return lanes + [lane]
 
     def add_both_lanes(self, lanes: list[Lane], type_: LaneType) -> list[Lane]:
         """Add left and right lanes."""

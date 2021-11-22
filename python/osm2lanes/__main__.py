@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from osm2lanes.core import Road
+from osm2lanes.core import DrivingSide, Road
 
 
 def run() -> None:
@@ -26,6 +26,8 @@ def run() -> None:
         tags: dict[str, str] = json.load(input_file)
 
     with Path(arguments.output).open("w+", encoding="utf-8") as output_file:
-        json.dump(
-            [lane.to_structure() for lane in Road(tags).parse()], output_file
-        )
+        lanes: list[dict[str, str]] = [
+            lane.to_structure()
+            for lane in Road(tags, DrivingSide.RIGHT).parse()
+        ]
+        json.dump(lanes, output_file)
