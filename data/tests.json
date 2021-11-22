@@ -322,5 +322,32 @@
             {"type": "travel_lane", "direction": "forward"},
             {"type": "bus_lane", "direction": "forward"}
         ]
+    },
+    {
+        "skip_rust": true,
+        "skip_python": true,
+        "way_id": 323605308,
+        "tags": {
+            "bus:lanes": "yes|yes|designated",
+            "busway:right": "lane",
+            "cycleway:right": "share_busway",
+            "highway": "primary",
+            "lanes": "3",
+            "lanes:psv": "1",
+            "lit": "yes",
+            "maxspeed": "30",
+            "name": "Quai Aimé Césaire",
+            "oneway": "yes",
+            "psv:lanes": "yes|yes|designated",
+            "source": "Bing",
+            "surface": "asphalt",
+            "taxi:lanes": "yes|yes|designated"
+        },
+        "driving_side": "right",
+        "output": [
+            {"type": "travel_lane", "direction": "forward"},
+            {"type": "travel_lane", "direction": "forward"},
+            {"type": "bus_lane", "direction": "forward"}
+        ]
     }
 ]
