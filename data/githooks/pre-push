@@ -12,6 +12,7 @@ cd ../..
 
 # Kotlin.
 
+ktlint || { echo "FAIL"; exit 1; }
 cd kotlin
 gradle clean
 gradle test || { echo "FAIL"; exit 1; }
