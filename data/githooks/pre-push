@@ -2,6 +2,7 @@
 
 # Python.
 
+black --check -l 80 python || { echo "FAIL"; exit 1; }
 pytest || { echo "FAIL"; exit 1; }
 
 # Rust.
