@@ -291,7 +291,6 @@
             "maxspeed": "50",
             "name": "Rue Gabriel Péri",
             "ref": "D 986",
-            "source": "Microsoft Bing orbital imagery + survey",
             "surface": "asphalt"
         },
         "driving_side": "right",
@@ -313,7 +312,6 @@
             "lanes": "2",
             "maxspeed": "30",
             "name": "Boulevard Raspail",
-            "name:ru": "бульвар Распай",
             "oneway": "yes",
             "surface": "asphalt"
         },
@@ -339,7 +337,6 @@
             "name": "Quai Aimé Césaire",
             "oneway": "yes",
             "psv:lanes": "yes|yes|designated",
-            "source": "Bing",
             "surface": "asphalt",
             "taxi:lanes": "yes|yes|designated"
         },
@@ -348,6 +345,38 @@
             {"type": "travel_lane", "direction": "forward"},
             {"type": "travel_lane", "direction": "forward"},
             {"type": "bus_lane", "direction": "forward"}
+        ]
+    },
+    {
+        "skip_rust": true,
+        "skip_python": true,
+        "skip_kotlin": true,
+        "way_id": 490351863,
+        "tags": {
+            "cycleway:right": "share_busway",
+            "highway": "secondary",
+            "lanes": "3",
+            "lanes:psv": "1",
+            "lit": "yes",
+            "maxspeed": "50",
+            "name": "Kurfürstendamm",
+            "note": "Ergänzungsstraße mit besonderer Bedeutung",
+            "oneway": "yes",
+            "postal_code": "10719",
+            "psv:lanes": "yes|designated|yes",
+            "sidewalk": "right",
+            "surface": "asphalt",
+            "turn:lanes": "left;through|none|right",
+            "vehicle:lanes": "yes|no|yes",
+            "wikidata": "Q160272",
+            "wikipedia": "de:Kurfürstendamm"
+        },
+        "driving_side": "right",
+        "output": [
+            {"type": "travel_lane", "direction": "forward"},
+            {"type": "bus_lane", "direction": "forward"},
+            {"type": "travel_lane", "direction": "forward"},
+            {"type": "sidewalk", "direction": "forward"}
         ]
     }
 ]
