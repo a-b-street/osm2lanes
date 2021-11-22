@@ -139,9 +139,16 @@ data class Lane(val type: LaneType, val direction: Direction) {
     }
 }
 
+enum class BusUsage {
+    YES,
+    NO,
+    DESIGNATED,
+    UNKNOWN,
+}
+
 data class LaneUsage(
     var is_vehicle: Boolean = false,
-    var is_psv: Boolean = false,
+    var is_psv: BusUsage = BusUsage.UNKNOWN,
     var is_left_turn: Boolean = false,
     var is_through_turn: Boolean = false,
     var is_right_turn: Boolean = false,
@@ -205,12 +212,23 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
         return laneCount
     }
 
-    private fun parseBusLanes(representation: String, laneUsage: List<LaneUsage>) {
+    private fun parseVehicleLanes(representation: String, laneUsage: List<LaneUsage>) {
         representation.split("|").forEachIndexed { i, description ->
             if (description == "yes")
                 laneUsage[i].is_vehicle = true
             else if (description == "no")
                 laneUsage[i].is_vehicle = false
+        }
+    }
+
+    private fun parseBusLanes(representation: String, laneUsage: List<LaneUsage>) {
+        representation.split("|").forEachIndexed { i, description ->
+            when (description) {
+                "designated" -> laneUsage[i].is_psv = BusUsage.DESIGNATED
+                "no" -> laneUsage[i].is_psv = BusUsage.NO
+                "yes" -> laneUsage[i].is_psv = BusUsage.YES
+                else -> laneUsage[i].is_psv = BusUsage.UNKNOWN
+            }
         }
     }
 
