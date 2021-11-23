@@ -378,5 +378,22 @@
             {"type": "travel_lane", "direction": "forward"},
             {"type": "sidewalk", "direction": "forward"}
         ]
+    },
+    {
+        "skip_rust": true,
+        "skip_python": true,
+        "skip_kotlin": true,
+        "link": "https://wiki.openstreetmap.org/wiki/Lanes",
+        "tags": {
+            "lanes": "3",
+            "oneway": "yes",
+            "maxspeed:lanes": "100|100|80"
+        },
+        "driving_side": "right",
+        "output": [
+            {"type": "travel_lane", "direction": "forward", "max_speed": 100},
+            {"type": "travel_lane", "direction": "forward", "max_speed": 100},
+            {"type": "travel_lane", "direction": "forward", "max_speed": 80}
+        ]
     }
 ]
