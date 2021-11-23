@@ -19,7 +19,7 @@ internal data class TestCase(
     /**
      * The OSM way unique identifier.
      */
-    val way_id: Int,
+    val way_id: Int? = null,
     val tags: HashMap<String, String>,
     val driving_side: DrivingSide,
     val output: ArrayList<Lane>,

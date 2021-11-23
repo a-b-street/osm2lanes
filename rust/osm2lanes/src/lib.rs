@@ -131,7 +131,7 @@ mod tests {
     #[derive(Deserialize)]
     struct TestCase {
         /// The OSM way unique identifier
-        way_id: i64,
+        way_id: Option<i64>,
         tags: BTreeMap<String, String>,
         driving_side: DrivingSide,
         output: Vec<LaneSpec>,
@@ -159,10 +159,12 @@ mod tests {
             let actual = get_lane_specs_ltr(test.tags.clone(), &cfg);
             if actual != test.output {
                 ok = false;
-                println!(
-                    "For input (example from https://www.openstreetmap.org/way/{}):",
-                    test.way_id
-                );
+                if !test.way_id.is_none() {
+                    println!(
+                        "For input (example from https://www.openstreetmap.org/way/{}):",
+                        test.way_id.unwrap()
+                    );
+                }
                 for (k, v) in test.tags {
                     println!("    {} = {}", k, v);
                 }
