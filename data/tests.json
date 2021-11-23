@@ -395,5 +395,24 @@
             {"type": "travel_lane", "direction": "forward", "max_speed": 100},
             {"type": "travel_lane", "direction": "forward", "max_speed": 80}
         ]
+    },
+    {
+        "skip_rust": true,
+        "skip_python": true,
+        "skip_kotlin": true,
+        "link": "https://wiki.openstreetmap.org/wiki/Bus_lanes",
+        "tags": {
+            "highway": "secondary",
+            "oneway": "yes",
+            "lanes": "3",
+            "busway:right": "lane",
+            "cycleway": "share_busway"
+        },
+        "driving_side": "right",
+        "output": [
+            {"type": "travel_lane", "direction": "forward"},
+            {"type": "travel_lane", "direction": "forward"},
+            {"type": "bus_lane", "direction": "forward"}
+        ]
     }
 ]
