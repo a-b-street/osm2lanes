@@ -146,6 +146,19 @@ enum class BusUsage {
     UNKNOWN,
 }
 
+enum class TurnUsage {
+    LEFT,
+    MERGE_TO_LEFT,
+    MERGE_TO_RIGHT,
+    REVERSE,
+    RIGHT,
+    SHARP_LEFT,
+    SHARP_RIGHT,
+    SLIGHT_LEFT,
+    SLIGHT_RIGHT,
+    THROUGH,
+}
+
 data class LaneUsage(
     var is_vehicle: Boolean = false,
     var is_psv: BusUsage = BusUsage.UNKNOWN,
