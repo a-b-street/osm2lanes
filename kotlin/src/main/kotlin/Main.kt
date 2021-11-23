@@ -139,11 +139,37 @@ data class Lane(val type: LaneType, val direction: Direction) {
     }
 }
 
+/**
+ * Lane usage by buses according to `lanes:pvs=*` scheme.  See OpenStreetMap wiki pages
+ * [Key:lanes:psv](https://wiki.openstreetmap.org/wiki/Key:lanes:psv) and
+ * [Bus Lanes](https://wiki.openstreetmap.org/wiki/Bus_lanes)
+ */
 enum class BusUsage {
+
+    /**
+     * Buses and other vehicles may use this lane.  Tag value `yes`.
+     */
     YES,
+
+    /**
+     * Buses cannot use this lane.  Tag value `no`.
+     */
     NO,
+
+    /**
+     * The lane is bus-only, explicitly designated.  Tag value `designated`.
+     */
     DESIGNATED,
+
+    /**
+     * Value is not specified.
+     */
     UNKNOWN,
+
+    /**
+     * Specified value is unknown.  Any tag value other than `yes`, `no`, or `designated`.
+     */
+    WRONG_VALUE,
 }
 
 enum class TurnUsage {
@@ -234,6 +260,12 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
         }
     }
 
+    /**
+     * E.g. `no|no|designated`.
+     *
+     * @param representation lane usage text representations separated with `|` sign
+     * @param laneUsage lane usage to update
+     */
     private fun parseBusLanes(representation: String, laneUsage: List<LaneUsage>) {
         representation.split("|").forEachIndexed { i, description ->
             when (description) {
