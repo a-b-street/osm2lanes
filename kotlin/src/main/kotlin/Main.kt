@@ -5,6 +5,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.encodeToJsonElement
 import java.io.File
+import kotlin.collections.ArrayList
 import kotlin.math.ceil
 
 /** Bidirectional traffic practice. */
@@ -188,9 +189,7 @@ enum class TurnUsage {
 data class LaneUsage(
     var is_vehicle: Boolean = false,
     var is_psv: BusUsage = BusUsage.UNKNOWN,
-    var is_left_turn: Boolean = false,
-    var is_through_turn: Boolean = false,
-    var is_right_turn: Boolean = false,
+    var turns: ArrayList<TurnUsage> = arrayListOf(),
 )
 
 /**
@@ -268,11 +267,18 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
      */
     private fun parseBusLanes(representation: String, laneUsage: List<LaneUsage>) {
         representation.split("|").forEachIndexed { i, description ->
-            when (description) {
-                "designated" -> laneUsage[i].is_psv = BusUsage.DESIGNATED
-                "no" -> laneUsage[i].is_psv = BusUsage.NO
-                "yes" -> laneUsage[i].is_psv = BusUsage.YES
-                else -> laneUsage[i].is_psv = BusUsage.UNKNOWN
+            try {
+                laneUsage[i].is_psv = BusUsage.valueOf(description)
+            } catch (e: IllegalArgumentException) {
+                laneUsage[i].is_psv = BusUsage.WRONG_VALUE
+            }
+        }
+    }
+
+    private fun parseTurnLanes(representation: String, laneUsage: List<LaneUsage>) {
+        representation.split("|").forEachIndexed { i, laneDescription ->
+            laneDescription.split(";").forEach { description ->
+                laneUsage[i].turns.add(TurnUsage.valueOf(description.uppercase()))
             }
         }
     }
