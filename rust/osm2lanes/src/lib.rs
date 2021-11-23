@@ -132,6 +132,7 @@ mod tests {
     struct TestCase {
         /// The OSM way unique identifier
         way_id: Option<i64>,
+        link: Option<String>,
         tags: BTreeMap<String, String>,
         driving_side: DrivingSide,
         output: Vec<LaneSpec>,
@@ -164,6 +165,8 @@ mod tests {
                         "For input (example from https://www.openstreetmap.org/way/{}):",
                         test.way_id.unwrap()
                     );
+                } else if !test.link.is_none() {
+                    println!("For input (example from {}):", test.link.unwrap());
                 }
                 for (k, v) in test.tags {
                     println!("    {} = {}", k, v);
