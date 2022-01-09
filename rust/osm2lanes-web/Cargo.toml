@@ -1,0 +1,19 @@
+[package]
+name = "osm2lanes-web"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+osm2lanes = { path = "../osm2lanes" }
+console_log = { version = "0.2", optional = true, features = ["color"] }
+log = "0.4"
+wee_alloc = { version = "0.4", optional = true }
+yew = "0.19"
+serde = { version = "1", features = ["derive"] }
+
+[dependencies.web-sys]
+version = "0.3"
+features = ["HtmlInputElement"]
+
+[features]
+default = ["console_log", "wee_alloc"]
