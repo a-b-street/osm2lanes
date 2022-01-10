@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# Spec.
+
+python data/test_spec.py || { echo "FAIL"; exit 1; }
+
 # Python.
 
 black --check -l 80 python || { echo "FAIL"; exit 1; }
@@ -7,9 +11,9 @@ pytest || { echo "FAIL"; exit 1; }
 
 # Rust.
 
-cd rust/osm2lanes
+cd rust
 cargo test || { echo "FAIL"; exit 1; }
-cd ../..
+cd ..
 
 # Kotlin.
 

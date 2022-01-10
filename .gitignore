@@ -1,7 +1,14 @@
-.DS_Store
+# Kotlin
 .gradle
-.idea
-__pycache__
 kotlin/build
+
+# Python
 python/osm2lanes.egg-info
 venv
+.venv
+__pycache__
+
+# IDEs
+.vscode
+.idea
+.DS_Store
