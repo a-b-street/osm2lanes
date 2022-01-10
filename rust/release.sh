@@ -23,7 +23,7 @@ git rm index.html
 git rm index-*.js
 git rm index-*.wasm
 git rm main-*.css
-cp dist/* ./
+cp dist/* ../
 git add index.html
 git add index-*.js
 git add index-*.wasm
