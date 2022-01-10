@@ -96,6 +96,56 @@ pub enum DrivingSide {
     Left,
 }
 
+/// Display lane detail as printable characters
+pub trait LanePrintable {
+    fn as_ascii(&self) -> char;
+    fn as_utf8(&self) -> char;
+}
+
+impl LanePrintable for LaneType {
+    fn as_ascii(&self) -> char {
+        match self {
+            LaneType::Driving => 'd',
+            LaneType::Biking => 'b',
+            LaneType::Bus => 'B',
+            LaneType::Parking => 'p',
+            LaneType::Sidewalk => 's',
+            LaneType::Shoulder => 'S',
+            LaneType::SharedLeftTurn => 'C',
+            LaneType::Construction => 'x',
+            LaneType::Buffer(_) => '|',
+        }
+    }
+    fn as_utf8(&self) -> char {
+        match self {
+            LaneType::Driving => '🚗',
+            LaneType::Biking => '🚲',
+            LaneType::Bus => '🚌',
+            LaneType::Parking => '🅿',
+            LaneType::Sidewalk => '🚶',
+            LaneType::Shoulder => 'ˢ',
+            LaneType::SharedLeftTurn => '🔃',
+            LaneType::Construction => 'x',
+            LaneType::Buffer(_) => '|',
+        }
+    }
+}
+
+impl LanePrintable for Direction {
+    fn as_ascii(&self) -> char {
+        match self {
+            Direction::Forward => '^',
+            Direction::Backward => 'v',
+        }
+    }
+    fn as_utf8(&self) -> char {
+        match self {
+            Direction::Forward => '↑',
+            Direction::Backward => '↓',
+        }
+    }
+}
+
 /// Internal convenience functions around a string->string map
 struct Tags(BTreeMap<String, String>);
 
@@ -184,36 +234,10 @@ mod tests {
     }
 
     fn stringify_lane_types(lanes: &[LaneSpec]) -> String {
-        lanes.iter().map(|s| s.lane_type.to_char()).collect()
+        lanes.iter().map(|s| s.lane_type.as_utf8()).collect()
     }
 
     fn stringify_directions(lanes: &[LaneSpec]) -> String {
-        lanes
-            .iter()
-            .map(|s| {
-                if s.direction == Direction::Forward {
-                    '^'
-                } else {
-                    'v'
-                }
-            })
-            .collect()
-    }
-
-    impl LaneType {
-        /// Represents the lane type as a single character. Always picks one buffer type.
-        pub fn to_char(self) -> char {
-            match self {
-                LaneType::Driving => 'd',
-                LaneType::Biking => 'b',
-                LaneType::Bus => 'B',
-                LaneType::Parking => 'p',
-                LaneType::Sidewalk => 's',
-                LaneType::Shoulder => 'S',
-                LaneType::SharedLeftTurn => 'C',
-                LaneType::Construction => 'x',
-                LaneType::Buffer(_) => '|',
-            }
-        }
+        lanes.iter().map(|s| s.direction.as_utf8()).collect()
     }
 }

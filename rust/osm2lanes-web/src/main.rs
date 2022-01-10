@@ -4,32 +4,13 @@ use serde::{Deserialize, Serialize};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use osm2lanes::{get_lane_specs_ltr, Config, Direction, DrivingSide, LaneSpec, LaneType};
+use osm2lanes::{get_lane_specs_ltr, Config, DrivingSide, LanePrintable, LaneSpec};
 
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 type ShouldRender = bool;
-
-struct WebLaneType(LaneType);
-
-impl WebLaneType {
-    /// Represents the lane type as a single character. Always picks one buffer type.
-    pub fn to_char(self) -> char {
-        match self.0 {
-            LaneType::Driving => '🚗',
-            LaneType::Biking => '🚲',
-            LaneType::Bus => '🚌',
-            LaneType::Parking => '🅿',
-            LaneType::Sidewalk => '🚶',
-            LaneType::Shoulder => 'ˢ',
-            LaneType::SharedLeftTurn => '🔃',
-            LaneType::Construction => 'x',
-            LaneType::Buffer(_) => '|',
-        }
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct State {
@@ -67,12 +48,9 @@ impl Component for App {
 
     fn create(_ctx: &Context<Self>) -> Self {
         let focus_ref = NodeRef::default();
-        let edit_value = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:taxi:backward=1\nlanes:psv=1\noneway=yes\nsidewalk=right".to_owned();
+        let edit_value = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:taxi:backward=1\nlanes:psv=1\nsidewalk=right".to_owned();
         let lanes = get_lane_specs_ltr(string_to_tags(&edit_value).unwrap(), &CFG);
-        let state = State {
-            edit_value,
-            lanes,
-        };
+        let state = State { edit_value, lanes };
         Self { focus_ref, state }
     }
 
@@ -114,7 +92,7 @@ impl Component for App {
                 <textarea
                     class="edit"
                     type="text"
-                    rows="8"
+                    rows={(self.state.edit_value.lines().count() + 1).to_string()}
                     cols="48"
                     ref={self.focus_ref.clone()}
                     value={self.state.edit_value.clone()}
@@ -141,18 +119,13 @@ impl Component for App {
 
 impl App {
     fn view_lane_type(&self, lane: &LaneSpec) -> Html {
-        let typ = WebLaneType(lane.lane_type).to_char();
         html! {
-            <div class="row-item"><span>{typ}</span></div>
+            <div class="row-item"><span>{lane.lane_type.as_utf8()}</span></div>
         }
     }
     fn view_lane_direction(&self, lane: &LaneSpec) -> Html {
-        let dir = match lane.direction {
-            Direction::Forward => '↑',
-            Direction::Backward => '↓',
-        };
         html! {
-            <div class="row-item"><span>{dir}</span></div>
+            <div class="row-item"><span>{lane.direction.as_utf8()}</span></div>
         }
     }
 }
