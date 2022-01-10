@@ -1,0 +1,38 @@
+{
+    "$id": "https://a-b-street.github.io/osm2lanes",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "description": "A representation of lanes",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "required": [
+            "type",
+            "direction"
+        ],
+        "properties": {
+            "type": {
+                "type": "string",
+                "description": "The type of the lane.",
+                "enum": [
+                    "buffer",
+                    "bus_lane",
+                    "construction",
+                    "cycleway",
+                    "parking_lane",
+                    "shared_left_turn",
+                    "shoulder",
+                    "sidewalk",
+                    "travel_lane"
+                ]
+            },
+            "direction": {
+                "type": "string",
+                "description": "The direction of the lane.",
+                "enum": [
+                    "forward",
+                    "backward"
+                ]
+            }
+        }
+    }
+}

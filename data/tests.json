@@ -10,11 +10,26 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "sidewalk", "direction": "backward"},
-            {"type": "cycleway", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "sidewalk", "direction": "forward"}
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -28,11 +43,26 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "sidewalk", "direction": "backward"},
-            {"type": "cycleway", "direction": "backward"},
-            {"type": "cycleway", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "sidewalk", "direction": "forward"}
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -47,11 +77,26 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "sidewalk", "direction": "backward"},
-            {"type": "cycleway", "direction": "backward"},
-            {"type": "cycleway", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "sidewalk", "direction": "forward"}
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -65,16 +110,46 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "sidewalk", "direction": "backward"},
-            {"type": "parking_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "cycleway", "direction": "backward"},
-            {"type": "cycleway", "direction": "forward"},
-            {"type": "parking_lane", "direction": "forward"},
-            {"type": "sidewalk", "direction": "forward"}
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            },
+            {
+                "type": "parking_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "forward"
+            },
+            {
+                "type": "parking_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -90,14 +165,38 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "sidewalk", "direction": "backward"},
-            {"type": "parking_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "shared_left_turn", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "cycleway", "direction": "backward"},
-            {"type": "cycleway", "direction": "forward"},
-            {"type": "sidewalk", "direction": "forward"}
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            },
+            {
+                "type": "parking_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "shared_left_turn",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "forward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -112,12 +211,30 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "sidewalk", "direction": "backward"},
-            {"type": "cycleway", "direction": "backward"},
-            {"type": "cycleway", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "parking_lane", "direction": "forward"},
-            {"type": "sidewalk", "direction": "forward"}
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "parking_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -132,12 +249,30 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "sidewalk", "direction": "backward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "cycleway", "direction": "backward"},
-            {"type": "cycleway", "direction": "forward"},
-            {"type": "sidewalk", "direction": "forward"}
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "forward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -149,10 +284,22 @@
         },
         "driving_side": "left",
         "output": [
-            {"type": "sidewalk", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "sidewalk", "direction": "backward"}
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            }
         ]
     },
     {
@@ -164,9 +311,18 @@
         },
         "driving_side": "left",
         "output": [
-            {"type": "sidewalk", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"}
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -179,10 +335,22 @@
         },
         "driving_side": "left",
         "output": [
-            {"type": "sidewalk", "direction": "forward"},
-            {"type": "cycleway", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"}
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -193,11 +361,26 @@
         },
         "driving_side": "left",
         "output": [
-            {"type": "sidewalk", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "cycleway", "direction": "backward"},
-            {"type": "sidewalk", "direction": "backward"}
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "cycleway",
+                "direction": "backward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            }
         ]
     },
     {
@@ -209,11 +392,26 @@
         },
         "driving_side": "left",
         "output": [
-            {"type": "sidewalk", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "sidewalk", "direction": "backward"}
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            }
         ]
     },
     {
@@ -225,13 +423,34 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "shoulder", "direction": "backward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "shoulder", "direction": "forward"}
+            {
+                "type": "shoulder",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "shoulder",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -242,10 +461,22 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "shoulder", "direction": "backward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "shoulder", "direction": "forward"}
+            {
+                "type": "shoulder",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "shoulder",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -273,12 +504,30 @@
             "wikipedia": "en:42nd Street (Manhattan)"
         },
         "output": [
-            {"type": "sidewalk", "direction": "backward"},
-            {"type": "bus_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "bus_lane", "direction": "forward"},
-            {"type": "sidewalk", "direction": "forward"}
+            {
+                "type": "sidewalk",
+                "direction": "backward"
+            },
+            {
+                "type": "bus_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "bus_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -295,10 +544,22 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "bus_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "backward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "bus_lane", "direction": "forward"}
+            {
+                "type": "bus_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "bus_lane",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -317,8 +578,14 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "bus_lane", "direction": "forward"}
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "bus_lane",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -342,9 +609,18 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "bus_lane", "direction": "forward"}
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "bus_lane",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -373,10 +649,22 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "bus_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "sidewalk", "direction": "forward"}
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "bus_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "sidewalk",
+                "direction": "forward"
+            }
         ]
     },
     {
@@ -391,9 +679,21 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "travel_lane", "direction": "forward", "max_speed": 100},
-            {"type": "travel_lane", "direction": "forward", "max_speed": 100},
-            {"type": "travel_lane", "direction": "forward", "max_speed": 80}
+            {
+                "type": "travel_lane",
+                "direction": "forward",
+                "max_speed": 100
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward",
+                "max_speed": 100
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward",
+                "max_speed": 80
+            }
         ]
     },
     {
@@ -410,9 +710,18 @@
         },
         "driving_side": "right",
         "output": [
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "travel_lane", "direction": "forward"},
-            {"type": "bus_lane", "direction": "forward"}
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "bus_lane",
+                "direction": "forward"
+            }
         ]
     }
 ]
