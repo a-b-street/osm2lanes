@@ -1,8 +1,12 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use web_sys::HtmlInputElement;
+use wasm_bindgen::JsCast;
+use web_sys::{window, HtmlCanvasElement, HtmlInputElement};
 use yew::prelude::*;
+
+use piet::{kurbo::Line, kurbo::Point, kurbo::Rect, Color, RenderContext};
+use piet_web::WebRenderContext;
 
 use osm2lanes::{get_lane_specs_ltr, Config, DrivingSide, LanePrintable, LaneSpec};
 
@@ -112,8 +116,13 @@ impl Component for App {
                         }
                     </div>
                 </section>
+                <canvas id="canvas"></canvas>
             </div>
         }
+    }
+
+    fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
+        self.draw_canvas()
     }
 }
 
@@ -127,6 +136,90 @@ impl App {
         html! {
             <div class="row-item"><span>{lane.direction.as_utf8()}</span></div>
         }
+    }
+    fn draw_canvas(&self) {
+        let window = window().unwrap();
+        let canvas = window
+            .document()
+            .unwrap()
+            .get_element_by_id("canvas")
+            .unwrap()
+            .dyn_into::<HtmlCanvasElement>()
+            .unwrap();
+        let context = canvas
+            .get_context("2d")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<web_sys::CanvasRenderingContext2d>()
+            .unwrap();
+
+        let dpr = window.device_pixel_ratio();
+        let canvas_width = (canvas.offset_width() as f64 * dpr) as u32;
+        let canvas_height = (canvas.offset_height() as f64 * dpr) as u32;
+        canvas.set_width(canvas_width);
+        canvas.set_height(canvas_height);
+        context.scale(dpr, dpr).unwrap();
+        let mut rc = WebRenderContext::new(context, window);
+
+        rc.clear(None, Color::OLIVE);
+
+        let grassy_verge = 10.0;
+        let asphalt_buffer = 10.0;
+        let lane_width = 80.0;
+        rc.fill(
+            Rect::new(
+                grassy_verge,
+                0.0,
+                (grassy_verge + asphalt_buffer)
+                    + (self.state.lanes.len() as f64 * lane_width)
+                    + (grassy_verge + asphalt_buffer),
+                canvas_height as f64,
+            ),
+            &Color::BLACK,
+        );
+        for (idx, lane) in self.state.lanes.iter().enumerate() {
+            rc.fill(
+                Rect::new(
+                    (grassy_verge + asphalt_buffer) + (idx as f64 * lane_width),
+                    0.0,
+                    (grassy_verge + asphalt_buffer) + (idx as f64 * lane_width) + lane_width,
+                    canvas_height as f64,
+                ),
+                &Color::BLACK,
+            );
+            let x = (grassy_verge + asphalt_buffer) + (idx as f64 * lane_width);
+            rc.stroke(
+                Line::new(
+                    Point {
+                        x,
+                        y: 0.0,
+                    },
+                    Point {
+                        x,
+                        y: canvas_height as f64,
+                    },
+                ),
+                &Color::WHITE,
+                1.0,
+            );
+            let x = (grassy_verge + asphalt_buffer + lane_width) + (idx as f64 * lane_width);
+            rc.stroke(
+                Line::new(
+                    Point {
+                        x,
+                        y: 0.0,
+                    },
+                    Point {
+                        x,
+                        y: canvas_height as f64,
+                    },
+                ),
+                &Color::WHITE,
+                1.0,
+            );
+        }
+
+        rc.finish().unwrap();
     }
 }
 
