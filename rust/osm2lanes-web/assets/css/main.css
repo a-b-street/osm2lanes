@@ -44,3 +44,8 @@ button:active, input:active, .button:active {
   align-self: center;
   flex-basis: 2em;
 }
+
+canvas {
+  width: 960px;
+  height: 480px;
+}

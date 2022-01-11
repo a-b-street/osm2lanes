@@ -1,35 +1,20 @@
-use std::collections::BTreeMap;
+use std::str::FromStr;
 
+use piet_web::WebRenderContext;
 use serde::{Deserialize, Serialize};
-use web_sys::HtmlInputElement;
+use wasm_bindgen::JsCast;
+use web_sys::{window, HtmlCanvasElement, HtmlInputElement};
 use yew::prelude::*;
 
-use osm2lanes::{get_lane_specs_ltr, Config, Direction, DrivingSide, LaneSpec, LaneType};
+mod draw;
+
+use osm2lanes::{get_lane_specs_ltr, Config, DrivingSide, LanePrintable, LaneSpec, Tags};
 
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 type ShouldRender = bool;
-
-struct WebLaneType(LaneType);
-
-impl WebLaneType {
-    /// Represents the lane type as a single character. Always picks one buffer type.
-    pub fn to_char(self) -> char {
-        match self.0 {
-            LaneType::Driving => '🚗',
-            LaneType::Biking => '🚲',
-            LaneType::Bus => '🚌',
-            LaneType::Parking => '🅿',
-            LaneType::Sidewalk => '🚶',
-            LaneType::Shoulder => 'ˢ',
-            LaneType::SharedLeftTurn => '🔃',
-            LaneType::Construction => 'x',
-            LaneType::Buffer(_) => '|',
-        }
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct State {
@@ -47,15 +32,6 @@ pub struct App {
     state: State,
 }
 
-fn string_to_tags(input: &str) -> Result<BTreeMap<String, String>, String> {
-    let mut map = BTreeMap::new();
-    for line in input.lines() {
-        let (key, val) = line.split_once("=").ok_or("tag must be = separated")?;
-        map.insert(key.to_owned(), val.to_owned());
-    }
-    Ok(map)
-}
-
 const CFG: Config = Config {
     driving_side: DrivingSide::Right,
     inferred_sidewalks: true,
@@ -67,12 +43,9 @@ impl Component for App {
 
     fn create(_ctx: &Context<Self>) -> Self {
         let focus_ref = NodeRef::default();
-        let edit_value = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:taxi:backward=1\nlanes:psv=1\noneway=yes\nsidewalk=right".to_owned();
-        let lanes = get_lane_specs_ltr(string_to_tags(&edit_value).unwrap(), &CFG);
-        let state = State {
-            edit_value,
-            lanes,
-        };
+        let edit_value = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:taxi:backward=1\nlanes:psv=1\nsidewalk=right".to_owned();
+        let lanes = get_lane_specs_ltr(Tags::from_str(&edit_value).unwrap(), &CFG);
+        let state = State { edit_value, lanes };
         Self { focus_ref, state }
     }
 
@@ -80,7 +53,7 @@ impl Component for App {
         match msg {
             Msg::Submit(value) => {
                 log::trace!("Submit: {}", value);
-                if let Ok(tags) = string_to_tags(&value) {
+                if let Ok(tags) = Tags::from_str(&value) {
                     self.state.lanes = get_lane_specs_ltr(tags, &CFG);
                 }
                 self.state.edit_value = value;
@@ -114,7 +87,7 @@ impl Component for App {
                 <textarea
                     class="edit"
                     type="text"
-                    rows="8"
+                    rows={(self.state.edit_value.lines().count() + 1).to_string()}
                     cols="48"
                     ref={self.focus_ref.clone()}
                     value={self.state.edit_value.clone()}
@@ -122,6 +95,7 @@ impl Component for App {
                     {onblur}
                     {onkeypress}
                 />
+                <hr/>
                 <section>
                     <div class="row">
                         {
@@ -134,26 +108,53 @@ impl Component for App {
                         }
                     </div>
                 </section>
+                <hr/>
+                <canvas id="canvas" width="960px" height="480px"></canvas>
             </div>
         }
+    }
+
+    fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
+        self.draw_canvas()
     }
 }
 
 impl App {
     fn view_lane_type(&self, lane: &LaneSpec) -> Html {
-        let typ = WebLaneType(lane.lane_type).to_char();
         html! {
-            <div class="row-item"><span>{typ}</span></div>
+            <div class="row-item"><span>{lane.lane_type.as_utf8()}</span></div>
         }
     }
     fn view_lane_direction(&self, lane: &LaneSpec) -> Html {
-        let dir = match lane.direction {
-            Direction::Forward => '↑',
-            Direction::Backward => '↓',
-        };
         html! {
-            <div class="row-item"><span>{dir}</span></div>
+            <div class="row-item"><span>{lane.direction.as_utf8()}</span></div>
         }
+    }
+    fn draw_canvas(&self) {
+        let window = window().unwrap();
+        let canvas = window
+            .document()
+            .unwrap()
+            .get_element_by_id("canvas")
+            .unwrap()
+            .dyn_into::<HtmlCanvasElement>()
+            .unwrap();
+        let context = canvas
+            .get_context("2d")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<web_sys::CanvasRenderingContext2d>()
+            .unwrap();
+
+        let dpr = window.device_pixel_ratio();
+        let canvas_width = (canvas.offset_width() as f64 * dpr) as u32;
+        let canvas_height = (canvas.offset_height() as f64 * dpr) as u32;
+        canvas.set_width(canvas_width);
+        canvas.set_height(canvas_height);
+        context.scale(dpr, dpr).unwrap();
+        let mut rc = WebRenderContext::new(context, window);
+
+        draw::lanes(&mut rc, (canvas_width, canvas_height), &self.state.lanes).unwrap();
     }
 }
 
