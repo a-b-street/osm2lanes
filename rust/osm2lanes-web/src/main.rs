@@ -1,12 +1,12 @@
 use std::collections::BTreeMap;
 
+use piet_web::WebRenderContext;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use web_sys::{window, HtmlCanvasElement, HtmlInputElement};
 use yew::prelude::*;
 
-use piet::{kurbo::Line, kurbo::Point, kurbo::Rect, Color, RenderContext};
-use piet_web::WebRenderContext;
+mod draw;
 
 use osm2lanes::{get_lane_specs_ltr, Config, DrivingSide, LanePrintable, LaneSpec};
 
@@ -104,6 +104,7 @@ impl Component for App {
                     {onblur}
                     {onkeypress}
                 />
+                <hr/>
                 <section>
                     <div class="row">
                         {
@@ -116,7 +117,8 @@ impl Component for App {
                         }
                     </div>
                 </section>
-                <canvas id="canvas"></canvas>
+                <hr/>
+                <canvas id="canvas" width="960px" height="480px"></canvas>
             </div>
         }
     }
@@ -161,65 +163,7 @@ impl App {
         context.scale(dpr, dpr).unwrap();
         let mut rc = WebRenderContext::new(context, window);
 
-        rc.clear(None, Color::OLIVE);
-
-        let grassy_verge = 10.0;
-        let asphalt_buffer = 10.0;
-        let lane_width = 80.0;
-        rc.fill(
-            Rect::new(
-                grassy_verge,
-                0.0,
-                (grassy_verge + asphalt_buffer)
-                    + (self.state.lanes.len() as f64 * lane_width)
-                    + (grassy_verge + asphalt_buffer),
-                canvas_height as f64,
-            ),
-            &Color::BLACK,
-        );
-        for (idx, lane) in self.state.lanes.iter().enumerate() {
-            rc.fill(
-                Rect::new(
-                    (grassy_verge + asphalt_buffer) + (idx as f64 * lane_width),
-                    0.0,
-                    (grassy_verge + asphalt_buffer) + (idx as f64 * lane_width) + lane_width,
-                    canvas_height as f64,
-                ),
-                &Color::BLACK,
-            );
-            let x = (grassy_verge + asphalt_buffer) + (idx as f64 * lane_width);
-            rc.stroke(
-                Line::new(
-                    Point {
-                        x,
-                        y: 0.0,
-                    },
-                    Point {
-                        x,
-                        y: canvas_height as f64,
-                    },
-                ),
-                &Color::WHITE,
-                1.0,
-            );
-            let x = (grassy_verge + asphalt_buffer + lane_width) + (idx as f64 * lane_width);
-            rc.stroke(
-                Line::new(
-                    Point {
-                        x,
-                        y: 0.0,
-                    },
-                    Point {
-                        x,
-                        y: canvas_height as f64,
-                    },
-                ),
-                &Color::WHITE,
-                1.0,
-            );
-        }
-
-        rc.finish().unwrap();
+        draw::lanes(&mut rc, (canvas_width, canvas_height), &self.state.lanes).unwrap();
     }
 }
 
