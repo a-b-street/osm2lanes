@@ -93,23 +93,21 @@ pub fn get_lane_specs_ltr(tags: Tags, cfg: &Config) -> Vec<LaneSpec> {
         1
     };
 
-    let driving_lane =
-        if tags.is("access", "no") && (tags.is("bus", "yes") || tags.is("psv", "yes")) {
-            // Sup West Seattle
-            LaneType::Bus
-        } else if tags
+    let driving_lane = if tags.is("access", "no")
+        && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
+        || tags
             .get("motor_vehicle:conditional")
             .map(|x| x.starts_with("no"))
             .unwrap_or(false)
             && tags.is("bus", "yes")
-        {
-            // Example: 3rd Ave in downtown Seattle
-            LaneType::Bus
-        } else if tags.is("access", "no") || tags.is("highway", "construction") {
-            LaneType::Construction
-        } else {
-            LaneType::Driving
-        };
+    // Example: 3rd Ave in downtown Seattle
+    {
+        LaneType::Bus
+    } else if tags.is("access", "no") || tags.is("highway", "construction") {
+        LaneType::Construction
+    } else {
+        LaneType::Driving
+    };
 
     // These are ordered from the road center, going outwards. Most of the members of fwd_side will
     // have Direction::Forward, but there can be exceptions with two-way cycletracks.
@@ -361,8 +359,8 @@ fn assemble_ltr(
 
 // See https://wiki.openstreetmap.org/wiki/Proposed_features/cycleway:separation#Typical_values.
 // Lots of these mappings are pretty wacky right now. We need more BufferTypes.
-fn osm_separation_type(x: &String) -> Option<BufferType> {
-    match x.as_ref() {
+fn osm_separation_type(x: &str) -> Option<BufferType> {
+    match x {
         "bollard" | "vertical_panel" => Some(BufferType::FlexPosts),
         "kerb" | "separation_kerb" => Some(BufferType::Curb),
         "grass_verge" | "planter" | "tree_row" => Some(BufferType::Planters),

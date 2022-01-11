@@ -161,17 +161,17 @@ impl Tags {
         &self.0
     }
 
-    pub fn get(&self, k: &str) -> Option<&String> {
-        self.0.get(k)
+    pub fn get(&self, k: &str) -> Option<&str> {
+        self.0.get(k).map(|v| v.as_str())
     }
 
     pub fn is(&self, k: &str, v: &str) -> bool {
-        self.0.get(k) == Some(&v.to_string())
+        self.get(k) == Some(v)
     }
 
     pub fn is_any(&self, k: &str, values: Vec<&str>) -> bool {
-        if let Some(v) = self.0.get(k) {
-            values.contains(&v.as_ref())
+        if let Some(v) = self.get(k) {
+            values.contains(&v)
         } else {
             false
         }
