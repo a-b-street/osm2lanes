@@ -1,10 +1,7 @@
-use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::{BufReader, Write};
 
-use serde::Deserialize;
-
-use osm2lanes::{get_lane_specs_ltr, Config, DrivingSide};
+use osm2lanes::{get_lane_specs_ltr, Config, DrivingSide, Tags};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -12,10 +9,10 @@ fn main() {
         panic!("Usage: osm2lanes INPUT_FILE OUTPUT_FILE");
     }
 
-    let input: Tags =
+    let tags: Tags =
         serde_json::from_reader(BufReader::new(File::open(&args[1]).unwrap())).unwrap();
     let lanes = get_lane_specs_ltr(
-        input.0,
+        tags,
         &Config {
             driving_side: DrivingSide::Right,
             inferred_sidewalks: true,
@@ -24,6 +21,3 @@ fn main() {
     let mut file = File::create(&args[2]).unwrap();
     writeln!(file, "{}", serde_json::to_string_pretty(&lanes).unwrap()).unwrap();
 }
-
-#[derive(Deserialize)]
-struct Tags(BTreeMap<String, String>);

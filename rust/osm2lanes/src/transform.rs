@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::iter;
 
 use crate::{BufferType, Config, Direction, DrivingSide, LaneSpec, LaneType, Tags};
@@ -6,8 +5,7 @@ use crate::{BufferType, Config, Direction, DrivingSide, LaneSpec, LaneType, Tags
 const HIGHWAY: &str = "highway";
 
 /// From an OpenStreetMap way's tags, determine the lanes along the road from left to right.
-pub fn get_lane_specs_ltr(tags: BTreeMap<String, String>, cfg: &Config) -> Vec<LaneSpec> {
-    let tags = Tags::new(tags);
+pub fn get_lane_specs_ltr(tags: Tags, cfg: &Config) -> Vec<LaneSpec> {
     let fwd = |lane_type: LaneType| LaneSpec {
         lane_type,
         direction: Direction::Forward,

@@ -1,10 +1,10 @@
-use std::collections::BTreeMap;
+use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
-use osm2lanes::{get_lane_specs_ltr, Config, DrivingSide, LanePrintable, LaneSpec};
+use osm2lanes::{get_lane_specs_ltr, Config, DrivingSide, LanePrintable, LaneSpec, Tags};
 
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
@@ -28,15 +28,6 @@ pub struct App {
     state: State,
 }
 
-fn string_to_tags(input: &str) -> Result<BTreeMap<String, String>, String> {
-    let mut map = BTreeMap::new();
-    for line in input.lines() {
-        let (key, val) = line.split_once("=").ok_or("tag must be = separated")?;
-        map.insert(key.to_owned(), val.to_owned());
-    }
-    Ok(map)
-}
-
 const CFG: Config = Config {
     driving_side: DrivingSide::Right,
     inferred_sidewalks: true,
@@ -49,7 +40,7 @@ impl Component for App {
     fn create(_ctx: &Context<Self>) -> Self {
         let focus_ref = NodeRef::default();
         let edit_value = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:taxi:backward=1\nlanes:psv=1\nsidewalk=right".to_owned();
-        let lanes = get_lane_specs_ltr(string_to_tags(&edit_value).unwrap(), &CFG);
+        let lanes = get_lane_specs_ltr(Tags::from_str(&edit_value).unwrap(), &CFG);
         let state = State { edit_value, lanes };
         Self { focus_ref, state }
     }
@@ -58,7 +49,7 @@ impl Component for App {
         match msg {
             Msg::Submit(value) => {
                 log::trace!("Submit: {}", value);
-                if let Ok(tags) = string_to_tags(&value) {
+                if let Ok(tags) = Tags::from_str(&value) {
                     self.state.lanes = get_lane_specs_ltr(tags, &CFG);
                 }
                 self.state.edit_value = value;

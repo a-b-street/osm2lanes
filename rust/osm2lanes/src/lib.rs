@@ -147,11 +147,17 @@ impl LanePrintable for Direction {
 }
 
 /// Internal convenience functions around a string->string map
-struct Tags(BTreeMap<String, String>);
+#[derive(Clone, Deserialize)]
+pub struct Tags(BTreeMap<String, String>);
 
 impl Tags {
     pub fn new(map: BTreeMap<String, String>) -> Tags {
         Tags(map)
+    }
+
+    /// Expose inner map
+    pub fn map(&self) -> &BTreeMap<String, String> {
+        &self.0
     }
 
     pub fn get(&self, k: &str) -> Option<&String> {
@@ -171,6 +177,27 @@ impl Tags {
     }
 }
 
+impl std::str::FromStr for Tags {
+    type Err = String;
+
+    /// Parse tags from an '=' separated list
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use osm2lanes::Tags;
+    /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
+    /// assert_eq!(tags.get("foo"), Some(&"bar".to_owned()));
+    /// ```
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut map = BTreeMap::new();
+        for line in s.lines() {
+            let (key, val) = line.split_once("=").ok_or("tag must be = separated")?;
+            map.insert(key.to_owned(), val.to_owned());
+        }
+        Ok(Self(map))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -183,7 +210,7 @@ mod tests {
         /// The OSM way unique identifier
         way_id: Option<i64>,
         link: Option<String>,
-        tags: BTreeMap<String, String>,
+        tags: Tags,
         driving_side: DrivingSide,
         output: Vec<LaneSpec>,
         #[serde(rename = "skip_rust")]
@@ -218,7 +245,7 @@ mod tests {
                 } else if !test.link.is_none() {
                     println!("For input (example from {}):", test.link.unwrap());
                 }
-                for (k, v) in test.tags {
+                for (k, v) in test.tags.map() {
                     println!("    {} = {}", k, v);
                 }
                 println!("Got:");
