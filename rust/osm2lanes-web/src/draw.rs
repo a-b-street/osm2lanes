@@ -3,7 +3,7 @@ use piet::{
     TextAttribute, TextLayoutBuilder,
 };
 
-use osm2lanes::{Direction, LaneSpec, LanePrintable};
+use osm2lanes::{Direction, LanePrintable, LaneSpec};
 
 pub fn lanes<R: RenderContext>(
     rc: &mut R,

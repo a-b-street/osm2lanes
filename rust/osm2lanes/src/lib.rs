@@ -146,7 +146,7 @@ impl LanePrintable for Direction {
     }
 }
 
-/// A map from string keys to string values. This makes copies of strings for 
+/// A map from string keys to string values. This makes copies of strings for
 /// convenience; don't use in performance sensitive contexts.
 #[derive(Clone, Deserialize)]
 pub struct Tags(BTreeMap<String, String>);
@@ -187,7 +187,7 @@ impl std::str::FromStr for Tags {
     /// use std::str::FromStr;
     /// use osm2lanes::Tags;
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
-    /// assert_eq!(tags.get("foo"), Some(&"bar".to_owned()));
+    /// assert_eq!(tags.get("foo"), Some("bar"));
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut map = BTreeMap::new();
