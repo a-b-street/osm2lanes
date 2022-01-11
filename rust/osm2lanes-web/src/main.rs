@@ -123,7 +123,7 @@ impl Component for App {
         }
     }
 
-    fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
+    fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
         self.draw_canvas()
     }
 }
