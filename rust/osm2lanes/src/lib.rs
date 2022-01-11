@@ -146,7 +146,8 @@ impl LanePrintable for Direction {
     }
 }
 
-/// Internal convenience functions around a string->string map
+/// A map from string keys to string values. This makes copies of strings for 
+/// convenience; don't use in performance sensitive contexts.
 #[derive(Clone, Deserialize)]
 pub struct Tags(BTreeMap<String, String>);
 
