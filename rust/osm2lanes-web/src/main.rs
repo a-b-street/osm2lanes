@@ -1,8 +1,12 @@
 use std::str::FromStr;
 
+use piet_web::WebRenderContext;
 use serde::{Deserialize, Serialize};
-use web_sys::HtmlInputElement;
+use wasm_bindgen::JsCast;
+use web_sys::{window, HtmlCanvasElement, HtmlInputElement};
 use yew::prelude::*;
+
+mod draw;
 
 use osm2lanes::{get_lane_specs_ltr, Config, DrivingSide, LanePrintable, LaneSpec, Tags};
 
@@ -91,6 +95,7 @@ impl Component for App {
                     {onblur}
                     {onkeypress}
                 />
+                <hr/>
                 <section>
                     <div class="row">
                         {
@@ -103,8 +108,14 @@ impl Component for App {
                         }
                     </div>
                 </section>
+                <hr/>
+                <canvas id="canvas" width="960px" height="480px"></canvas>
             </div>
         }
+    }
+
+    fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
+        self.draw_canvas()
     }
 }
 
@@ -118,6 +129,32 @@ impl App {
         html! {
             <div class="row-item"><span>{lane.direction.as_utf8()}</span></div>
         }
+    }
+    fn draw_canvas(&self) {
+        let window = window().unwrap();
+        let canvas = window
+            .document()
+            .unwrap()
+            .get_element_by_id("canvas")
+            .unwrap()
+            .dyn_into::<HtmlCanvasElement>()
+            .unwrap();
+        let context = canvas
+            .get_context("2d")
+            .unwrap()
+            .unwrap()
+            .dyn_into::<web_sys::CanvasRenderingContext2d>()
+            .unwrap();
+
+        let dpr = window.device_pixel_ratio();
+        let canvas_width = (canvas.offset_width() as f64 * dpr) as u32;
+        let canvas_height = (canvas.offset_height() as f64 * dpr) as u32;
+        canvas.set_width(canvas_width);
+        canvas.set_height(canvas_height);
+        context.scale(dpr, dpr).unwrap();
+        let mut rc = WebRenderContext::new(context, window);
+
+        draw::lanes(&mut rc, (canvas_width, canvas_height), &self.state.lanes).unwrap();
     }
 }
 
