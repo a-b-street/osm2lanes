@@ -12,7 +12,7 @@ pub fn lanes<R: RenderContext>(
 ) -> Result<(), Error> {
     rc.clear(None, Color::OLIVE);
 
-    let canvas_width = canvas_width as f64;
+    let _canvas_width = canvas_width as f64;
     let canvas_height = canvas_height as f64;
     let grassy_verge = 10.0;
     let asphalt_buffer = 10.0;
