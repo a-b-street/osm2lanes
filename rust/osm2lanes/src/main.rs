@@ -12,7 +12,7 @@ fn main() {
     let tags: Tags =
         serde_json::from_reader(BufReader::new(File::open(&args[1]).unwrap())).unwrap();
     let lanes = get_lane_specs_ltr(
-        tags,
+        &tags,
         &Config {
             driving_side: DrivingSide::Right,
             inferred_sidewalks: true,
