@@ -1,11 +1,28 @@
 use std::iter;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{BufferType, Config, Direction, DrivingSide, LaneSpec, LaneType, Tags};
 
 const HIGHWAY: &str = "highway";
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LaneSpecError(String);
+
+#[derive(Default)]
+pub struct LaneSpecWarnings(Vec<LaneSpecWarning>);
+
+pub struct LaneSpecWarning {
+    _description: String,
+    // Tags relevant to triggering the warning
+    _tags: Tags,
+}
+
 /// From an OpenStreetMap way's tags, determine the lanes along the road from left to right.
-pub fn get_lane_specs_ltr(tags: Tags, cfg: &Config) -> Vec<LaneSpec> {
+pub fn get_lane_specs_ltr_with_warnings(
+    tags: Tags,
+    cfg: &Config,
+) -> Result<(Vec<LaneSpec>, LaneSpecWarnings), LaneSpecError> {
     let fwd = |lane_type: LaneType| LaneSpec {
         lane_type,
         direction: Direction::Forward,
@@ -17,7 +34,7 @@ pub fn get_lane_specs_ltr(tags: Tags, cfg: &Config) -> Vec<LaneSpec> {
 
     // Easy special cases first.
     if tags.is(HIGHWAY, "steps") {
-        return vec![fwd(LaneType::Sidewalk)];
+        return Ok((vec![fwd(LaneType::Sidewalk)], LaneSpecWarnings::default()));
     }
     // Eventually, we should have some kind of special LaneType for shared walking/cycling paths of
     // different kinds. Until then, model by making bike lanes and a shoulder for walking.
@@ -32,7 +49,7 @@ pub fn get_lane_specs_ltr(tags: Tags, cfg: &Config) -> Vec<LaneSpec> {
             || (tags.is(HIGHWAY, "footway")
                 && !tags.is_any("bicycle", vec!["designated", "yes", "dismount"]))
         {
-            return vec![fwd(LaneType::Sidewalk)];
+            return Ok((vec![fwd(LaneType::Sidewalk)], LaneSpecWarnings::default()));
         }
         // Otherwise, there'll always be a bike lane.
 
@@ -49,7 +66,10 @@ pub fn get_lane_specs_ltr(tags: Tags, cfg: &Config) -> Vec<LaneSpec> {
                 back_side.push(back(LaneType::Shoulder));
             }
         }
-        return assemble_ltr(fwd_side, back_side, cfg.driving_side);
+        return Ok((
+            assemble_ltr(fwd_side, back_side, cfg.driving_side),
+            LaneSpecWarnings::default(),
+        ));
     }
 
     // TODO Reversible roads should be handled differently?
@@ -123,7 +143,10 @@ pub fn get_lane_specs_ltr(tags: Tags, cfg: &Config) -> Vec<LaneSpec> {
     }
 
     if driving_lane == LaneType::Construction {
-        return assemble_ltr(fwd_side, back_side, cfg.driving_side);
+        return Ok((
+            assemble_ltr(fwd_side, back_side, cfg.driving_side),
+            LaneSpecWarnings::default(),
+        ));
     }
 
     let fwd_bus_spec = if let Some(s) = tags.get("bus:lanes:forward") {
@@ -335,7 +358,21 @@ pub fn get_lane_specs_ltr(tags: Tags, cfg: &Config) -> Vec<LaneSpec> {
         }
     }
 
-    assemble_ltr(fwd_side, back_side, cfg.driving_side)
+    Ok((
+        (assemble_ltr(fwd_side, back_side, cfg.driving_side)),
+        LaneSpecWarnings::default(),
+    ))
+}
+
+pub fn get_lane_specs_ltr(tags: Tags, cfg: &Config) -> Result<Vec<LaneSpec>, LaneSpecError> {
+    let (lane_specs, warnings) = get_lane_specs_ltr_with_warnings(tags, cfg)?;
+    if !warnings.0.is_empty() {
+        return Err(LaneSpecError(format!(
+            "{} warnings found",
+            warnings.0.len()
+        )));
+    }
+    Ok(lane_specs)
 }
 
 fn assemble_ltr(
