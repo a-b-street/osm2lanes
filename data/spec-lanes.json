@@ -1,10 +1,11 @@
 {
     "$id": "https://a-b-street.github.io/osm2lanes",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "description": "A representation of lanes",
+    "description": "Lanes from left to right.",
     "type": "array",
     "items": {
         "type": "object",
+        "description": "A lane. Can either be for travelling, parking, or any visible separation between them.",
         "required": [
             "type"
         ],
@@ -23,11 +24,11 @@
                     },
                     {
                         "const": "shoulder",
-                        "description": "Undesignated side of road suitable for non-vehicular traffic or parked vehicles. May be anything from a grassy verge to an asphalt breakdown lane."
+                        "description": "Undesignated side of road suitable for non-vehicular traffic or parked vehicles. Does not include asphalt breakdown lanes."
                     },
                     {
-                        "const": "buffer",
-                        "description": "Buffer space not designated for traffic. Direction assumed to be None."
+                        "const": "separator",
+                        "description": "Separator not designated for traffic. Direction assumed to be None. Marking Required."
                     },
                     {
                         "const": "construction",
@@ -35,9 +36,29 @@
                     }
                 ]
             },
+            "direction": {
+                "type": "string",
+                "description": "The direction of the way. OSM ways always have a start and end, but this direction may not reflect the direction of traffic.",
+                "anyOf": [
+                    {
+                        "const": "forward"
+                    },
+                    {
+                        "const": "backward"
+                    },
+                    {
+                        "const": "both",
+                        "description": "Traffic may travel in both directions in one lane."
+                    },
+                    {
+                        "const": "none",
+                        "description": "Traffic does not travel in this lane."
+                    }
+                ]
+            },
             "designated": {
                 "type": "string",
-                "description": "The predominant or designated traffic type, to hint at how to depict the lane.",
+                "description": "The predominant or designated traffic type, to hint at how to depict the lane. Should not be used to determine access restrictions.",
                 "anyOf": [
                     {
                         "const": "any",
@@ -63,36 +84,57 @@
                     }
                 ]
             },
-            "use": {
+            "markings": {
                 "type": "array",
-                "description": "The valid reasons to use the lane. Optional, defaults to all uses.",
+                "description": "The road markings arranged from left to right.",
                 "items": {
-                    "enum": [
-                        "public",
-                        "taxi",
-                        "emergency"
-                    ]
-                }
-            },
-            "direction": {
-                "type": "string",
-                "description": "The direction of the way. OSM ways always have a start and end, but this direction may not reflect the direction of traffic.",
-                "anyOf": [
-                    {
-                        "const": "forward"
-                    },
-                    {
-                        "const": "backward"
-                    },
-                    {
-                        "const": "both",
-                        "description": "Traffic may travel in both directions in one lane."
-                    },
-                    {
-                        "const": "none",
-                        "description": "Traffic does not travel in this lane."
+                    "type": "object",
+                    "description": "A single lane marking. Double lines are treated separately.",
+                    "required": [
+                        "style"
+                    ],
+                    "properties": {
+                        "style": {
+                            "type": "string",
+                            "description": "The style of the marking.",
+                            "anyOf": [
+                                {
+                                    "const": "solid_line"
+                                },
+                                {
+                                    "const": "broken_line",
+                                    "description": "A ratio of 2:1 for line to gap."
+                                },
+                                {
+                                    "const": "dashed_line",
+                                    "description": "A ratio of 1:1 for line to gap."
+                                },
+                                {
+                                    "const": "dotted_line",
+                                    "description": "A ratio of 1:2 for line to gap."
+                                },
+                                {
+                                    "const": "gore_chevron",
+                                    "description": "A fill. Often found when a link road merges from or with a main road."
+                                },
+                                {
+                                    "const": "diagnoal_hatched",
+                                    "description": "A fill."
+                                },
+                                {
+                                    "const": "criss_cross",
+                                    "description": "A fill. Often found in box functions."
+                                },
+                                {
+                                    "const": "solid_fill"
+                                },
+                                {
+                                    "const": "no_fill"
+                                }
+                            ]
+                        }
                     }
-                ]
+                }
             },
             "width": {
                 "type": "number",
