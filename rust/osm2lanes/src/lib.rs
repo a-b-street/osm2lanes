@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-pub use self::transform::get_lane_specs_ltr;
+pub use self::transform::{get_lane_specs_ltr, lanes_to_tags};
 
 mod transform;
 
@@ -218,6 +218,14 @@ mod tests {
         skip: Option<bool>,
     }
 
+    fn stringify_lane_types(lanes: &[LaneSpec]) -> String {
+        lanes.iter().map(|s| s.lane_type.as_ascii()).collect()
+    }
+
+    fn stringify_directions(lanes: &[LaneSpec]) -> String {
+        lanes.iter().map(|s| s.direction.as_utf8()).collect()
+    }
+
     #[test]
     fn test_from_data() {
         // TODO This is brittle, depends on running the test from the right directory. Use
@@ -261,11 +269,49 @@ mod tests {
         assert!(ok);
     }
 
-    fn stringify_lane_types(lanes: &[LaneSpec]) -> String {
-        lanes.iter().map(|s| s.lane_type.as_ascii()).collect()
-    }
+    #[test]
+    fn test_roundtrip() {
+        // TODO This is brittle, depends on running the test from the right directory. Use
+        // include_str?
+        let tests: Vec<TestCase> =
+            serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
+                .unwrap();
 
-    fn stringify_directions(lanes: &[LaneSpec]) -> String {
-        lanes.iter().map(|s| s.direction.as_ascii()).collect()
+        let mut ok = true;
+        // TODO take all tests
+        for test in tests.iter().take(1) {
+            if !test.skip.is_none() && test.skip.unwrap() {
+                continue;
+            }
+            let cfg = Config {
+                driving_side: test.driving_side,
+                inferred_sidewalks: true,
+            };
+            let tags = lanes_to_tags(&test.output, &cfg).unwrap();
+            let lanes = get_lane_specs_ltr(&tags, &cfg).unwrap();
+            if test.output != lanes {
+                ok = false;
+                if !test.way_id.is_none() {
+                    println!(
+                        "For input (example from https://www.openstreetmap.org/way/{}):",
+                        test.way_id.unwrap()
+                    );
+                } else if !test.link.is_none() {
+                    println!("For input (example from {}):", test.link.as_ref().unwrap());
+                }
+                println!("Normalized OSM tags:");
+                for (k, v) in tags.map() {
+                    println!("    {} = {}", k, v);
+                }
+                println!("Got:");
+                println!("    {}", stringify_lane_types(&lanes));
+                println!("    {}", stringify_directions(&lanes));
+                println!("Expected:");
+                println!("    {}", stringify_lane_types(&test.output));
+                println!("    {}", stringify_directions(&test.output));
+                println!();
+            }
+        }
+        assert!(ok);
     }
 }
