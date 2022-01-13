@@ -485,3 +485,38 @@ fn osm_separation_type(x: &str) -> Option<BufferType> {
         _ => None,
     }
 }
+
+pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpecError> {
+    let mut tags = std::collections::BTreeMap::new();
+    tags.insert("highway".to_owned(), "yes".to_owned()); // TODO, what?
+    {
+        let lane_count = lanes
+            .iter()
+            .filter(|lane| lane.lane_type == LaneType::Driving)
+            .count();
+        tags.insert("lanes".to_owned(), lane_count.to_string());
+    }
+    if lanes
+        .iter()
+        .filter(|lane| lane.lane_type == LaneType::Driving)
+        .all(|lane| lane.direction == Direction::Forward)
+    {
+        tags.insert("oneway".to_owned(), "yes".to_owned());
+    }
+    if lanes.first().unwrap().lane_type == LaneType::Sidewalk
+        && lanes.last().unwrap().lane_type == LaneType::Sidewalk
+    {
+        tags.insert("sidewalk".to_owned(), "both".to_string());
+    }
+    if lanes
+        .iter()
+        .skip_while(|lane| lane.lane_type == LaneType::Sidewalk)
+        .next()
+        .unwrap()
+        .lane_type
+        == LaneType::Biking
+    {
+        tags.insert("cycleway:left".to_owned(), "lane".to_string());
+    }
+    Ok(Tags(tags))
+}
