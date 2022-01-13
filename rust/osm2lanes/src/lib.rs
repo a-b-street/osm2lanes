@@ -228,8 +228,6 @@ mod tests {
 
     #[test]
     fn test_from_data() {
-        // TODO This is brittle, depends on running the test from the right directory. Use
-        // include_str?
         let tests: Vec<TestCase> =
             serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
                 .unwrap();
@@ -271,8 +269,6 @@ mod tests {
 
     #[test]
     fn test_roundtrip() {
-        // TODO This is brittle, depends on running the test from the right directory. Use
-        // include_str?
         let tests: Vec<TestCase> =
             serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
                 .unwrap();

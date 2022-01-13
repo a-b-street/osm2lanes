@@ -504,7 +504,7 @@ pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpec
         tags.insert("oneway".to_owned(), "yes".to_owned());
     }
     if lanes.first().unwrap().lane_type == LaneType::Sidewalk
-        && lanes.first().unwrap().lane_type == LaneType::Sidewalk
+        && lanes.last().unwrap().lane_type == LaneType::Sidewalk
     {
         tags.insert("sidewalk".to_owned(), "both".to_string());
     }
