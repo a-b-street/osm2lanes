@@ -1,5 +1,7 @@
 use std::iter;
 
+use serde::{Deserialize, Serialize};
+
 use crate::{BufferType, Config, Direction, DrivingSide, LaneSpec, LaneType, Tags};
 
 impl Tags {
@@ -27,84 +29,22 @@ impl LaneSpec {
     }
 }
 
-// https://wiki.openstreetmap.org/wiki/Key:access#List_of_possible_values
-// enum Access {
-//     Yes,
-//     No,
-//     // Private,
-//     // Permissive,
-//     // Permit,
-//     // Destination,
-//     // Delivery,
-//     // Customers,
-//     Designated,
-//     // UseSidepath,
-//     Dismount,
-//     // Agricultural,
-//     // Forestry,
-//     // Discouraged,
-//     // Unknown,
-//     // Other(String),
-// }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LaneSpecError(String);
 
-// https://wiki.openstreetmap.org/wiki/Key:access#Land-based_transportation
-// For no good reason, we group non-vehicle, human-powered, and motorized vehicles
-// enum NonMotorizedTransport {
-//     Foot,
-//     Horse,
-//     Bicycle,
-//     Carriage,
-// }
+#[derive(Default)]
+pub struct LaneSpecWarnings(Vec<LaneSpecWarning>);
 
-// enum MotorizedVehicleType {
-//     Single(SingleTrackedMotorizedVehicle),
-//     Double(DoubleTrackedMotorizedVehicle),
-//     // Other,
-// }
+pub struct LaneSpecWarning {
+    _description: String,
+    // Tags relevant to triggering the warning
+    _tags: Tags,
+}
 
-// enum SingleTrackedMotorizedVehicle {
-//     Motorcycle,
-//     Moped,
-//     SpeedPedelec,
-//     Mofa,
-// }
-
-// enum DoubleTrackedMotorizedVehicle {
-//     Motorcar,
-//     // Motorhome,
-//     // TouristBus,
-//     Coach,
-//     Goods,
-//     Hgv(HeavyGoodsVehicle),
-//     // Agricultural,
-//     // GolfCart,
-//     // Atv,
-// }
-
-// enum HeavyGoodsVehicle {
-//     Articulated,
-//     Bdouble,
-//     // Other(String),
-// }
-
-// enum MotorizedVehicleUse {
-//     Psv(PublicServiceVehicle),
-//     Hov,
-//     // CarSharing,
-//     // Emergency,
-//     // Hazmat,
-//     // Disabled,
-// }
-
-// enum PublicServiceVehicle {
-//     Bus,
-//     Taxi,
-//     Minubs,
-//     ShareTaxi,
-// }
+type LaneSpecResult = Result<(Vec<LaneSpec>, LaneSpecWarnings), LaneSpecError>;
 
 // Handle non motorized ways
-fn non_motorized(tags: &Tags, cfg: &Config) -> Option<Vec<LaneSpec>> {
+fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
     if !tags.highway_is_any(&[
         "cycleway",
         "footway",
@@ -117,7 +57,10 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<Vec<LaneSpec>> {
     }
     // Easy special cases first.
     if tags.highway_is("steps") {
-        return Some(vec![LaneSpec::forward(LaneType::Sidewalk)]);
+        return Some(Ok((
+            vec![LaneSpec::forward(LaneType::Sidewalk)],
+            LaneSpecWarnings::default(),
+        )));
     }
 
     // Eventually, we should have some kind of special LaneType for shared walking/cycling paths of
@@ -130,7 +73,10 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<Vec<LaneSpec>> {
         || (tags.highway_is("footway")
             && !tags.is_any("bicycle", &["designated", "yes", "dismount"]))
     {
-        return Some(vec![LaneSpec::forward(LaneType::Sidewalk)]);
+        return Some(Ok((
+            vec![LaneSpec::forward(LaneType::Sidewalk)],
+            LaneSpecWarnings::default(),
+        )));
     }
     // Otherwise, there'll always be a bike lane.
 
@@ -147,7 +93,10 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<Vec<LaneSpec>> {
             back_side.push(LaneSpec::backward(LaneType::Shoulder));
         }
     }
-    Some(assemble_ltr(fwd_side, back_side, cfg.driving_side))
+    Some(Ok((
+        assemble_ltr(fwd_side, back_side, cfg.driving_side),
+        LaneSpecWarnings::default(),
+    )))
 }
 
 fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, usize) {
@@ -429,7 +378,7 @@ fn walking(
 }
 
 /// From an OpenStreetMap way's tags, determine the lanes along the road from left to right.
-pub fn get_lane_specs_ltr(tags: &Tags, cfg: &Config) -> Vec<LaneSpec> {
+pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LaneSpecResult {
     if let Some(spec) = non_motorized(tags, cfg) {
         return spec;
     }
@@ -478,7 +427,10 @@ pub fn get_lane_specs_ltr(tags: &Tags, cfg: &Config) -> Vec<LaneSpec> {
     }
 
     if driving_lane == LaneType::Construction {
-        return assemble_ltr(fwd_side, back_side, cfg.driving_side);
+        return Ok((
+            assemble_ltr(fwd_side, back_side, cfg.driving_side),
+            LaneSpecWarnings::default(),
+        ));
     }
 
     bus(tags, cfg, oneway, &mut fwd_side, &mut back_side);
@@ -491,7 +443,21 @@ pub fn get_lane_specs_ltr(tags: &Tags, cfg: &Config) -> Vec<LaneSpec> {
 
     walking(tags, cfg, oneway, &mut fwd_side, &mut back_side);
 
-    assemble_ltr(fwd_side, back_side, cfg.driving_side)
+    Ok((
+        (assemble_ltr(fwd_side, back_side, cfg.driving_side)),
+        LaneSpecWarnings::default(),
+    ))
+}
+
+pub fn get_lane_specs_ltr(tags: &Tags, cfg: &Config) -> Result<Vec<LaneSpec>, LaneSpecError> {
+    let (lane_specs, warnings) = get_lane_specs_ltr_with_warnings(tags, cfg)?;
+    if !warnings.0.is_empty() {
+        return Err(LaneSpecError(format!(
+            "{} warnings found",
+            warnings.0.len()
+        )));
+    }
+    Ok(lane_specs)
 }
 
 fn assemble_ltr(

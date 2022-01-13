@@ -235,7 +235,7 @@ mod tests {
                 driving_side: test.driving_side,
                 inferred_sidewalks: true,
             };
-            let actual = get_lane_specs_ltr(&test.tags, &cfg);
+            let actual = get_lane_specs_ltr(&test.tags, &cfg).unwrap();
             if actual != test.output {
                 ok = false;
                 if !test.way_id.is_none() {

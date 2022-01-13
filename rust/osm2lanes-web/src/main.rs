@@ -44,7 +44,7 @@ impl Component for App {
     fn create(_ctx: &Context<Self>) -> Self {
         let focus_ref = NodeRef::default();
         let edit_value = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:taxi:backward=1\nlanes:psv=1\nsidewalk=right".to_owned();
-        let lanes = get_lane_specs_ltr(&Tags::from_str(&edit_value).unwrap(), &CFG);
+        let lanes = get_lane_specs_ltr(&Tags::from_str(&edit_value).unwrap(), &CFG).unwrap();
         let state = State { edit_value, lanes };
         Self { focus_ref, state }
     }
@@ -54,7 +54,7 @@ impl Component for App {
             Msg::Submit(value) => {
                 log::trace!("Submit: {}", value);
                 if let Ok(tags) = Tags::from_str(&value) {
-                    self.state.lanes = get_lane_specs_ltr(&tags, &CFG);
+                    self.state.lanes = get_lane_specs_ltr(&tags, &CFG).unwrap();
                 }
                 self.state.edit_value = value;
                 true

@@ -27,10 +27,22 @@
             },
             "direction": {
                 "type": "string",
-                "description": "The direction of the lane.",
-                "enum": [
-                    "forward",
-                    "backward"
+                "description": "The direction of the way. OSM ways always have a start and end, but this direction may not reflect the direction of traffic.",
+                "anyOf": [
+                    {
+                        "const": "forward"
+                    },
+                    {
+                        "const": "backward"
+                    },
+                    {
+                        "const": "both",
+                        "description": "Traffic may travel in both directions in one lane."
+                    },
+                    {
+                        "const": "none",
+                        "description": "Traffic does not travel in this lane."
+                    }
                 ]
             }
         }
