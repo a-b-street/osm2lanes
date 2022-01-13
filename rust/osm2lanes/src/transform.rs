@@ -383,15 +383,6 @@ pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LaneSpecRe
         return spec;
     }
 
-    let fwd = |lane_type: LaneType| LaneSpec {
-        lane_type,
-        direction: Direction::Forward,
-    };
-    let back = |lane_type: LaneType| LaneSpec {
-        lane_type,
-        direction: Direction::Backward,
-    };
-
     // TODO Reversible roads should be handled differently?
     let oneway = tags.is_any("oneway", &["yes", "reversible"]) || tags.is("junction", "roundabout");
 
@@ -415,15 +406,15 @@ pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LaneSpecRe
 
     // These are ordered from the road center, going outwards. Most of the members of fwd_side will
     // have Direction::Forward, but there can be exceptions with two-way cycletracks.
-    let mut fwd_side: Vec<LaneSpec> = iter::repeat_with(|| fwd(driving_lane))
+    let mut fwd_side: Vec<LaneSpec> = iter::repeat_with(|| LaneSpec::forward(driving_lane))
         .take(num_driving_fwd)
         .collect();
-    let mut back_side: Vec<LaneSpec> = iter::repeat_with(|| back(driving_lane))
+    let mut back_side: Vec<LaneSpec> = iter::repeat_with(|| LaneSpec::backward(driving_lane))
         .take(num_driving_back)
         .collect();
     // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
     if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
-        fwd_side.insert(0, fwd(LaneType::SharedLeftTurn));
+        fwd_side.insert(0, LaneSpec::forward(LaneType::SharedLeftTurn));
     }
 
     if driving_lane == LaneType::Construction {
