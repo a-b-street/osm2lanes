@@ -12,6 +12,42 @@ impl Tags {
     fn highway_is_any(&self, values: &[&str]) -> bool {
         self.is_any(Self::HIGHWAY, values)
     }
+    fn subset(&self, keys: &[&str]) -> Self {
+        let mut map = Self::default();
+        for &key in keys {
+            if let Some(val) = self.get(key) {
+                map.0.insert(key.to_owned(), val.to_owned()).unwrap();
+            }
+        }
+        map
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum WaySide {
+    Both,
+    Right,
+    Left,
+}
+
+impl std::string::ToString for WaySide {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Both => "both",
+            Self::Right => "right",
+            Self::Left => "left",
+        }
+        .to_owned()
+    }
+}
+
+impl std::convert::From<DrivingSide> for WaySide {
+    fn from(side: DrivingSide) -> Self {
+        match side {
+            DrivingSide::Right => Self::Right,
+            DrivingSide::Left => Self::Left,
+        }
+    }
 }
 
 impl LaneSpec {
@@ -48,9 +84,10 @@ pub struct LaneSpecError(String);
 pub struct LaneSpecWarnings(Vec<LaneSpecWarning>);
 
 pub struct LaneSpecWarning {
-    _description: String,
+    pub description: String,
     // Tags relevant to triggering the warning
-    _tags: Tags,
+    // TODO: investigate making this a view of keys on a Tags object instead
+    pub tags: Tags,
 }
 
 type LaneSpecResult = Result<(Vec<LaneSpec>, LaneSpecWarnings), LaneSpecError>;
@@ -71,7 +108,10 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
     if tags.highway_is("steps") {
         return Some(Ok((
             vec![LaneSpec::both(LaneType::Sidewalk)],
-            LaneSpecWarnings::default(),
+            LaneSpecWarnings(vec![LaneSpecWarning {
+                description: "highway is steps, but lane is only a sidewalk".to_owned(),
+                tags: tags.subset(&["highway"]),
+            }]),
         )));
     }
 
@@ -82,8 +122,7 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
     // types, assume bikes are allowed, except for footways, where they must be explicitly
     // allowed.
     if tags.is("bicycle", "no")
-        || (tags.highway_is("footway")
-            && !tags.is_any("bicycle", &["designated", "yes", "dismount"]))
+        || (tags.highway_is("footway") && !tags.is_any("bicycle", &["designated", "yes"]))
     {
         return Some(Ok((
             vec![LaneSpec::both(LaneType::Sidewalk)],
@@ -92,21 +131,21 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
     }
     // Otherwise, there'll always be a bike lane.
 
-    let mut fwd_side = vec![LaneSpec::forward(LaneType::Biking)];
-    let mut back_side = if tags.is("oneway", "yes") {
+    let mut forward_side = vec![LaneSpec::forward(LaneType::Biking)];
+    let mut backward_side = if tags.is("oneway", "yes") {
         vec![]
     } else {
         vec![LaneSpec::backward(LaneType::Biking)]
     };
 
     if !tags.is("foot", "no") {
-        fwd_side.push(LaneSpec::both(LaneType::Shoulder));
-        if !back_side.is_empty() {
-            back_side.push(LaneSpec::both(LaneType::Shoulder));
+        forward_side.push(LaneSpec::both(LaneType::Shoulder));
+        if !backward_side.is_empty() {
+            backward_side.push(LaneSpec::both(LaneType::Shoulder));
         }
     }
     Some(Ok((
-        assemble_ltr(fwd_side, back_side, cfg.driving_side),
+        assemble_ltr(forward_side, backward_side, cfg.driving_side),
         LaneSpecWarnings::default(),
     )))
 }
@@ -120,11 +159,9 @@ fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, 
     } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
         if oneway {
             n
-        } else if n % 2 == 0 {
-            n / 2
         } else {
-            // usize division rounds down
-            (n / 2) + 1
+            // usize division rounded up
+            (n + 1) / 2
         }
     } else {
         1
@@ -208,67 +245,148 @@ fn bicycle(
     oneway: bool,
     forward_side: &mut Vec<LaneSpec>,
     backward_side: &mut Vec<LaneSpec>,
-) {
-    if tags.is_any("cycleway", &["lane", "track"]) {
-        forward_side.push(LaneSpec::forward(LaneType::Biking));
-        if !backward_side.is_empty() {
-            backward_side.push(LaneSpec::backward(LaneType::Biking));
-        }
-    } else if tags.is_any("cycleway:both", &["lane", "track"]) {
-        forward_side.push(LaneSpec::forward(LaneType::Biking));
-        backward_side.push(LaneSpec::backward(LaneType::Biking));
-    } else {
-        // Note here that we look at driving_side frequently, to match up left/right with fwd/back.
-        // If we're driving on the right, then right=fwd. Driving on the left, then right=back.
-        //
-        // TODO Can we express this more simply by referring to a left_side and right_side here?
-        if tags.is_any("cycleway:right", &["lane", "track"]) {
-            if cfg.driving_side == DrivingSide::Right {
-                if tags.is("cycleway:right:oneway", "no") || tags.is("oneway:bicycle", "no") {
-                    forward_side.push(LaneSpec::both(LaneType::Biking));
-                } else {
-                    forward_side.push(LaneSpec::forward(LaneType::Biking));
-                }
+    warnings: &mut LaneSpecWarnings,
+) -> Result<(), LaneSpecError> {
+    const CYCLEWAY: &'static str = "cycleway";
+    impl Tags {
+        fn is_cycleway(&self, side: Option<WaySide>) -> bool {
+            if let Some(side) = side {
+                self.is_any(
+                    &format!("{}:{}", CYCLEWAY, &side.to_string()),
+                    &["lane", "track"],
+                )
             } else {
-                if tags.is("cycleway:right:oneway", "no") || tags.is("oneway:bicycle", "no") {
-                    backward_side.push(LaneSpec::both(LaneType::Biking));
-                } else {
-                    backward_side.push(LaneSpec::backward(LaneType::Biking));
-                }
+                self.is_any(CYCLEWAY, &["lane", "track"])
             }
         }
-        if tags.is("cycleway:left", "opposite_lane") || tags.is("cycleway", "opposite_lane") {
-            if cfg.driving_side == DrivingSide::Right {
-                backward_side.push(LaneSpec::backward(LaneType::Biking));
+        fn cycleway_is(&self, side: Option<WaySide>, attr: Option<&str>, val: &str) -> bool {
+            if let Some(side) = side {
+                if let Some(attr) = attr {
+                    self.is(&format!("{}:{}:{}", CYCLEWAY, &side.to_string(), attr), val)
+                } else {
+                    self.is(&format!("{}:{}", CYCLEWAY, &side.to_string()), val)
+                }
+            } else {
+                self.is(CYCLEWAY, val)
+            }
+        }
+        fn cycleway_is_any(
+            &self,
+            side: Option<WaySide>,
+            attr: Option<&str>,
+            values: &[&str],
+        ) -> bool {
+            if let Some(side) = side {
+                if let Some(attr) = attr {
+                    self.is_any(
+                        &format!("{}:{}:{}", CYCLEWAY, &side.to_string(), attr),
+                        values,
+                    )
+                } else {
+                    self.is_any(&format!("{}:{}", CYCLEWAY, &side.to_string()), values)
+                }
+            } else {
+                self.is_any(CYCLEWAY, values)
+            }
+        }
+    }
+
+    if tags.is_cycleway(None) {
+        if tags.is_cycleway(Some(WaySide::Both))
+            || tags.is_cycleway(Some(WaySide::Right))
+            || tags.is_cycleway(Some(WaySide::Left))
+        {
+            return Err(LaneSpecError(
+                "cycleway=* not supported with any cycleway:* values".to_owned(),
+            ));
+        }
+        forward_side.push(LaneSpec::forward(LaneType::Biking));
+        if oneway {
+            if !backward_side.is_empty() {
+                // TODO safety check to be checked
+                warnings.0.push(LaneSpecWarning {
+                    description: "oneway has backwards lanes when adding cycleways".to_owned(),
+                    tags: tags.subset(&["oneway", CYCLEWAY]),
+                })
+            }
+        } else {
+            backward_side.push(LaneSpec::backward(LaneType::Biking));
+        }
+    } else if tags.is_cycleway(Some(WaySide::Both)) {
+        forward_side.push(LaneSpec::both(LaneType::Biking));
+    } else {
+        // deprecated cycleway=opposite_lane
+        if tags.cycleway_is(None, None, "opposite_lane") {
+            warnings.0.push(LaneSpecWarning {
+                description: "cycleway=opposite_lane deprecated".to_owned(),
+                tags: tags.subset(&[CYCLEWAY]),
+            });
+            backward_side.push(LaneSpec::backward(LaneType::Biking));
+        }
+        // cycleway:FORWARD=*
+        if tags.is_cycleway(Some(cfg.driving_side.into())) {
+            if tags.cycleway_is(Some(cfg.driving_side.into()), Some("oneway"), "no")
+                || tags.is("oneway:bicycle", "no")
+            {
+                forward_side.push(LaneSpec::both(LaneType::Biking));
             } else {
                 forward_side.push(LaneSpec::forward(LaneType::Biking));
             }
         }
-        if tags.is_any("cycleway:left", &["lane", "opposite_track", "track"]) {
-            if cfg.driving_side == DrivingSide::Right {
-                if tags.is("cycleway:left:oneway", "no") || tags.is("oneway:bicycle", "no") {
-                    backward_side.push(LaneSpec::both(LaneType::Biking));
-                } else if oneway {
-                    forward_side.insert(0, LaneSpec::forward(LaneType::Biking));
-                } else {
-                    backward_side.push(LaneSpec::backward(LaneType::Biking));
-                }
+        // cycleway:FORWARD=opposite_lane
+        if tags.cycleway_is_any(
+            Some(cfg.driving_side.into()),
+            None,
+            &["opposite_lane", "opposite_track"],
+        ) {
+            warnings.0.push(LaneSpecWarning {
+                description: "cycleway:FORWARD=opposite_lane deprecated".to_owned(),
+                tags: tags.subset(&[CYCLEWAY]), // TODO make side specific
+            });
+            forward_side.push(LaneSpec::backward(LaneType::Biking));
+        }
+        // cycleway:BACKWARD=*
+        if tags.is_cycleway(Some(cfg.driving_side.opposite().into())) {
+            if tags.cycleway_is(
+                Some(cfg.driving_side.opposite().into()),
+                Some("oneway"),
+                "no",
+            ) || tags.is("oneway:bicycle", "no") {
+                backward_side.push(LaneSpec::both(LaneType::Biking));
+            } else if oneway {
+                // A oneway road with a cycleway on the wrong side
+                forward_side.insert(0, LaneSpec::forward(LaneType::Biking));
             } else {
-                // TODO This should mimic the logic for right-handed driving, but I need test cases
-                // first to do this sanely
-                if tags.is("cycleway:left:oneway", "no") || tags.is("oneway:bicycle", "no") {
-                    forward_side.push(LaneSpec::both(LaneType::Biking));
-                } else {
-                    forward_side.push(LaneSpec::forward(LaneType::Biking));
-                }
+                // A contraflow bicycle lane
+                backward_side.push(LaneSpec::backward(LaneType::Biking));
             }
+        }
+        // cycleway:BACKWARD=opposite_lane
+        if tags.cycleway_is_any(
+            Some(cfg.driving_side.opposite().into()),
+            None,
+            &["opposite_lane", "opposite_track"],
+        ) {
+            return Err(LaneSpecError(
+                "cycleway:BACKWARD=opposite_lane unsupported".to_owned(),
+            ));
         }
     }
 
     // My brain hurts. How does the above combinatorial explosion play with
     // https://wiki.openstreetmap.org/wiki/Proposed_features/cycleway:separation? Let's take the
     // "post-processing" approach.
+
     // TODO Not attempting left-handed driving yet.
+    if cfg.driving_side == DrivingSide::Left
+        && forward_side
+            .iter()
+            .chain(backward_side.iter())
+            .any(|lane| lane.lane_type == LaneType::Biking)
+    {
+        return Err(LaneSpecError("LHD with cycleways not supported".to_owned()));
+    }
+
     // TODO A two-way cycletrack on one side of a one-way road will almost definitely break this.
     if let Some(buffer) = tags
         .get("cycleway:right:separation:left")
@@ -306,6 +424,8 @@ fn bicycle(
             forward_side.insert(idx + 1, LaneSpec::forward(LaneType::Buffer(buffer)));
         }
     }
+
+    Ok(())
 }
 
 fn parking(
@@ -393,6 +513,8 @@ fn walking(
 
 /// From an OpenStreetMap way's tags, determine the lanes along the road from left to right.
 pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LaneSpecResult {
+    let mut warnings = LaneSpecWarnings::default();
+
     if let Some(spec) = non_motorized(tags, cfg) {
         return spec;
     }
@@ -440,7 +562,14 @@ pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LaneSpecRe
 
     bus(tags, cfg, oneway, &mut fwd_side, &mut back_side);
 
-    bicycle(tags, cfg, oneway, &mut fwd_side, &mut back_side);
+    bicycle(
+        tags,
+        cfg,
+        oneway,
+        &mut fwd_side,
+        &mut back_side,
+        &mut warnings,
+    )?;
 
     if driving_lane == LaneType::Driving {
         parking(tags, cfg, oneway, &mut fwd_side, &mut back_side);
@@ -450,7 +579,7 @@ pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LaneSpecRe
 
     Ok((
         (assemble_ltr(fwd_side, back_side, cfg.driving_side)),
-        LaneSpecWarnings::default(),
+        warnings,
     ))
 }
 
