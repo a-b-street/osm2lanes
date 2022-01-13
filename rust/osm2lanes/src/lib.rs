@@ -169,7 +169,7 @@ impl Tags {
         self.get(k) == Some(v)
     }
 
-    pub fn is_any(&self, k: &str, values: Vec<&str>) -> bool {
+    pub fn is_any(&self, k: &str, values: &[&str]) -> bool {
         if let Some(v) = self.get(k) {
             values.contains(&v)
         } else {
@@ -235,7 +235,7 @@ mod tests {
                 driving_side: test.driving_side,
                 inferred_sidewalks: true,
             };
-            let actual = get_lane_specs_ltr(test.tags.clone(), &cfg).unwrap();
+            let actual = get_lane_specs_ltr(&test.tags, &cfg).unwrap();
             if actual != test.output {
                 ok = false;
                 if !test.way_id.is_none() {
@@ -262,10 +262,10 @@ mod tests {
     }
 
     fn stringify_lane_types(lanes: &[LaneSpec]) -> String {
-        lanes.iter().map(|s| s.lane_type.as_utf8()).collect()
+        lanes.iter().map(|s| s.lane_type.as_ascii()).collect()
     }
 
     fn stringify_directions(lanes: &[LaneSpec]) -> String {
-        lanes.iter().map(|s| s.direction.as_utf8()).collect()
+        lanes.iter().map(|s| s.direction.as_ascii()).collect()
     }
 }
