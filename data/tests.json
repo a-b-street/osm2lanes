@@ -41,7 +41,7 @@
         "way_id": 8591383,
         "mapillary": "https://www.mapillary.com/app/?pKey=3963080753774579",
         "description": "a bidirectional cycleway",
-        "comment": "TODO: cyceway tagged as track, but appears to be a lane",
+        "comment": "TODO: cycleway tagged as track, but appears to be a lane",
         "tags": {
             "highway": "tertiary",
             "lanes": "1",
@@ -206,9 +206,10 @@
         ]
     },
     {
+        "skip_rust": true,
         "way_id": 369623526,
         "mapillary": "https://www.mapillary.com/app/?pKey=839524790321923",
-        "comment": "TODO: parking lane is not parallel",
+        "comment": "OSM Version #9; check if cycleway:left=opposite_track for RHD is valid; TODO: parking lane is not parallel",
         "tags": {
             "highway": "residential",
             "lanes": "1",
@@ -331,6 +332,7 @@
         ]
     },
     {
+        "skip_rust": true,
         "way_id": 4188078,
         "tags": {
             "lanes": "2",
@@ -359,6 +361,7 @@
         ]
     },
     {
+        "skip_rust": true,
         "way_id": 49207928,
         "tags": {
             "cycleway:right": "lane",

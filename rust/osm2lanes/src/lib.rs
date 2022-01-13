@@ -8,9 +8,8 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-pub use self::transform::{get_lane_specs_ltr, lanes_to_tags};
-
 mod transform;
+pub use self::transform::{get_lane_specs_ltr, get_lane_specs_ltr_with_warnings, lanes_to_tags};
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -100,6 +99,15 @@ pub enum DrivingSide {
     Left,
 }
 
+impl DrivingSide {
+    pub fn opposite(&self) -> Self {
+        match self {
+            Self::Right => Self::Left,
+            Self::Left => Self::Right,
+        }
+    }
+}
+
 /// Display lane detail as printable characters
 pub trait LanePrintable {
     fn as_ascii(&self) -> char;
@@ -156,7 +164,8 @@ impl LanePrintable for Direction {
 
 /// A map from string keys to string values. This makes copies of strings for
 /// convenience; don't use in performance sensitive contexts.
-#[derive(Clone, Deserialize)]
+// TODO: Rationale for BTreeMap iso HashMap
+#[derive(Clone, Deserialize, Default)]
 pub struct Tags(BTreeMap<String, String>);
 
 impl Tags {
@@ -224,6 +233,40 @@ mod tests {
         output: Vec<LaneSpec>,
         #[serde(rename = "skip_rust")]
         skip: Option<bool>,
+        comment: Option<String>,
+        description: Option<String>,
+    }
+
+    impl TestCase {
+        fn print(&self) {
+            if !self.way_id.is_none() {
+                println!(
+                    "For input (example from https://www.openstreetmap.org/way/{}) with {}:",
+                    self.way_id.unwrap(),
+                    self.driving_side.to_tla(),
+                );
+            } else if !self.link.is_none() {
+                println!("For input (example from {}):", self.link.as_ref().unwrap());
+            }
+            if let Some(comment) = self.comment.as_ref() {
+                println!("        Comment: {}", comment);
+            }
+            if let Some(description) = self.description.as_ref() {
+                println!("        Description: {}", description);
+            }
+            for (k, v) in self.tags.map() {
+                println!("    {} = {}", k, v);
+            }
+        }
+    }
+
+    impl DrivingSide {
+        const fn to_tla(&self) -> &'static str {
+            match self {
+                Self::Right => "RHD",
+                Self::Left => "LHD",
+            }
+        }
     }
 
     fn stringify_lane_types(lanes: &[LaneSpec]) -> String {
@@ -249,26 +292,27 @@ mod tests {
                 driving_side: test.driving_side,
                 inferred_sidewalks: true,
             };
-            let actual = get_lane_specs_ltr(&test.tags, &cfg).unwrap();
-            if actual != test.output {
+            let lanes = get_lane_specs_ltr(&test.tags, &cfg);
+            if let Ok(actual) = lanes {
+                if actual != test.output {
+                    ok = false;
+                    test.print();
+                    println!("Got:");
+                    println!("    {}", stringify_lane_types(&actual));
+                    println!("    {}", stringify_directions(&actual));
+                    println!("Expected:");
+                    println!("    {}", stringify_lane_types(&test.output));
+                    println!("    {}", stringify_directions(&test.output));
+                    println!();
+                }
+            } else {
                 ok = false;
-                if !test.way_id.is_none() {
-                    println!(
-                        "For input (example from https://www.openstreetmap.org/way/{}):",
-                        test.way_id.unwrap()
-                    );
-                } else if !test.link.is_none() {
-                    println!("For input (example from {}):", test.link.unwrap());
-                }
-                for (k, v) in test.tags.map() {
-                    println!("    {} = {}", k, v);
-                }
-                println!("Got:");
-                println!("    {}", stringify_lane_types(&actual));
-                println!("    {}", stringify_directions(&actual));
+                test.print();
                 println!("Expected:");
                 println!("    {}", stringify_lane_types(&test.output));
                 println!("    {}", stringify_directions(&test.output));
+                println!("Panicked:");
+                println!("{:#?}", lanes.unwrap_err());
                 println!();
             }
         }
