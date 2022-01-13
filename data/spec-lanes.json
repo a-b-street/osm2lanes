@@ -6,24 +6,73 @@
     "items": {
         "type": "object",
         "required": [
-            "type",
-            "direction"
+            "type"
         ],
         "properties": {
             "type": {
                 "type": "string",
                 "description": "The type of the lane.",
-                "enum": [
-                    "buffer",
-                    "bus_lane",
-                    "construction",
-                    "cycleway",
-                    "parking_lane",
-                    "shared_left_turn",
-                    "shoulder",
-                    "sidewalk",
-                    "travel_lane"
+                "anyOf": [
+                    {
+                        "const": "travel_lane",
+                        "description": "General vehicular and non-vehicular traffic."
+                    },
+                    {
+                        "const": "parking_lane",
+                        "description": "Parked traffic."
+                    },
+                    {
+                        "const": "shoulder",
+                        "description": "Undesignated side of road suitable for non-vehicular traffic or parked vehicles. May be anything from a grassy verge to an asphalt breakdown lane."
+                    },
+                    {
+                        "const": "buffer",
+                        "description": "Buffer space not designated for traffic. Direction assumed to be None."
+                    },
+                    {
+                        "const": "construction",
+                        "description": "Closed temporarily for construction. Direction assumed to be None."
+                    }
                 ]
+            },
+            "designated": {
+                "type": "string",
+                "description": "The predominant or designated traffic type, to hint at how to depict the lane.",
+                "anyOf": [
+                    {
+                        "const": "any",
+                        "description": "No designated type. Examples could be a living street or unmarked rural road."
+                    },
+                    {
+                        "const": "foot",
+                        "description": "Designated footpaths or sidewalks."
+                    },
+                    {
+                        "const": "bicycle",
+                        "description": "Designated cycleways."
+                    },
+                    {
+                        "const": "motor_vehicle",
+                        "description": "No significant pedestrian or bicycle usage, but may have busses, taxis, motorbikes, etc."
+                    },
+                    {
+                        "const": "bus"
+                    },
+                    {
+                        "const": "taxi"
+                    }
+                ]
+            },
+            "use": {
+                "type": "array",
+                "description": "The valid reasons to use the lane. Optional, defaults to all uses.",
+                "items": {
+                    "enum": [
+                        "public",
+                        "taxi",
+                        "emergency"
+                    ]
+                }
             },
             "direction": {
                 "type": "string",
@@ -44,6 +93,10 @@
                         "description": "Traffic does not travel in this lane."
                     }
                 ]
+            },
+            "width": {
+                "type": "number",
+                "description": "The average width of the lane in meters."
             }
         }
     }
