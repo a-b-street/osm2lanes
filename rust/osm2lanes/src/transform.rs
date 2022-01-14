@@ -4,13 +4,60 @@ use serde::{Deserialize, Serialize};
 
 use crate::{BufferType, Config, Direction, DrivingSide, LaneSpec, LaneType, Tags};
 
+enum TagKey {
+    Const(&'static str),
+    Str(String),
+}
+
+impl TagKey {
+    const fn from(string: &'static str) -> Self {
+        TagKey::Const(string)
+    }
+    fn as_str(&self) -> &str {
+        match self {
+            Self::Const(v) => v,
+            Self::Str(v) => v.as_str(),
+        }
+    }
+}
+
+impl From<&'static str> for TagKey {
+    fn from(string: &'static str) -> Self {
+        TagKey::from(string)
+    }
+}
+
+impl std::ops::Add for TagKey {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        let val = format!("{}:{}", self.as_str(), other.as_str());
+        TagKey::Str(val)
+    }
+}
+
+impl std::ops::Add<&'static str> for TagKey {
+    type Output = Self;
+    fn add(self, other: &'static str) -> Self {
+        self.add(TagKey::from(other))
+    }
+}
+
 impl Tags {
-    const HIGHWAY: &'static str = "highway";
+    fn key_get(&self, k: TagKey) -> Option<&str> {
+        self.get(k.as_str())
+    }
+    fn key_is(&self, k: TagKey, v: &str) -> bool {
+        self.is(k.as_str(), v)
+    }
+    fn key_is_any(&self, k: TagKey, values: &[&str]) -> bool {
+        self.is_any(k.as_str(), values)
+    }
+    const HIGHWAY: TagKey = TagKey::from("highway");
     fn highway_is(&self, v: &str) -> bool {
-        self.is(Self::HIGHWAY, v)
+        self.key_is(Self::HIGHWAY, v)
     }
     fn highway_is_any(&self, values: &[&str]) -> bool {
-        self.is_any(Self::HIGHWAY, values)
+        self.key_is_any(Self::HIGHWAY, values)
     }
 }
 
@@ -145,14 +192,14 @@ fn bus(
     forward_side: &mut [LaneSpec],
     backward_side: &mut [LaneSpec],
 ) {
-    let fwd_bus_spec = if let Some(s) = tags.get("bus:lanes:forward") {
+    let fwd_bus_spec = if let Some(s) = tags.key_get(TagKey::from("bus") + "lanes" + "forward") {
         s
-    } else if let Some(s) = tags.get("psv:lanes:forward") {
+    } else if let Some(s) = tags.key_get(TagKey::from("psv") + "lanes" + "forward") {
         s
     } else if oneway {
-        if let Some(s) = tags.get("bus:lanes") {
+        if let Some(s) = tags.key_get(TagKey::from("bus") + "lanes") {
             s
-        } else if let Some(s) = tags.get("psv:lanes") {
+        } else if let Some(s) = tags.key_get(TagKey::from("psv") + "lanes") {
             s
         } else {
             ""
