@@ -4,19 +4,62 @@ use serde::{Deserialize, Serialize};
 
 use crate::{BufferType, Config, Direction, DrivingSide, LaneSpec, LaneType, Tags};
 
+enum TagKey {
+    Const(&'static str),
+    Str(String),
+}
+
+impl TagKey {
+    const fn from(string: &'static str) -> Self {
+        TagKey::Const(string)
+    }
+    fn as_str(&self) -> &str {
+        match self {
+            Self::Const(v) => v,
+            Self::Str(v) => v.as_str(),
+        }
+    }
+}
+
+impl From<&'static str> for TagKey {
+    fn from(string: &'static str) -> Self {
+        TagKey::from(string)
+    }
+}
+
+const HIGHWAY: TagKey = TagKey::from("highway");
+const CYCLEWAY: TagKey = TagKey::from("cycleway");
+
+impl std::ops::Add for TagKey {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        let val = format!("{}:{}", self.as_str(), other.as_str());
+        TagKey::Str(val)
+    }
+}
+
+impl std::ops::Add<&'static str> for TagKey {
+    type Output = Self;
+    fn add(self, other: &'static str) -> Self {
+        self.add(TagKey::from(other))
+    }
+}
+
 impl Tags {
-    const HIGHWAY: &'static str = "highway";
-    fn highway_is(&self, v: &str) -> bool {
-        self.is(Self::HIGHWAY, v)
+    fn _key_get(&self, k: TagKey) -> Option<&str> {
+        self.get(k.as_str())
     }
-    fn highway_is_any(&self, values: &[&str]) -> bool {
-        self.is_any(Self::HIGHWAY, values)
+    fn key_is(&self, k: TagKey, v: &str) -> bool {
+        self.is(k.as_str(), v)
     }
-    fn subset(&self, keys: &[&str]) -> Self {
+    fn key_is_any(&self, k: TagKey, values: &[&str]) -> bool {
+        self.is_any(k.as_str(), values)
+    }
+    fn subset(&self, keys: &[TagKey]) -> Self {
         let mut map = Self::default();
-        for &key in keys {
-            if let Some(val) = self.get(key) {
-                map.0.insert(key.to_owned(), val.to_owned()).unwrap();
+        for key in keys {
+            if let Some(val) = self.get(key.as_str()) {
+                map.0.insert(key.as_str().to_owned(), val.to_owned()).unwrap();
             }
         }
         map
@@ -30,14 +73,19 @@ enum WaySide {
     Left,
 }
 
-impl std::string::ToString for WaySide {
-    fn to_string(&self) -> String {
+impl WaySide {
+    fn as_str(&self) -> &'static str {
         match self {
             Self::Both => "both",
             Self::Right => "right",
             Self::Left => "left",
         }
-        .to_owned()
+    }
+}
+
+impl std::string::ToString for WaySide {
+    fn to_string(&self) -> String {
+        self.as_str().to_owned()
     }
 }
 
@@ -47,6 +95,21 @@ impl std::convert::From<DrivingSide> for WaySide {
             DrivingSide::Right => Self::Right,
             DrivingSide::Left => Self::Left,
         }
+    }
+}
+
+impl std::convert::From<DrivingSide> for TagKey {
+    fn from(side: DrivingSide) -> Self {
+        match side {
+            DrivingSide::Right => Self::from("right"),
+            DrivingSide::Left => Self::from("left"),
+        }
+    }
+}
+
+impl DrivingSide {
+    fn tag(&self) -> TagKey {
+        (*self).into()
     }
 }
 
@@ -94,7 +157,7 @@ type LaneSpecResult = Result<(Vec<LaneSpec>, LaneSpecWarnings), LaneSpecError>;
 
 // Handle non motorized ways
 fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
-    if !tags.highway_is_any(&[
+    if !tags.key_is_any(HIGHWAY, &[
         "cycleway",
         "footway",
         "path",
@@ -105,12 +168,12 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
         return None;
     }
     // Easy special cases first.
-    if tags.highway_is("steps") {
+    if tags.key_is(HIGHWAY, "steps") {
         return Some(Ok((
             vec![LaneSpec::both(LaneType::Sidewalk)],
             LaneSpecWarnings(vec![LaneSpecWarning {
                 description: "highway is steps, but lane is only a sidewalk".to_owned(),
-                tags: tags.subset(&["highway"]),
+                tags: tags.subset(&[HIGHWAY]),
             }]),
         )));
     }
@@ -122,7 +185,7 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
     // types, assume bikes are allowed, except for footways, where they must be explicitly
     // allowed.
     if tags.is("bicycle", "no")
-        || (tags.highway_is("footway") && !tags.is_any("bicycle", &["designated", "yes"]))
+        || (tags.key_is(HIGHWAY, "footway") && !tags.is_any("bicycle", &["designated", "yes"]))
     {
         return Some(Ok((
             vec![LaneSpec::both(LaneType::Sidewalk)],
@@ -247,46 +310,15 @@ fn bicycle(
     backward_side: &mut Vec<LaneSpec>,
     warnings: &mut LaneSpecWarnings,
 ) -> Result<(), LaneSpecError> {
-    const CYCLEWAY: &'static str = "cycleway";
     impl Tags {
         fn is_cycleway(&self, side: Option<WaySide>) -> bool {
             if let Some(side) = side {
-                self.is_any(
-                    &format!("{}:{}", CYCLEWAY, &side.to_string()),
+                self.key_is_any(
+                    CYCLEWAY + side.as_str(),
                     &["lane", "track"],
                 )
             } else {
-                self.is_any(CYCLEWAY, &["lane", "track"])
-            }
-        }
-        fn cycleway_is(&self, side: Option<WaySide>, attr: Option<&str>, val: &str) -> bool {
-            if let Some(side) = side {
-                if let Some(attr) = attr {
-                    self.is(&format!("{}:{}:{}", CYCLEWAY, &side.to_string(), attr), val)
-                } else {
-                    self.is(&format!("{}:{}", CYCLEWAY, &side.to_string()), val)
-                }
-            } else {
-                self.is(CYCLEWAY, val)
-            }
-        }
-        fn cycleway_is_any(
-            &self,
-            side: Option<WaySide>,
-            attr: Option<&str>,
-            values: &[&str],
-        ) -> bool {
-            if let Some(side) = side {
-                if let Some(attr) = attr {
-                    self.is_any(
-                        &format!("{}:{}:{}", CYCLEWAY, &side.to_string(), attr),
-                        values,
-                    )
-                } else {
-                    self.is_any(&format!("{}:{}", CYCLEWAY, &side.to_string()), values)
-                }
-            } else {
-                self.is_any(CYCLEWAY, values)
+                self.key_is_any(CYCLEWAY, &["lane", "track"])
             }
         }
     }
@@ -306,7 +338,7 @@ fn bicycle(
                 // TODO safety check to be checked
                 warnings.0.push(LaneSpecWarning {
                     description: "oneway has backwards lanes when adding cycleways".to_owned(),
-                    tags: tags.subset(&["oneway", CYCLEWAY]),
+                    tags: tags.subset(&["oneway".into(), "cycleway".into()]),
                 })
             }
         } else {
@@ -315,8 +347,8 @@ fn bicycle(
     } else if tags.is_cycleway(Some(WaySide::Both)) {
         forward_side.push(LaneSpec::both(LaneType::Biking));
     } else {
-        // deprecated cycleway=opposite_lane
-        if tags.cycleway_is(None, None, "opposite_lane") {
+        // cycleway=opposite_lane
+        if tags.key_is(CYCLEWAY, "opposite_lane") {
             warnings.0.push(LaneSpecWarning {
                 description: "cycleway=opposite_lane deprecated".to_owned(),
                 tags: tags.subset(&[CYCLEWAY]),
@@ -325,7 +357,7 @@ fn bicycle(
         }
         // cycleway:FORWARD=*
         if tags.is_cycleway(Some(cfg.driving_side.into())) {
-            if tags.cycleway_is(Some(cfg.driving_side.into()), Some("oneway"), "no")
+            if tags.key_is(CYCLEWAY + cfg.driving_side.tag() + "oneway", "no")
                 || tags.is("oneway:bicycle", "no")
             {
                 forward_side.push(LaneSpec::both(LaneType::Biking));
@@ -334,9 +366,8 @@ fn bicycle(
             }
         }
         // cycleway:FORWARD=opposite_lane
-        if tags.cycleway_is_any(
-            Some(cfg.driving_side.into()),
-            None,
+        if tags.key_is_any(
+            CYCLEWAY + cfg.driving_side.tag(),
             &["opposite_lane", "opposite_track"],
         ) {
             warnings.0.push(LaneSpecWarning {
@@ -347,9 +378,7 @@ fn bicycle(
         }
         // cycleway:BACKWARD=*
         if tags.is_cycleway(Some(cfg.driving_side.opposite().into())) {
-            if tags.cycleway_is(
-                Some(cfg.driving_side.opposite().into()),
-                Some("oneway"),
+            if tags.key_is(CYCLEWAY + cfg.driving_side.opposite().tag() + "oneway",
                 "no",
             ) || tags.is("oneway:bicycle", "no") {
                 backward_side.push(LaneSpec::both(LaneType::Biking));
@@ -362,9 +391,8 @@ fn bicycle(
             }
         }
         // cycleway:BACKWARD=opposite_lane
-        if tags.cycleway_is_any(
-            Some(cfg.driving_side.opposite().into()),
-            None,
+        if tags.key_is_any(
+            CYCLEWAY + cfg.driving_side.opposite().tag(),
             &["opposite_lane", "opposite_track"],
         ) {
             return Err(LaneSpecError(
@@ -486,7 +514,7 @@ fn walking(
         .last()
         .map(|spec| spec.lane_type != LaneType::Sidewalk)
         .unwrap_or(true);
-    if tags.highway_is_any(&["motorway", "motorway_link", "construction"])
+    if tags.key_is_any(HIGHWAY, &["motorway", "motorway_link", "construction"])
         || tags.is("foot", "no")
         || tags.is("access", "no")
         || tags.is("motorroad", "yes")
@@ -501,7 +529,7 @@ fn walking(
 
     // For living streets in Krakow, there aren't separate footways. People can walk in the street.
     // For now, model that by putting shoulders.
-    if cfg.inferred_sidewalks || tags.highway_is("living_street") {
+    if cfg.inferred_sidewalks || tags.key_is(HIGHWAY, "living_street") {
         if need_fwd_shoulder {
             forward_side.push(LaneSpec::both(LaneType::Shoulder));
         }
