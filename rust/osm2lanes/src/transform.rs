@@ -412,7 +412,7 @@ fn bicycle(
             .chain(backward_side.iter())
             .any(|lane| lane.lane_type == LaneType::Biking)
     {
-        return Err(LaneSpecError("LHD with cycleways not supported".to_owned()));
+        return Err(LaneSpecError("LHT with cycleways not supported".to_owned()));
     }
 
     // TODO A two-way cycletrack on one side of a one-way road will almost definitely break this.

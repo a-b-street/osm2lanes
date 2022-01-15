@@ -209,7 +209,7 @@
         "skip_rust": true,
         "way_id": 369623526,
         "mapillary": "https://www.mapillary.com/app/?pKey=839524790321923",
-        "comment": "OSM Version #9; check if cycleway:left=opposite_track for RHD is valid; TODO: parking lane is not parallel",
+        "comment": "OSM Version #9; check if cycleway:left=opposite_track for RHT is valid; TODO: parking lane is not parallel",
         "tags": {
             "highway": "residential",
             "lanes": "1",
