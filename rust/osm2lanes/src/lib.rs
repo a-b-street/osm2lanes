@@ -261,10 +261,11 @@ mod tests {
     }
 
     impl DrivingSide {
+        /// Three-letter abbreviation
         const fn to_tla(&self) -> &'static str {
             match self {
-                Self::Right => "RHD",
-                Self::Left => "LHD",
+                Self::Right => "RHT",
+                Self::Left => "LHT",
             }
         }
     }
