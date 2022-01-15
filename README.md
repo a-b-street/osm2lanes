@@ -1,6 +1,9 @@
 osm2lanes
 =========
 
+This project transforms OpenStreetMap tags to a specification of lanes on a
+street. Start with the [web demo](https://a-b-street.github.io/osm2lanes).
+
 See [discussion](https://github.com/a-b-street/abstreet/discussions/789) for
 context.  This repo is currently just for starting this experiment.  No license
 chosen yet.
