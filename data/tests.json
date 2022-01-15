@@ -1,9 +1,9 @@
 [
     {
-        "way_id": 428294122,
-        "mapillary": "https://www.mapillary.com/app/?pKey=503446704131825",
         "description": "with oneway=yes, a cycleway:*=* is in the forward direction. https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway",
         "comment": "TODO: OSM tags do not accurately reflect parking situation",
+        "way_id": 428294122,
+        "mapillary": "https://www.mapillary.com/app/?pKey=503446704131825",
         "tags": {
             "highway": "secondary",
             "bicycle": "designated",
@@ -38,10 +38,10 @@
         ]
     },
     {
+        "description": "a bidirectional cycleway",
         "way_id": 8591383,
         "mapillary": "https://www.mapillary.com/app/?pKey=3963080753774579",
-        "description": "a bidirectional cycleway",
-        "comment": "TODO: cycleway tagged as track, but appears to be a lane",
+        "comment": "TODO: cyceway tagged as track, but appears to be a lane",
         "tags": {
             "highway": "tertiary",
             "lanes": "1",
@@ -72,9 +72,9 @@
         ]
     },
     {
+        "description": "a bidirectional cycleway",
         "way_id": 8591383,
         "mapillary": "https://www.mapillary.com/app/?pKey=3963080753774579",
-        "description": "a bidirectional cycleway",
         "comment": "A slight variation of the above, using cycleway:left:oneway:no, which should be equivalent",
         "tags": {
             "highway": "tertiary",
@@ -159,6 +159,7 @@
         ]
     },
     {
+        "description": "legacy centre_turn_lane",
         "way_id": 389654080,
         "mapillary": "https://www.mapillary.com/app/?pKey=331760328316020",
         "comment": "TODO: the cycleway is actually two marked lanes, how should we know that given the tags or what should the tags be?",
