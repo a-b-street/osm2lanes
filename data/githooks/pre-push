@@ -6,7 +6,7 @@ python data/test_spec.py || { echo "FAIL"; exit 1; }
 
 # Python.
 
-black --check -l 80 python || { echo "FAIL"; exit 1; }
+black --check python || { echo "FAIL"; exit 1; }
 pytest || { echo "FAIL"; exit 1; }
 
 # Rust.

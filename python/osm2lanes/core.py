@@ -26,21 +26,23 @@ class Direction(Enum):
     https://wiki.openstreetmap.org/wiki/Forward_%26_backward,_left_%26_right.
     """
 
-    # The direction of the lane coincides with the direction of the way.
     FORWARD = "forward"
-
-    # The direction of the lane it opposite to the direction of the way.
     BACKWARD = "backward"
+    BOTH = "both"
+    NONE = "none"
 
     def __str__(self):
         if self == Direction.FORWARD:
             return "↑"
-
-        # self == Direction.BACKWARD:
-        return "↓"
+        if self == Direction.BACKWARD:
+            return "↓"
+        if self == Direction.BOTH:
+            return "↕"
+        if self == Direction.NONE:
+            return "—"
 
     def __repr__(self):
-        return "v"
+        return str(self)
 
 
 class LaneType(Enum):
@@ -140,6 +142,12 @@ class Road:
 
     def add_both_lanes(self, lanes: list[Lane], type_: LaneType) -> list[Lane]:
         """Add left and right lanes."""
+        if type_ in (LaneType.SHOULDER, LaneType.SIDEWALK):
+            return (
+                [Lane(type_, Direction.BOTH)]
+                + lanes
+                + [Lane(type_, Direction.BOTH)]
+            )
         return (
             [Lane(type_, self.get_direction("left"))]
             + lanes
@@ -222,7 +230,7 @@ class Road:
                 Lane(LaneType.TRAVEL_LANE, self.get_direction("left"))
             ] * half
             if self.tags.get("centre_turn_lane") == "yes":
-                lanes += [Lane(LaneType.SHARED_LEFT_TURN, Direction.FORWARD)]
+                lanes += [Lane(LaneType.SHARED_LEFT_TURN, Direction.BOTH)]
             lanes += [
                 Lane(LaneType.TRAVEL_LANE, self.get_direction("right"))
             ] * (travel_lane_number - half)
@@ -239,10 +247,7 @@ class Road:
                 )
                 lanes = self.add_lane(lanes, lane, side)
             elif self.tags.get(f"cycleway:{side}") in track_values:
-                lane = Lane(LaneType.CYCLEWAY, self.get_direction(side, True))
-                lanes = self.add_lane(lanes, lane, side)
-
-                lane = Lane(LaneType.CYCLEWAY, self.get_direction(side))
+                lane = Lane(LaneType.CYCLEWAY, Direction.BOTH)
                 lanes = self.add_lane(lanes, lane, side)
 
         # Bus lanes
@@ -272,7 +277,7 @@ class Road:
         else:
             for side in sides:
                 if self.tags.get("sidewalk") == side:
-                    lane = Lane(LaneType.SIDEWALK, self.get_direction(side))
+                    lane = Lane(LaneType.SIDEWALK, Direction.BOTH)
                     lanes = self.add_lane(lanes, lane, side)
 
         return lanes

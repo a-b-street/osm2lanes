@@ -1,7 +1,11 @@
 [
     {
         "way_id": 428294122,
+        "mapillary": "https://www.mapillary.com/app/?pKey=503446704131825",
+        "description": "with oneway=yes, a cycleway:*=* is in the forward direction. https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway",
+        "comment": "TODO: OSM tags do not accurately reflect parking situation",
         "tags": {
+            "highway": "secondary",
             "bicycle": "designated",
             "lanes": "2",
             "oneway": "yes",
@@ -9,10 +13,11 @@
             "cycleway:left": "lane"
         },
         "driving_side": "right",
+        "ISO 3166-2": "US-WA",
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             },
             {
                 "type": "cycleway",
@@ -28,13 +33,17 @@
             },
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
     {
         "way_id": 8591383,
+        "mapillary": "https://www.mapillary.com/app/?pKey=3963080753774579",
+        "description": "a bidirectional cycleway",
+        "comment": "TODO: cyceway tagged as track, but appears to be a lane",
         "tags": {
+            "highway": "tertiary",
             "lanes": "1",
             "oneway": "yes",
             "sidewalk": "both",
@@ -42,18 +51,15 @@
             "oneway:bicycle": "no"
         },
         "driving_side": "right",
+        "ISO 3166-2": "US-WA",
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             },
             {
                 "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -61,14 +67,17 @@
             },
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
     {
-        "comment": "A slight variation of the above, using cycleway:left:oneway:no, which should be equivalent",
         "way_id": 8591383,
+        "mapillary": "https://www.mapillary.com/app/?pKey=3963080753774579",
+        "description": "a bidirectional cycleway",
+        "comment": "A slight variation of the above, using cycleway:left:oneway:no, which should be equivalent",
         "tags": {
+            "highway": "tertiary",
             "lanes": "1",
             "oneway": "yes",
             "sidewalk": "both",
@@ -76,18 +85,15 @@
             "cycleway:left:oneway": "no"
         },
         "driving_side": "right",
+        "ISO 3166-2": "US-WA",
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             },
             {
                 "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -95,13 +101,16 @@
             },
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
     {
         "way_id": 353690151,
+        "mapillary": "https://www.mapillary.com/app/?pKey=814030435898295",
+        "comment": "TODO: parking not visible in mapillary; TODO: tram line not supported",
         "tags": {
+            "highway": "secondary",
             "lanes": "4",
             "sidewalk": "both",
             "parking:lane:both": "parallel",
@@ -109,10 +118,11 @@
             "cycleway:right:oneway": "no"
         },
         "driving_side": "right",
+        "ISO 3166-2": "US-WA",
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             },
             {
                 "type": "parking_lane",
@@ -136,11 +146,7 @@
             },
             {
                 "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "parking_lane",
@@ -148,13 +154,16 @@
             },
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
     {
         "way_id": 389654080,
+        "mapillary": "https://www.mapillary.com/app/?pKey=331760328316020",
+        "comment": "TODO: the cycleway is actually two marked lanes, how should we know that given the tags or what should the tags be?",
         "tags": {
+            "highway": "secondary",
             "lanes": "2",
             "sidewalk": "both",
             "parking:lane:left": "parallel",
@@ -164,10 +173,11 @@
             "cycleway:right:oneway": "no"
         },
         "driving_side": "right",
+        "ISO 3166-2": "US-WA",
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             },
             {
                 "type": "parking_lane",
@@ -179,7 +189,7 @@
             },
             {
                 "type": "shared_left_turn",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -187,21 +197,20 @@
             },
             {
                 "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
     {
         "way_id": 369623526,
+        "mapillary": "https://www.mapillary.com/app/?pKey=839524790321923",
+        "comment": "TODO: parking lane is not parallel",
         "tags": {
+            "highway": "residential",
             "lanes": "1",
             "oneway": "yes",
             "sidewalk": "both",
@@ -210,18 +219,15 @@
             "oneway:bicycle": "no"
         },
         "driving_side": "right",
+        "ISO 3166-2": "US-WA",
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             },
             {
                 "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -233,12 +239,14 @@
             },
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
     {
         "way_id": 534549104,
+        "mapillary": "https://www.mapillary.com/app/?pKey=1848856645291310",
+        "comment": "TODO: find better example with same tags",
         "tags": {
             "lanes": "2",
             "oneway": "yes",
@@ -251,7 +259,7 @@
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -263,20 +271,17 @@
             },
             {
                 "type": "cycleway",
-                "direction": "backward"
-            },
-            {
-                "type": "cycleway",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
     {
         "way_id": 777565028,
+        "comment": "TODO: image; TODO: example with oneway assumed to be no",
         "tags": {
             "highway": "residential",
             "oneway": "no",
@@ -286,7 +291,7 @@
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -298,7 +303,7 @@
             },
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             }
         ]
     },
@@ -313,7 +318,7 @@
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -337,7 +342,7 @@
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "cycleway",
@@ -363,7 +368,7 @@
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -379,7 +384,7 @@
             },
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             }
         ]
     },
@@ -394,7 +399,7 @@
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -410,7 +415,7 @@
             },
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             }
         ]
     },
@@ -425,7 +430,7 @@
         "output": [
             {
                 "type": "shoulder",
-                "direction": "backward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -449,7 +454,7 @@
             },
             {
                 "type": "shoulder",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
@@ -463,7 +468,7 @@
         "output": [
             {
                 "type": "shoulder",
-                "direction": "backward"
+                "direction": "both"
             },
             {
                 "type": "travel_lane",
@@ -475,7 +480,7 @@
             },
             {
                 "type": "shoulder",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
@@ -506,7 +511,7 @@
         "output": [
             {
                 "type": "sidewalk",
-                "direction": "backward"
+                "direction": "both"
             },
             {
                 "type": "bus_lane",
@@ -526,7 +531,7 @@
             },
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
@@ -663,7 +668,7 @@
             },
             {
                 "type": "sidewalk",
-                "direction": "forward"
+                "direction": "both"
             }
         ]
     },
