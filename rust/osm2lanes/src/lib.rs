@@ -77,6 +77,10 @@ pub enum Direction {
     Forward,
     #[serde(rename = "backward")]
     Backward,
+    #[serde(rename = "both")]
+    Both,
+    #[serde(rename = "none")]
+    None,
 }
 
 /// Configuration to give extra context about the place where an OSM way exists.
@@ -136,12 +140,16 @@ impl LanePrintable for Direction {
         match self {
             Direction::Forward => '^',
             Direction::Backward => 'v',
+            Direction::Both => '|',
+            Direction::None => '-',
         }
     }
     fn as_utf8(&self) -> char {
         match self {
             Direction::Forward => '↑',
             Direction::Backward => '↓',
+            Direction::Both => '↕',
+            Direction::None => '—',
         }
     }
 }

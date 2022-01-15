@@ -43,6 +43,12 @@ enum class Direction {
      */
     @SerialName("backward")
     BACKWARD,
+
+    @SerialName("both")
+    BOTH,
+
+    @SerialName("none")
+    NONE,
 }
 
 /** Lane designation. */
@@ -232,8 +238,13 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
      * @param type lane type
      */
     private fun addBothLanes(lanes: ArrayList<Lane>, type: LaneType) {
-        lanes.add(0, Lane(type, getDirection("left")))
-        lanes.add(Lane(type, getDirection("right")))
+        if (type == LaneType.SHOULDER || type == LaneType.SIDEWALK) {
+            lanes.add(0, Lane(type, Direction.BOTH))
+            lanes.add(Lane(type, Direction.BOTH))
+        } else {
+            lanes.add(0, Lane(type, getDirection("left")))
+            lanes.add(Lane(type, getDirection("right")))
+        }
     }
 
     /**
@@ -319,7 +330,7 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
             (1..half).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL_LANE, getDirection("left"))) }
 
             if (tags["centre_turn_lane"] == "yes")
-                lanes.add(Lane(LaneType.SHARED_LEFT_TURN, Direction.FORWARD))
+                lanes.add(Lane(LaneType.SHARED_LEFT_TURN, Direction.BOTH))
 
             (half + 1..travelLaneNumber).forEach { _ ->
                 lanes.add(Lane(LaneType.TRAVEL_LANE, getDirection("right")))
@@ -333,8 +344,7 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
             // If road is oneway, cycleways should follow the travel lane direction.
                 addLane(lanes, Lane(LaneType.CYCLEWAY, if (oneway) Direction.FORWARD else getDirection(side)), side)
             else if (trackValues.contains(tags["cycleway:$side"])) {
-                addLane(lanes, Lane(LaneType.CYCLEWAY, getDirection(side, true)), side)
-                addLane(lanes, Lane(LaneType.CYCLEWAY, getDirection(side)), side)
+                addLane(lanes, Lane(LaneType.CYCLEWAY, Direction.BOTH), side)
             }
 
         // Bus lanes
@@ -363,7 +373,7 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
         else
             for (side in sides)
                 if (tags["sidewalk"] == side)
-                    addLane(lanes, Lane(LaneType.SIDEWALK, getDirection(side)), side)
+                    addLane(lanes, Lane(LaneType.SIDEWALK, Direction.BOTH), side)
 
         return lanes
     }

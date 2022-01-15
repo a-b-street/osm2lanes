@@ -27,6 +27,18 @@ impl LaneSpec {
             direction: Direction::Backward,
         }
     }
+    fn both(lane_type: LaneType) -> Self {
+        Self {
+            lane_type,
+            direction: Direction::Both,
+        }
+    }
+    fn _none(lane_type: LaneType) -> Self {
+        Self {
+            lane_type,
+            direction: Direction::None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,7 +70,7 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
     // Easy special cases first.
     if tags.highway_is("steps") {
         return Some(Ok((
-            vec![LaneSpec::forward(LaneType::Sidewalk)],
+            vec![LaneSpec::both(LaneType::Sidewalk)],
             LaneSpecWarnings::default(),
         )));
     }
@@ -74,7 +86,7 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
             && !tags.is_any("bicycle", &["designated", "yes", "dismount"]))
     {
         return Some(Ok((
-            vec![LaneSpec::forward(LaneType::Sidewalk)],
+            vec![LaneSpec::both(LaneType::Sidewalk)],
             LaneSpecWarnings::default(),
         )));
     }
@@ -88,9 +100,9 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
     };
 
     if !tags.is("foot", "no") {
-        fwd_side.push(LaneSpec::forward(LaneType::Shoulder));
+        fwd_side.push(LaneSpec::both(LaneType::Shoulder));
         if !back_side.is_empty() {
-            back_side.push(LaneSpec::backward(LaneType::Shoulder));
+            back_side.push(LaneSpec::both(LaneType::Shoulder));
         }
     }
     Some(Ok((
@@ -213,14 +225,16 @@ fn bicycle(
         if tags.is_any("cycleway:right", &["lane", "track"]) {
             if cfg.driving_side == DrivingSide::Right {
                 if tags.is("cycleway:right:oneway", "no") || tags.is("oneway:bicycle", "no") {
-                    forward_side.push(LaneSpec::backward(LaneType::Biking));
+                    forward_side.push(LaneSpec::both(LaneType::Biking));
+                } else {
+                    forward_side.push(LaneSpec::forward(LaneType::Biking));
                 }
-                forward_side.push(LaneSpec::forward(LaneType::Biking));
             } else {
                 if tags.is("cycleway:right:oneway", "no") || tags.is("oneway:bicycle", "no") {
-                    backward_side.push(LaneSpec::forward(LaneType::Biking));
+                    backward_side.push(LaneSpec::both(LaneType::Biking));
+                } else {
+                    backward_side.push(LaneSpec::backward(LaneType::Biking));
                 }
-                backward_side.push(LaneSpec::backward(LaneType::Biking));
             }
         }
         if tags.is("cycleway:left", "opposite_lane") || tags.is("cycleway", "opposite_lane") {
@@ -233,8 +247,7 @@ fn bicycle(
         if tags.is_any("cycleway:left", &["lane", "opposite_track", "track"]) {
             if cfg.driving_side == DrivingSide::Right {
                 if tags.is("cycleway:left:oneway", "no") || tags.is("oneway:bicycle", "no") {
-                    backward_side.push(LaneSpec::forward(LaneType::Biking));
-                    backward_side.push(LaneSpec::backward(LaneType::Biking));
+                    backward_side.push(LaneSpec::both(LaneType::Biking));
                 } else if oneway {
                     forward_side.insert(0, LaneSpec::forward(LaneType::Biking));
                 } else {
@@ -244,9 +257,10 @@ fn bicycle(
                 // TODO This should mimic the logic for right-handed driving, but I need test cases
                 // first to do this sanely
                 if tags.is("cycleway:left:oneway", "no") || tags.is("oneway:bicycle", "no") {
-                    forward_side.push(LaneSpec::backward(LaneType::Biking));
+                    forward_side.push(LaneSpec::both(LaneType::Biking));
+                } else {
+                    forward_side.push(LaneSpec::forward(LaneType::Biking));
                 }
-                forward_side.push(LaneSpec::forward(LaneType::Biking));
             }
         }
     }
@@ -322,25 +336,25 @@ fn walking(
     backward_side: &mut Vec<LaneSpec>,
 ) {
     if tags.is("sidewalk", "both") {
-        forward_side.push(LaneSpec::forward(LaneType::Sidewalk));
-        backward_side.push(LaneSpec::backward(LaneType::Sidewalk));
+        forward_side.push(LaneSpec::both(LaneType::Sidewalk));
+        backward_side.push(LaneSpec::both(LaneType::Sidewalk));
     } else if tags.is("sidewalk", "separate") && cfg.inferred_sidewalks {
         // TODO Need to snap separate sidewalks to ways. Until then, just do this.
         forward_side.push(LaneSpec::forward(LaneType::Sidewalk));
         if !backward_side.is_empty() {
-            backward_side.push(LaneSpec::backward(LaneType::Sidewalk));
+            backward_side.push(LaneSpec::both(LaneType::Sidewalk));
         }
     } else if tags.is("sidewalk", "right") {
         if cfg.driving_side == DrivingSide::Right {
-            forward_side.push(LaneSpec::forward(LaneType::Sidewalk));
+            forward_side.push(LaneSpec::both(LaneType::Sidewalk));
         } else {
-            backward_side.push(LaneSpec::backward(LaneType::Sidewalk));
+            backward_side.push(LaneSpec::both(LaneType::Sidewalk));
         }
     } else if tags.is("sidewalk", "left") {
         if cfg.driving_side == DrivingSide::Right {
-            backward_side.push(LaneSpec::backward(LaneType::Sidewalk));
+            backward_side.push(LaneSpec::both(LaneType::Sidewalk));
         } else {
-            forward_side.push(LaneSpec::forward(LaneType::Sidewalk));
+            forward_side.push(LaneSpec::both(LaneType::Sidewalk));
         }
     }
 
@@ -369,10 +383,10 @@ fn walking(
     // For now, model that by putting shoulders.
     if cfg.inferred_sidewalks || tags.highway_is("living_street") {
         if need_fwd_shoulder {
-            forward_side.push(LaneSpec::forward(LaneType::Shoulder));
+            forward_side.push(LaneSpec::both(LaneType::Shoulder));
         }
         if need_back_shoulder {
-            backward_side.push(LaneSpec::backward(LaneType::Shoulder));
+            backward_side.push(LaneSpec::both(LaneType::Shoulder));
         }
     }
 }
@@ -414,7 +428,7 @@ pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LaneSpecRe
         .collect();
     // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
     if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
-        fwd_side.insert(0, LaneSpec::forward(LaneType::SharedLeftTurn));
+        fwd_side.insert(0, LaneSpec::both(LaneType::SharedLeftTurn));
     }
 
     if driving_lane == LaneType::Construction {
@@ -510,8 +524,7 @@ pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpec
     }
     if lanes
         .iter()
-        .skip_while(|lane| lane.lane_type == LaneType::Sidewalk)
-        .next()
+        .find(|lane| lane.lane_type != LaneType::Sidewalk)
         .unwrap()
         .lane_type
         == LaneType::Biking
