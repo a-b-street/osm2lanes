@@ -164,7 +164,9 @@ impl LanePrintable for Direction {
 
 /// A map from string keys to string values. This makes copies of strings for
 /// convenience; don't use in performance sensitive contexts.
-// TODO: Rationale for BTreeMap iso HashMap
+// BTreeMap chosen for deterministic serialization.
+// We often need to compare output directly, so cannot tolerate reordering
+// TODO: fix this in the serialization by having the keys sorted.
 #[derive(Clone, Deserialize, Default)]
 pub struct Tags(BTreeMap<String, String>);
 
