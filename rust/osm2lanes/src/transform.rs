@@ -2,7 +2,7 @@ use std::iter;
 
 use serde::{Deserialize, Serialize};
 
-use crate::tags::{TagKey, Tags, TagsRead};
+use crate::tags::{TagKey, Tags, TagsRead, TagsWrite};
 use crate::{BufferType, Config, Direction, DrivingSide, LaneSpec, LaneType};
 
 const HIGHWAY: TagKey = TagKey::from("highway");
@@ -602,26 +602,26 @@ fn osm_separation_type(x: &str) -> Option<BufferType> {
 }
 
 pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpecError> {
-    let mut tags = std::collections::BTreeMap::new();
-    tags.insert("highway".to_owned(), "yes".to_owned()); // TODO, what?
+    let mut tags = Tags::default();
+    tags.insert("highway", "yes"); // TODO, what?
     {
         let lane_count = lanes
             .iter()
             .filter(|lane| lane.lane_type == LaneType::Driving)
             .count();
-        tags.insert("lanes".to_owned(), lane_count.to_string());
+        tags.insert("lanes", lane_count.to_string());
     }
     if lanes
         .iter()
         .filter(|lane| lane.lane_type == LaneType::Driving)
         .all(|lane| lane.direction == Direction::Forward)
     {
-        tags.insert("oneway".to_owned(), "yes".to_owned());
+        tags.insert("oneway", "yes");
     }
     if lanes.first().unwrap().lane_type == LaneType::Sidewalk
         && lanes.last().unwrap().lane_type == LaneType::Sidewalk
     {
-        tags.insert("sidewalk".to_owned(), "both".to_string());
+        tags.insert("sidewalk", "both");
     }
     if lanes
         .iter()
@@ -630,7 +630,7 @@ pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpec
         .lane_type
         == LaneType::Biking
     {
-        tags.insert("cycleway:left".to_owned(), "lane".to_string());
+        tags.insert("cycleway:left", "lane");
     }
-    Ok(Tags::new(tags))
+    Ok(tags)
 }
