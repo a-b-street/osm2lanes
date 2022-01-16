@@ -729,5 +729,31 @@
                 "direction": "forward"
             }
         ]
+    },
+    {
+        "skip_rust": true,
+        "description": "test for `busway:left=lane` and `busway:right=lane`",
+        "tags": {
+            "busway:right": "lane",
+            "busway:left": "lane",
+            "highway": "secondary",
+            "lanes": "3",
+            "oneway": "yes"
+        },
+        "driving_side": "right",
+        "output": [
+            {
+                "type": "bus_lane",
+                "direction": "backward"
+            },
+            {
+                "type": "travel_lane",
+                "direction": "forward"
+            },
+            {
+                "type": "bus_lane",
+                "direction": "forward"
+            }
+        ]
     }
 ]
