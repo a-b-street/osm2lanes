@@ -184,6 +184,12 @@ class Road:
         ):
             lane_count += 2
 
+        if (
+            self.tags.get("busway:right") == "lane"
+            or self.tags.get("busway:left") == "lane"
+        ):
+            lane_count += 1
+
         return lane_count
 
     def parse(self) -> list[Lane]:
@@ -204,14 +210,15 @@ class Road:
         oneway: bool = self.tags.get("oneway") == "yes"
 
         travel_lane_number: int
+        total_lane_number = self.tags.get("lanes")
 
-        if "lanes" in self.tags:
-            total_lane_number = int(self.tags["lanes"])
-            travel_lane_number = total_lane_number - self.get_extra_lanes()
-        else:
-            # If lane number is not specified, we assume that there are two
-            # lanes: one forward and one backward (if it is not a oneway road).
-            travel_lane_number = 2
+        # If lane number is not specified, we assume that there are two
+        # lanes: one forward and one backward (if it is not a oneway road).
+        travel_lane_number = (
+            int(total_lane_number) - self.get_extra_lanes()
+            if total_lane_number
+            else 2
+        )
 
         if travel_lane_number == 1 and not oneway:
             travel_lane_number = 2
@@ -257,6 +264,10 @@ class Road:
             or self.tags.get("busway:both") == "lane"
         ):
             lanes = self.add_both_lanes(lanes, LaneType.BUS_LANE)
+        for side in sides:
+            if self.tags.get(f"busway:{side}") == "lane":
+                lane = Lane(LaneType.BUS_LANE, self.get_direction(side))
+                lanes = self.add_lane(lanes, lane, side)
 
         # Parking lanes
 
