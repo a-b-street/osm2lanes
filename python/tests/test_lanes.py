@@ -37,7 +37,7 @@ class Case:
         """Parse test from configuration."""
         return cls(
             structure["skip_python"] if "skip_python" in structure else False,
-            structure["way_id"],
+            structure["way_id"] if "way_id" in structure else 0,
             structure["tags"],
             DrivingSide(structure["driving_side"]),
             list(map(Lane.from_structure, structure["output"])),
