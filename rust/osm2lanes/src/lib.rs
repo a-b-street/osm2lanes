@@ -4,9 +4,10 @@
 //! WARNING: The output specification and all of this code is just being prototyped. Don't depend
 //! on anything yet.
 
-use std::collections::BTreeMap;
-
 use serde::{Deserialize, Serialize};
+
+mod tags;
+pub use self::tags::{Tags, TagsRead, TagsWrite};
 
 mod transform;
 pub use self::transform::{get_lane_specs_ltr, get_lane_specs_ltr_with_warnings, lanes_to_tags};
@@ -159,62 +160,6 @@ impl LanePrintable for Direction {
             Direction::Both => '↕',
             Direction::None => '—',
         }
-    }
-}
-
-/// A map from string keys to string values. This makes copies of strings for
-/// convenience; don't use in performance sensitive contexts.
-// BTreeMap chosen for deterministic serialization.
-// We often need to compare output directly, so cannot tolerate reordering
-// TODO: fix this in the serialization by having the keys sorted.
-#[derive(Clone, Deserialize, Default)]
-pub struct Tags(BTreeMap<String, String>);
-
-impl Tags {
-    pub fn new(map: BTreeMap<String, String>) -> Tags {
-        Tags(map)
-    }
-
-    /// Expose inner map
-    pub fn map(&self) -> &BTreeMap<String, String> {
-        &self.0
-    }
-
-    pub fn get(&self, k: &str) -> Option<&str> {
-        self.0.get(k).map(|v| v.as_str())
-    }
-
-    pub fn is(&self, k: &str, v: &str) -> bool {
-        self.get(k) == Some(v)
-    }
-
-    pub fn is_any(&self, k: &str, values: &[&str]) -> bool {
-        if let Some(v) = self.get(k) {
-            values.contains(&v)
-        } else {
-            false
-        }
-    }
-}
-
-impl std::str::FromStr for Tags {
-    type Err = String;
-
-    /// Parse tags from an '=' separated list
-    ///
-    /// ```
-    /// use std::str::FromStr;
-    /// use osm2lanes::Tags;
-    /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
-    /// assert_eq!(tags.get("foo"), Some("bar"));
-    /// ```
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut map = BTreeMap::new();
-        for line in s.lines() {
-            let (key, val) = line.split_once("=").ok_or("tag must be = separated")?;
-            map.insert(key.to_owned(), val.to_owned());
-        }
-        Ok(Self(map))
     }
 }
 
