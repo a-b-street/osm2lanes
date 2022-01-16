@@ -572,7 +572,6 @@
     },
     {
         "skip_rust": true,
-        "skip_python": true,
         "way_id": 84867915,
         "tags": {
             "busway:right": "lane",
@@ -598,7 +597,6 @@
     },
     {
         "skip_rust": true,
-        "skip_python": true,
         "way_id": 323605308,
         "tags": {
             "bus:lanes": "yes|yes|designated",
