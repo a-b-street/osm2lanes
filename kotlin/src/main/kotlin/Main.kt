@@ -207,6 +207,8 @@ data class LaneUsage(
  */
 class Road(private val tags: Map<String, String>, private val drivingSide: DrivingSide) {
 
+    private val sides = setOf("left", "right")
+
     /**
      * Compute lane direction based on road side and bidirectional traffic practice.
      *
@@ -255,8 +257,9 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
 
         if (tags["busway"] == "lane" || tags["busway:both"] == "lane")
             laneCount += 2
-        if (tags["busway:right"] == "lane" || tags["busway:left"] == "lane")
-            laneCount += 1
+        for (side in sides)
+            if (tags["busway:$side"] == "lane")
+                laneCount += 1
 
         return laneCount
     }
@@ -301,7 +304,6 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
      */
     fun parse(): List<Lane> {
 
-        val sides = setOf("left", "right")
         val parkingValues = setOf("parallel", "diagonal")
         val trackValues = setOf("track", "opposite_track")
 
