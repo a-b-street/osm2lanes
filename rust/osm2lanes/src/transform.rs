@@ -646,7 +646,7 @@ pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpec
         let lane_count = lanes
             .iter()
             .filter(|lane| {
-                lane.lane_type == LaneType::Driving || lane.lane_type == LaneType::SharedLeftTurn
+                lane.lane_type == LaneType::Driving || lane.lane_type == LaneType::SharedLeftTurn || lane.lane_type == LaneType::Bus
             })
             .count();
         tags.insert("lanes", lane_count.to_string());
