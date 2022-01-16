@@ -7,6 +7,8 @@ from enum import Enum
 
 Tags = dict[str, str]
 
+SIDES: set[str] = {"left", "right"}
+
 
 class DrivingSide(Enum):
     """Bidirectional traffic practice."""
@@ -184,11 +186,9 @@ class Road:
         ):
             lane_count += 2
 
-        if (
-            self.tags.get("busway:right") == "lane"
-            or self.tags.get("busway:left") == "lane"
-        ):
-            lane_count += 1
+        for side in SIDES:
+            if self.tags.get(f"busway:{side}") == "lane":
+                lane_count += 1
 
         return lane_count
 
@@ -199,7 +199,6 @@ class Road:
 
         :return: list of lane specifications
         """
-        sides: set[str] = {"left", "right"}
         parking_values: set[str] = {"parallel", "diagonal"}
         track_values: set[str] = {"track", "opposite_track"}
 
@@ -246,7 +245,7 @@ class Road:
 
         lane: Lane
 
-        for side in sides:
+        for side in SIDES:
             if self.tags.get(f"cycleway:{side}") == "lane":
                 lane = Lane(
                     LaneType.CYCLEWAY,
@@ -264,7 +263,8 @@ class Road:
             or self.tags.get("busway:both") == "lane"
         ):
             lanes = self.add_both_lanes(lanes, LaneType.BUS_LANE)
-        for side in sides:
+
+        for side in SIDES:
             if self.tags.get(f"busway:{side}") == "lane":
                 lane = Lane(LaneType.BUS_LANE, self.get_direction(side))
                 lanes = self.add_lane(lanes, lane, side)
@@ -274,7 +274,7 @@ class Road:
         if self.tags.get("parking:lane:both") == "parallel":
             lanes = self.add_both_lanes(lanes, LaneType.PARKING_LANE)
 
-        for side in sides:
+        for side in SIDES:
             if self.tags.get(f"parking:lane:{side}") in parking_values:
                 lane = Lane(LaneType.PARKING_LANE, self.get_direction(side))
                 lanes = self.add_lane(lanes, lane, side)
@@ -286,7 +286,7 @@ class Road:
         elif self.tags.get("sidewalk") == "none":
             lanes = self.add_both_lanes(lanes, LaneType.SHOULDER)
         else:
-            for side in sides:
+            for side in SIDES:
                 if self.tags.get("sidewalk") == side:
                     lane = Lane(LaneType.SIDEWALK, Direction.BOTH)
                     lanes = self.add_lane(lanes, lane, side)
