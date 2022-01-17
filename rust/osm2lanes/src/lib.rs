@@ -283,8 +283,7 @@ mod tests {
                 .unwrap();
 
         let mut ok = true;
-        // TODO take all tests
-        for test in tests.iter().take(1) {
+        for test in tests {
             if !test.skip.is_none() && test.skip.unwrap() {
                 continue;
             }
@@ -304,6 +303,9 @@ mod tests {
                 } else if !test.link.is_none() {
                     println!("For input (example from {}):", test.link.as_ref().unwrap());
                 }
+                println!("From:");
+                println!("    {}", stringify_lane_types(&test.output));
+                println!("    {}", stringify_directions(&test.output));
                 println!("Normalized OSM tags:");
                 for (k, v) in tags.map() {
                     println!("    {} = {}", k, v);
@@ -311,9 +313,6 @@ mod tests {
                 println!("Got:");
                 println!("    {}", stringify_lane_types(&lanes));
                 println!("    {}", stringify_directions(&lanes));
-                println!("Expected:");
-                println!("    {}", stringify_lane_types(&test.output));
-                println!("    {}", stringify_directions(&test.output));
                 println!();
             }
         }

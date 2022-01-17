@@ -183,18 +183,27 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
 }
 
 fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, usize) {
+    let both_ways = if let Some(n) = tags
+        .get("lanes:both_ways")
+        .and_then(|num| num.parse::<usize>().ok())
+    {
+        n
+    } else {
+        0
+    };
     let num_driving_fwd = if let Some(n) = tags
         .get("lanes:forward")
         .and_then(|num| num.parse::<usize>().ok())
     {
         n
     } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
-        if oneway {
+        let half = if oneway {
             n
         } else {
             // usize division rounded up
             (n + 1) / 2
-        }
+        };
+        half - both_ways
     } else {
         1
     };
@@ -205,12 +214,13 @@ fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, 
         n
     } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
         let base = n - num_driving_fwd;
-        if oneway {
+        let half = if oneway {
             base
         } else {
             // lanes=1 but not oneway... what is this supposed to mean?
             base.max(1)
-        }
+        };
+        half - both_ways
     } else if oneway {
         0
     } else {
@@ -630,34 +640,117 @@ fn osm_separation_type(x: &str) -> Option<BufferType> {
 
 pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpecError> {
     let mut tags = Tags::default();
+    let mut oneway = false;
     tags.insert("highway", "yes"); // TODO, what?
     {
         let lane_count = lanes
             .iter()
-            .filter(|lane| lane.lane_type == LaneType::Driving)
+            .filter(|lane| {
+                lane.lane_type == LaneType::Driving
+                    || lane.lane_type == LaneType::SharedLeftTurn
+                    || lane.lane_type == LaneType::Bus
+            })
             .count();
         tags.insert("lanes", lane_count.to_string());
     }
+    // Oneway
     if lanes
         .iter()
         .filter(|lane| lane.lane_type == LaneType::Driving)
         .all(|lane| lane.direction == Direction::Forward)
     {
         tags.insert("oneway", "yes");
+        oneway = true;
     }
-    if lanes.first().unwrap().lane_type == LaneType::Sidewalk
-        && lanes.last().unwrap().lane_type == LaneType::Sidewalk
+    // Pedestrian
     {
-        tags.insert("sidewalk", "both");
+        match (
+            lanes.first().unwrap().lane_type == LaneType::Sidewalk,
+            lanes.last().unwrap().lane_type == LaneType::Sidewalk,
+        ) {
+            (false, false) => {}
+            (true, false) => assert!(tags.insert("sidewalk", "left").is_none()),
+            (false, true) => assert!(tags.insert("sidewalk", "right").is_none()),
+            (true, true) => assert!(tags.insert("sidewalk", "both").is_none()),
+        }
+    }
+    // Parking
+    match (
+        lanes
+            .iter()
+            .take_while(|lane| lane.lane_type != LaneType::Driving)
+            .find(|lane| lane.lane_type == LaneType::Parking)
+            .is_some(),
+        lanes
+            .iter()
+            .skip_while(|lane| lane.lane_type != LaneType::Driving)
+            .find(|lane| lane.lane_type == LaneType::Parking)
+            .is_some(),
+    ) {
+        (false, false) => {}
+        (true, false) => assert!(tags.insert("parking:lane:left", "parallel").is_none()),
+        (false, true) => assert!(tags.insert("parking:lane:right", "parallel").is_none()),
+        (true, true) => assert!(tags.insert("parking:lane:both", "parallel").is_none()),
+    }
+    // Cycleway
+    {
+        let left_cycle_lane = lanes
+            .iter()
+            .take_while(|lane| lane.lane_type != LaneType::Driving)
+            .find(|lane| lane.lane_type == LaneType::Biking);
+        let right_cycle_lane = lanes
+            .iter()
+            .rev()
+            .take_while(|lane| lane.lane_type != LaneType::Driving)
+            .find(|lane| lane.lane_type == LaneType::Biking);
+        match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
+            (false, false) => {}
+            (true, false) => assert!(tags.insert("cycleway:left", "lane").is_none()),
+            (false, true) => assert!(tags.insert("cycleway:right", "lane").is_none()),
+            (true, true) => assert!(tags.insert("cycleway:both", "lane").is_none()),
+        }
+        // https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
+        // TODO, incomplete, pending testing.
+        if !oneway {
+            if let Some(LaneSpec {
+                lane_type: _,
+                direction: Direction::Both,
+            }) = left_cycle_lane
+            {
+                tags.insert("cycleway:left:oneway", "no");
+            }
+            if let Some(LaneSpec {
+                lane_type: _,
+                direction: Direction::Both,
+            }) = right_cycle_lane
+            {
+                tags.insert("cycleway:right:oneway", "no");
+            }
+        } else {
+            if let Some(LaneSpec {
+                lane_type: _,
+                direction: Direction::Both,
+            }) = left_cycle_lane
+            {
+                tags.insert("cycleway:left:oneway", "no");
+            }
+            if let Some(LaneSpec {
+                lane_type: _,
+                direction: Direction::Both,
+            }) = right_cycle_lane
+            {
+                tags.insert("cycleway:right:oneway", "no");
+            }
+        }
     }
     if lanes
         .iter()
-        .find(|lane| lane.lane_type != LaneType::Sidewalk)
-        .ok_or(LaneSpecError("Only sidewalk?".to_owned()))?
-        .lane_type
-        == LaneType::Biking
+        .find(|lane| lane.lane_type == LaneType::SharedLeftTurn)
+        .is_some()
     {
-        tags.insert("cycleway:left", "lane");
+        tags.insert("lanes:both_ways", "1");
+        // TODO: add LHT support
+        tags.insert("turn:lanes:both_ways", "left");
     }
     Ok(tags)
 }
