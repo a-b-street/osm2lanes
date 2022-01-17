@@ -33,12 +33,18 @@ button:active, input:active, .button:active {
   cursor: default;
 }
 
-.row {
+.row, .lanes {
   display: flex;
+  max-width: 1040px;
+}
+/* .row-item, .lane {
+} */
+
+.lanes {
   flex-wrap: wrap;
   max-width: 1040px;
 }
-.row-item {
+.lane {
   padding: 0;
   margin: 0 1em;
   align-self: center;
