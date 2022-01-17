@@ -154,11 +154,12 @@ impl TagsRead for Tags {
 }
 
 pub trait TagsWrite {
-    fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V);
+    /// Returns the old value of this key, if it was already present.
+    fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V) -> Option<String>;
 }
 
 impl TagsWrite for Tags {
-    fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V) {
-        self.0.insert(k.into().as_str().to_owned(), v.into());
+    fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V) -> Option<String> {
+        self.0.insert(k.into().as_str().to_owned(), v.into())
     }
 }

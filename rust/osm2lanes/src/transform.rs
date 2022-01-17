@@ -646,7 +646,9 @@ pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpec
         let lane_count = lanes
             .iter()
             .filter(|lane| {
-                lane.lane_type == LaneType::Driving || lane.lane_type == LaneType::SharedLeftTurn || lane.lane_type == LaneType::Bus
+                lane.lane_type == LaneType::Driving
+                    || lane.lane_type == LaneType::SharedLeftTurn
+                    || lane.lane_type == LaneType::Bus
             })
             .count();
         tags.insert("lanes", lane_count.to_string());
@@ -662,15 +664,14 @@ pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpec
     }
     // Pedestrian
     {
-        match (lanes.first().unwrap().lane_type == LaneType::Sidewalk, lanes.last().unwrap().lane_type == LaneType::Sidewalk)
-        {
+        match (
+            lanes.first().unwrap().lane_type == LaneType::Sidewalk,
+            lanes.last().unwrap().lane_type == LaneType::Sidewalk,
+        ) {
             (false, false) => {}
-            (true, false) => assert!(tags.insert("sidewalk", "left")
-                .is_none()),
-            (false, true) => assert!(tags.insert("sidewalk", "right")
-                .is_none()),
-            (true, true) => assert!(tags.insert("sidewalk", "both")
-                .is_none()),
+            (true, false) => assert!(tags.insert("sidewalk", "left").is_none()),
+            (false, true) => assert!(tags.insert("sidewalk", "right").is_none()),
+            (true, true) => assert!(tags.insert("sidewalk", "both").is_none()),
         }
     }
     // Parking
@@ -687,15 +688,9 @@ pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpec
             .is_some(),
     ) {
         (false, false) => {}
-        (true, false) => assert!(tags
-            .insert("parking:lane:left", "parallel")
-            .is_none()),
-        (false, true) => assert!(tags
-            .insert("parking:lane:right", "parallel")
-            .is_none()),
-        (true, true) => assert!(tags
-            .insert("parking:lane:both", "parallel")
-            .is_none()),
+        (true, false) => assert!(tags.insert("parking:lane:left", "parallel").is_none()),
+        (false, true) => assert!(tags.insert("parking:lane:right", "parallel").is_none()),
+        (true, true) => assert!(tags.insert("parking:lane:both", "parallel").is_none()),
     }
     // Cycleway
     {
@@ -710,15 +705,9 @@ pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpec
             .find(|lane| lane.lane_type == LaneType::Biking);
         match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
             (false, false) => {}
-            (true, false) => assert!(tags
-                .insert("cycleway:left", "lane")
-                .is_none()),
-            (false, true) => assert!(tags
-                .insert("cycleway:right", "lane")
-                .is_none()),
-            (true, true) => assert!(tags
-                .insert("cycleway:both", "lane")
-                .is_none()),
+            (true, false) => assert!(tags.insert("cycleway:left", "lane").is_none()),
+            (false, true) => assert!(tags.insert("cycleway:right", "lane").is_none()),
+            (true, true) => assert!(tags.insert("cycleway:both", "lane").is_none()),
         }
         // https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
         // TODO, incomplete, pending testing.
