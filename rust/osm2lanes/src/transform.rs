@@ -3,7 +3,7 @@ use std::iter;
 use serde::{Deserialize, Serialize};
 
 use crate::tags::{TagKey, Tags, TagsRead, TagsWrite};
-use crate::{BufferType, Config, Direction, DrivingSide, LaneSpec, LaneType};
+use crate::{BufferType, Config, Direction, DrivingSide, LaneSpec, LaneType, Lanes};
 
 const HIGHWAY: TagKey = TagKey::from("highway");
 const CYCLEWAY: TagKey = TagKey::from("cycleway");
@@ -25,7 +25,7 @@ impl WaySide {
     }
 }
 
-impl std::string::ToString for WaySide {
+impl ToString for WaySide {
     fn to_string(&self) -> String {
         self.as_str().to_owned()
     }
@@ -85,9 +85,32 @@ impl LaneSpec {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LaneSpecError(String);
 
-#[derive(Default)]
+impl ToString for LaneSpecError {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct LaneSpecWarnings(Vec<LaneSpecWarning>);
 
+impl LaneSpecWarnings {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
+impl ToString for LaneSpecWarnings {
+    fn to_string(&self) -> String {
+        self.0
+            .iter()
+            .map(|warn| format!("Warning: {}", warn.description))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LaneSpecWarning {
     pub description: String,
     // Tags relevant to triggering the warning
@@ -95,7 +118,7 @@ pub struct LaneSpecWarning {
     pub tags: Tags,
 }
 
-type LaneSpecResult = Result<(Vec<LaneSpec>, LaneSpecWarnings), LaneSpecError>;
+type LaneSpecResult = Result<Lanes, LaneSpecError>;
 
 // Handle non motorized ways
 fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
@@ -110,17 +133,18 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
             "track",
         ],
     ) {
+        log::trace!("motorized");
         return None;
     }
     // Easy special cases first.
     if tags.is(HIGHWAY, "steps") {
-        return Some(Ok((
-            vec![LaneSpec::both(LaneType::Sidewalk)],
-            LaneSpecWarnings(vec![LaneSpecWarning {
+        return Some(Ok(Lanes {
+            lanes: vec![LaneSpec::both(LaneType::Sidewalk)],
+            warnings: LaneSpecWarnings(vec![LaneSpecWarning {
                 description: "highway is steps, but lane is only a sidewalk".to_owned(),
                 tags: tags.subset(&[HIGHWAY]),
             }]),
-        )));
+        }));
     }
 
     // Eventually, we should have some kind of special LaneType for shared walking/cycling paths of
@@ -132,10 +156,10 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
     if tags.is("bicycle", "no")
         || (tags.is(HIGHWAY, "footway") && !tags.is_any("bicycle", &["designated", "yes"]))
     {
-        return Some(Ok((
-            vec![LaneSpec::both(LaneType::Sidewalk)],
-            LaneSpecWarnings::default(),
-        )));
+        return Some(Ok(Lanes {
+            lanes: vec![LaneSpec::both(LaneType::Sidewalk)],
+            warnings: LaneSpecWarnings::default(),
+        }));
     }
     // Otherwise, there'll always be a bike lane.
 
@@ -152,10 +176,10 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LaneSpecResult> {
             backward_side.push(LaneSpec::both(LaneType::Shoulder));
         }
     }
-    Some(Ok((
-        assemble_ltr(forward_side, backward_side, cfg.driving_side),
-        LaneSpecWarnings::default(),
-    )))
+    Some(Ok(Lanes {
+        lanes: assemble_ltr(forward_side, backward_side, cfg.driving_side),
+        warnings: LaneSpecWarnings::default(),
+    }))
 }
 
 fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, usize) {
@@ -526,10 +550,10 @@ pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LaneSpecRe
     }
 
     if driving_lane == LaneType::Construction {
-        return Ok((
-            assemble_ltr(fwd_side, back_side, cfg.driving_side),
-            LaneSpecWarnings::default(),
-        ));
+        return Ok(Lanes {
+            lanes: assemble_ltr(fwd_side, back_side, cfg.driving_side),
+            warnings: LaneSpecWarnings::default(),
+        });
     }
 
     bus(tags, cfg, oneway, &mut fwd_side, &mut back_side);
@@ -549,14 +573,17 @@ pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LaneSpecRe
 
     walking(tags, cfg, oneway, &mut fwd_side, &mut back_side);
 
-    Ok((
-        (assemble_ltr(fwd_side, back_side, cfg.driving_side)),
+    Ok(Lanes {
+        lanes: assemble_ltr(fwd_side, back_side, cfg.driving_side),
         warnings,
-    ))
+    })
 }
 
 pub fn get_lane_specs_ltr(tags: &Tags, cfg: &Config) -> Result<Vec<LaneSpec>, LaneSpecError> {
-    let (lane_specs, warnings) = get_lane_specs_ltr_with_warnings(tags, cfg)?;
+    let Lanes {
+        lanes: lane_specs,
+        warnings,
+    } = get_lane_specs_ltr_with_warnings(tags, cfg)?;
     if !warnings.0.is_empty() {
         return Err(LaneSpecError(format!(
             "{} warnings found",
@@ -626,7 +653,7 @@ pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpec
     if lanes
         .iter()
         .find(|lane| lane.lane_type != LaneType::Sidewalk)
-        .unwrap()
+        .ok_or(LaneSpecError("Only sidewalk?".to_owned()))?
         .lane_type
         == LaneType::Biking
     {

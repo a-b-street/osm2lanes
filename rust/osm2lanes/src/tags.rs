@@ -1,6 +1,7 @@
-use serde::Deserialize;
-
 use std::collections::BTreeMap;
+use std::str::FromStr;
+
+use serde::{Deserialize, Serialize};
 
 /// A representation for a OSM tags key
 #[derive(Clone)]
@@ -47,7 +48,7 @@ impl std::ops::Add<&'static str> for TagKey {
 // BTreeMap chosen for deterministic serialization.
 // We often need to compare output directly, so cannot tolerate reordering
 // TODO: fix this in the serialization by having the keys sorted.
-#[derive(Clone, Deserialize, Default)]
+#[derive(Clone, Debug, Deserialize, Default, Serialize)]
 pub struct Tags(BTreeMap<String, String>);
 
 impl Tags {
@@ -61,7 +62,7 @@ impl Tags {
     }
 }
 
-impl std::str::FromStr for Tags {
+impl FromStr for Tags {
     type Err = String;
 
     /// Parse tags from an '=' separated list
@@ -80,6 +81,27 @@ impl std::str::FromStr for Tags {
             map.insert(key.to_owned(), val.to_owned());
         }
         Ok(Self(map))
+    }
+}
+
+impl ToString for Tags {
+    /// Return tags as an '=' separated list
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use std::string::ToString;
+    /// use osm2lanes::Tags;
+    /// use osm2lanes::TagsRead;
+    /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
+    /// assert_eq!(tags.to_string(), "abra=cadabra\nfoo=bar");
+    /// ```
+    fn to_string(&self) -> String {
+        self.0
+            .iter()
+            .map(|(k, v)| format!("{}={}", k.as_str(), v.as_str()))
+            .collect::<Vec<String>>()
+            .as_slice()
+            .join("\n")
     }
 }
 
@@ -121,9 +143,10 @@ impl TagsRead for Tags {
         for key in keys {
             let tag_key: TagKey = key.clone().into();
             if let Some(val) = self.get(tag_key.clone()) {
-                map.0
+                assert!(map
+                    .0
                     .insert(tag_key.as_str().to_owned(), val.to_owned())
-                    .unwrap();
+                    .is_none());
             }
         }
         map

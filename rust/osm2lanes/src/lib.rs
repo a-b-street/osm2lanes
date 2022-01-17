@@ -10,7 +10,16 @@ mod tags;
 pub use self::tags::{Tags, TagsRead, TagsWrite};
 
 mod transform;
-pub use self::transform::{get_lane_specs_ltr, get_lane_specs_ltr_with_warnings, lanes_to_tags};
+pub use self::transform::{
+    get_lane_specs_ltr, get_lane_specs_ltr_with_warnings, lanes_to_tags, LaneSpecWarnings,
+};
+
+/// Lanes
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Lanes {
+    pub lanes: Vec<LaneSpec>,
+    pub warnings: LaneSpecWarnings,
+}
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
