@@ -16,24 +16,29 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             },
             {
-                "type": "cycleway",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "bicycle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             }
         ]
     },
@@ -54,20 +59,24 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             }
         ]
     },
@@ -88,20 +97,24 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             }
         ]
     },
@@ -121,40 +134,49 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             },
             {
-                "type": "parking_lane",
-                "direction": "backward"
+                "type": "parking",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "parking_lane",
-                "direction": "forward"
+                "type": "parking",
+                "direction": "forward",
+                "designated": "foot"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             }
         ]
     },
@@ -176,32 +198,39 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             },
             {
-                "type": "parking_lane",
-                "direction": "backward"
+                "type": "parking",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "shared_left_turn",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             }
         ]
     },
@@ -223,24 +252,29 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "parking_lane",
-                "direction": "forward"
+                "type": "parking",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             }
         ]
     },
@@ -259,24 +293,29 @@
         "driving_side": "right",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             }
         ]
     },
@@ -291,26 +330,33 @@
         "driving_side": "left",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             }
         ]
     },
     {
         "way_id": 224637155,
+        "mapillary": "https://www.mapillary.com/app/?pKey=3687326814728481",
+        "comment": "TODO: missing cycleway:left and busway tags",
         "tags": {
+            "highway": "primary",
             "lanes": "2",
             "oneway": "yes",
             "sidewalk": "left"
@@ -318,16 +364,19 @@
         "driving_side": "left",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "foot"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             }
         ]
     },

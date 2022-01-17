@@ -15,11 +15,11 @@
                 "description": "The type of the lane.",
                 "anyOf": [
                     {
-                        "const": "travel_lane",
+                        "const": "travel",
                         "description": "General vehicular and non-vehicular traffic."
                     },
                     {
-                        "const": "parking_lane",
+                        "const": "parking",
                         "description": "Parked traffic."
                     },
                     {
