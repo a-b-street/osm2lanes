@@ -4,13 +4,22 @@
 //! WARNING: The output specification and all of this code is just being prototyped. Don't depend
 //! on anything yet.
 
-use std::collections::BTreeMap;
-
 use serde::{Deserialize, Serialize};
 
-pub use self::transform::get_lane_specs_ltr;
+mod tags;
+pub use self::tags::{Tags, TagsRead, TagsWrite};
 
 mod transform;
+pub use self::transform::{
+    get_lane_specs_ltr, get_lane_specs_ltr_with_warnings, lanes_to_tags, LaneSpecWarnings,
+};
+
+/// Lanes
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Lanes {
+    pub lanes: Vec<LaneSpec>,
+    pub warnings: LaneSpecWarnings,
+}
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -77,6 +86,10 @@ pub enum Direction {
     Forward,
     #[serde(rename = "backward")]
     Backward,
+    #[serde(rename = "both")]
+    Both,
+    #[serde(rename = "none")]
+    None,
 }
 
 /// Configuration to give extra context about the place where an OSM way exists.
@@ -94,6 +107,15 @@ pub enum DrivingSide {
     Right,
     #[serde(rename = "left")]
     Left,
+}
+
+impl DrivingSide {
+    pub fn opposite(&self) -> Self {
+        match self {
+            Self::Right => Self::Left,
+            Self::Left => Self::Right,
+        }
+    }
 }
 
 /// Display lane detail as printable characters
@@ -136,66 +158,17 @@ impl LanePrintable for Direction {
         match self {
             Direction::Forward => '^',
             Direction::Backward => 'v',
+            Direction::Both => '|',
+            Direction::None => '-',
         }
     }
     fn as_utf8(&self) -> char {
         match self {
             Direction::Forward => '↑',
             Direction::Backward => '↓',
+            Direction::Both => '↕',
+            Direction::None => '—',
         }
-    }
-}
-
-/// A map from string keys to string values. This makes copies of strings for
-/// convenience; don't use in performance sensitive contexts.
-#[derive(Clone, Deserialize)]
-pub struct Tags(BTreeMap<String, String>);
-
-impl Tags {
-    pub fn new(map: BTreeMap<String, String>) -> Tags {
-        Tags(map)
-    }
-
-    /// Expose inner map
-    pub fn map(&self) -> &BTreeMap<String, String> {
-        &self.0
-    }
-
-    pub fn get(&self, k: &str) -> Option<&str> {
-        self.0.get(k).map(|v| v.as_str())
-    }
-
-    pub fn is(&self, k: &str, v: &str) -> bool {
-        self.get(k) == Some(v)
-    }
-
-    pub fn is_any(&self, k: &str, values: Vec<&str>) -> bool {
-        if let Some(v) = self.get(k) {
-            values.contains(&v)
-        } else {
-            false
-        }
-    }
-}
-
-impl std::str::FromStr for Tags {
-    type Err = String;
-
-    /// Parse tags from an '=' separated list
-    ///
-    /// ```
-    /// use std::str::FromStr;
-    /// use osm2lanes::Tags;
-    /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
-    /// assert_eq!(tags.get("foo"), Some("bar"));
-    /// ```
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut map = BTreeMap::new();
-        for line in s.lines() {
-            let (key, val) = line.split_once("=").ok_or("tag must be = separated")?;
-            map.insert(key.to_owned(), val.to_owned());
-        }
-        Ok(Self(map))
     }
 }
 
@@ -216,12 +189,53 @@ mod tests {
         output: Vec<LaneSpec>,
         #[serde(rename = "skip_rust")]
         skip: Option<bool>,
+        comment: Option<String>,
+        description: Option<String>,
+    }
+
+    impl TestCase {
+        fn print(&self) {
+            if !self.way_id.is_none() {
+                println!(
+                    "For input (example from https://www.openstreetmap.org/way/{}) with {}:",
+                    self.way_id.unwrap(),
+                    self.driving_side.to_tla(),
+                );
+            } else if !self.link.is_none() {
+                println!("For input (example from {}):", self.link.as_ref().unwrap());
+            }
+            if let Some(comment) = self.comment.as_ref() {
+                println!("        Comment: {}", comment);
+            }
+            if let Some(description) = self.description.as_ref() {
+                println!("        Description: {}", description);
+            }
+            for (k, v) in self.tags.map() {
+                println!("    {} = {}", k, v);
+            }
+        }
+    }
+
+    impl DrivingSide {
+        /// Three-letter abbreviation
+        const fn to_tla(&self) -> &'static str {
+            match self {
+                Self::Right => "RHT",
+                Self::Left => "LHT",
+            }
+        }
+    }
+
+    fn stringify_lane_types(lanes: &[LaneSpec]) -> String {
+        lanes.iter().map(|s| s.lane_type.as_ascii()).collect()
+    }
+
+    fn stringify_directions(lanes: &[LaneSpec]) -> String {
+        lanes.iter().map(|s| s.direction.as_utf8()).collect()
     }
 
     #[test]
     fn test_from_data() {
-        // TODO This is brittle, depends on running the test from the right directory. Use
-        // include_str?
         let tests: Vec<TestCase> =
             serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
                 .unwrap();
@@ -235,8 +249,52 @@ mod tests {
                 driving_side: test.driving_side,
                 inferred_sidewalks: true,
             };
-            let actual = get_lane_specs_ltr(test.tags.clone(), &cfg).unwrap();
-            if actual != test.output {
+            let lanes = get_lane_specs_ltr(&test.tags, &cfg);
+            if let Ok(actual) = lanes {
+                if actual != test.output {
+                    ok = false;
+                    test.print();
+                    println!("Got:");
+                    println!("    {}", stringify_lane_types(&actual));
+                    println!("    {}", stringify_directions(&actual));
+                    println!("Expected:");
+                    println!("    {}", stringify_lane_types(&test.output));
+                    println!("    {}", stringify_directions(&test.output));
+                    println!();
+                }
+            } else {
+                ok = false;
+                test.print();
+                println!("Expected:");
+                println!("    {}", stringify_lane_types(&test.output));
+                println!("    {}", stringify_directions(&test.output));
+                println!("Panicked:");
+                println!("{:#?}", lanes.unwrap_err());
+                println!();
+            }
+        }
+        assert!(ok);
+    }
+
+    #[test]
+    fn test_roundtrip() {
+        let tests: Vec<TestCase> =
+            serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
+                .unwrap();
+
+        let mut ok = true;
+        // TODO take all tests
+        for test in tests.iter().take(1) {
+            if !test.skip.is_none() && test.skip.unwrap() {
+                continue;
+            }
+            let cfg = Config {
+                driving_side: test.driving_side,
+                inferred_sidewalks: true,
+            };
+            let tags = lanes_to_tags(&test.output, &cfg).unwrap();
+            let lanes = get_lane_specs_ltr(&tags, &cfg).unwrap();
+            if test.output != lanes {
                 ok = false;
                 if !test.way_id.is_none() {
                     println!(
@@ -244,14 +302,15 @@ mod tests {
                         test.way_id.unwrap()
                     );
                 } else if !test.link.is_none() {
-                    println!("For input (example from {}):", test.link.unwrap());
+                    println!("For input (example from {}):", test.link.as_ref().unwrap());
                 }
-                for (k, v) in test.tags.map() {
+                println!("Normalized OSM tags:");
+                for (k, v) in tags.map() {
                     println!("    {} = {}", k, v);
                 }
                 println!("Got:");
-                println!("    {}", stringify_lane_types(&actual));
-                println!("    {}", stringify_directions(&actual));
+                println!("    {}", stringify_lane_types(&lanes));
+                println!("    {}", stringify_directions(&lanes));
                 println!("Expected:");
                 println!("    {}", stringify_lane_types(&test.output));
                 println!("    {}", stringify_directions(&test.output));
@@ -259,13 +318,5 @@ mod tests {
             }
         }
         assert!(ok);
-    }
-
-    fn stringify_lane_types(lanes: &[LaneSpec]) -> String {
-        lanes.iter().map(|s| s.lane_type.as_utf8()).collect()
-    }
-
-    fn stringify_directions(lanes: &[LaneSpec]) -> String {
-        lanes.iter().map(|s| s.direction.as_utf8()).collect()
     }
 }

@@ -8,7 +8,10 @@ use yew::prelude::*;
 
 mod draw;
 
-use osm2lanes::{get_lane_specs_ltr, Config, DrivingSide, LanePrintable, LaneSpec, Tags};
+use osm2lanes::{
+    get_lane_specs_ltr_with_warnings, lanes_to_tags, Config, DrivingSide, LanePrintable, LaneSpec,
+    Lanes, Tags,
+};
 
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
@@ -18,10 +21,17 @@ type ShouldRender = bool;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct State {
-    pub edit_value: String,
+    /// The editable input, line and equal separated tags
+    pub edit_tags: String,
+    /// The input normalised
+    pub normalized_tags: Option<String>,
+    /// Lanes to visualise
     pub lanes: Vec<LaneSpec>,
+    /// Message for user
+    pub message: Option<String>,
 }
 
+#[derive(Debug)]
 pub enum Msg {
     Submit(String),
     Focus,
@@ -43,20 +53,27 @@ impl Component for App {
 
     fn create(_ctx: &Context<Self>) -> Self {
         let focus_ref = NodeRef::default();
-        let edit_value = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:taxi:backward=1\nlanes:psv=1\nsidewalk=right".to_owned();
-        let lanes = get_lane_specs_ltr(Tags::from_str(&edit_value).unwrap(), &CFG).unwrap();
-        let state = State { edit_value, lanes };
+        let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:taxi:backward=1\nlanes:psv=1\nsidewalk=right".to_owned();
+        let state = if let Ok((Lanes { lanes, warnings }, norm_tags)) = Self::calculate(&edit_tags)
+        {
+            State {
+                edit_tags,
+                normalized_tags: Some(norm_tags.to_string()),
+                lanes,
+                message: Some(warnings.to_string()),
+            }
+        } else {
+            unreachable!();
+        };
         Self { focus_ref, state }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> ShouldRender {
+        log::trace!("Message: {:?}", msg);
         match msg {
             Msg::Submit(value) => {
-                log::trace!("Submit: {}", value);
-                if let Ok(tags) = Tags::from_str(&value) {
-                    self.state.lanes = get_lane_specs_ltr(tags, &CFG).unwrap();
-                }
-                self.state.edit_value = value;
+                self.update_tags(&value);
+                self.state.edit_tags = value;
                 true
             }
             Msg::Focus => {
@@ -84,25 +101,63 @@ impl Component for App {
         html! {
             <div>
                 <h1>{"osm2lanes"}</h1>
-                <textarea
-                    class="edit"
-                    type="text"
-                    rows={(self.state.edit_value.lines().count() + 1).to_string()}
-                    cols="48"
-                    ref={self.focus_ref.clone()}
-                    value={self.state.edit_value.clone()}
-                    {onmouseover}
-                    {onblur}
-                    {onkeypress}
-                />
+                <section class="row">
+                    <div class="row-item">
+                        <textarea
+                            rows={(self.state.edit_tags.lines().count() + 1).to_string()}
+                            cols="48"
+                            ref={self.focus_ref.clone()}
+                            value={self.state.edit_tags.clone()}
+                            {onmouseover}
+                            {onblur}
+                            {onkeypress}
+                        />
+                    </div>
+                    <div class="row-item">
+                        <textarea
+                            readonly=true
+                            disabled={self.state.normalized_tags.is_none()}
+                            rows={
+                                if let Some(tags) = &self.state.normalized_tags {
+                                    (tags.lines().count() + 1).to_string()
+                                } else {
+                                    "1".to_owned()
+                                }
+                            }
+                            cols="48"
+                            ref={self.focus_ref.clone()}
+                            value={
+                                if let Some(tags) = &self.state.normalized_tags {
+                                    tags.clone()
+                                } else {
+                                    "".to_owned()
+                                }
+                            }
+                        />
+                    </div>
+                </section>
+                <hr/>
+                {
+                    if let Some(message) = &self.state.message {
+                        html!{
+                            <section>
+                                <pre>
+                                    {message}
+                                </pre>
+                            </section>
+                        }
+                    } else {
+                        html!{}
+                    }
+                }
                 <hr/>
                 <section>
-                    <div class="row">
+                    <div class="lanes">
                         {
                             for self.state.lanes.iter().map(|lane| self.view_lane_type(lane))
                         }
                     </div>
-                    <div class="row">
+                    <div class="lanes">
                         {
                             for self.state.lanes.iter().map(|lane| self.view_lane_direction(lane))
                         }
@@ -120,14 +175,64 @@ impl Component for App {
 }
 
 impl App {
+    fn calculate(value: &String) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
+        log::trace!("Calculate: {}", value);
+        match Tags::from_str(&value) {
+            Ok(tags) => match get_lane_specs_ltr_with_warnings(&tags, &CFG) {
+                Ok(lanes) => match lanes_to_tags(&lanes.lanes, &CFG) {
+                    Ok(tags) => Ok((lanes, tags)),
+                    Err(e) => Err(Ok((lanes, e.to_string()))),
+                },
+                Err(e) => Err(Err(e.to_string())),
+            },
+            Err(_) => Err(Err("parsing tags failed".to_owned())),
+        }
+    }
+
+    fn update_tags(&mut self, value: &String) {
+        log::trace!("Update Tags: {}", value);
+        let calculate = Self::calculate(&value);
+        log::trace!("Update: {:?}", calculate);
+        match calculate {
+            Ok((Lanes { lanes, warnings }, norm_tags)) => {
+                self.state.lanes = lanes;
+                self.state.normalized_tags = Some(norm_tags.to_string());
+                if warnings.is_empty() {
+                    self.state.message = None;
+                } else {
+                    self.state.message = Some(warnings.to_string());
+                }
+            }
+            Err(Ok((Lanes { lanes, warnings }, norm_err))) => {
+                self.state.lanes = lanes;
+                self.state.normalized_tags = None;
+                if warnings.is_empty() {
+                    self.state.message =
+                        Some(format!("Normalisation Error: {}", norm_err.to_string()));
+                } else {
+                    self.state.message = Some(format!(
+                        "{}\nNormalisation Error: {}",
+                        warnings.to_string(),
+                        norm_err.to_string()
+                    ));
+                }
+            }
+            Err(Err(lanes_err)) => {
+                self.state.lanes = Vec::new();
+                self.state.normalized_tags = None;
+                self.state.message = Some(format!("Conversion Error: {}", lanes_err.to_string()));
+            }
+        }
+    }
+
     fn view_lane_type(&self, lane: &LaneSpec) -> Html {
         html! {
-            <div class="row-item"><span>{lane.lane_type.as_utf8()}</span></div>
+            <div class="lane"><span>{lane.lane_type.as_utf8()}</span></div>
         }
     }
     fn view_lane_direction(&self, lane: &LaneSpec) -> Html {
         html! {
-            <div class="row-item"><span>{lane.direction.as_utf8()}</span></div>
+            <div class="lane"><span>{lane.direction.as_utf8()}</span></div>
         }
     }
     fn draw_canvas(&self) {

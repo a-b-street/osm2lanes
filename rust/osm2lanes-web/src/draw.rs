@@ -124,7 +124,35 @@ pub fn draw_arrow<R: RenderContext>(
     mid: Point,
     direction: Direction,
 ) -> Result<(), Error> {
-    // arrow
+    fn draw_point<R: RenderContext>(
+        rc: &mut R,
+        mid: Point,
+        direction: Direction,
+    ) -> Result<(), Error> {
+        let dir_sign = match direction {
+            Direction::Forward => -1.0,
+            Direction::Backward => 1.0,
+            _ => unreachable!(),
+        };
+        for x in [-10.0, 10.0] {
+            rc.stroke(
+                Line::new(
+                    Point {
+                        x: mid.x,
+                        y: mid.y + dir_sign * 20.0,
+                    },
+                    Point {
+                        x: mid.x + x,
+                        y: mid.y + dir_sign * 10.0,
+                    },
+                ),
+                &Color::WHITE,
+                1.0,
+            );
+        }
+        Ok(())
+    }
+    // line
     rc.stroke(
         Line::new(
             Point {
@@ -139,37 +167,13 @@ pub fn draw_arrow<R: RenderContext>(
         &Color::WHITE,
         1.0,
     );
-    let dir_sign = match direction {
-        Direction::Forward => -1.0,
-        Direction::Backward => 1.0,
-    };
-    rc.stroke(
-        Line::new(
-            Point {
-                x: mid.x,
-                y: mid.y + dir_sign * 20.0,
-            },
-            Point {
-                x: mid.x - 10.0,
-                y: mid.y + dir_sign * 10.0,
-            },
-        ),
-        &Color::WHITE,
-        1.0,
-    );
-    rc.stroke(
-        Line::new(
-            Point {
-                x: mid.x,
-                y: mid.y + dir_sign * 20.0,
-            },
-            Point {
-                x: mid.x + 10.0,
-                y: mid.y + dir_sign * 10.0,
-            },
-        ),
-        &Color::WHITE,
-        1.0,
-    );
+    match direction {
+        Direction::Forward | Direction::Backward => draw_point(rc, mid, direction)?,
+        Direction::Both => {
+            draw_point(rc, mid, Direction::Forward)?;
+            draw_point(rc, mid, Direction::Backward)?;
+        }
+        Direction::None => {}
+    }
     Ok(())
 }
