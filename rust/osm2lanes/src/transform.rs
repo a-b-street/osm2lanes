@@ -200,8 +200,8 @@ fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, 
         let half = if oneway {
             n
         } else {
-            // usize division rounds down
-            (n / 2) + 1
+            // usize division rounded up
+            (n + 1) / 2
         };
         half - both_ways
     } else {
