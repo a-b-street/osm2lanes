@@ -638,7 +638,7 @@ fn osm_separation_type(x: &str) -> Option<BufferType> {
     }
 }
 
-pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpecError> {
+pub fn lanes_to_tags(lanes: &[LaneSpec], cfg: &Config) -> Result<Tags, LaneSpecError> {
     let mut tags = Tags::default();
     let mut oneway = false;
     tags.insert("highway", "yes"); // TODO, what?
@@ -752,5 +752,12 @@ pub fn lanes_to_tags(lanes: &[LaneSpec], _cfg: &Config) -> Result<Tags, LaneSpec
         // TODO: add LHT support
         tags.insert("turn:lanes:both_ways", "left");
     }
+
+    // Check roundtrip!
+    let rountrip_lanes = get_lane_specs_ltr(&tags, &cfg)?;
+    if lanes != rountrip_lanes {
+        return Err(LaneSpecError("lanes to tags cannot roundtrip".to_owned()));
+    }
+
     Ok(tags)
 }
