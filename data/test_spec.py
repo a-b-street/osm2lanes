@@ -5,13 +5,15 @@ Test lane spec.
 import json
 import typing
 import unittest
+import yaml
 from pathlib import Path
 
 from jsonschema import validate
 
-CONFIGURATIONS: list[dict[str, typing.Any]] = [
-    test for test in json.loads(Path("data/tests.json").read_text())
-]
+with Path("data/tests.yml").open() as input_file:
+    CONFIGURATIONS: list[dict[str, typing.Any]] = [
+        test for test in yaml.safe_load(input_file)
+    ]
 SCHEMA = json.loads(Path("data/spec-lanes.json").read_text())
 
 

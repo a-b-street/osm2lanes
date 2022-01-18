@@ -111,7 +111,7 @@
     designated: bicycle
   - type: parking
     direction: forward
-    designated: foot
+    designated: motor_vehicle
   - type: travel
     designated: foot
 
@@ -368,7 +368,7 @@
     designated: foot
   - type: travel
     direction: backward
-    designated: motor_vehicle
+    designated: bus
   - type: travel
     direction: backward
     designated: motor_vehicle
@@ -482,7 +482,7 @@
   - type: travel
     direction: forward
     designated: motor_vehicle
-  - type: bus_lane
+  - type: travel
     direction: forward
     designated: bus
   - type: travel
