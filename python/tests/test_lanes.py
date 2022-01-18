@@ -40,7 +40,11 @@ class Case:
             way_id=structure.get("way_id"),
             tags=structure["tags"],
             driving_side=DrivingSide(structure["driving_side"]),
-            output=list(map(Lane.from_structure, structure["output"])),
+            output=[
+                Lane.from_structure(l)
+                for l in structure["output"]
+                if l["type"] != "separator"
+            ],
         )
 
 
