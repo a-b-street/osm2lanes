@@ -13,7 +13,6 @@
   ISO 3166-2: US-WA
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: travel
     direction: forward
@@ -25,7 +24,6 @@
     direction: forward
     designated: motor_vehicle
   - type: travel
-    direction: both
     designated: foot
 
 - way_id: 8591383
@@ -43,7 +41,6 @@
   ISO 3166-2: US-WA
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: travel
     direction: both
@@ -52,7 +49,6 @@
     direction: forward
     designated: motor_vehicle
   - type: travel
-    direction: both
     designated: foot
 
 # A slight variation of the above, using cycleway:left:oneway:no, which should be equivalent
@@ -70,7 +66,6 @@
   ISO 3166-2: US-WA
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: travel
     direction: both
@@ -79,7 +74,6 @@
     direction: forward
     designated: motor_vehicle
   - type: travel
-    direction: both
     designated: foot
 
 - way_id: 353690151
@@ -96,7 +90,6 @@
   ISO 3166-2: US-WA
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: parking
     direction: backward
@@ -120,7 +113,6 @@
     direction: forward
     designated: foot
   - type: travel
-    direction: both
     designated: foot
 
 - way_id: 389654080
@@ -140,7 +132,6 @@
   ISO 3166-2: US-WA
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: parking
     direction: backward
@@ -158,7 +149,6 @@
     direction: both
     designated: bicycle
   - type: travel
-    direction: both
     designated: foot
 
 - skip_rust: true
@@ -178,7 +168,6 @@
   ISO 3166-2: US-WA
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: travel
     direction: both
@@ -190,7 +179,6 @@
     direction: forward
     designated: motor_vehicle
   - type: travel
-    direction: both
     designated: foot
 
 - way_id: 534549104
@@ -206,7 +194,6 @@
   driving_side: right
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: travel
     direction: forward
@@ -218,7 +205,6 @@
     direction: both
     designated: bicycle
   - type: travel
-    direction: both
     designated: foot
 
 - way_id: 777565028
@@ -230,7 +216,6 @@
   driving_side: left
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: travel
     direction: forward
@@ -239,7 +224,6 @@
     direction: backward
     designated: motor_vehicle
   - type: travel
-    direction: both
     designated: foot
 
 - way_id: 224637155
@@ -253,7 +237,6 @@
   driving_side: left
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: travel
     direction: forward
@@ -273,7 +256,6 @@
   driving_side: left
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: travel
     direction: forward
@@ -293,7 +275,6 @@
   driving_side: left
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: travel
     direction: forward
@@ -305,7 +286,6 @@
     direction: backward
     designated: bicycle
   - type: travel
-    direction: both
     designated: foot
 
 - way_id: 898731283
@@ -316,7 +296,6 @@
   driving_side: left
   output:
   - type: travel
-    direction: both
     designated: foot
   - type: travel
     direction: forward
@@ -328,7 +307,6 @@
     direction: backward
     designated: motor_vehicle
   - type: travel
-    direction: both
     designated: foot
 
 # I didn't look for a real example of this
@@ -362,13 +340,13 @@
   driving_side: right
   output:
   - type: shoulder
-    direction: both
-  - type: travel_lane
+  - type: travel
     direction: backward
-  - type: travel_lane
+    designated: motor_vehicle
+  - type: travel
     direction: forward
+    designated: motor_vehicle
   - type: shoulder
-    direction: both
 
 - skip_rust: true
   way_id: 988980354
@@ -383,28 +361,25 @@
     name: East 42nd Street
     sidewalk: both
     surface: asphalt
-    tiger:cfcc: A41
-    tiger:county: New York, NY
-    tiger:name_base: 42nd
-    tiger:name_direction_prefix: E
-    tiger:name_type: St
-    tiger:zip_left: '10017'
-    tiger:zip_right: '10017'
     wikidata: Q110061
     wikipedia: en:42nd Street (Manhattan)
   output:
-  - type: sidewalk
-    direction: both
-  - type: bus_lane
+  - type: travel
+    designated: foot
+  - type: travel
     direction: backward
-  - type: travel_lane
+    designated: motor_vehicle
+  - type: travel
     direction: backward
-  - type: travel_lane
+    designated: motor_vehicle
+  - type: travel
     direction: forward
-  - type: bus_lane
+    designated: motor_vehicle
+  - type: travel
     direction: forward
-  - type: sidewalk
-    direction: both
+    designated: bus
+  - type: travel
+    designated: foot
 
 - skip_rust: true
   way_id: 13859146
@@ -418,14 +393,18 @@
     surface: asphalt
   driving_side: right
   output:
-  - type: bus_lane
+  - type: travel
     direction: backward
-  - type: travel_lane
+    designated: bus
+  - type: travel
     direction: backward
-  - type: travel_lane
+    designated: motor_vehicle
+  - type: travel
     direction: forward
-  - type: bus_lane
+    designated: motor_vehicle
+  - type: travel
     direction: forward
+    designated: bus
 
 - skip_rust: true
   way_id: 84867915
@@ -440,10 +419,12 @@
     surface: asphalt
   driving_side: right
   output:
-  - type: travel_lane
+  - type: travel
     direction: forward
-  - type: bus_lane
+    designated: motor_vehicle
+  - type: travel
     direction: forward
+    designated: bus
 
 - skip_rust: true
   way_id: 323605308
@@ -463,12 +444,16 @@
     taxi:lanes: yes|yes|designated
   driving_side: right
   output:
-  - type: travel_lane
+  - type: travel
     direction: forward
-  - type: travel_lane
+    designated: motor_vehicle
+  - type: travel
     direction: forward
-  - type: bus_lane
+    designated: motor_vehicle
+  - type: travel
     direction: forward
+    # TODO: psv?
+    designated: bus
 
 - skip_rust: true
   skip_python: true
@@ -494,14 +479,17 @@
     wikipedia: de:Kurfürstendamm
   driving_side: right
   output:
-  - type: travel_lane
+  - type: travel
     direction: forward
+    designated: motor_vehicle
   - type: bus_lane
     direction: forward
-  - type: travel_lane
+    designated: bus
+  - type: travel
     direction: forward
-  - type: sidewalk
-    direction: both
+    designated: motor_vehicle
+  - type: travel
+    designated: foot
 
 - skip_rust: true
   skip_python: true
@@ -513,14 +501,17 @@
     maxspeed:lanes: 100|100|80
   driving_side: right
   output:
-  - type: travel_lane
+  - type: travel
     direction: forward
+    designated: motor_vehicle
     max_speed: 100
-  - type: travel_lane
+  - type: travel
     direction: forward
+    designated: motor_vehicle
     max_speed: 100
-  - type: travel_lane
+  - type: travel
     direction: forward
+    designated: motor_vehicle
     max_speed: 80
 
 - skip_rust: true
@@ -535,9 +526,12 @@
     cycleway: share_busway
   driving_side: right
   output:
-  - type: travel_lane
+  - type: travel
     direction: forward
-  - type: travel_lane
+    designated: motor_vehicle
+  - type: travel
     direction: forward
-  - type: bus_lane
+    designated: motor_vehicle
+  - type: travel
     direction: forward
+    designated: bus
