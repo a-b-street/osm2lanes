@@ -174,6 +174,7 @@ impl LanePrintable for Direction {
 
 #[cfg(test)]
 mod tests {
+    use self::transform::lanes_to_tags_no_roundtrip;
     use super::*;
 
     use std::fs::File;
@@ -291,7 +292,7 @@ mod tests {
                 driving_side: test.driving_side,
                 inferred_sidewalks: true,
             };
-            let tags = lanes_to_tags(&test.output, &cfg).unwrap();
+            let tags = lanes_to_tags_no_roundtrip(&test.output, &cfg).unwrap();
             let lanes = get_lane_specs_ltr(&tags, &cfg).unwrap();
             if test.output != lanes {
                 ok = false;
