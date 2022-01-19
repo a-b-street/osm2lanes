@@ -90,7 +90,7 @@ enum class LaneDesignated {
 @Serializable
 data class Lane(val type: LaneType, val direction: Direction? = null, val designated: LaneDesignated? = null) {
     override fun toString(): String {
-        return "${type}_${direction}_${designated}"
+        return "${type}_${direction}_$designated"
     }
 }
 
