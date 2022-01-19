@@ -12,7 +12,7 @@ Structure
 ---------
 
   * `data`
-    * `tests.json`—tests, initially converted from Rust file.
+    * `tests.yml`—tests, initially converted from Rust file.
       `spec-lanes.json`—json specification.
   * `kotlin`—[Kotlin implementation](#kotlin).
   * `python`—[Python 3.9 implementation](#python).
@@ -29,6 +29,10 @@ A lane represents a continuous area with no formal separation of vehicles.
 Lanes are often separated by something visible like painted lines or raised curbs,
 but these are not necessary for lanes to exist.
 
+For all examples:
+- we omit access, this mimics the access tags for a lane in OSM.
+- we omit widths, for simplicity. osm2lanes will first try to determine widths from OSM tags, but it can fallback to making assumptions itself.
+- we omit turn markings (for now, TODO)
 
 ### Example 1 ###
 
@@ -54,8 +58,6 @@ Note:
 
 - there is no sidewalk nor verge for pedestrians to walk here.
 - lane separators are listed.
-- we omit widths for simplicity. (TODO: if a guess is needed, e.g. on an average lane width, where is this guess made?)
-- we omit turn markings for now. (TODO)
 
 ### Example 2 ###
 
