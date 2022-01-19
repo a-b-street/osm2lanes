@@ -49,10 +49,6 @@
                     {
                         "const": "both",
                         "description": "Traffic may travel in both directions in one lane."
-                    },
-                    {
-                        "const": "none",
-                        "description": "Traffic does not travel in this lane."
                     }
                 ]
             },
@@ -80,7 +76,7 @@
                         "const": "bus"
                     },
                     {
-                        "const": "taxi"
+                        "const": "psv"
                     }
                 ]
             },

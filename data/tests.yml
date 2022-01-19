@@ -1,6 +1,7 @@
 - way_id: 159276650
   description: "Alaska Highway, a 2 lane rural road."
   image: "https://www.travelyukon.com/sites/default/files/styles/hero_crop/public/hero/2017-10/alaskahighway_fn.jpg.jpeg?itok=GSSh7NDZ"
+  skip_kotlin: true
   tags:
     highway: trunk
     lanes: '2'

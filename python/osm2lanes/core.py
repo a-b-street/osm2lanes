@@ -30,7 +30,6 @@ class Direction(Enum):
     FORWARD = "forward"
     BACKWARD = "backward"
     BOTH = "both"
-    NONE = "none"
 
     def __str__(self):
         if self == Direction.FORWARD:
@@ -39,8 +38,6 @@ class Direction(Enum):
             return "↓"
         if self == Direction.BOTH:
             return "↕"
-        if self == Direction.NONE:
-            return "—"
 
     def __repr__(self):
         return str(self)
@@ -67,30 +64,10 @@ class LaneDesignation(Enum):
     BICYCLE = "bicycle"
     MOTOR = "motor_vehicle"
     BUS = "bus"
-    TAXI = "taxi"
+    PSV = "psv"
 
     def __str__(self):
         return self.value
-
-
-class BufferType(Enum):
-    """The amount of space between the lanes."""
-
-    # Painted stripes
-    STRIPES = "stripes"
-
-    # Flex posts, wands, cones, car ticklers, bollards, other "weak" forms of
-    # protection. Usually possible to weave through them.
-    FLEX_POSTS = "flex_posts"
-
-    # Sturdier planters, with gaps
-    PLANTERS = "planters"
-
-    # Solid barrier, no gaps.
-    JERSEY_BARRIER = "jersey_barrier"
-
-    # A raised curb
-    CURB = "curb"
 
 
 @dataclass

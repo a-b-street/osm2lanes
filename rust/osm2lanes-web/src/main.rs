@@ -9,7 +9,7 @@ use yew::prelude::*;
 mod draw;
 
 use osm2lanes::{
-    get_lane_specs_ltr_with_warnings, lanes_to_tags, Config, DrivingSide, LanePrintable, LaneSpec,
+    get_lane_specs_ltr_with_warnings, lanes_to_tags, Config, DrivingSide, Lane, LanePrintable,
     Lanes, Tags,
 };
 
@@ -26,7 +26,7 @@ pub struct State {
     /// The input normalised
     pub normalized_tags: Option<String>,
     /// Lanes to visualise
-    pub lanes: Vec<LaneSpec>,
+    pub lanes: Vec<Lane>,
     /// Message for user
     pub message: Option<String>,
 }
@@ -225,14 +225,22 @@ impl App {
         }
     }
 
-    fn view_lane_type(&self, lane: &LaneSpec) -> Html {
+    fn view_lane_type(&self, lane: &Lane) -> Html {
         html! {
-            <div class="lane"><span>{lane.lane_type.as_utf8()}</span></div>
+            <div class="lane"><span>{lane.as_utf8()}</span></div>
         }
     }
-    fn view_lane_direction(&self, lane: &LaneSpec) -> Html {
+    fn view_lane_direction(&self, lane: &Lane) -> Html {
         html! {
-            <div class="lane"><span>{lane.direction.as_utf8()}</span></div>
+            <div class="lane"><span>{if let Lane::Travel {
+                direction: Some(direction),
+                ..
+            } = lane
+            {
+                direction.as_utf8()
+            } else {
+                ' '
+            }}</span></div>
         }
     }
     fn draw_canvas(&self) {
