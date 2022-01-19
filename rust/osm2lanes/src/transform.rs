@@ -616,9 +616,9 @@ fn assemble_ltr(
     }
 }
 
-pub fn lanes_to_tags(lanes: &[Lane], _cfg: &Config) -> Result<Tags, LaneSpecError> {
+pub fn lanes_to_tags(lanes: &[Lane], cfg: &Config) -> Result<Tags, LaneSpecError> {
     let mut tags = Tags::default();
-    let mut oneway = false;
+    let mut _oneway = false;
     tags.insert("highway", "yes"); // TODO, what?
     {
         let lane_count = lanes
@@ -658,7 +658,7 @@ pub fn lanes_to_tags(lanes: &[Lane], _cfg: &Config) -> Result<Tags, LaneSpecErro
         })
     {
         tags.insert("oneway", "yes");
-        oneway = true;
+        _oneway = true;
     }
     // Pedestrian
     {
@@ -797,10 +797,10 @@ pub fn lanes_to_tags(lanes: &[Lane], _cfg: &Config) -> Result<Tags, LaneSpecErro
     }
 
     // Check roundtrip!
-    // let rountrip = get_lane_specs_ltr(&tags, &cfg)?;
-    // if lanes != rountrip.lanes {
-    //     return Err(LaneSpecError("lanes to tags cannot roundtrip".to_owned()));
-    // }
+    let rountrip = get_lane_specs_ltr(&tags, cfg)?;
+    if lanes != rountrip.lanes {
+        return Err(LaneSpecError("lanes to tags cannot roundtrip".to_owned()));
+    }
 
     Ok(tags)
 }

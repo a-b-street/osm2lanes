@@ -175,9 +175,9 @@ impl Component for App {
 }
 
 impl App {
-    fn calculate(value: &String) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
+    fn calculate(value: &str) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
         log::trace!("Calculate: {}", value);
-        match Tags::from_str(&value) {
+        match Tags::from_str(value) {
             Ok(tags) => match get_lane_specs_ltr_with_warnings(&tags, &CFG) {
                 Ok(lanes) => match lanes_to_tags(&lanes.lanes, &CFG) {
                     Ok(tags) => Ok((lanes, tags)),
@@ -189,9 +189,9 @@ impl App {
         }
     }
 
-    fn update_tags(&mut self, value: &String) {
+    fn update_tags(&mut self, value: &str) {
         log::trace!("Update Tags: {}", value);
-        let calculate = Self::calculate(&value);
+        let calculate = Self::calculate(value);
         log::trace!("Update: {:?}", calculate);
         match calculate {
             Ok((Lanes { lanes, warnings }, norm_tags)) => {
@@ -207,20 +207,19 @@ impl App {
                 self.state.lanes = lanes;
                 self.state.normalized_tags = None;
                 if warnings.is_empty() {
-                    self.state.message =
-                        Some(format!("Normalisation Error: {}", norm_err.to_string()));
+                    self.state.message = Some(format!("Normalisation Error: {}", norm_err));
                 } else {
                     self.state.message = Some(format!(
                         "{}\nNormalisation Error: {}",
                         warnings.to_string(),
-                        norm_err.to_string()
+                        norm_err
                     ));
                 }
             }
             Err(Err(lanes_err)) => {
                 self.state.lanes = Vec::new();
                 self.state.normalized_tags = None;
-                self.state.message = Some(format!("Conversion Error: {}", lanes_err.to_string()));
+                self.state.message = Some(format!("Conversion Error: {}", lanes_err));
             }
         }
     }
