@@ -3,7 +3,7 @@ use std::iter;
 use serde::{Deserialize, Serialize};
 
 use crate::tags::{TagKey, Tags, TagsRead, TagsWrite};
-use crate::{Config, DrivingSide, Lane, LaneDesignated, LaneDirection, Road};
+use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Locale, Road};
 
 const HIGHWAY: TagKey = TagKey::from("highway");
 const CYCLEWAY: TagKey = TagKey::from("cycleway");
@@ -134,7 +134,7 @@ type LanesResult = Result<Lanes, LaneSpecError>;
 type RoadResult = Result<Road, LaneSpecError>;
 
 // Handle non motorized ways
-fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LanesResult> {
+fn non_motorized(tags: &Tags, lc: &Locale) -> Option<LanesResult> {
     if !tags.is_any(
         HIGHWAY,
         &[
@@ -190,12 +190,12 @@ fn non_motorized(tags: &Tags, cfg: &Config) -> Option<LanesResult> {
         }
     }
     Some(Ok(Lanes {
-        lanes: assemble_ltr(forward_side, backward_side, cfg.driving_side),
+        lanes: assemble_ltr(forward_side, backward_side, lc.driving_side),
         warnings: LaneSpecWarnings::default(),
     }))
 }
 
-fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, usize) {
+fn driving_lane_directions(tags: &Tags, _lc: &Locale, oneway: bool) -> (usize, usize) {
     let both_ways = if let Some(n) = tags
         .get("lanes:both_ways")
         .and_then(|num| num.parse::<usize>().ok())
@@ -244,7 +244,7 @@ fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, 
 
 fn bus(
     tags: &Tags,
-    _cfg: &Config,
+    _lc: &Locale,
     oneway: bool,
     forward_side: &mut [Lane],
     backward_side: &mut [Lane],
@@ -317,7 +317,7 @@ fn bus(
 
 fn bicycle(
     tags: &Tags,
-    cfg: &Config,
+    lc: &Locale,
     oneway: bool,
     forward_side: &mut Vec<Lane>,
     backward_side: &mut Vec<Lane>,
@@ -366,8 +366,8 @@ fn bicycle(
             backward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }
         // cycleway:FORWARD=*
-        if tags.is_cycleway(Some(cfg.driving_side.into())) {
-            if tags.is(CYCLEWAY + cfg.driving_side.tag() + "oneway", "no")
+        if tags.is_cycleway(Some(lc.driving_side.into())) {
+            if tags.is(CYCLEWAY + lc.driving_side.tag() + "oneway", "no")
                 || tags.is("oneway:bicycle", "no")
             {
                 forward_side.push(Lane::both(LaneDesignated::Bicycle));
@@ -377,7 +377,7 @@ fn bicycle(
         }
         // cycleway:FORWARD=opposite_lane
         if tags.is_any(
-            CYCLEWAY + cfg.driving_side.tag(),
+            CYCLEWAY + lc.driving_side.tag(),
             &["opposite_lane", "opposite_track"],
         ) {
             warnings.0.push(LaneSpecWarning {
@@ -387,11 +387,9 @@ fn bicycle(
             forward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }
         // cycleway:BACKWARD=*
-        if tags.is_cycleway(Some(cfg.driving_side.opposite().into())) {
-            if tags.is(
-                CYCLEWAY + cfg.driving_side.opposite().tag() + "oneway",
-                "no",
-            ) || tags.is("oneway:bicycle", "no")
+        if tags.is_cycleway(Some(lc.driving_side.opposite().into())) {
+            if tags.is(CYCLEWAY + lc.driving_side.opposite().tag() + "oneway", "no")
+                || tags.is("oneway:bicycle", "no")
             {
                 backward_side.push(Lane::both(LaneDesignated::Bicycle));
             } else if oneway {
@@ -404,7 +402,7 @@ fn bicycle(
         }
         // cycleway:BACKWARD=opposite_lane
         if tags.is_any(
-            CYCLEWAY + cfg.driving_side.opposite().tag(),
+            CYCLEWAY + lc.driving_side.opposite().tag(),
             &["opposite_lane", "opposite_track"],
         ) {
             return Err(LaneSpecError(
@@ -417,7 +415,7 @@ fn bicycle(
 
 fn parking(
     tags: &Tags,
-    _cfg: &Config,
+    _lc: &Locale,
     _oneway: bool,
     forward_side: &mut Vec<Lane>,
     backward_side: &mut Vec<Lane>,
@@ -437,7 +435,7 @@ fn parking(
 
 fn walking(
     tags: &Tags,
-    cfg: &Config,
+    lc: &Locale,
     _oneway: bool,
     forward_side: &mut Vec<Lane>,
     backward_side: &mut Vec<Lane>,
@@ -445,20 +443,20 @@ fn walking(
     if tags.is("sidewalk", "both") {
         forward_side.push(Lane::foot());
         backward_side.push(Lane::foot());
-    } else if tags.is("sidewalk", "separate") && cfg.inferred_sidewalks {
+    } else if tags.is("sidewalk", "separate") && lc.infer_sidewalks {
         // TODO Need to snap separate sidewalks to ways. Until then, just do this.
         forward_side.push(Lane::foot());
         if !backward_side.is_empty() {
             backward_side.push(Lane::foot());
         }
     } else if tags.is("sidewalk", "right") {
-        if cfg.driving_side == DrivingSide::Right {
+        if lc.driving_side == DrivingSide::Right {
             forward_side.push(Lane::foot());
         } else {
             backward_side.push(Lane::foot());
         }
     } else if tags.is("sidewalk", "left") {
-        if cfg.driving_side == DrivingSide::Right {
+        if lc.driving_side == DrivingSide::Right {
             backward_side.push(Lane::foot());
         } else {
             forward_side.push(Lane::foot());
@@ -504,7 +502,7 @@ fn walking(
 
     // For living streets in Krakow, there aren't separate footways. People can walk in the street.
     // For now, model that by putting shoulders.
-    if cfg.inferred_sidewalks || tags.is(HIGHWAY, "living_street") {
+    if lc.infer_sidewalks || tags.is(HIGHWAY, "living_street") {
         if need_fwd_shoulder {
             forward_side.push(Lane::Shoulder);
         }
@@ -515,17 +513,17 @@ fn walking(
 }
 
 /// From an OpenStreetMap way's tags, determine the lanes along the road from left to right.
-pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LanesResult {
+pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, lc: &Locale) -> LanesResult {
     let mut warnings = LaneSpecWarnings::default();
 
-    if let Some(spec) = non_motorized(tags, cfg) {
+    if let Some(spec) = non_motorized(tags, lc) {
         return spec;
     }
 
     // TODO Reversible roads should be handled differently?
     let oneway = tags.is_any("oneway", &["yes", "reversible"]) || tags.is("junction", "roundabout");
 
-    let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, cfg, oneway);
+    let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, lc, oneway);
 
     let driving_lane = if tags.is("access", "no")
         && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
@@ -563,11 +561,11 @@ pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LanesResul
     //     });
     // }
 
-    bus(tags, cfg, oneway, &mut fwd_side, &mut back_side);
+    bus(tags, lc, oneway, &mut fwd_side, &mut back_side);
 
     bicycle(
         tags,
-        cfg,
+        lc,
         oneway,
         &mut fwd_side,
         &mut back_side,
@@ -575,19 +573,19 @@ pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LanesResul
     )?;
 
     if driving_lane == LaneDesignated::Motor {
-        parking(tags, cfg, oneway, &mut fwd_side, &mut back_side);
+        parking(tags, lc, oneway, &mut fwd_side, &mut back_side);
     }
 
-    walking(tags, cfg, oneway, &mut fwd_side, &mut back_side);
+    walking(tags, lc, oneway, &mut fwd_side, &mut back_side);
 
     Ok(Lanes {
-        lanes: assemble_ltr(fwd_side, back_side, cfg.driving_side),
+        lanes: assemble_ltr(fwd_side, back_side, lc.driving_side),
         warnings,
     })
 }
 
-pub fn get_lane_specs_ltr(tags: &Tags, cfg: &Config) -> RoadResult {
-    let Lanes { lanes, warnings } = get_lane_specs_ltr_with_warnings(tags, cfg)?;
+pub fn get_lane_specs_ltr(tags: &Tags, lc: &Locale) -> RoadResult {
+    let Lanes { lanes, warnings } = get_lane_specs_ltr_with_warnings(tags, lc)?;
     if !warnings.0.is_empty() {
         return Err(LaneSpecError(format!(
             "{} warnings found",
@@ -616,7 +614,7 @@ fn assemble_ltr(
     }
 }
 
-pub fn lanes_to_tags(lanes: &[Lane], cfg: &Config) -> Result<Tags, LaneSpecError> {
+pub fn lanes_to_tags(lanes: &[Lane], lc: &Locale) -> Result<Tags, LaneSpecError> {
     let mut tags = Tags::default();
     let mut _oneway = false;
     tags.insert("highway", "yes"); // TODO, what?
@@ -797,7 +795,7 @@ pub fn lanes_to_tags(lanes: &[Lane], cfg: &Config) -> Result<Tags, LaneSpecError
     }
 
     // Check roundtrip!
-    let rountrip = get_lane_specs_ltr(&tags, cfg)?;
+    let rountrip = get_lane_specs_ltr(&tags, lc)?;
     if lanes != rountrip.lanes {
         return Err(LaneSpecError("lanes to tags cannot roundtrip".to_owned()));
     }
