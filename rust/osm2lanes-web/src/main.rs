@@ -9,8 +9,7 @@ use yew::prelude::*;
 mod draw;
 
 use osm2lanes::{
-    get_lane_specs_ltr_with_warnings, lanes_to_tags, Config, DrivingSide, Lane, LanePrintable,
-    Lanes, Tags,
+    get_lane_specs_ltr_with_warnings, lanes_to_tags, Lane, LanePrintable, Lanes, Locale, Tags,
 };
 
 // Use `wee_alloc` as the global allocator.
@@ -21,6 +20,7 @@ type ShouldRender = bool;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct State {
+    pub locale: Locale,
     /// The editable input, line and equal separated tags
     pub edit_tags: String,
     /// The input normalised
@@ -42,21 +42,19 @@ pub struct App {
     state: State,
 }
 
-const CFG: Config = Config {
-    driving_side: DrivingSide::Right,
-    inferred_sidewalks: true,
-};
-
 impl Component for App {
     type Message = Msg;
     type Properties = ();
 
     fn create(_ctx: &Context<Self>) -> Self {
+        let locale = Locale::builder().build();
         let focus_ref = NodeRef::default();
         let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:taxi:backward=1\nlanes:psv=1\nsidewalk=right".to_owned();
-        let state = if let Ok((Lanes { lanes, warnings }, norm_tags)) = Self::calculate(&edit_tags)
+        let state = if let Ok((Lanes { lanes, warnings }, norm_tags)) =
+            Self::calculate(&edit_tags, &locale)
         {
             State {
+                locale,
                 edit_tags,
                 normalized_tags: Some(norm_tags.to_string()),
                 lanes,
@@ -175,11 +173,14 @@ impl Component for App {
 }
 
 impl App {
-    fn calculate(value: &str) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
+    fn calculate(
+        value: &str,
+        locale: &Locale,
+    ) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
         log::trace!("Calculate: {}", value);
         match Tags::from_str(value) {
-            Ok(tags) => match get_lane_specs_ltr_with_warnings(&tags, &CFG) {
-                Ok(lanes) => match lanes_to_tags(&lanes.lanes, &CFG) {
+            Ok(tags) => match get_lane_specs_ltr_with_warnings(&tags, locale) {
+                Ok(lanes) => match lanes_to_tags(&lanes.lanes, locale) {
                     Ok(tags) => Ok((lanes, tags)),
                     Err(e) => Err(Ok((lanes, e.to_string()))),
                 },
@@ -191,7 +192,7 @@ impl App {
 
     fn update_tags(&mut self, value: &str) {
         log::trace!("Update Tags: {}", value);
-        let calculate = Self::calculate(value);
+        let calculate = Self::calculate(value, &self.state.locale);
         log::trace!("Update: {:?}", calculate);
         match calculate {
             Ok((Lanes { lanes, warnings }, norm_tags)) => {
