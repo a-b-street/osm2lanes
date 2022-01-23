@@ -62,6 +62,21 @@ impl Tags {
     }
 
     /// Get tree
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use osm2lanes::Tags;
+    /// let tags = Tags::from_str("foo=bar\na:b:c=foobar").unwrap();
+    /// let tree = tags.tree();
+    /// let a = tree.get("a");
+    /// assert!(a.is_some());
+    /// let a = a.unwrap();
+    /// assert!(a.val().is_none());
+    /// let c = a.get("b:c");
+    /// assert!(c.is_some());
+    /// let c = c.unwrap();
+    /// assert_eq!(c.val(), Some("foobar"))
+    /// ```
     pub fn tree(&self) -> TagTree {
         let mut tag_tree = TagTree::default();
         for (k, v) in self.0.iter() {
@@ -153,7 +168,7 @@ pub struct TagTreeVal {
 }
 
 impl TagTreeVal {
-    pub fn insert(&mut self, key: Option<&str>, val: String) {
+    fn insert(&mut self, key: Option<&str>, val: String) {
         match key {
             Some(key) => self
                 .tree
@@ -162,11 +177,17 @@ impl TagTreeVal {
             None => self.set(val),
         }
     }
-    pub fn set(&mut self, input: String) {
+    fn set(&mut self, input: String) {
         if let Some(val) = &self.val {
             panic!("TagTreeVal already contains value {}", val);
         }
         self.val = Some(input);
+    }
+    pub fn get<K: Into<TagKey>>(&self, key: K) -> Option<&TagTreeVal> {
+        self.tree.as_ref()?.get(key)
+    }
+    pub fn val(&self) -> Option<&str> {
+        Some(self.val.as_ref()?.as_str())
     }
 }
 

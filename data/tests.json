@@ -1,5 +1,62 @@
 [
     {
+        "way_id": 62176050,
+        "description": "Great Northern Highway, a 2 lane rural road.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/4/44/Onderweg_-_Fitzroy_Crossing_-_Purnululu_%288991950691%29.jpg",
+        "skip_kotlin": true,
+        "tags": {
+            "highway": "trunk",
+            "surface": "asphalt"
+        },
+        "driving_side": "left",
+        "ISO 3166-2": "AU-WA",
+        "output": [
+            {
+                "type": "shoulder"
+            },
+            {
+                "type": "separator",
+                "markings": [
+                    {
+                        "style": "solid_line",
+                        "color": "white"
+                    }
+                ]
+            },
+            {
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
+            },
+            {
+                "type": "separator",
+                "markings": [
+                    {
+                        "style": "dotted_line",
+                        "color": "white"
+                    }
+                ]
+            },
+            {
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
+            },
+            {
+                "type": "separator",
+                "markings": [
+                    {
+                        "style": "solid_line",
+                        "color": "white"
+                    }
+                ]
+            },
+            {
+                "type": "shoulder"
+            }
+        ]
+    },
+    {
         "way_id": 159276650,
         "description": "Alaska Highway, a 2 lane rural road.",
         "image": "https://www.travelyukon.com/sites/default/files/styles/hero_crop/public/hero/2017-10/alaskahighway_fn.jpg.jpeg?itok=GSSh7NDZ",
@@ -33,11 +90,7 @@
                 "type": "separator",
                 "markings": [
                     {
-                        "style": "solid_line",
-                        "color": "yellow"
-                    },
-                    {
-                        "style": "solid_line",
+                        "style": "dotted_line",
                         "color": "yellow"
                     }
                 ]
@@ -58,6 +111,52 @@
             },
             {
                 "type": "shoulder"
+            }
+        ]
+    },
+    {
+        "way_id": 988980354,
+        "description": "busway=* and lanes:bus=*",
+        "driving_side": "right",
+        "tags": {
+            "highway": "primary",
+            "busway": "lane",
+            "hgv": "local",
+            "lanes:bus": "2",
+            "lit": "yes",
+            "maxspeed": "25 mph",
+            "name": "East 42nd Street",
+            "sidewalk": "both",
+            "surface": "asphalt"
+        },
+        "output": [
+            {
+                "type": "travel",
+                "designated": "foot"
+            },
+            {
+                "type": "travel",
+                "direction": "backward",
+                "designated": "bus"
+            },
+            {
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
+            },
+            {
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
+            },
+            {
+                "type": "travel",
+                "direction": "forward",
+                "designated": "bus"
+            },
+            {
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
@@ -287,7 +386,7 @@
         "skip_rust": true,
         "way_id": 369623526,
         "mapillary": "https://www.mapillary.com/app/?pKey=839524790321923",
-        "comment": "OSM Version #9; check if cycleway:left=opposite_track for RHT is valid; TODO: parking lane is not parallel",
+        "comment": "OSM Version #9; check if cycleway:left=opposite_track for RHT is valid (rust); TODO: parking lane is not parallel",
         "tags": {
             "highway": "residential",
             "lanes": "1",
@@ -423,7 +522,6 @@
         ]
     },
     {
-        "skip_rust": true,
         "way_id": 4188078,
         "mapillary": "https://www.mapillary.com/app/?pKey=270752554744918",
         "tags": {
@@ -456,7 +554,6 @@
         ]
     },
     {
-        "skip_rust": true,
         "way_id": 49207928,
         "tags": {
             "cycleway:right": "lane",
@@ -591,55 +688,8 @@
     },
     {
         "skip_rust": true,
-        "way_id": 988980354,
-        "driving_side": "right",
-        "tags": {
-            "busway": "lane",
-            "hgv": "local",
-            "highway": "primary",
-            "lanes:bus": "2",
-            "lit": "yes",
-            "maxspeed": "25 mph",
-            "name": "East 42nd Street",
-            "sidewalk": "both",
-            "surface": "asphalt",
-            "wikidata": "Q110061",
-            "wikipedia": "en:42nd Street (Manhattan)"
-        },
-        "output": [
-            {
-                "type": "travel",
-                "designated": "foot"
-            },
-            {
-                "type": "travel",
-                "direction": "backward",
-                "designated": "bus"
-            },
-            {
-                "type": "travel",
-                "direction": "backward",
-                "designated": "motor_vehicle"
-            },
-            {
-                "type": "travel",
-                "direction": "forward",
-                "designated": "motor_vehicle"
-            },
-            {
-                "type": "travel",
-                "direction": "forward",
-                "designated": "bus"
-            },
-            {
-                "type": "travel",
-                "designated": "foot"
-            }
-        ]
-    },
-    {
-        "skip_rust": true,
         "way_id": 13859146,
+        "mapillary": "https://www.mapillary.com/app/?pKey=1491728521220443,",
         "tags": {
             "busway:both": "lane",
             "highway": "secondary",

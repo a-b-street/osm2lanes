@@ -825,11 +825,11 @@ pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> Result<Tags,
     match (
         lanes
             .iter()
-            .take_while(|lane| lane.is_motor())
+            .take_while(|lane| !lane.is_motor())
             .any(|lane| matches!(lane, Lane::Parking { .. })),
         lanes
             .iter()
-            .skip_while(|lane| lane.is_motor())
+            .skip_while(|lane| !lane.is_motor())
             .any(|lane| matches!(lane, Lane::Parking { .. })),
     ) {
         (false, false) => {}
@@ -841,12 +841,12 @@ pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> Result<Tags,
     {
         let left_cycle_lane = lanes
             .iter()
-            .take_while(|lane| lane.is_motor())
+            .take_while(|lane| !lane.is_motor())
             .find(|lane| lane.is_bicycle());
         let right_cycle_lane = lanes
             .iter()
             .rev()
-            .take_while(|lane| lane.is_motor())
+            .take_while(|lane| !lane.is_motor())
             .find(|lane| lane.is_bicycle());
         match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
             (false, false) => {}
