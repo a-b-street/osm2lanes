@@ -1,3 +1,88 @@
+### Tests for osm2lanes
+###
+### Tests are ordered as follows, from out to in, top to bottom:
+### - simple to complex
+### - rural to urban
+### - By infrastructure:
+###   - car-centric 
+###   - pedestrian 
+###   - cycleways
+###   - busways
+###   - heavy goods vehicles
+###   - other
+### - By country alphabetically, where we identify the following countries of special interest:
+###   - United Kingdom: LHT, and `psv` usage.
+###   - Netherlands: cycleways, and roads with only cars and busses
+###     (a separate OSM way often exists for pedestrians and cyclists).
+###   - TODO: more?
+### - esoteric to realistic
+###
+### Tests are stored as a list of mappings in yaml.
+### Prefer real examples over esoteric examples.
+### Esoteric examples should have a description.
+### Real examples should have a way_id, and either an image or mapillary link.
+### To provide context clues for the locale, the following are provided:
+### - driving_side: left or right
+### - iso-3166-2: e.g. US-CA
+### Tags are a map of strings from OSM, however irrelevant tags may be omitted.
+### Output are the lanes, matching the spec.
+### Each language defines a way to skip its tests (e.g. skip_kotlin)
+###
+### An example of the complete structure:
+### - description: "An x lane road with y and z"
+### - way_id: 123456789
+###   image: "https://www.com/"
+###   mapillary: https://www.mapillary.com/app/?pKey=123456789
+###   skip_kotlin: true
+###   tags:
+###     highway: trunk
+###     lanes: '2'
+###   driving_side: right
+###   ISO 3166-2: CA-YT
+###   output:
+###   - type: shoulder
+###   - type: separator
+###     markings:
+###     - style: solid_line
+###       color: white
+###   - type: travel
+###     direction: backward
+###     designated: motor_vehicle
+###
+
+### Trivial, Rural
+
+- way_id: 62176050
+  description: "Great Northern Highway, a 2 lane rural road."
+  image: "https://upload.wikimedia.org/wikipedia/commons/4/44/Onderweg_-_Fitzroy_Crossing_-_Purnululu_%288991950691%29.jpg"
+  skip_kotlin: true
+  tags:
+    highway: trunk
+    surface: asphalt
+  driving_side: left
+  ISO 3166-2: AU-WA
+  output:
+  - type: shoulder
+  - type: separator
+    markings:
+    - style: solid_line
+      color: white
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: separator
+    markings:
+    - style: dotted_line
+      color: white
+  - type: travel
+    direction: backward
+    designated: motor_vehicle
+  - type: separator
+    markings:
+    - style: solid_line
+      color: white
+  - type: shoulder
+
 - way_id: 159276650
   description: "Alaska Highway, a 2 lane rural road."
   image: "https://www.travelyukon.com/sites/default/files/styles/hero_crop/public/hero/2017-10/alaskahighway_fn.jpg.jpeg?itok=GSSh7NDZ"
@@ -19,9 +104,7 @@
     designated: motor_vehicle
   - type: separator
     markings:
-    - style: solid_line
-      color: yellow
-    - style: solid_line
+    - style: dotted_line
       color: yellow
   - type: travel
     direction: forward
@@ -32,6 +115,29 @@
       color: white
   - type: shoulder
 
+### Multi-lane Trunk
+# TODO
+
+### City
+# TODO
+
+### Pedestrian
+# TODO
+
+### Cycleways
+# TODO
+
+### Busways
+# TODO
+
+### Combination
+# TODO
+
+### Other
+# TODO
+
+### To Sort
+# The following still need to be categorized
 - way_id: 428294122
   mapillary: https://www.mapillary.com/app/?pKey=503446704131825
   description: with oneway=yes, a cycleway:*=* is in the forward direction. https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
