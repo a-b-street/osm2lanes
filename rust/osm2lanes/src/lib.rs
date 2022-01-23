@@ -11,77 +11,40 @@ pub use self::tags::{Tags, TagsRead, TagsWrite};
 
 mod transform;
 pub use self::transform::{
-    get_lane_specs_ltr, get_lane_specs_ltr_with_warnings, lanes_to_tags, LaneSpecWarnings,
+    get_lane_specs_ltr, get_lane_specs_ltr_with_warnings, lanes_to_tags, LaneSpecWarnings, Lanes,
 };
 
-/// Lanes
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Lanes {
-    pub lanes: Vec<LaneSpec>,
-    pub warnings: LaneSpecWarnings,
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Road {
+    pub lanes: Vec<Lane>,
 }
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct LaneSpec {
-    #[serde(rename = "type")]
-    pub lane_type: LaneType,
-    pub direction: Direction,
-}
-
-/// The type of a lane
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum LaneType {
-    /// A general-purpose lane for any vehicles
-    #[serde(rename = "travel_lane")]
-    Driving,
-    /// On-street parking. May be diagonal, perpendicular, or parallel.
-    #[serde(rename = "parking_lane")]
-    Parking,
-    /// A dedicated space for pedestrians, separated from the road by a curb.
-    #[serde(rename = "sidewalk")]
-    Sidewalk,
-    /// Some roads without any sidewalks still have pedestrian traffic. This type represents the
-    /// shoulder of the road, where people are usually forced to walk.
+#[serde(tag = "type")]
+pub enum Lane {
+    #[serde(rename = "travel")]
+    Travel {
+        // TODO, we could make this non-optional, but remove the field for designated=foot?
+        direction: Option<LaneDirection>,
+        designated: LaneDesignated,
+    },
+    #[serde(rename = "parking")]
+    Parking {
+        direction: LaneDirection,
+        designated: LaneDesignated,
+    },
     #[serde(rename = "shoulder")]
     Shoulder,
-    /// A marked bike lane. May be separated from the rest of the road by some type of buffer.
-    #[serde(rename = "cycleway")]
-    Biking,
-    /// A bus-only lane
-    #[serde(rename = "bus_lane")]
-    Bus,
-    /// A shared center turn lane
-    #[serde(rename = "shared_left_turn")]
-    SharedLeftTurn,
-    /// Some lane that's under construction
-    Construction,
-    Buffer(BufferType),
+    // TODO
+    #[serde(rename = "separator")]
+    Separator,
+    // #[serde(rename = "separator")]
+    // Construction,
 }
 
-/// Some kind of physical or symbolic buffer, usually between motorized and non-motorized traffic.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum BufferType {
-    /// Painted stripes
-    Stripes,
-    /// Flex posts, wands, cones, car ticklers, bollards, other "weak" forms of protection. Usually
-    /// possible to weave through them.
-    FlexPosts,
-    /// Sturdier planters, with gaps
-    Planters,
-    /// Solid barrier, no gaps.
-    JerseyBarrier,
-    /// A raised curb
-    Curb,
-}
-
-/// Is a lane oriented the same direction as the OSM way or not? See
-/// https://wiki.openstreetmap.org/wiki/Forward_%26_backward,_left_%26_right.
-///
-/// Note this concept needs to be thought through carefully. What direction does a parking lane
-/// face? If there's bidirectional movement on a sidewalk, does a value make sense?
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum Direction {
+pub enum LaneDirection {
     #[serde(rename = "forward")]
     Forward,
     #[serde(rename = "backward")]
@@ -90,6 +53,20 @@ pub enum Direction {
     Both,
     #[serde(rename = "none")]
     None,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum LaneDesignated {
+    // #[serde(rename = "any")]
+    // Any,
+    #[serde(rename = "foot")]
+    Foot,
+    #[serde(rename = "bicycle")]
+    Bicycle,
+    #[serde(rename = "motor_vehicle")]
+    Motor,
+    #[serde(rename = "bus")]
+    Bus,
 }
 
 /// Configuration to give extra context about the place where an OSM way exists.
@@ -124,50 +101,70 @@ pub trait LanePrintable {
     fn as_utf8(&self) -> char;
 }
 
-impl LanePrintable for LaneType {
+impl LanePrintable for Lane {
     fn as_ascii(&self) -> char {
         match self {
-            LaneType::Driving => 'd',
-            LaneType::Biking => 'b',
-            LaneType::Bus => 'B',
-            LaneType::Parking => 'p',
-            LaneType::Sidewalk => 's',
-            LaneType::Shoulder => 'S',
-            LaneType::SharedLeftTurn => 'C',
-            LaneType::Construction => 'x',
-            LaneType::Buffer(_) => '|',
+            Self::Travel {
+                designated: LaneDesignated::Foot,
+                ..
+            } => 's',
+            Self::Travel {
+                designated: LaneDesignated::Bicycle,
+                ..
+            } => 'b',
+            Self::Travel {
+                designated: LaneDesignated::Motor,
+                ..
+            } => 'd',
+            Self::Travel {
+                designated: LaneDesignated::Bus,
+                ..
+            } => 'B',
+            Self::Shoulder => 'S',
+            Self::Parking { .. } => 'p',
+            Self::Separator => todo!(),
         }
     }
     fn as_utf8(&self) -> char {
         match self {
-            LaneType::Driving => '🚗',
-            LaneType::Biking => '🚲',
-            LaneType::Bus => '🚌',
-            LaneType::Parking => '🅿',
-            LaneType::Sidewalk => '🚶',
-            LaneType::Shoulder => 'ˢ',
-            LaneType::SharedLeftTurn => '🔃',
-            LaneType::Construction => 'x',
-            LaneType::Buffer(_) => '|',
+            Self::Travel {
+                designated: LaneDesignated::Foot,
+                ..
+            } => '🚶',
+            Self::Travel {
+                designated: LaneDesignated::Bicycle,
+                ..
+            } => '🚲',
+            Self::Travel {
+                designated: LaneDesignated::Motor,
+                ..
+            } => '🚗',
+            Self::Travel {
+                designated: LaneDesignated::Bus,
+                ..
+            } => '🚌',
+            Self::Shoulder => 'ˢ',
+            Self::Parking { .. } => '🅿',
+            Self::Separator => todo!(),
         }
     }
 }
 
-impl LanePrintable for Direction {
+impl LanePrintable for LaneDirection {
     fn as_ascii(&self) -> char {
         match self {
-            Direction::Forward => '^',
-            Direction::Backward => 'v',
-            Direction::Both => '|',
-            Direction::None => '-',
+            Self::Forward => '^',
+            Self::Backward => 'v',
+            Self::Both => '|',
+            Self::None => '-',
         }
     }
     fn as_utf8(&self) -> char {
         match self {
-            Direction::Forward => '↑',
-            Direction::Backward => '↓',
-            Direction::Both => '↕',
-            Direction::None => '—',
+            Self::Forward => '↑',
+            Self::Backward => '↓',
+            Self::Both => '↕',
+            Self::None => '—',
         }
     }
 }
@@ -182,16 +179,18 @@ mod tests {
 
     #[derive(Deserialize)]
     struct TestCase {
+        // Metadata
         /// The OSM way unique identifier
         way_id: Option<i64>,
         link: Option<String>,
-        tags: Tags,
         driving_side: DrivingSide,
-        output: Vec<LaneSpec>,
         #[serde(rename = "skip_rust")]
         skip: Option<bool>,
         comment: Option<String>,
         description: Option<String>,
+        // Data
+        tags: Tags,
+        output: Vec<Lane>,
     }
 
     impl TestCase {
@@ -227,12 +226,25 @@ mod tests {
         }
     }
 
-    fn stringify_lane_types(lanes: &[LaneSpec]) -> String {
-        lanes.iter().map(|s| s.lane_type.as_ascii()).collect()
+    fn stringify_lane_types(road: &Road) -> String {
+        road.lanes.iter().map(|l| l.as_ascii()).collect()
     }
 
-    fn stringify_directions(lanes: &[LaneSpec]) -> String {
-        lanes.iter().map(|s| s.direction.as_utf8()).collect()
+    fn stringify_directions(road: &Road) -> String {
+        road.lanes
+            .iter()
+            .map(|lane| {
+                if let Lane::Travel {
+                    direction: Some(direction),
+                    ..
+                } = lane
+                {
+                    direction.as_utf8()
+                } else {
+                    ' '
+                }
+            })
+            .collect()
     }
 
     #[test]
@@ -242,7 +254,12 @@ mod tests {
                 .unwrap();
 
         let mut ok = true;
-        for test in tests {
+        for test in tests.iter().filter(|test| {
+            !test
+                .output
+                .iter()
+                .any(|lane| matches!(lane, Lane::Separator))
+        }) {
             if !test.skip.is_none() && test.skip.unwrap() {
                 continue;
             }
@@ -251,24 +268,27 @@ mod tests {
                 inferred_sidewalks: true,
             };
             let lanes = get_lane_specs_ltr(&test.tags, &cfg);
-            if let Ok(actual) = lanes {
-                if actual != test.output {
+            let expected_road = Road {
+                lanes: test.output.clone(),
+            };
+            if let Ok(actual_road) = lanes {
+                if actual_road != expected_road {
                     ok = false;
                     test.print();
                     println!("Got:");
-                    println!("    {}", stringify_lane_types(&actual));
-                    println!("    {}", stringify_directions(&actual));
+                    println!("    {}", stringify_lane_types(&actual_road));
+                    println!("    {}", stringify_directions(&actual_road));
                     println!("Expected:");
-                    println!("    {}", stringify_lane_types(&test.output));
-                    println!("    {}", stringify_directions(&test.output));
+                    println!("    {}", stringify_lane_types(&expected_road));
+                    println!("    {}", stringify_directions(&expected_road));
                     println!();
                 }
             } else {
                 ok = false;
                 test.print();
                 println!("Expected:");
-                println!("    {}", stringify_lane_types(&test.output));
-                println!("    {}", stringify_directions(&test.output));
+                println!("    {}", stringify_lane_types(&expected_road));
+                println!("    {}", stringify_directions(&expected_road));
                 println!("Panicked:");
                 println!("{:#?}", lanes.unwrap_err());
                 println!();
@@ -284,7 +304,12 @@ mod tests {
                 .unwrap();
 
         let mut ok = true;
-        for test in tests {
+        for test in tests.iter().filter(|test| {
+            !test
+                .output
+                .iter()
+                .any(|lane| matches!(lane, Lane::Separator))
+        }) {
             if !test.skip.is_none() && test.skip.unwrap() {
                 continue;
             }
@@ -292,9 +317,12 @@ mod tests {
                 driving_side: test.driving_side,
                 inferred_sidewalks: true,
             };
+            let input_road = Road {
+                lanes: test.output.clone(),
+            };
             let tags = lanes_to_tags_no_roundtrip(&test.output, &cfg).unwrap();
-            let lanes = get_lane_specs_ltr(&tags, &cfg).unwrap();
-            if test.output != lanes {
+            let output_road = get_lane_specs_ltr(&tags, &cfg).unwrap();
+            if input_road != output_road {
                 ok = false;
                 if !test.way_id.is_none() {
                     println!(
@@ -305,15 +333,15 @@ mod tests {
                     println!("For input (example from {}):", test.link.as_ref().unwrap());
                 }
                 println!("From:");
-                println!("    {}", stringify_lane_types(&test.output));
-                println!("    {}", stringify_directions(&test.output));
+                println!("    {}", stringify_lane_types(&input_road));
+                println!("    {}", stringify_directions(&input_road));
                 println!("Normalized OSM tags:");
                 for (k, v) in tags.map() {
                     println!("    {} = {}", k, v);
                 }
                 println!("Got:");
-                println!("    {}", stringify_lane_types(&lanes));
-                println!("    {}", stringify_directions(&lanes));
+                println!("    {}", stringify_lane_types(&output_road));
+                println!("    {}", stringify_directions(&output_road));
                 println!();
             }
         }

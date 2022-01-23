@@ -1,23 +1,23 @@
 """
 Test lane tag parsing.
 """
-import json
+import yaml
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import pytest
 from osm2lanes.core import DrivingSide, Lane, Road
 
 Tags = dict[str, str]
 
-TEST_FILE_PATH: Path = Path("data/tests.json")
+TEST_FILE_PATH: Path = Path("data/tests.yml")
 
 with TEST_FILE_PATH.open(encoding="utf-8") as input_file:
     CONFIGURATIONS: list[dict[str, Any]] = [
         test
-        for test in json.load(input_file)
-        if "skip_python" not in test or not test["skip_python"]
+        for test in yaml.safe_load(input_file)
+        if not test.get("skip_python")
     ]
 
 
@@ -27,7 +27,7 @@ class Case:
 
     skip: bool
     # The OSM way unique identifier.
-    way_id: int
+    way_id: Optional[int]
     tags: Tags
     driving_side: DrivingSide
     output: list[Lane]
@@ -36,11 +36,15 @@ class Case:
     def from_structure(cls, structure: dict[str, Any]) -> "Case":
         """Parse test from configuration."""
         return cls(
-            structure["skip_python"] if "skip_python" in structure else False,
-            structure["way_id"],
-            structure["tags"],
-            DrivingSide(structure["driving_side"]),
-            list(map(Lane.from_structure, structure["output"])),
+            skip=bool(structure.get("skip_python")),
+            way_id=structure.get("way_id"),
+            tags=structure["tags"],
+            driving_side=DrivingSide(structure["driving_side"]),
+            output=[
+                Lane.from_structure(l)
+                for l in structure["output"]
+                if l["type"] != "separator"
+            ],
         )
 
 

@@ -9,7 +9,7 @@ use yew::prelude::*;
 mod draw;
 
 use osm2lanes::{
-    get_lane_specs_ltr_with_warnings, lanes_to_tags, Config, DrivingSide, LanePrintable, LaneSpec,
+    get_lane_specs_ltr_with_warnings, lanes_to_tags, Config, DrivingSide, Lane, LanePrintable,
     Lanes, Tags,
 };
 
@@ -26,7 +26,7 @@ pub struct State {
     /// The input normalised
     pub normalized_tags: Option<String>,
     /// Lanes to visualise
-    pub lanes: Vec<LaneSpec>,
+    pub lanes: Vec<Lane>,
     /// Message for user
     pub message: Option<String>,
 }
@@ -175,9 +175,9 @@ impl Component for App {
 }
 
 impl App {
-    fn calculate(value: &String) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
+    fn calculate(value: &str) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
         log::trace!("Calculate: {}", value);
-        match Tags::from_str(&value) {
+        match Tags::from_str(value) {
             Ok(tags) => match get_lane_specs_ltr_with_warnings(&tags, &CFG) {
                 Ok(lanes) => match lanes_to_tags(&lanes.lanes, &CFG) {
                     Ok(tags) => Ok((lanes, tags)),
@@ -189,9 +189,9 @@ impl App {
         }
     }
 
-    fn update_tags(&mut self, value: &String) {
+    fn update_tags(&mut self, value: &str) {
         log::trace!("Update Tags: {}", value);
-        let calculate = Self::calculate(&value);
+        let calculate = Self::calculate(value);
         log::trace!("Update: {:?}", calculate);
         match calculate {
             Ok((Lanes { lanes, warnings }, norm_tags)) => {
@@ -207,32 +207,39 @@ impl App {
                 self.state.lanes = lanes;
                 self.state.normalized_tags = None;
                 if warnings.is_empty() {
-                    self.state.message =
-                        Some(format!("Normalisation Error: {}", norm_err.to_string()));
+                    self.state.message = Some(format!("Normalisation Error: {}", norm_err));
                 } else {
                     self.state.message = Some(format!(
                         "{}\nNormalisation Error: {}",
                         warnings.to_string(),
-                        norm_err.to_string()
+                        norm_err
                     ));
                 }
             }
             Err(Err(lanes_err)) => {
                 self.state.lanes = Vec::new();
                 self.state.normalized_tags = None;
-                self.state.message = Some(format!("Conversion Error: {}", lanes_err.to_string()));
+                self.state.message = Some(format!("Conversion Error: {}", lanes_err));
             }
         }
     }
 
-    fn view_lane_type(&self, lane: &LaneSpec) -> Html {
+    fn view_lane_type(&self, lane: &Lane) -> Html {
         html! {
-            <div class="lane"><span>{lane.lane_type.as_utf8()}</span></div>
+            <div class="lane"><span>{lane.as_utf8()}</span></div>
         }
     }
-    fn view_lane_direction(&self, lane: &LaneSpec) -> Html {
+    fn view_lane_direction(&self, lane: &Lane) -> Html {
         html! {
-            <div class="lane"><span>{lane.direction.as_utf8()}</span></div>
+            <div class="lane"><span>{if let Lane::Travel {
+                direction: Some(direction),
+                ..
+            } = lane
+            {
+                direction.as_utf8()
+            } else {
+                ' '
+            }}</span></div>
         }
     }
     fn draw_canvas(&self) {

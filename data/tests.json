@@ -1,9 +1,70 @@
 [
     {
-        "description": "with oneway=yes, a cycleway:*=* is in the forward direction. https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway",
-        "comment": "TODO: OSM tags do not accurately reflect parking situation",
+        "way_id": 159276650,
+        "description": "Alaska Highway, a 2 lane rural road.",
+        "image": "https://www.travelyukon.com/sites/default/files/styles/hero_crop/public/hero/2017-10/alaskahighway_fn.jpg.jpeg?itok=GSSh7NDZ",
+        "skip_kotlin": true,
+        "tags": {
+            "highway": "trunk",
+            "lanes": "2",
+            "surface": "paved"
+        },
+        "driving_side": "right",
+        "ISO 3166-2": "CA-YT",
+        "output": [
+            {
+                "type": "shoulder"
+            },
+            {
+                "type": "separator",
+                "markings": [
+                    {
+                        "style": "solid_line",
+                        "color": "white"
+                    }
+                ]
+            },
+            {
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
+            },
+            {
+                "type": "separator",
+                "markings": [
+                    {
+                        "style": "solid_line",
+                        "color": "yellow"
+                    },
+                    {
+                        "style": "solid_line",
+                        "color": "yellow"
+                    }
+                ]
+            },
+            {
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
+            },
+            {
+                "type": "separator",
+                "markings": [
+                    {
+                        "style": "solid_line",
+                        "color": "white"
+                    }
+                ]
+            },
+            {
+                "type": "shoulder"
+            }
+        ]
+    },
+    {
         "way_id": 428294122,
         "mapillary": "https://www.mapillary.com/app/?pKey=503446704131825",
+        "description": "with oneway=yes, a cycleway:*=* is in the forward direction. https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway",
         "tags": {
             "highway": "secondary",
             "bicycle": "designated",
@@ -16,32 +77,34 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "cycleway",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "bicycle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
     {
-        "description": "a bidirectional cycleway",
         "way_id": 8591383,
         "mapillary": "https://www.mapillary.com/app/?pKey=3963080753774579",
-        "comment": "TODO: cyceway tagged as track, but appears to be a lane",
+        "description": "a bidirectional cycleway",
         "tags": {
             "highway": "tertiary",
             "lanes": "1",
@@ -54,28 +117,29 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
     {
-        "description": "a bidirectional cycleway",
         "way_id": 8591383,
         "mapillary": "https://www.mapillary.com/app/?pKey=3963080753774579",
-        "comment": "A slight variation of the above, using cycleway:left:oneway:no, which should be equivalent",
+        "description": "a bidirectional cycleway",
         "tags": {
             "highway": "tertiary",
             "lanes": "1",
@@ -88,20 +152,22 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
@@ -121,45 +187,51 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "parking_lane",
-                "direction": "backward"
+                "type": "parking",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "parking_lane",
-                "direction": "forward"
+                "type": "parking",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
     {
-        "description": "legacy centre_turn_lane",
         "way_id": 389654080,
         "mapillary": "https://www.mapillary.com/app/?pKey=331760328316020",
         "comment": "TODO: the cycleway is actually two marked lanes, how should we know that given the tags or what should the tags be?",
@@ -177,32 +249,37 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "parking_lane",
-                "direction": "backward"
+                "type": "parking",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "shared_left_turn",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
@@ -210,7 +287,7 @@
         "skip_rust": true,
         "way_id": 369623526,
         "mapillary": "https://www.mapillary.com/app/?pKey=839524790321923",
-        "comment": "OSM Version #9; check if cycleway:left=opposite_track for RHT is valid (skip_rust); TODO: parking lane is not parallel",
+        "comment": "OSM Version #9; check if cycleway:left=opposite_track for RHT is valid; TODO: parking lane is not parallel",
         "tags": {
             "highway": "residential",
             "lanes": "1",
@@ -224,24 +301,27 @@
         "ISO 3166-2": "US-WA",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "parking_lane",
-                "direction": "forward"
+                "type": "parking",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
@@ -260,24 +340,27 @@
         "driving_side": "right",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "cycleway",
-                "direction": "both"
+                "type": "travel",
+                "direction": "both",
+                "designated": "bicycle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
@@ -292,26 +375,31 @@
         "driving_side": "left",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
     {
         "way_id": 224637155,
+        "mapillary": "https://www.mapillary.com/app/?pKey=3687326814728481",
+        "comment": "TODO: missing cycleway:left and busway tags",
         "tags": {
+            "highway": "primary",
             "lanes": "2",
             "oneway": "yes",
             "sidewalk": "left"
@@ -319,21 +407,25 @@
         "driving_side": "left",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             }
         ]
     },
     {
+        "skip_rust": true,
         "way_id": 4188078,
+        "mapillary": "https://www.mapillary.com/app/?pKey=270752554744918",
         "tags": {
             "lanes": "2",
             "cycleway:left": "lane",
@@ -343,24 +435,28 @@
         "driving_side": "left",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "cycleway",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "bicycle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             }
         ]
     },
     {
+        "skip_rust": true,
         "way_id": 49207928,
         "tags": {
             "cycleway:right": "lane",
@@ -369,30 +465,33 @@
         "driving_side": "left",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "cycleway",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "bicycle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
     {
-        "comment": "How should an odd number of lanes forward/backwards be split without any clues?",
         "way_id": 898731283,
+        "comment": "how should an odd number of lanes forward/backwards be split without any clues?",
         "tags": {
             "lanes": "3",
             "sidewalk": "both"
@@ -400,30 +499,31 @@
         "driving_side": "left",
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
     {
-        "comment": "I didn't look for a real example of this",
-        "way_id": 898731283,
         "tags": {
             "lanes": "5",
             "sidewalk": "none"
@@ -431,32 +531,35 @@
         "driving_side": "right",
         "output": [
             {
-                "type": "shoulder",
-                "direction": "both"
+                "type": "shoulder"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "shoulder",
-                "direction": "both"
+                "type": "shoulder"
             }
         ]
     },
@@ -469,26 +572,26 @@
         "driving_side": "right",
         "output": [
             {
-                "type": "shoulder",
-                "direction": "both"
+                "type": "shoulder"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "shoulder",
-                "direction": "both"
+                "type": "shoulder"
             }
         ]
     },
     {
+        "skip_rust": true,
         "way_id": 988980354,
-        "comment": "busway=* and lanes:bus=* are different schemes",
         "driving_side": "right",
         "tags": {
             "busway": "lane",
@@ -500,74 +603,73 @@
             "name": "East 42nd Street",
             "sidewalk": "both",
             "surface": "asphalt",
-            "tiger:cfcc": "A41",
-            "tiger:county": "New York, NY",
-            "tiger:name_base": "42nd",
-            "tiger:name_direction_prefix": "E",
-            "tiger:name_type": "St",
-            "tiger:zip_left": "10017",
-            "tiger:zip_right": "10017",
             "wikidata": "Q110061",
             "wikipedia": "en:42nd Street (Manhattan)"
         },
         "output": [
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             },
             {
-                "type": "bus_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "bus"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "bus_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "bus"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
     {
         "skip_rust": true,
         "way_id": 13859146,
-        "mapillary": "https://www.mapillary.com/app/?pKey=1491728521220443",
-        "comment": "TODO: missing parking and sidewalks!",
         "tags": {
             "busway:both": "lane",
             "highway": "secondary",
             "lanes": "4",
             "maxspeed": "50",
-            "name": "Rue Gabriel Péri",
+            "name": "Rue Gabriel P\u00e9ri",
             "ref": "D 986",
             "surface": "asphalt"
         },
         "driving_side": "right",
         "output": [
             {
-                "type": "bus_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "bus"
             },
             {
-                "type": "travel_lane",
-                "direction": "backward"
+                "type": "travel",
+                "direction": "backward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "bus_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "bus"
             }
         ]
     },
@@ -587,12 +689,14 @@
         "driving_side": "right",
         "output": [
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "bus_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "bus"
             }
         ]
     },
@@ -608,7 +712,7 @@
             "lanes:psv": "1",
             "lit": "yes",
             "maxspeed": "30",
-            "name": "Quai Aimé Césaire",
+            "name": "Quai Aim\u00e9 C\u00e9saire",
             "oneway": "yes",
             "psv:lanes": "yes|yes|designated",
             "surface": "asphalt",
@@ -617,16 +721,19 @@
         "driving_side": "right",
         "output": [
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "bus_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "bus"
             }
         ]
     },
@@ -642,8 +749,8 @@
             "lanes:psv": "1",
             "lit": "yes",
             "maxspeed": "50",
-            "name": "Kurfürstendamm",
-            "note": "Ergänzungsstraße mit besonderer Bedeutung",
+            "name": "Kurf\u00fcrstendamm",
+            "note": "Erg\u00e4nzungsstra\u00dfe mit besonderer Bedeutung",
             "oneway": "yes",
             "postal_code": "10719",
             "psv:lanes": "yes|designated|yes",
@@ -652,25 +759,28 @@
             "turn:lanes": "left;through|none|right",
             "vehicle:lanes": "yes|no|yes",
             "wikidata": "Q160272",
-            "wikipedia": "de:Kurfürstendamm"
+            "wikipedia": "de:Kurf\u00fcrstendamm"
         },
         "driving_side": "right",
         "output": [
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "bus_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "bus"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "sidewalk",
-                "direction": "both"
+                "type": "travel",
+                "designated": "foot"
             }
         ]
     },
@@ -687,18 +797,21 @@
         "driving_side": "right",
         "output": [
             {
-                "type": "travel_lane",
+                "type": "travel",
                 "direction": "forward",
+                "designated": "motor_vehicle",
                 "max_speed": 100
             },
             {
-                "type": "travel_lane",
+                "type": "travel",
                 "direction": "forward",
+                "designated": "motor_vehicle",
                 "max_speed": 100
             },
             {
-                "type": "travel_lane",
+                "type": "travel",
                 "direction": "forward",
+                "designated": "motor_vehicle",
                 "max_speed": 80
             }
         ]
@@ -718,16 +831,19 @@
         "driving_side": "right",
         "output": [
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "travel_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "motor_vehicle"
             },
             {
-                "type": "bus_lane",
-                "direction": "forward"
+                "type": "travel",
+                "direction": "forward",
+                "designated": "bus"
             }
         ]
     }
