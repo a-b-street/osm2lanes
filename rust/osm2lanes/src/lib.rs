@@ -177,19 +177,26 @@ mod tests {
     use std::io::BufReader;
 
     #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Rust {
+        Bool(bool),
+        Struct { separator: Option<bool> },
+    }
+
+    #[derive(Deserialize)]
     struct TestCase {
         // Metadata
         /// The OSM way unique identifier
         way_id: Option<i64>,
         link: Option<String>,
         driving_side: DrivingSide,
-        #[serde(rename = "skip_rust")]
-        skip: Option<bool>,
         comment: Option<String>,
         description: Option<String>,
         // Data
         tags: Tags,
         output: Vec<Lane>,
+        // Skipping
+        rust: Option<Rust>,
     }
 
     impl TestCase {
@@ -211,6 +218,32 @@ mod tests {
             }
             for (k, v) in self.tags.map() {
                 println!("    {} = {}", k, v);
+            }
+        }
+        /// Is test enabled
+        fn is(&self) -> bool {
+            match self.rust {
+                None => true,
+                Some(Rust::Bool(b)) => b,
+                Some(Rust::Struct { .. }) => true,
+            }
+        }
+        /// Is test enabled for separators, true by default
+        fn is_separators(&self) -> bool {
+            match self.rust {
+                None => true,
+                Some(Rust::Bool(_)) => unreachable!(),
+                Some(Rust::Struct { separator }) => separator.unwrap_or(true),
+            }
+        }
+        fn road(&self) -> Road {
+            Road {
+                lanes: self
+                    .output
+                    .iter()
+                    .filter(|lane| self.is_separators() || !matches!(lane, Lane::Separator))
+                    .cloned()
+                    .collect(),
             }
         }
     }
@@ -250,29 +283,18 @@ mod tests {
     fn test_from_data() {
         let tests: Vec<TestCase> =
             serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
-                .unwrap();
+                .expect("invalid json");
+        let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is()).collect();
 
-        let mut ok = true;
-        for test in tests.iter().filter(|test| {
-            !test
-                .output
-                .iter()
-                .any(|lane| matches!(lane, Lane::Separator))
-        }) {
-            if !test.skip.is_none() && test.skip.unwrap() {
-                continue;
-            }
+        assert!(tests.iter().all(|test| {
             let cfg = Config {
                 driving_side: test.driving_side,
                 inferred_sidewalks: true,
             };
             let lanes = get_lane_specs_ltr(&test.tags, &cfg);
-            let expected_road = Road {
-                lanes: test.output.clone(),
-            };
+            let expected_road = test.road();
             if let Ok(actual_road) = lanes {
                 if actual_road != expected_road {
-                    ok = false;
                     test.print();
                     println!("Got:");
                     println!("    {}", stringify_lane_types(&actual_road));
@@ -281,9 +303,11 @@ mod tests {
                     println!("    {}", stringify_lane_types(&expected_road));
                     println!("    {}", stringify_directions(&expected_road));
                     println!();
+                    false
+                } else {
+                    true
                 }
             } else {
-                ok = false;
                 test.print();
                 println!("Expected:");
                 println!("    {}", stringify_lane_types(&expected_road));
@@ -291,9 +315,9 @@ mod tests {
                 println!("Panicked:");
                 println!("{:#?}", lanes.unwrap_err());
                 println!();
+                false
             }
-        }
-        assert!(ok);
+        }));
     }
 
     #[test]
@@ -301,28 +325,17 @@ mod tests {
         let tests: Vec<TestCase> =
             serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
                 .unwrap();
+        let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is()).collect();
 
-        let mut ok = true;
-        for test in tests.iter().filter(|test| {
-            !test
-                .output
-                .iter()
-                .any(|lane| matches!(lane, Lane::Separator))
-        }) {
-            if !test.skip.is_none() && test.skip.unwrap() {
-                continue;
-            }
+        assert!(tests.iter().all(|test| {
             let cfg = Config {
                 driving_side: test.driving_side,
                 inferred_sidewalks: true,
             };
-            let input_road = Road {
-                lanes: test.output.clone(),
-            };
+            let input_road = test.road();
             let tags = lanes_to_tags(&test.output, &cfg).unwrap();
             let output_road = get_lane_specs_ltr(&tags, &cfg).unwrap();
             if input_road != output_road {
-                ok = false;
                 if !test.way_id.is_none() {
                     println!(
                         "For input (example from https://www.openstreetmap.org/way/{}):",
@@ -342,8 +355,10 @@ mod tests {
                 println!("    {}", stringify_lane_types(&output_road));
                 println!("    {}", stringify_directions(&output_road));
                 println!();
+                false
+            } else {
+                true
             }
-        }
-        assert!(ok);
+        }));
     }
 }
