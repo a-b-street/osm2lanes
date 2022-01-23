@@ -171,6 +171,7 @@ impl LanePrintable for LaneDirection {
 
 #[cfg(test)]
 mod tests {
+    use self::transform::lanes_to_tags_no_roundtrip;
     use super::*;
 
     use std::fs::File;
@@ -319,7 +320,7 @@ mod tests {
             let input_road = Road {
                 lanes: test.output.clone(),
             };
-            let tags = lanes_to_tags(&test.output, &cfg).unwrap();
+            let tags = lanes_to_tags_no_roundtrip(&test.output, &cfg).unwrap();
             let output_road = get_lane_specs_ltr(&tags, &cfg).unwrap();
             if input_road != output_road {
                 ok = false;

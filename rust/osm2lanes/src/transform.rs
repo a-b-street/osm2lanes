@@ -86,6 +86,49 @@ impl Lane {
             designated: LaneDesignated::Motor,
         }
     }
+    fn is_motor(&self) -> bool {
+        matches!(
+            self,
+            Lane::Travel {
+                designated: LaneDesignated::Motor,
+                ..
+            }
+        )
+    }
+    fn is_foot(&self) -> bool {
+        matches!(
+            self,
+            Lane::Travel {
+                designated: LaneDesignated::Foot,
+                ..
+            }
+        )
+    }
+    fn is_bicycle(&self) -> bool {
+        matches!(
+            self,
+            Lane::Travel {
+                designated: LaneDesignated::Bicycle,
+                ..
+            }
+        )
+    }
+    fn is_bus(&self) -> bool {
+        matches!(
+            self,
+            Lane::Travel {
+                designated: LaneDesignated::Bus,
+                ..
+            }
+        )
+    }
+    fn set_bus(&mut self) -> Result<(), LaneSpecError> {
+        match self {
+            Self::Travel { designated, .. } => *designated = LaneDesignated::Bus,
+            _ => unreachable!(),
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -217,6 +260,8 @@ fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, 
             (n + 1) / 2
         };
         half - both_ways
+    } else if tags.is("lanes:bus", "2") {
+        2
     } else {
         1
     };
@@ -234,6 +279,12 @@ fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, 
             base.max(1)
         };
         half - both_ways
+    } else if tags.is("lanes:bus", "2") {
+        if oneway {
+            1
+        } else {
+            2
+        }
     } else if oneway {
         0
     } else {
@@ -244,11 +295,119 @@ fn driving_lane_directions(tags: &Tags, _cfg: &Config, oneway: bool) -> (usize, 
 
 fn bus(
     tags: &Tags,
+    cfg: &Config,
+    oneway: bool,
+    forward_side: &mut Vec<Lane>,
+    backward_side: &mut Vec<Lane>,
+) -> Result<(), LaneSpecError> {
+    // https://wiki.openstreetmap.org/wiki/Bus_lanes
+    // 3 schemes, for simplicity we only allow one at a time
+    let tag_tree = tags.tree();
+
+    match (
+        tag_tree.get("busway").is_some(),
+        tag_tree
+            .get("lanes:psv")
+            .or_else(|| tag_tree.get("lanes:bus"))
+            .is_some(),
+        tag_tree
+            .get("bus:lanes")
+            .or_else(|| tag_tree.get("psv:lanes"))
+            .is_some(),
+    ) {
+        (false, false, false) => {}
+        (true, _, false) => bus_busway(tags, cfg, oneway, forward_side, backward_side)?,
+        (false, true, false) => bus_bus_lanes(tags, cfg, oneway, forward_side, backward_side)?,
+        (false, false, true) => bus_lanes_bus(tags, cfg, oneway, forward_side, backward_side)?,
+        _ => {
+            return Err(LaneSpecError(
+                "more than one bus lanes scheme used".to_owned(),
+            ))
+        }
+    }
+
+    Ok(())
+}
+
+fn bus_busway(
+    tags: &Tags,
+    cfg: &Config,
+    _oneway: bool,
+    forward_side: &mut Vec<Lane>,
+    backward_side: &mut Vec<Lane>,
+) -> Result<(), LaneSpecError> {
+    const BUSWAY: TagKey = TagKey::from("busway");
+    if tags.is(BUSWAY, "lane") {
+        forward_side
+            .last_mut()
+            .ok_or_else(|| LaneSpecError("no forward lanes for busway".to_owned()))?
+            .set_bus()?;
+        if !tags.is("oneway", "yes") && !tags.is("oneway:bus", "yes") {
+            backward_side
+                .last_mut()
+                .ok_or_else(|| LaneSpecError("no backward lanes for busway".to_owned()))?
+                .set_bus()?;
+        }
+    }
+    if tags.is(BUSWAY, "opposite_lane") {
+        backward_side
+            .last_mut()
+            .ok_or_else(|| LaneSpecError("no backward lanes for busway".to_owned()))?
+            .set_bus()?;
+    }
+    if tags.is(BUSWAY + "both", "lane") {
+        forward_side
+            .last_mut()
+            .ok_or_else(|| LaneSpecError("no forward lanes for busway".to_owned()))?
+            .set_bus()?;
+        backward_side
+            .last_mut()
+            .ok_or_else(|| LaneSpecError("no backward lanes for busway".to_owned()))?
+            .set_bus()?;
+        if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
+            return Err(LaneSpecError(
+                "busway:both=lane is ambiguous for oneway roads".to_owned(),
+            ));
+        }
+    }
+    if tags.is(BUSWAY + cfg.driving_side.tag(), "lane") {
+        forward_side
+            .last_mut()
+            .ok_or_else(|| LaneSpecError("no forward lanes for busway".to_owned()))?
+            .set_bus()?;
+    }
+    if tags.is(BUSWAY + cfg.driving_side.opposite().tag(), "lane") {
+        if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
+            forward_side
+                .first_mut()
+                .ok_or_else(|| LaneSpecError("no forward lanes for busway".to_owned()))?
+                .set_bus()?;
+        } else {
+            return Err(LaneSpecError(
+                "busway:BACKWARD=lane is ambiguous for bidirectional roads".to_owned(),
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn bus_lanes_bus(
+    _tags: &Tags,
+    _cfg: &Config,
+    _oneway: bool,
+    _forward_side: &mut Vec<Lane>,
+    _backward_side: &mut Vec<Lane>,
+) -> Result<(), LaneSpecError> {
+    Ok(())
+}
+
+fn bus_bus_lanes(
+    tags: &Tags,
     _cfg: &Config,
     oneway: bool,
-    forward_side: &mut [Lane],
-    backward_side: &mut [Lane],
-) {
+    forward_side: &mut Vec<Lane>,
+    backward_side: &mut Vec<Lane>,
+) -> Result<(), LaneSpecError> {
     let fwd_bus_spec = if let Some(s) = tags.get("bus:lanes:forward") {
         s
     } else if let Some(s) = tags.get("psv:lanes:forward") {
@@ -313,6 +472,8 @@ fn bus(
             }
         }
     }
+
+    Ok(())
 }
 
 fn bicycle(
@@ -563,7 +724,7 @@ pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, cfg: &Config) -> LanesResul
     //     });
     // }
 
-    bus(tags, cfg, oneway, &mut fwd_side, &mut back_side);
+    bus(tags, cfg, oneway, &mut fwd_side, &mut back_side)?;
 
     bicycle(
         tags,
@@ -616,7 +777,7 @@ fn assemble_ltr(
     }
 }
 
-pub fn lanes_to_tags(lanes: &[Lane], cfg: &Config) -> Result<Tags, LaneSpecError> {
+pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> Result<Tags, LaneSpecError> {
     let mut tags = Tags::default();
     let mut _oneway = false;
     tags.insert("highway", "yes"); // TODO, what?
@@ -636,47 +797,23 @@ pub fn lanes_to_tags(lanes: &[Lane], cfg: &Config) -> Result<Tags, LaneSpecError
         tags.insert("lanes", lane_count.to_string());
     }
     // Oneway
-    if lanes
-        .iter()
-        .filter(|lane| {
-            matches!(
-                lane,
-                Lane::Travel {
-                    designated: LaneDesignated::Motor,
-                    ..
-                }
-            )
-        })
-        .all(|lane| {
-            matches!(
-                lane,
-                Lane::Travel {
-                    direction: Some(LaneDirection::Forward),
-                    ..
-                }
-            )
-        })
-    {
+    if lanes.iter().filter(|lane| lane.is_motor()).all(|lane| {
+        matches!(
+            lane,
+            Lane::Travel {
+                direction: Some(LaneDirection::Forward),
+                ..
+            }
+        )
+    }) {
         tags.insert("oneway", "yes");
         _oneway = true;
     }
     // Pedestrian
     {
         match (
-            matches!(
-                lanes.first().unwrap(),
-                Lane::Travel {
-                    designated: LaneDesignated::Foot,
-                    ..
-                }
-            ),
-            matches!(
-                lanes.last().unwrap(),
-                Lane::Travel {
-                    designated: LaneDesignated::Foot,
-                    ..
-                }
-            ),
+            lanes.first().unwrap().is_foot(),
+            lanes.last().unwrap().is_foot(),
         ) {
             (false, false) => {}
             (true, false) => assert!(tags.insert("sidewalk", "left").is_none()),
@@ -688,27 +825,11 @@ pub fn lanes_to_tags(lanes: &[Lane], cfg: &Config) -> Result<Tags, LaneSpecError
     match (
         lanes
             .iter()
-            .take_while(|lane| {
-                !matches!(
-                    lane,
-                    Lane::Travel {
-                        designated: LaneDesignated::Motor,
-                        ..
-                    }
-                )
-            })
+            .take_while(|lane| !lane.is_motor())
             .any(|lane| matches!(lane, Lane::Parking { .. })),
         lanes
             .iter()
-            .skip_while(|lane| {
-                !matches!(
-                    lane,
-                    Lane::Travel {
-                        designated: LaneDesignated::Motor,
-                        ..
-                    }
-                )
-            })
+            .skip_while(|lane| !lane.is_motor())
             .any(|lane| matches!(lane, Lane::Parking { .. })),
     ) {
         (false, false) => {}
@@ -720,45 +841,13 @@ pub fn lanes_to_tags(lanes: &[Lane], cfg: &Config) -> Result<Tags, LaneSpecError
     {
         let left_cycle_lane = lanes
             .iter()
-            .take_while(|lane| {
-                !matches!(
-                    lane,
-                    Lane::Travel {
-                        designated: LaneDesignated::Motor,
-                        ..
-                    }
-                )
-            })
-            .find(|lane| {
-                matches!(
-                    lane,
-                    Lane::Travel {
-                        designated: LaneDesignated::Bicycle,
-                        ..
-                    }
-                )
-            });
+            .take_while(|lane| !lane.is_motor())
+            .find(|lane| lane.is_bicycle());
         let right_cycle_lane = lanes
             .iter()
             .rev()
-            .take_while(|lane| {
-                !matches!(
-                    lane,
-                    Lane::Travel {
-                        designated: LaneDesignated::Motor,
-                        ..
-                    }
-                )
-            })
-            .find(|lane| {
-                matches!(
-                    lane,
-                    Lane::Travel {
-                        designated: LaneDesignated::Bicycle,
-                        ..
-                    }
-                )
-            });
+            .take_while(|lane| !lane.is_motor())
+            .find(|lane| lane.is_bicycle());
         match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
             (false, false) => {}
             (true, false) => assert!(tags.insert("cycleway:left", "lane").is_none()),
@@ -782,6 +871,25 @@ pub fn lanes_to_tags(lanes: &[Lane], cfg: &Config) -> Result<Tags, LaneSpecError
             tags.insert("cycleway:right:oneway", "no");
         }
     }
+    // Bus Lanes
+    {
+        let left_bus_lane = lanes
+            .iter()
+            .take_while(|lane| !lane.is_motor())
+            .find(|lane| lane.is_bus());
+        let right_bus_lane = lanes
+            .iter()
+            .rev()
+            .take_while(|lane| !lane.is_motor())
+            .find(|lane| lane.is_bus());
+        match (left_bus_lane.is_some(), right_bus_lane.is_some()) {
+            (false, false) => {}
+            (true, false) => assert!(tags.insert("busway:left", "lane").is_none()),
+            (false, true) => assert!(tags.insert("busway:right", "lane").is_none()),
+            (true, true) => assert!(tags.insert("busway:both", "lane").is_none()),
+        }
+    }
+
     if lanes.iter().any(|lane| {
         matches!(
             lane,
@@ -795,6 +903,12 @@ pub fn lanes_to_tags(lanes: &[Lane], cfg: &Config) -> Result<Tags, LaneSpecError
         // TODO: add LHT support
         tags.insert("turn:lanes:both_ways", "left");
     }
+
+    Ok(tags)
+}
+
+pub fn lanes_to_tags(lanes: &[Lane], cfg: &Config) -> Result<Tags, LaneSpecError> {
+    let tags = lanes_to_tags_no_roundtrip(lanes, cfg)?;
 
     // Check roundtrip!
     let rountrip = get_lane_specs_ltr(&tags, cfg)?;
