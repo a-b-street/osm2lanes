@@ -148,6 +148,7 @@ impl LanePrintable for LaneDirection {
 
 #[cfg(test)]
 mod tests {
+    use self::transform::lanes_to_tags_no_roundtrip;
     use super::*;
 
     use std::fs::File;
@@ -239,8 +240,8 @@ mod tests {
             if !test.skip.is_none() && test.skip.unwrap() {
                 continue;
             }
-            let lc = Locale::builder().driving_side(test.driving_side).build();
-            let lanes = get_lane_specs_ltr(&test.tags, &lc);
+            let locale = Locale::builder().driving_side(test.driving_side).build();
+            let lanes = get_lane_specs_ltr(&test.tags, &locale);
             let expected_road = Road {
                 lanes: test.output.clone(),
             };
@@ -286,12 +287,12 @@ mod tests {
             if !test.skip.is_none() && test.skip.unwrap() {
                 continue;
             }
-            let lc = Locale::builder().driving_side(test.driving_side).build();
+            let locale = Locale::builder().driving_side(test.driving_side).build();
             let input_road = Road {
                 lanes: test.output.clone(),
             };
-            let tags = lanes_to_tags(&test.output, &lc).unwrap();
-            let output_road = get_lane_specs_ltr(&tags, &lc).unwrap();
+            let tags = lanes_to_tags_no_roundtrip(&test.output, &locale).unwrap();
+            let output_road = get_lane_specs_ltr(&tags, &locale).unwrap();
             if input_road != output_road {
                 ok = false;
                 if !test.way_id.is_none() {

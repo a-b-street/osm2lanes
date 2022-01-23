@@ -11,8 +11,8 @@ fn main() {
 
     let tags: Tags =
         serde_json::from_reader(BufReader::new(File::open(&args[1]).unwrap())).unwrap();
-    let lc = Locale::builder().build();
-    let lanes = get_lane_specs_ltr(&tags, &lc);
+    let locale = Locale::builder().build();
+    let lanes = get_lane_specs_ltr(&tags, &locale);
     let mut file = File::create(&args[2]).unwrap();
     writeln!(file, "{}", serde_json::to_string_pretty(&lanes).unwrap()).unwrap();
 }

@@ -60,6 +60,32 @@ impl Tags {
     pub fn map(&self) -> &BTreeMap<String, String> {
         &self.0
     }
+
+    /// Get tree
+    ///
+    /// Parses colon separated keys like `cycleway:right:oneway` as a tree.
+    ///
+    /// ```
+    /// use std::str::FromStr;
+    /// use osm2lanes::Tags;
+    /// let tags = Tags::from_str("foo=bar\na:b:c=foobar").unwrap();
+    /// let tree = tags.tree();
+    /// let a = tree.get("a");
+    /// assert!(a.is_some());
+    /// let a = a.unwrap();
+    /// assert!(a.val().is_none());
+    /// let c = a.get("b:c");
+    /// assert!(c.is_some());
+    /// let c = c.unwrap();
+    /// assert_eq!(c.val(), Some("foobar"))
+    /// ```
+    pub fn tree(&self) -> TagTree {
+        let mut tag_tree = TagTree::default();
+        for (k, v) in self.0.iter() {
+            tag_tree.insert(k, v.to_owned());
+        }
+        tag_tree
+    }
 }
 
 impl FromStr for Tags {
@@ -105,11 +131,75 @@ impl ToString for Tags {
     }
 }
 
+#[derive(Clone, Default)]
+pub struct TagTree(BTreeMap<String, TagTreeVal>);
+
+impl TagTree {
+    fn insert(&mut self, key: &str, val: String) {
+        let (root_key, rest_key) = match key.split_once(':') {
+            Some((left, right)) => (left, Some(right)),
+            None => (key, None),
+        };
+        self.0
+            .entry(root_key.to_owned())
+            .or_default()
+            .insert(rest_key, val)
+    }
+    pub fn get<K: Into<TagKey>>(&self, key: K) -> Option<&TagTreeVal> {
+        let key: TagKey = key.into();
+        let (root_key, rest_key) = match key.as_str().split_once(':') {
+            Some((left, right)) => (left, Some(right)),
+            None => (key.as_str(), None),
+        };
+        let next = self.0.get(root_key);
+        if let Some(rest_key) = rest_key {
+            next?
+                .tree
+                .as_ref()?
+                .get(TagKey::String(rest_key.to_owned()))
+        } else {
+            next
+        }
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct TagTreeVal {
+    tree: Option<TagTree>,
+    val: Option<String>,
+}
+
+impl TagTreeVal {
+    fn insert(&mut self, key: Option<&str>, val: String) {
+        match key {
+            Some(key) => self
+                .tree
+                .get_or_insert_with(TagTree::default)
+                .insert(key, val),
+            None => self.set(val),
+        }
+    }
+    fn set(&mut self, input: String) {
+        if let Some(val) = &self.val {
+            panic!("TagTreeVal already contains value {}", val);
+        }
+        self.val = Some(input);
+    }
+    pub fn get<K: Into<TagKey>>(&self, key: K) -> Option<&TagTreeVal> {
+        self.tree.as_ref()?.get(key)
+    }
+    pub fn val(&self) -> Option<&str> {
+        Some(self.val.as_ref()?.as_str())
+    }
+}
+
 // TODO, shouldn't TagKey be passed by reference?
 pub trait TagsRead {
+    // Basic read operations
     fn get<T: Into<TagKey>>(&self, k: T) -> Option<&str>;
     fn is<T: Into<TagKey>>(&self, k: T, v: &str) -> bool;
     fn is_any<T: Into<TagKey>>(&self, k: T, values: &[&str]) -> bool;
+    // Filtering
     fn subset<T>(&self, keys: &[T]) -> Self
     where
         T: Clone,
