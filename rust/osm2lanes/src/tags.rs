@@ -259,7 +259,7 @@ pub trait TagsWrite {
         &mut self,
         k: K,
         v: V,
-    ) -> Result<String, TagError>;
+    ) -> Result<(), TagError>;
 }
 
 impl TagsWrite for Tags {
@@ -270,8 +270,11 @@ impl TagsWrite for Tags {
         &mut self,
         k: K,
         v: V,
-    ) -> Result<String, TagError> {
-        self.insert(k, v)
-            .ok_or_else(|| TagError("duplicate key".to_owned()))
+    ) -> Result<(), TagError> {
+        if self.insert(k, v).is_some() {
+            Err(TagError("duplicate key".to_owned()))
+        } else {
+            Ok(())
+        }
     }
 }

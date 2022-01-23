@@ -2,7 +2,7 @@ use std::iter;
 
 use serde::{Deserialize, Serialize};
 
-use crate::tags::{TagKey, Tags, TagsRead, TagsWrite};
+use crate::tags::{TagError, TagKey, Tags, TagsRead, TagsWrite};
 use crate::{Config, DrivingSide, Lane, LaneDesignated, LaneDirection, Road, RoadError};
 
 const HIGHWAY: TagKey = TagKey::from("highway");
@@ -776,10 +776,16 @@ fn assemble_ltr(
     }
 }
 
+impl std::convert::From<TagError> for RoadError {
+    fn from(e: TagError) -> Self {
+        RoadError::Tag(e)
+    }
+}
+
 pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> TagsResult {
     let mut tags = Tags::default();
     let mut _oneway = false;
-    tags.insert("highway", "yes"); // TODO, what?
+    tags.checked_insert("highway", "yes")?; // TODO, what?
     {
         let lane_count = lanes
             .iter()
@@ -793,7 +799,7 @@ pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> TagsResult {
                 )
             })
             .count();
-        tags.insert("lanes", lane_count.to_string());
+        tags.checked_insert("lanes", lane_count.to_string())?;
     }
     // Oneway
     if lanes.iter().filter(|lane| lane.is_motor()).all(|lane| {
@@ -815,9 +821,9 @@ pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> TagsResult {
             lanes.last().unwrap().is_foot(),
         ) {
             (false, false) => {}
-            (true, false) => assert!(tags.insert("sidewalk", "left").is_none()),
-            (false, true) => assert!(tags.insert("sidewalk", "right").is_none()),
-            (true, true) => assert!(tags.insert("sidewalk", "both").is_none()),
+            (true, false) => tags.checked_insert("sidewalk", "left")?,
+            (false, true) => tags.checked_insert("sidewalk", "right")?,
+            (true, true) => tags.checked_insert("sidewalk", "both")?,
         }
     }
     // Parking
@@ -832,9 +838,9 @@ pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> TagsResult {
             .any(|lane| matches!(lane, Lane::Parking { .. })),
     ) {
         (false, false) => {}
-        (true, false) => assert!(tags.insert("parking:lane:left", "parallel").is_none()),
-        (false, true) => assert!(tags.insert("parking:lane:right", "parallel").is_none()),
-        (true, true) => assert!(tags.insert("parking:lane:both", "parallel").is_none()),
+        (true, false) => tags.checked_insert("parking:lane:left", "parallel")?,
+        (false, true) => tags.checked_insert("parking:lane:right", "parallel")?,
+        (true, true) => tags.checked_insert("parking:lane:both", "parallel")?,
     }
     // Cycleway
     {
@@ -849,9 +855,9 @@ pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> TagsResult {
             .find(|lane| lane.is_bicycle());
         match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
             (false, false) => {}
-            (true, false) => assert!(tags.insert("cycleway:left", "lane").is_none()),
-            (false, true) => assert!(tags.insert("cycleway:right", "lane").is_none()),
-            (true, true) => assert!(tags.insert("cycleway:both", "lane").is_none()),
+            (true, false) => tags.checked_insert("cycleway:left", "lane")?,
+            (false, true) => tags.checked_insert("cycleway:right", "lane")?,
+            (true, true) => tags.checked_insert("cycleway:both", "lane")?,
         }
         // https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
         // TODO, incomplete, pending testing.
@@ -860,14 +866,14 @@ pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> TagsResult {
             ..
         }) = left_cycle_lane
         {
-            tags.insert("cycleway:left:oneway", "no");
+            tags.checked_insert("cycleway:left:oneway", "no")?;
         }
         if let Some(Lane::Travel {
             direction: Some(LaneDirection::Both),
             ..
         }) = right_cycle_lane
         {
-            tags.insert("cycleway:right:oneway", "no");
+            tags.checked_insert("cycleway:right:oneway", "no")?;
         }
     }
     // Bus Lanes
@@ -883,9 +889,9 @@ pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> TagsResult {
             .find(|lane| lane.is_bus());
         match (left_bus_lane.is_some(), right_bus_lane.is_some()) {
             (false, false) => {}
-            (true, false) => assert!(tags.insert("busway:left", "lane").is_none()),
-            (false, true) => assert!(tags.insert("busway:right", "lane").is_none()),
-            (true, true) => assert!(tags.insert("busway:both", "lane").is_none()),
+            (true, false) => tags.checked_insert("busway:left", "lane")?,
+            (false, true) => tags.checked_insert("busway:right", "lane")?,
+            (true, true) => tags.checked_insert("busway:both", "lane")?,
         }
     }
 
@@ -898,9 +904,9 @@ pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _cfg: &Config) -> TagsResult {
             }
         )
     }) {
-        tags.insert("lanes:both_ways", "1");
+        tags.checked_insert("lanes:both_ways", "1")?;
         // TODO: add LHT support
-        tags.insert("turn:lanes:both_ways", "left");
+        tags.checked_insert("turn:lanes:both_ways", "left")?;
     }
 
     Ok(tags)
