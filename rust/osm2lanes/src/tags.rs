@@ -63,6 +63,8 @@ impl Tags {
 
     /// Get tree
     ///
+    /// Parses colon separated keys like `cycleway:right:oneway` as a tree.
+    ///
     /// ```
     /// use std::str::FromStr;
     /// use osm2lanes::Tags;
