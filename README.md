@@ -29,6 +29,16 @@ A lane represents a continuous area with no formal separation of vehicles.
 Lanes are often separated by something visible like painted lines or raised curbs,
 but these are not necessary for lanes to exist.
 
+Whilst the type of lanes are usually determined from the OSM tags,
+osm2lanes also reports on lane separators and lane widths which are usually assumptions.
+These will be a best guess based on regional, national, or other standards.
+We always assume the lanes are new, with the latest road markings.
+When lane separators may change down a way,
+e.g. a dashed line allowing overtaking on straight sections but a double solid line on curves,
+the most permissive line arrangement will be assumed (e.g. a single dashed line);
+we use a fail-deadly approach to emphasize that
+osm2lanes should not be used in road safety applications.
+
 For all examples:
 - we omit access, this mimics the access tags for a lane in OSM.
 - we omit widths, for simplicity. osm2lanes will first try to determine widths from OSM tags, but it can fallback to making assumptions itself.
