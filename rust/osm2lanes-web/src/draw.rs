@@ -179,7 +179,6 @@ pub fn draw_arrow<R: RenderContext>(
             draw_point(rc, mid, LaneDirection::Forward)?;
             draw_point(rc, mid, LaneDirection::Backward)?;
         }
-        LaneDirection::None => {}
     }
     Ok(())
 }
