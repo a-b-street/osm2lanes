@@ -308,11 +308,11 @@ fn bus(
         tag_tree.get("busway").is_some(),
         tag_tree
             .get("lanes:psv")
-            .or(tag_tree.get("lanes:bus"))
+            .or_else(|| tag_tree.get("lanes:bus"))
             .is_some(),
         tag_tree
             .get("bus:lanes")
-            .or(tag_tree.get("psv:lanes"))
+            .or_else(|| tag_tree.get("psv:lanes"))
             .is_some(),
     ) {
         (false, false, false) => {}
@@ -340,29 +340,29 @@ fn bus_busway(
     if tags.is(BUSWAY, "lane") {
         forward_side
             .last_mut()
-            .ok_or(LaneSpecError("no forward lanes for busway".to_owned()))?
+            .ok_or_else(|| LaneSpecError("no forward lanes for busway".to_owned()))?
             .set_bus()?;
         if !tags.is("oneway", "yes") && !tags.is("oneway:bus", "yes") {
             backward_side
                 .last_mut()
-                .ok_or(LaneSpecError("no backward lanes for busway".to_owned()))?
+                .ok_or_else(|| LaneSpecError("no backward lanes for busway".to_owned()))?
                 .set_bus()?;
         }
     }
     if tags.is(BUSWAY, "opposite_lane") {
         backward_side
             .last_mut()
-            .ok_or(LaneSpecError("no backward lanes for busway".to_owned()))?
+            .ok_or_else(|| LaneSpecError("no backward lanes for busway".to_owned()))?
             .set_bus()?;
     }
     if tags.is(BUSWAY + "both", "lane") {
         forward_side
             .last_mut()
-            .ok_or(LaneSpecError("no forward lanes for busway".to_owned()))?
+            .ok_or_else(|| LaneSpecError("no forward lanes for busway".to_owned()))?
             .set_bus()?;
         backward_side
             .last_mut()
-            .ok_or(LaneSpecError("no backward lanes for busway".to_owned()))?
+            .ok_or_else(|| LaneSpecError("no backward lanes for busway".to_owned()))?
             .set_bus()?;
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             return Err(LaneSpecError(
@@ -373,14 +373,14 @@ fn bus_busway(
     if tags.is(BUSWAY + cfg.driving_side.tag(), "lane") {
         forward_side
             .last_mut()
-            .ok_or(LaneSpecError("no forward lanes for busway".to_owned()))?
+            .ok_or_else(|| LaneSpecError("no forward lanes for busway".to_owned()))?
             .set_bus()?;
     }
     if tags.is(BUSWAY + cfg.driving_side.opposite().tag(), "lane") {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             forward_side
                 .first_mut()
-                .ok_or(LaneSpecError("no forward lanes for busway".to_owned()))?
+                .ok_or_else(|| LaneSpecError("no forward lanes for busway".to_owned()))?
                 .set_bus()?;
         } else {
             return Err(LaneSpecError(
