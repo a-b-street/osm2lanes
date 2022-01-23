@@ -37,9 +37,9 @@ internal class LaneTest {
             if (!testCase.skip) {
                 val parsed = Road(testCase.tags, testCase.driving_side).parse()
                 assertEquals(
-                    testCase.output,
+                    testCase.output.filter { it.type != LaneType.SEPARATOR },
                     parsed,
-                    "\nGot:      " + parsed + "\nExpected: " + testCase.output + "\n"
+                    "${testCase.way_id}\nGot:      ${parsed}\nExpected: ${testCase.output}\n"
                 )
             }
         }

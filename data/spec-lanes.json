@@ -1,28 +1,39 @@
 {
     "$id": "https://a-b-street.github.io/osm2lanes",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "description": "A representation of lanes",
+    "description": "Lanes from left to right.",
     "type": "array",
     "items": {
         "type": "object",
+        "description": "A lane. Can either be for travelling, parking, or any visible separation between them.",
         "required": [
-            "type",
-            "direction"
+            "type"
         ],
         "properties": {
             "type": {
                 "type": "string",
                 "description": "The type of the lane.",
-                "enum": [
-                    "buffer",
-                    "bus_lane",
-                    "construction",
-                    "cycleway",
-                    "parking_lane",
-                    "shared_left_turn",
-                    "shoulder",
-                    "sidewalk",
-                    "travel_lane"
+                "anyOf": [
+                    {
+                        "const": "travel",
+                        "description": "General vehicular and non-vehicular traffic."
+                    },
+                    {
+                        "const": "parking",
+                        "description": "Parked traffic."
+                    },
+                    {
+                        "const": "shoulder",
+                        "description": "Undesignated side of road suitable for non-vehicular traffic or parked vehicles. Does not include asphalt breakdown lanes."
+                    },
+                    {
+                        "const": "separator",
+                        "description": "Separator not designated for traffic. Direction assumed to be None. Marking Required."
+                    },
+                    {
+                        "const": "construction",
+                        "description": "Closed temporarily for construction. Direction assumed to be None."
+                    }
                 ]
             },
             "direction": {
@@ -38,13 +49,128 @@
                     {
                         "const": "both",
                         "description": "Traffic may travel in both directions in one lane."
-                    },
-                    {
-                        "const": "none",
-                        "description": "Traffic does not travel in this lane."
                     }
                 ]
+            },
+            "designated": {
+                "type": "string",
+                "description": "The predominant or designated traffic type, to hint at how to depict the lane. Should not be used to determine access restrictions.",
+                "anyOf": [
+                    {
+                        "const": "any",
+                        "description": "No designated type. Examples could be a living street or unmarked rural road."
+                    },
+                    {
+                        "const": "foot",
+                        "description": "Designated footpaths or sidewalks."
+                    },
+                    {
+                        "const": "bicycle",
+                        "description": "Designated cycleways."
+                    },
+                    {
+                        "const": "motor_vehicle",
+                        "description": "No significant pedestrian or bicycle usage, but may have busses, taxis, motorbikes, etc."
+                    },
+                    {
+                        "const": "bus"
+                    },
+                    {
+                        "const": "psv"
+                    }
+                ]
+            },
+            "access": {
+                "type": "object",
+                "description": "Access to the lane. Freeform tags matching OSM way access",
+                "additionalProperties": {
+                    "type": "string"
+                }
+            },
+            "markings": {
+                "type": "array",
+                "description": "The road markings arranged from left to right. Only applicable to lanes of type separator.",
+                "items": {
+                    "type": "object",
+                    "description": "A single lane marking. Double lines are treated separately.",
+                    "required": [
+                        "style"
+                    ],
+                    "properties": {
+                        "style": {
+                            "type": "string",
+                            "description": "The style of the marking.",
+                            "anyOf": [
+                                {
+                                    "const": "solid_line"
+                                },
+                                {
+                                    "const": "broken_line",
+                                    "description": "A ratio of 2:1 for line to gap."
+                                },
+                                {
+                                    "const": "dashed_line",
+                                    "description": "A ratio of 1:1 for line to gap."
+                                },
+                                {
+                                    "const": "dotted_line",
+                                    "description": "A ratio of 1:2 for line to gap."
+                                },
+                                {
+                                    "const": "gore_chevron",
+                                    "description": "A fill. Often found when a link road merges from or with a main road."
+                                },
+                                {
+                                    "const": "diagnoal_hatched",
+                                    "description": "A fill."
+                                },
+                                {
+                                    "const": "criss_cross",
+                                    "description": "A fill. Often found in box functions."
+                                },
+                                {
+                                    "const": "solid_fill"
+                                },
+                                {
+                                    "const": "no_fill"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "width": {
+                "type": "object",
+                "description": "A lane width.",
+                "properties": {
+                    "value": {
+                        "type": "number",
+                        "description": "The average width of the lane in meters."
+                    },
+                    "source": {
+                        "$ref": "/schemas/source"
+                    }
+                }
+            },
+            "source": {
+                "$ref": "/schemas/source"
             }
+        }
+    },
+    "$defs": {
+        "source": {
+            "$id": "/schemas/source",
+            "$schema": "https://json-schema.org/draft/2020-12/schema#",
+            "type": "string",
+            "description": "The source of the lane width.",
+            "anyOf": [
+                {
+                    "const": "osm"
+                },
+                {
+                    "const": "osm2lanes"
+                }
+            ]
         }
     }
 }

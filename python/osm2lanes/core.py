@@ -4,6 +4,7 @@ Lane tag parsing.
 import math
 from dataclasses import dataclass
 from enum import Enum
+from typing import Optional
 
 Tags = dict[str, str]
 
@@ -29,7 +30,6 @@ class Direction(Enum):
     FORWARD = "forward"
     BACKWARD = "backward"
     BOTH = "both"
-    NONE = "none"
 
     def __str__(self):
         if self == Direction.FORWARD:
@@ -38,8 +38,6 @@ class Direction(Enum):
             return "↓"
         if self == Direction.BOTH:
             return "↕"
-        if self == Direction.NONE:
-            return "—"
 
     def __repr__(self):
         return str(self)
@@ -48,54 +46,28 @@ class Direction(Enum):
 class LaneType(Enum):
     """Lane designation."""
 
-    # Part of a highway set aside for the use of pedestrians and sometimes also
-    # cyclists, separated from the carriageway (or roadway).  See
-    # https://wiki.openstreetmap.org/wiki/Sidewalks
-    SIDEWALK = "sidewalk"
-
-    # Cycling infrastructure that is an inherent part of the road.  See
-    # https://wiki.openstreetmap.org/wiki/Key:cycleway
-    CYCLEWAY = "cycleway"
-
-    # Traffic lane of a highway suitable for vehicles.
-    TRAVEL_LANE = "travel_lane"
-
-    # Part of the road designated for parking.
-    PARKING_LANE = "parking_lane"
-
-    # A shared center turn lane.
-    SHARED_LEFT_TURN = "shared_left_turn"
-
-    # Some roads without any sidewalks still have pedestrian traffic.  This type
-    # represents the shoulder of the road, where people are usually forced to
-    # walk.
+    TRAVEL = "travel"
+    PARKING = "parking"
     SHOULDER = "shoulder"
-
-    # A bus-only lane.
-    BUS_LANE = "bus_lane"
+    SEPARATOR = "separator"
+    CONSTRUCTION = "construction"
 
     def __str__(self):
         return self.value
 
 
-class BufferType(Enum):
-    """The amount of space between the lanes."""
+class LaneDesignation(Enum):
+    """Lane designation."""
 
-    # Painted stripes
-    STRIPES = "stripes"
+    ANY = "any"
+    FOOT = "foot"
+    BICYCLE = "bicycle"
+    MOTOR = "motor_vehicle"
+    BUS = "bus"
+    PSV = "psv"
 
-    # Flex posts, wands, cones, car ticklers, bollards, other "weak" forms of
-    # protection. Usually possible to weave through them.
-    FLEX_POSTS = "flex_posts"
-
-    # Sturdier planters, with gaps
-    PLANTERS = "planters"
-
-    # Solid barrier, no gaps.
-    JERSEY_BARRIER = "jersey_barrier"
-
-    # A raised curb
-    CURB = "curb"
+    def __str__(self):
+        return self.value
 
 
 @dataclass
@@ -103,21 +75,33 @@ class Lane:
     """Lane specification."""
 
     type_: LaneType
-    direction: Direction
+    direction: Optional[Direction]
+    designation: Optional[LaneDesignation]
 
     @classmethod
     def from_structure(cls, structure: dict[str, str]) -> "Lane":
         """Parse lane specification from structure."""
         return cls(
-            LaneType(structure["type"]), Direction(structure["direction"])
+            LaneType(structure["type"]),
+            Direction(structure["direction"])
+            if structure.get("direction")
+            else None,
+            LaneDesignation(structure["designated"])
+            if structure.get("designated")
+            else None,
         )
 
     def to_structure(self) -> dict[str, str]:
         """Serialize lane specification into structure."""
-        return {"type": self.type_.value, "direction": self.direction.value}
+        ret = {"type": self.type_.value}
+        if self.direction:
+            ret["direction"] = self.direction.value
+        if self.designation:
+            ret["designated"] = self.designation.value
+        return ret
 
     def __repr__(self):
-        return f"{self.type_} {self.direction}"
+        return f"{self.type_} {self.direction} {self.designation}"
 
 
 @dataclass
@@ -140,18 +124,25 @@ class Road:
 
         return lanes + [lane]
 
-    def add_both_lanes(self, lanes: list[Lane], type_: LaneType) -> list[Lane]:
+    def add_both_lanes(
+        self,
+        lanes: list[Lane],
+        type_: LaneType,
+        designation: Optional[LaneDesignation],
+    ) -> list[Lane]:
         """Add left and right lanes."""
-        if type_ in (LaneType.SHOULDER, LaneType.SIDEWALK):
+        if type_ == LaneType.SHOULDER or (
+            type_ == LaneType.TRAVEL and designation == LaneDesignation.FOOT
+        ):
             return (
-                [Lane(type_, Direction.BOTH)]
+                [Lane(type_, None, designation)]
                 + lanes
-                + [Lane(type_, Direction.BOTH)]
+                + [Lane(type_, None, designation)]
             )
         return (
-            [Lane(type_, self.get_direction("left"))]
+            [Lane(type_, self.get_direction("left"), designation)]
             + lanes
-            + [Lane(type_, self.get_direction("right"))]
+            + [Lane(type_, self.get_direction("right"), designation)]
         )
 
     def get_direction(self, side: str, is_inverted: bool = False) -> Direction:
@@ -225,7 +216,7 @@ class Road:
 
         if oneway:
             lanes = [
-                Lane(LaneType.TRAVEL_LANE, Direction.FORWARD)
+                Lane(LaneType.TRAVEL, Direction.FORWARD, LaneDesignation.MOTOR)
             ] * travel_lane_number
         else:
             half: int = (
@@ -234,12 +225,22 @@ class Road:
                 else math.ceil(travel_lane_number / 2.0)
             )
             lanes = [
-                Lane(LaneType.TRAVEL_LANE, self.get_direction("left"))
+                Lane(
+                    LaneType.TRAVEL,
+                    self.get_direction("left"),
+                    LaneDesignation.MOTOR,
+                )
             ] * half
             if self.tags.get("centre_turn_lane") == "yes":
-                lanes += [Lane(LaneType.SHARED_LEFT_TURN, Direction.BOTH)]
+                lanes += [
+                    Lane(LaneType.TRAVEL, Direction.BOTH, LaneDesignation.MOTOR)
+                ]
             lanes += [
-                Lane(LaneType.TRAVEL_LANE, self.get_direction("right"))
+                Lane(
+                    LaneType.TRAVEL,
+                    self.get_direction("right"),
+                    LaneDesignation.MOTOR,
+                )
             ] * (travel_lane_number - half)
 
         # Cycleways
@@ -249,12 +250,15 @@ class Road:
         for side in sides:
             if self.tags.get(f"cycleway:{side}") == "lane":
                 lane = Lane(
-                    LaneType.CYCLEWAY,
+                    LaneType.TRAVEL,
                     Direction.FORWARD if oneway else self.get_direction(side),
+                    LaneDesignation.BICYCLE,
                 )
                 lanes = self.add_lane(lanes, lane, side)
             elif self.tags.get(f"cycleway:{side}") in track_values:
-                lane = Lane(LaneType.CYCLEWAY, Direction.BOTH)
+                lane = Lane(
+                    LaneType.TRAVEL, Direction.BOTH, LaneDesignation.BICYCLE
+                )
                 lanes = self.add_lane(lanes, lane, side)
 
         # Bus lanes
@@ -263,32 +267,53 @@ class Road:
             self.tags.get("busway") == "lane"
             or self.tags.get("busway:both") == "lane"
         ):
-            lanes = self.add_both_lanes(lanes, LaneType.BUS_LANE)
+            lanes = self.add_both_lanes(
+                lanes, LaneType.TRAVEL, LaneDesignation.BUS
+            )
         for side in sides:
             if self.tags.get(f"busway:{side}") == "lane":
-                lane = Lane(LaneType.BUS_LANE, self.get_direction(side))
+                lane = Lane(
+                    LaneType.TRAVEL,
+                    self.get_direction(side),
+                    LaneDesignation.BUS,
+                )
                 lanes = self.add_lane(lanes, lane, side)
 
         # Parking lanes
 
         if self.tags.get("parking:lane:both") == "parallel":
-            lanes = self.add_both_lanes(lanes, LaneType.PARKING_LANE)
+            lanes = self.add_both_lanes(
+                lanes, LaneType.PARKING, LaneDesignation.MOTOR
+            )
 
         for side in sides:
             if self.tags.get(f"parking:lane:{side}") in parking_values:
-                lane = Lane(LaneType.PARKING_LANE, self.get_direction(side))
+                lane = Lane(
+                    LaneType.PARKING,
+                    self.get_direction(side),
+                    LaneDesignation.MOTOR,
+                )
                 lanes = self.add_lane(lanes, lane, side)
 
         # Sidewalks
 
+        is_rural = (
+            self.tags.get("sidewalk") is None
+            and (
+                self.tags.get("lanes") is None or self.tags.get("lanes") == "2"
+            )
+            and self.tags.get("oneway") is None
+        )
         if self.tags.get("sidewalk") == "both":
-            lanes = self.add_both_lanes(lanes, LaneType.SIDEWALK)
-        elif self.tags.get("sidewalk") == "none":
-            lanes = self.add_both_lanes(lanes, LaneType.SHOULDER)
+            lanes = self.add_both_lanes(
+                lanes, LaneType.TRAVEL, LaneDesignation.FOOT
+            )
+        elif self.tags.get("sidewalk") == "none" or is_rural:
+            lanes = self.add_both_lanes(lanes, LaneType.SHOULDER, None)
         else:
             for side in sides:
                 if self.tags.get("sidewalk") == side:
-                    lane = Lane(LaneType.SIDEWALK, Direction.BOTH)
+                    lane = Lane(LaneType.TRAVEL, None, LaneDesignation.FOOT)
                     lanes = self.add_lane(lanes, lane, side)
 
         return lanes

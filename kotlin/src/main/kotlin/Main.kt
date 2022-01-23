@@ -32,117 +32,65 @@ enum class DrivingSide {
  */
 @Serializable
 enum class Direction {
-    /**
-     * The direction of the lane coincides with the direction of the way.
-     */
+
     @SerialName("forward")
     FORWARD,
 
-    /**
-     * The direction of the lane it opposite to the direction of the way.
-     */
     @SerialName("backward")
     BACKWARD,
 
     @SerialName("both")
     BOTH,
-
-    @SerialName("none")
-    NONE,
 }
 
-/** Lane designation. */
+/** Lane type. */
 @Serializable
 enum class LaneType {
-    /**
-     * Part of a highway set aside for the use of pedestrians and sometimes also cyclists, separated from the
-     * carriageway (or roadway).  See OpenStreetMap wiki page
-     * [Sidewalks](https://wiki.openstreetmap.org/wiki/Sidewalks).
-     */
-    @SerialName("sidewalk")
-    SIDEWALK,
 
-    /**
-     * Cycling infrastructure that is an inherent part of the road.  See OpenStreetMap wiki page
-     * [Key:cycleway](https://wiki.openstreetmap.org/wiki/Key:cycleway).
-     */
-    @SerialName("cycleway")
-    CYCLEWAY,
+    @SerialName("travel")
+    TRAVEL,
 
-    /**
-     * Traffic lane of a highway suitable for vehicles.
-     */
-    @SerialName("travel_lane")
-    TRAVEL_LANE,
+    @SerialName("parking")
+    PARKING,
 
-    /**
-     * Part of the road designated for parking.
-     */
-    @SerialName("parking_lane")
-    PARKING_LANE,
-
-    /**
-     * A shared center turn lane.
-     */
-    @SerialName("shared_left_turn")
-    SHARED_LEFT_TURN,
-
-    /**
-     * Some roads without any sidewalks still have pedestrian traffic. This type represents the shoulder of the road,
-     * where people are usually forced to walk.
-     */
     @SerialName("shoulder")
     SHOULDER,
 
-    /**
-     * A bus-only lane.
-     */
-    @SerialName("bus_lane")
-    BUS_LANE,
+    @SerialName("separator")
+    SEPARATOR,
+
+    @SerialName("construction")
+    CONSTRUCTION,
 }
 
-/**
- * The amount of space between the lanes.
- */
+/** Lane designated. */
 @Serializable
-enum class BufferType {
-    /**
-     * Painted stripes
-     */
-    @SerialName("stripes")
-    STRIPES,
+enum class LaneDesignated {
 
-    /**
-     * Flex posts, wands, cones, car ticklers, bollards, other "weak" forms of protection. Usually possible to weave
-     * through them.
-     */
-    @SerialName("flex_posts")
-    FLEX_POSTS,
+    @SerialName("any")
+    ANY,
 
-    /**
-     * Sturdier planters, with gaps
-     */
-    @SerialName("planters")
-    PLANTERS,
+    @SerialName("foot")
+    FOOT,
 
-    /**
-     * Solid barrier, no gaps.
-     */
-    @SerialName("jersey_barrier")
-    JERSEY_BARRIER,
+    @SerialName("bicycle")
+    BICYCLE,
 
-    /**
-     * A raised curb
-     */
-    @SerialName("curb")
-    CURB,
+    @SerialName("motor_vehicle")
+    MOTOR,
+
+    @SerialName("bus")
+    BUS,
+
+    @SerialName("psv")
+    PSV,
 }
 
 /** Lane specification. */
 @Serializable
-data class Lane(val type: LaneType, val direction: Direction) {
+data class Lane(val type: LaneType, val direction: Direction? = null, val designated: LaneDesignated? = null) {
     override fun toString(): String {
-        return "${type}_$direction"
+        return "${type}_${direction}_$designated"
     }
 }
 
@@ -237,13 +185,13 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
      * @param lanes destination lanes listed from left to right
      * @param type lane type
      */
-    private fun addBothLanes(lanes: ArrayList<Lane>, type: LaneType) {
-        if (type == LaneType.SHOULDER || type == LaneType.SIDEWALK) {
-            lanes.add(0, Lane(type, Direction.BOTH))
-            lanes.add(Lane(type, Direction.BOTH))
+    private fun addBothLanes(lanes: ArrayList<Lane>, type: LaneType, designated: LaneDesignated?) {
+        if (type == LaneType.SHOULDER || (type == LaneType.TRAVEL && designated == LaneDesignated.FOOT)) {
+            lanes.add(0, Lane(type, null, designated))
+            lanes.add(Lane(type, null, designated))
         } else {
-            lanes.add(0, Lane(type, getDirection("left")))
-            lanes.add(Lane(type, getDirection("right")))
+            lanes.add(0, Lane(type, getDirection("left"), designated))
+            lanes.add(Lane(type, getDirection("right"), designated))
         }
     }
 
@@ -322,18 +270,18 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
             travelLaneNumber = 2
 
         if (oneway)
-            (1..travelLaneNumber).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL_LANE, Direction.FORWARD)) }
+            (1..travelLaneNumber).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL, Direction.FORWARD, LaneDesignated.MOTOR)) }
         else {
             val half =
                 if (drivingSide == DrivingSide.RIGHT) travelLaneNumber / 2 else ceil(travelLaneNumber / 2.0).toInt()
 
-            (1..half).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL_LANE, getDirection("left"))) }
+            (1..half).forEach { _ -> lanes.add(Lane(LaneType.TRAVEL, getDirection("left"), LaneDesignated.MOTOR)) }
 
             if (tags["centre_turn_lane"] == "yes")
-                lanes.add(Lane(LaneType.SHARED_LEFT_TURN, Direction.BOTH))
+                lanes.add(Lane(LaneType.TRAVEL, Direction.BOTH, LaneDesignated.MOTOR))
 
             (half + 1..travelLaneNumber).forEach { _ ->
-                lanes.add(Lane(LaneType.TRAVEL_LANE, getDirection("right")))
+                lanes.add(Lane(LaneType.TRAVEL, getDirection("right"), LaneDesignated.MOTOR))
             }
         }
 
@@ -342,38 +290,38 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
         for (side in sides)
             if (tags["cycleway:$side"] == "lane")
             // If road is oneway, cycleways should follow the travel lane direction.
-                addLane(lanes, Lane(LaneType.CYCLEWAY, if (oneway) Direction.FORWARD else getDirection(side)), side)
+                addLane(lanes, Lane(LaneType.TRAVEL, if (oneway) Direction.FORWARD else getDirection(side), LaneDesignated.BICYCLE), side)
             else if (trackValues.contains(tags["cycleway:$side"])) {
-                addLane(lanes, Lane(LaneType.CYCLEWAY, Direction.BOTH), side)
+                addLane(lanes, Lane(LaneType.TRAVEL, Direction.BOTH, LaneDesignated.BICYCLE), side)
             }
 
         // Bus lanes
 
         if (tags["busway"] == "lane" || tags["busway:both"] == "lane")
-            addBothLanes(lanes, LaneType.BUS_LANE)
+            addBothLanes(lanes, LaneType.TRAVEL, LaneDesignated.BUS)
         for (side in sides)
             if (tags["busway:$side"] == "lane")
-                addLane(lanes, Lane(LaneType.BUS_LANE, getDirection(side)), side)
+                addLane(lanes, Lane(LaneType.TRAVEL, getDirection(side), LaneDesignated.BUS), side)
 
         // Parking lanes
 
         if (tags["parking:lane:both"] == "parallel")
-            addBothLanes(lanes, LaneType.PARKING_LANE)
+            addBothLanes(lanes, LaneType.PARKING, LaneDesignated.MOTOR)
 
         for (side in sides)
             if (parkingValues.contains(tags["parking:lane:$side"]))
-                addLane(lanes, Lane(LaneType.PARKING_LANE, getDirection(side)), side)
+                addLane(lanes, Lane(LaneType.PARKING, getDirection(side), LaneDesignated.MOTOR), side)
 
         // Sidewalks
 
         if (tags["sidewalk"] == "both")
-            addBothLanes(lanes, LaneType.SIDEWALK)
+            addBothLanes(lanes, LaneType.TRAVEL, LaneDesignated.FOOT)
         else if (tags["sidewalk"] == "none")
-            addBothLanes(lanes, LaneType.SHOULDER)
+            addBothLanes(lanes, LaneType.SHOULDER, null)
         else
             for (side in sides)
                 if (tags["sidewalk"] == side)
-                    addLane(lanes, Lane(LaneType.SIDEWALK, Direction.BOTH), side)
+                    addLane(lanes, Lane(LaneType.TRAVEL, null, LaneDesignated.FOOT), side)
 
         return lanes
     }

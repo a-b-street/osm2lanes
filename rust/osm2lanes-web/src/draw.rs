@@ -3,12 +3,12 @@ use piet::{
     TextAttribute, TextLayoutBuilder,
 };
 
-use osm2lanes::{Direction, LanePrintable, LaneSpec};
+use osm2lanes::{Lane, LaneDirection, LanePrintable};
 
 pub fn lanes<R: RenderContext>(
     rc: &mut R,
     (canvas_width, canvas_height): (u32, u32),
-    lanes: &[LaneSpec],
+    lanes: &[Lane],
 ) -> Result<(), Error> {
     rc.clear(None, Color::OLIVE);
 
@@ -88,27 +88,33 @@ pub fn lanes<R: RenderContext>(
             1.0,
         );
         // lane markings
-        let x = (grassy_verge + asphalt_buffer) + (idx as f64 * lane_width) + (0.5 * lane_width);
-        draw_arrow(
-            rc,
-            Point {
-                x,
-                y: 0.3 * canvas_height,
-            },
-            lane.direction,
-        )?;
-        draw_arrow(
-            rc,
-            Point {
-                x,
-                y: 0.7 * canvas_height,
-            },
-            lane.direction,
-        )?;
-
+        if let Lane::Travel {
+            direction: Some(direction),
+            ..
+        } = lane
+        {
+            let x =
+                (grassy_verge + asphalt_buffer) + (idx as f64 * lane_width) + (0.5 * lane_width);
+            draw_arrow(
+                rc,
+                Point {
+                    x,
+                    y: 0.3 * canvas_height,
+                },
+                *direction,
+            )?;
+            draw_arrow(
+                rc,
+                Point {
+                    x,
+                    y: 0.7 * canvas_height,
+                },
+                *direction,
+            )?;
+        }
         let layout = rc
             .text()
-            .new_text_layout(lane.lane_type.as_utf8().to_string())
+            .new_text_layout(lane.as_utf8().to_string())
             .font(FontFamily::SYSTEM_UI, 24.0)
             .default_attribute(TextAttribute::TextColor(Color::WHITE))
             .build()?;
@@ -122,16 +128,16 @@ pub fn lanes<R: RenderContext>(
 pub fn draw_arrow<R: RenderContext>(
     rc: &mut R,
     mid: Point,
-    direction: Direction,
+    direction: LaneDirection,
 ) -> Result<(), Error> {
     fn draw_point<R: RenderContext>(
         rc: &mut R,
         mid: Point,
-        direction: Direction,
+        direction: LaneDirection,
     ) -> Result<(), Error> {
         let dir_sign = match direction {
-            Direction::Forward => -1.0,
-            Direction::Backward => 1.0,
+            LaneDirection::Forward => -1.0,
+            LaneDirection::Backward => 1.0,
             _ => unreachable!(),
         };
         for x in [-10.0, 10.0] {
@@ -168,12 +174,12 @@ pub fn draw_arrow<R: RenderContext>(
         1.0,
     );
     match direction {
-        Direction::Forward | Direction::Backward => draw_point(rc, mid, direction)?,
-        Direction::Both => {
-            draw_point(rc, mid, Direction::Forward)?;
-            draw_point(rc, mid, Direction::Backward)?;
+        LaneDirection::Forward | LaneDirection::Backward => draw_point(rc, mid, direction)?,
+        LaneDirection::Both => {
+            draw_point(rc, mid, LaneDirection::Forward)?;
+            draw_point(rc, mid, LaneDirection::Backward)?;
         }
-        Direction::None => {}
+        LaneDirection::None => {}
     }
     Ok(())
 }
