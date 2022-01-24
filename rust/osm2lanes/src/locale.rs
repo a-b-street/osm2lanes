@@ -18,7 +18,7 @@ impl Locale {
 /// Configuration to build locale, context about the place where an OSM way exists.
 #[derive(Default)]
 pub struct Config {
-    way_id: Option<u32>,
+    way_id: Option<u64>,
     _iso_3166_1_alpha_2: Option<String>,
     _iso_3166_1_alpha_3: Option<String>,
     _iso_3166_2: Option<String>,
@@ -31,7 +31,7 @@ impl Config {
         Self::default()
     }
 
-    pub fn way_id(mut self, id: u32) -> Self {
+    pub fn way_id(mut self, id: u64) -> Self {
         self.way_id = Some(id);
         todo!();
     }

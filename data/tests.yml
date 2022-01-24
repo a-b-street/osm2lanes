@@ -10,12 +10,13 @@
 ###   - busways
 ###   - heavy goods vehicles
 ###   - other
+### - esoteric to realistic
 ### - By country alphabetically, where we identify the following countries of special interest:
 ###   - United Kingdom: LHT, and `psv` usage.
 ###   - Netherlands: cycleways, and roads with only cars and busses
 ###     (a separate OSM way often exists for pedestrians and cyclists).
 ###   - TODO: more?
-### - esoteric to realistic
+### - right hand travel then left hand travel
 ###
 ### Tests are stored as a list of mappings in yaml.
 ### Prefer real examples over esoteric examples.
@@ -213,7 +214,104 @@
     designated: foot
 
 ### Cycleways
-# TODO
+
+## cycleway=lane
+
+- way_id: 428294122
+  mapillary: https://www.mapillary.com/app/?pKey=503446704131825
+  description: with oneway=yes, a cycleway:*=* is in the forward direction. https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
+  # TODO: OSM tags do not accurately reflect parking situation
+  tags:
+    highway: secondary
+    bicycle: designated
+    lanes: '2'
+    oneway: 'yes'
+    sidewalk: both
+    cycleway:left: lane
+  driving_side: right
+  ISO 3166-2: US-WA
+  output:
+  - type: travel
+    designated: foot
+  - type: travel
+    direction: forward
+    designated: bicycle
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    designated: foot
+
+# TODO: find better example with same tags
+- way_id: 534549104
+  mapillary: https://www.mapillary.com/app/?pKey=1848856645291310
+  tags:
+    lanes: '2'
+    oneway: 'yes'
+    sidewalk: both
+    cycleway:right: track
+    cycleway:right:oneway: 'no'
+    oneway:bicycle: 'no'
+  driving_side: right
+  output:
+  - type: travel
+    designated: foot
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    direction: both
+    designated: bicycle
+  - type: travel
+    designated: foot
+
+- way_id: 4188078
+  mapillary: https://www.mapillary.com/app/?pKey=270752554744918
+  rust: false
+  tags:
+    lanes: '2'
+    cycleway:left: lane
+    oneway: 'yes'
+    sidewalk: left
+  driving_side: left
+  output:
+  - type: travel
+    designated: foot
+  - type: travel
+    direction: forward
+    designated: bicycle
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+
+- way_id: 49207928
+  tags:
+    cycleway:right: lane
+    sidewalk: both
+  driving_side: left
+  output:
+  - type: travel
+    designated: foot
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    direction: backward
+    designated: motor_vehicle
+  - type: travel
+    direction: backward
+    designated: bicycle
+  - type: travel
+    designated: foot
 
 ### Busways
 
@@ -262,33 +360,6 @@
 
 ### To Sort
 # The following still need to be categorized
-- way_id: 428294122
-  mapillary: https://www.mapillary.com/app/?pKey=503446704131825
-  description: with oneway=yes, a cycleway:*=* is in the forward direction. https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
-  # TODO: OSM tags do not accurately reflect parking situation
-  tags:
-    highway: secondary
-    bicycle: designated
-    lanes: '2'
-    oneway: 'yes'
-    sidewalk: both
-    cycleway:left: lane
-  driving_side: right
-  ISO 3166-2: US-WA
-  output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
 
 - way_id: 8591383
   mapillary: https://www.mapillary.com/app/?pKey=3963080753774579
@@ -340,9 +411,11 @@
   - type: travel
     designated: foot
 
+
 - way_id: 353690151
   mapillary: https://www.mapillary.com/app/?pKey=814030435898295
-  comment: 'TODO: parking not visible in mapillary; TODO: tram line not supported'
+  # TODO: parking not visible in mapillary
+  # TODO: tram line not supported
   tags:
     highway: secondary
     lanes: '4'
@@ -381,8 +454,8 @@
 
 - way_id: 389654080
   mapillary: https://www.mapillary.com/app/?pKey=331760328316020
-  comment: 'TODO: the cycleway is actually two marked lanes, how should we know that
-    given the tags or what should the tags be?'
+  # TODO: the cycleway is actually two marked lanes,
+  # how should we know that given the tags or what should the tags be?
   tags:
     highway: secondary
     lanes: '2'
@@ -416,10 +489,11 @@
     designated: foot
 
 - way_id: 369623526
+  # OSM Version #9
   mapillary: https://www.mapillary.com/app/?pKey=839524790321923
-  comment: 'OSM Version #9; check if cycleway:left=opposite_track for RHT is valid (rust);
-    TODO: parking lane is not parallel'
+  # TODO: check if cycleway:left=opposite_track for RHT is valid, rust disabled
   rust: false
+  # TODO: parking lane is not parallel
   tags:
     highway: residential
     lanes: '1'
@@ -442,32 +516,6 @@
   - type: parking
     direction: forward
     designated: motor_vehicle
-  - type: travel
-    designated: foot
-
-- way_id: 534549104
-  mapillary: https://www.mapillary.com/app/?pKey=1848856645291310
-  comment: 'TODO: find better example with same tags'
-  tags:
-    lanes: '2'
-    oneway: 'yes'
-    sidewalk: both
-    cycleway:right: track
-    cycleway:right:oneway: 'no'
-    oneway:bicycle: 'no'
-  driving_side: right
-  output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: both
-    designated: bicycle
   - type: travel
     designated: foot
 
@@ -508,48 +556,6 @@
   - type: travel
     direction: forward
     designated: motor_vehicle
-
-- way_id: 4188078
-  mapillary: https://www.mapillary.com/app/?pKey=270752554744918
-  rust: false
-  tags:
-    lanes: '2'
-    cycleway:left: lane
-    oneway: 'yes'
-    sidewalk: left
-  driving_side: left
-  output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-
-- way_id: 49207928
-  tags:
-    cycleway:right: lane
-    sidewalk: both
-  driving_side: left
-  output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: bicycle
-  - type: travel
-    designated: foot
 
 - way_id: 898731283
   comment: how should an odd number of lanes forward/backwards be split without any clues?

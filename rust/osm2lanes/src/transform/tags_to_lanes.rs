@@ -1,194 +1,95 @@
 use std::iter;
 
-use serde::{Deserialize, Serialize};
-
-use crate::tags::{TagError, TagKey, Tags, TagsRead, TagsWrite};
+use crate::tags::{TagKey, Tags, TagsRead};
 use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Locale, Road, RoadError};
 
-const HIGHWAY: TagKey = TagKey::from("highway");
-const CYCLEWAY: TagKey = TagKey::from("cycleway");
+use super::*;
 
-#[derive(Clone, Debug, PartialEq)]
-enum WaySide {
-    Both,
-    Right,
-    Left,
+/// From an OpenStreetMap way's tags,
+/// determine the lanes along the road from left to right.
+/// Warnings generate and error.
+/// To ignore warnings, use tags_to_lanes_with_warnings and ignore them explicitly.
+pub fn tags_to_lanes(tags: &Tags, locale: &Locale) -> RoadResult {
+    let Lanes { lanes, warnings } = tags_to_lanes_with_warnings(tags, locale)?;
+    if !warnings.0.is_empty() {
+        return Err(format!("{} warnings found", warnings.0.len()).into());
+    }
+    Ok(Road { lanes })
 }
 
-impl WaySide {
-    fn as_str(&self) -> &'static str {
-        match self {
-            Self::Both => "both",
-            Self::Right => "right",
-            Self::Left => "left",
-        }
+/// From an OpenStreetMap way's tags,
+/// determine the lanes along the road from left to right.
+/// Warnings are produced for any ambiguity.
+pub fn tags_to_lanes_with_warnings(tags: &Tags, locale: &Locale) -> LanesResult {
+    let mut warnings = LaneWarnings::default();
+
+    if let Some(spec) = non_motorized(tags, locale) {
+        return spec;
     }
+
+    // TODO Reversible roads should be handled differently?
+    let oneway = tags.is_any("oneway", &["yes", "reversible"]) || tags.is("junction", "roundabout");
+
+    let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
+
+    let driving_lane = if tags.is("access", "no")
+        && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
+        || tags
+            .get("motor_vehicle:conditional")
+            .map(|x| x.starts_with("no"))
+            .unwrap_or(false)
+            && tags.is("bus", "yes")
+    // Example: 3rd Ave in downtown Seattle
+    {
+        LaneDesignated::Bus
+    // } else if tags.is("access", "no") || tags.is("highway", "construction") {
+    //     LaneType::Construction
+    } else {
+        LaneDesignated::Motor
+    };
+
+    // These are ordered from the road center, going outwards. Most of the members of fwd_side will
+    // have Direction::Forward, but there can be exceptions with two-way cycletracks.
+    let mut fwd_side: Vec<Lane> = iter::repeat_with(|| Lane::forward(driving_lane))
+        .take(num_driving_fwd)
+        .collect();
+    let mut back_side: Vec<Lane> = iter::repeat_with(|| Lane::backward(driving_lane))
+        .take(num_driving_back)
+        .collect();
+    // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
+    if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
+        fwd_side.insert(0, Lane::both(LaneDesignated::Motor));
+    }
+
+    // if driving_lane == LaneType::Construction {
+    //     return Ok(Lanes {
+    //         lanes: assemble_ltr(fwd_side, back_side, cfg.driving_side),
+    //         warnings: LaneSpecWarnings::default(),
+    //     });
+    // }
+
+    bus(tags, locale, oneway, &mut fwd_side, &mut back_side)?;
+
+    bicycle(
+        tags,
+        locale,
+        oneway,
+        &mut fwd_side,
+        &mut back_side,
+        &mut warnings,
+    )?;
+
+    if driving_lane == LaneDesignated::Motor {
+        parking(tags, locale, oneway, &mut fwd_side, &mut back_side);
+    }
+
+    walking(tags, locale, oneway, &mut fwd_side, &mut back_side);
+
+    Ok(Lanes {
+        lanes: assemble_ltr(fwd_side, back_side, locale.driving_side),
+        warnings,
+    })
 }
-
-impl ToString for WaySide {
-    fn to_string(&self) -> String {
-        self.as_str().to_owned()
-    }
-}
-
-impl std::convert::From<DrivingSide> for WaySide {
-    fn from(side: DrivingSide) -> Self {
-        match side {
-            DrivingSide::Right => Self::Right,
-            DrivingSide::Left => Self::Left,
-        }
-    }
-}
-
-impl std::convert::From<DrivingSide> for TagKey {
-    fn from(side: DrivingSide) -> Self {
-        match side {
-            DrivingSide::Right => Self::from("right"),
-            DrivingSide::Left => Self::from("left"),
-        }
-    }
-}
-
-impl DrivingSide {
-    fn tag(&self) -> TagKey {
-        (*self).into()
-    }
-}
-
-impl Lane {
-    fn forward(designated: LaneDesignated) -> Self {
-        Self::Travel {
-            direction: Some(LaneDirection::Forward),
-            designated,
-        }
-    }
-    fn backward(designated: LaneDesignated) -> Self {
-        Self::Travel {
-            direction: Some(LaneDirection::Backward),
-            designated,
-        }
-    }
-    fn both(designated: LaneDesignated) -> Self {
-        Self::Travel {
-            direction: Some(LaneDirection::Both),
-            designated,
-        }
-    }
-    fn foot() -> Self {
-        Self::Travel {
-            direction: None,
-            designated: LaneDesignated::Foot,
-        }
-    }
-    fn parking(direction: LaneDirection) -> Self {
-        Self::Parking {
-            direction,
-            designated: LaneDesignated::Motor,
-        }
-    }
-    fn is_motor(&self) -> bool {
-        matches!(
-            self,
-            Lane::Travel {
-                designated: LaneDesignated::Motor,
-                ..
-            }
-        )
-    }
-    fn is_foot(&self) -> bool {
-        matches!(
-            self,
-            Lane::Travel {
-                designated: LaneDesignated::Foot,
-                ..
-            }
-        )
-    }
-    fn is_bicycle(&self) -> bool {
-        matches!(
-            self,
-            Lane::Travel {
-                designated: LaneDesignated::Bicycle,
-                ..
-            }
-        )
-    }
-    fn is_bus(&self) -> bool {
-        matches!(
-            self,
-            Lane::Travel {
-                designated: LaneDesignated::Bus,
-                ..
-            }
-        )
-    }
-    fn set_bus(&mut self) -> ModeResult {
-        match self {
-            Self::Travel { designated, .. } => *designated = LaneDesignated::Bus,
-            _ => unreachable!(),
-        }
-        Ok(())
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LaneError(String);
-
-impl ToString for LaneError {
-    fn to_string(&self) -> String {
-        self.0.to_string()
-    }
-}
-
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct LaneWarnings(Vec<LaneSpecWarning>);
-
-impl LaneWarnings {
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-}
-
-impl ToString for LaneWarnings {
-    fn to_string(&self) -> String {
-        self.0
-            .iter()
-            .map(|warn| format!("Warning: {}", warn.description))
-            .collect::<Vec<_>>()
-            .join("\n")
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct LaneSpecWarning {
-    pub description: String,
-    // Tags relevant to triggering the warning
-    // TODO: investigate making this a view of keys on a Tags object instead
-    pub tags: Tags,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Lanes {
-    pub lanes: Vec<Lane>,
-    pub warnings: LaneWarnings,
-}
-
-impl From<String> for RoadError {
-    fn from(s: String) -> Self {
-        RoadError::Lane(LaneError(s))
-    }
-}
-
-impl From<&'static str> for RoadError {
-    fn from(s: &'static str) -> Self {
-        RoadError::Lane(LaneError(s.to_owned()))
-    }
-}
-
-type ModeResult = Result<(), RoadError>;
-type LanesResult = Result<Lanes, RoadError>;
-type RoadResult = Result<Road, RoadError>;
-type TagsResult = Result<Tags, RoadError>;
 
 // Handle non motorized ways
 fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
@@ -677,86 +578,6 @@ fn walking(
     }
 }
 
-/// From an OpenStreetMap way's tags, determine the lanes along the road from left to right.
-pub fn get_lane_specs_ltr_with_warnings(tags: &Tags, locale: &Locale) -> LanesResult {
-    let mut warnings = LaneWarnings::default();
-
-    if let Some(spec) = non_motorized(tags, locale) {
-        return spec;
-    }
-
-    // TODO Reversible roads should be handled differently?
-    let oneway = tags.is_any("oneway", &["yes", "reversible"]) || tags.is("junction", "roundabout");
-
-    let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
-
-    let driving_lane = if tags.is("access", "no")
-        && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
-        || tags
-            .get("motor_vehicle:conditional")
-            .map(|x| x.starts_with("no"))
-            .unwrap_or(false)
-            && tags.is("bus", "yes")
-    // Example: 3rd Ave in downtown Seattle
-    {
-        LaneDesignated::Bus
-    // } else if tags.is("access", "no") || tags.is("highway", "construction") {
-    //     LaneType::Construction
-    } else {
-        LaneDesignated::Motor
-    };
-
-    // These are ordered from the road center, going outwards. Most of the members of fwd_side will
-    // have Direction::Forward, but there can be exceptions with two-way cycletracks.
-    let mut fwd_side: Vec<Lane> = iter::repeat_with(|| Lane::forward(driving_lane))
-        .take(num_driving_fwd)
-        .collect();
-    let mut back_side: Vec<Lane> = iter::repeat_with(|| Lane::backward(driving_lane))
-        .take(num_driving_back)
-        .collect();
-    // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
-    if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
-        fwd_side.insert(0, Lane::both(LaneDesignated::Motor));
-    }
-
-    // if driving_lane == LaneType::Construction {
-    //     return Ok(Lanes {
-    //         lanes: assemble_ltr(fwd_side, back_side, cfg.driving_side),
-    //         warnings: LaneSpecWarnings::default(),
-    //     });
-    // }
-
-    bus(tags, locale, oneway, &mut fwd_side, &mut back_side)?;
-
-    bicycle(
-        tags,
-        locale,
-        oneway,
-        &mut fwd_side,
-        &mut back_side,
-        &mut warnings,
-    )?;
-
-    if driving_lane == LaneDesignated::Motor {
-        parking(tags, locale, oneway, &mut fwd_side, &mut back_side);
-    }
-
-    walking(tags, locale, oneway, &mut fwd_side, &mut back_side);
-
-    Ok(Lanes {
-        lanes: assemble_ltr(fwd_side, back_side, locale.driving_side),
-        warnings,
-    })
-}
-
-pub fn get_lane_specs_ltr(tags: &Tags, locale: &Locale) -> RoadResult {
-    let Lanes { lanes, warnings } = get_lane_specs_ltr_with_warnings(tags, locale)?;
-    if !warnings.0.is_empty() {
-        return Err(format!("{} warnings found", warnings.0.len()).into());
-    }
-    Ok(Road { lanes })
-}
-
 fn assemble_ltr(
     mut fwd_side: Vec<Lane>,
     mut back_side: Vec<Lane>,
@@ -774,152 +595,4 @@ fn assemble_ltr(
             fwd_side
         }
     }
-}
-
-impl std::convert::From<TagError> for RoadError {
-    fn from(e: TagError) -> Self {
-        RoadError::Tag(e)
-    }
-}
-
-pub fn lanes_to_tags_no_roundtrip(lanes: &[Lane], _locale: &Locale) -> TagsResult {
-    let mut tags = Tags::default();
-    let mut _oneway = false;
-    tags.checked_insert("highway", "yes")?; // TODO, what?
-    {
-        let lane_count = lanes
-            .iter()
-            .filter(|lane| {
-                matches!(
-                    lane,
-                    Lane::Travel {
-                        designated: LaneDesignated::Motor | LaneDesignated::Bus,
-                        ..
-                    }
-                )
-            })
-            .count();
-        tags.checked_insert("lanes", lane_count.to_string())?;
-    }
-    // Oneway
-    if lanes.iter().filter(|lane| lane.is_motor()).all(|lane| {
-        matches!(
-            lane,
-            Lane::Travel {
-                direction: Some(LaneDirection::Forward),
-                ..
-            }
-        )
-    }) {
-        tags.insert("oneway", "yes");
-        _oneway = true;
-    }
-    // Pedestrian
-    {
-        match (
-            lanes.first().unwrap().is_foot(),
-            lanes.last().unwrap().is_foot(),
-        ) {
-            (false, false) => {}
-            (true, false) => tags.checked_insert("sidewalk", "left")?,
-            (false, true) => tags.checked_insert("sidewalk", "right")?,
-            (true, true) => tags.checked_insert("sidewalk", "both")?,
-        }
-    }
-    // Parking
-    match (
-        lanes
-            .iter()
-            .take_while(|lane| !lane.is_motor())
-            .any(|lane| matches!(lane, Lane::Parking { .. })),
-        lanes
-            .iter()
-            .skip_while(|lane| !lane.is_motor())
-            .any(|lane| matches!(lane, Lane::Parking { .. })),
-    ) {
-        (false, false) => {}
-        (true, false) => tags.checked_insert("parking:lane:left", "parallel")?,
-        (false, true) => tags.checked_insert("parking:lane:right", "parallel")?,
-        (true, true) => tags.checked_insert("parking:lane:both", "parallel")?,
-    }
-    // Cycleway
-    {
-        let left_cycle_lane = lanes
-            .iter()
-            .take_while(|lane| !lane.is_motor())
-            .find(|lane| lane.is_bicycle());
-        let right_cycle_lane = lanes
-            .iter()
-            .rev()
-            .take_while(|lane| !lane.is_motor())
-            .find(|lane| lane.is_bicycle());
-        match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
-            (false, false) => {}
-            (true, false) => tags.checked_insert("cycleway:left", "lane")?,
-            (false, true) => tags.checked_insert("cycleway:right", "lane")?,
-            (true, true) => tags.checked_insert("cycleway:both", "lane")?,
-        }
-        // https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
-        // TODO, incomplete, pending testing.
-        if let Some(Lane::Travel {
-            direction: Some(LaneDirection::Both),
-            ..
-        }) = left_cycle_lane
-        {
-            tags.checked_insert("cycleway:left:oneway", "no")?;
-        }
-        if let Some(Lane::Travel {
-            direction: Some(LaneDirection::Both),
-            ..
-        }) = right_cycle_lane
-        {
-            tags.checked_insert("cycleway:right:oneway", "no")?;
-        }
-    }
-    // Bus Lanes
-    {
-        let left_bus_lane = lanes
-            .iter()
-            .take_while(|lane| !lane.is_motor())
-            .find(|lane| lane.is_bus());
-        let right_bus_lane = lanes
-            .iter()
-            .rev()
-            .take_while(|lane| !lane.is_motor())
-            .find(|lane| lane.is_bus());
-        match (left_bus_lane.is_some(), right_bus_lane.is_some()) {
-            (false, false) => {}
-            (true, false) => tags.checked_insert("busway:left", "lane")?,
-            (false, true) => tags.checked_insert("busway:right", "lane")?,
-            (true, true) => tags.checked_insert("busway:both", "lane")?,
-        }
-    }
-
-    if lanes.iter().any(|lane| {
-        matches!(
-            lane,
-            Lane::Travel {
-                designated: LaneDesignated::Motor,
-                direction: Some(LaneDirection::Both),
-            }
-        )
-    }) {
-        tags.checked_insert("lanes:both_ways", "1")?;
-        // TODO: add LHT support
-        tags.checked_insert("turn:lanes:both_ways", "left")?;
-    }
-
-    Ok(tags)
-}
-
-pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale) -> TagsResult {
-    let tags = lanes_to_tags_no_roundtrip(lanes, locale)?;
-
-    // Check roundtrip!
-    let rountrip = get_lane_specs_ltr(&tags, locale)?;
-    if lanes != rountrip.lanes {
-        return Err("lanes to tags cannot roundtrip".into());
-    }
-
-    Ok(tags)
 }
