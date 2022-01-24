@@ -57,6 +57,7 @@
   image: "https://upload.wikimedia.org/wikipedia/commons/4/44/Onderweg_-_Fitzroy_Crossing_-_Purnululu_%288991950691%29.jpg"
   rust:
     separator: false
+  skip_kotlin: true
   tags:
     highway: trunk
     surface: asphalt
@@ -89,6 +90,7 @@
   image: "https://www.travelyukon.com/sites/default/files/styles/hero_crop/public/hero/2017-10/alaskahighway_fn.jpg.jpeg?itok=GSSh7NDZ"
   rust:
     separator: false
+  skip_kotlin: true
   tags:
     highway: trunk
     lanes: '2'
@@ -123,6 +125,7 @@
   description: Japanese Expressway
   mapillary: https://www.mapillary.com/app/?pKey=2655760771400441
   skip_python: true
+  skip_kotlin: true
   rust: false
   tags:
     highway: motorway
@@ -199,6 +202,7 @@
 - way_id: 40297361
   mapillary: https://www.mapillary.com/app/?pKey=619551292322212
   skip_python: true
+  skip_kotlin: true
   rust: false
   tags:
     highway: steps

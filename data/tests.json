@@ -6,6 +6,7 @@
         "rust": {
             "separator": false
         },
+        "skip_kotlin": true,
         "tags": {
             "highway": "trunk",
             "surface": "asphalt"
@@ -65,6 +66,7 @@
         "rust": {
             "separator": false
         },
+        "skip_kotlin": true,
         "tags": {
             "highway": "trunk",
             "lanes": "2",
@@ -123,6 +125,7 @@
         "description": "Japanese Expressway",
         "mapillary": "https://www.mapillary.com/app/?pKey=2655760771400441",
         "skip_python": true,
+        "skip_kotlin": true,
         "rust": false,
         "tags": {
             "highway": "motorway",
@@ -239,6 +242,7 @@
         "way_id": 40297361,
         "mapillary": "https://www.mapillary.com/app/?pKey=619551292322212",
         "skip_python": true,
+        "skip_kotlin": true,
         "rust": false,
         "tags": {
             "highway": "steps"
