@@ -3,6 +3,15 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TagError(String);
+
+impl ToString for TagError {
+    fn to_string(&self) -> String {
+        self.0.to_string()
+    }
+}
+
 /// A representation for a OSM tags key
 #[derive(Clone)]
 pub enum TagKey {
@@ -246,10 +255,26 @@ impl TagsRead for Tags {
 pub trait TagsWrite {
     /// Returns the old value of this key, if it was already present.
     fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V) -> Option<String>;
+    fn checked_insert<K: Into<TagKey>, V: Into<String>>(
+        &mut self,
+        k: K,
+        v: V,
+    ) -> Result<(), TagError>;
 }
 
 impl TagsWrite for Tags {
     fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V) -> Option<String> {
         self.0.insert(k.into().as_str().to_owned(), v.into())
+    }
+    fn checked_insert<K: Into<TagKey>, V: Into<String>>(
+        &mut self,
+        k: K,
+        v: V,
+    ) -> Result<(), TagError> {
+        if self.insert(k, v).is_some() {
+            Err(TagError("duplicate key".to_owned()))
+        } else {
+            Ok(())
+        }
     }
 }
