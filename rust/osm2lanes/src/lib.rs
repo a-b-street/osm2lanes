@@ -169,9 +169,9 @@ mod tests {
 
     #[derive(Deserialize)]
     #[serde(untagged)]
-    enum Rust {
-        Bool(bool),
-        Struct { separator: Option<bool> },
+    enum RustTesting {
+        Enabled(bool),
+        WithOptions { separator: Option<bool> },
     }
 
     #[derive(Deserialize)]
@@ -187,18 +187,28 @@ mod tests {
         tags: Tags,
         output: Vec<Lane>,
         // Skipping
-        rust: Option<Rust>,
+        rust: Option<RustTesting>,
+    }
+
+    impl DrivingSide {
+        /// Three-letter abbreviation
+        const fn as_tla(&self) -> &'static str {
+            match self {
+                Self::Right => "RHT",
+                Self::Left => "LHT",
+            }
+        }
     }
 
     impl TestCase {
         fn print(&self) {
-            if !self.way_id.is_none() {
+            if self.way_id.is_some() {
                 println!(
                     "For input (example from https://www.openstreetmap.org/way/{}) with {}:",
                     self.way_id.unwrap(),
-                    self.driving_side.to_tla(),
+                    self.driving_side.as_tla(),
                 );
-            } else if !self.link.is_none() {
+            } else if self.link.is_some() {
                 println!("For input (example from {}):", self.link.as_ref().unwrap());
             }
             if let Some(comment) = self.comment.as_ref() {
@@ -211,40 +221,30 @@ mod tests {
                 println!("    {} = {}", k, v);
             }
         }
-        /// Is test enabled
-        fn is(&self) -> bool {
+
+        fn is_enabled(&self) -> bool {
             match self.rust {
                 None => true,
-                Some(Rust::Bool(b)) => b,
-                Some(Rust::Struct { .. }) => true,
+                Some(RustTesting::Enabled(b)) => b,
+                Some(RustTesting::WithOptions { .. }) => true,
             }
         }
-        /// Is test enabled for separators, true by default
-        fn is_separators(&self) -> bool {
+
+        fn is_separators_tested(&self) -> bool {
             match self.rust {
                 None => true,
-                Some(Rust::Bool(_)) => unreachable!(),
-                Some(Rust::Struct { separator }) => separator.unwrap_or(true),
+                Some(RustTesting::Enabled(_)) => unreachable!(),
+                Some(RustTesting::WithOptions { separator }) => separator.unwrap_or(true),
             }
         }
-        fn road(&self) -> Road {
+        fn expected_road(&self) -> Road {
             Road {
                 lanes: self
                     .output
                     .iter()
-                    .filter(|lane| self.is_separators() || !matches!(lane, Lane::Separator))
+                    .filter(|lane| self.is_separators_tested() || !matches!(lane, Lane::Separator))
                     .cloned()
                     .collect(),
-            }
-        }
-    }
-
-    impl DrivingSide {
-        /// Three-letter abbreviation
-        const fn to_tla(&self) -> &'static str {
-            match self {
-                Self::Right => "RHT",
-                Self::Left => "LHT",
             }
         }
     }
@@ -275,12 +275,12 @@ mod tests {
         let tests: Vec<TestCase> =
             serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
                 .expect("invalid json");
-        let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is()).collect();
+        let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is_enabled()).collect();
 
         assert!(tests.iter().all(|test| {
             let locale = Locale::builder().driving_side(test.driving_side).build();
             let lanes = get_lane_specs_ltr(&test.tags, &locale);
-            let expected_road = test.road();
+            let expected_road = test.expected_road();
             if let Ok(actual_road) = lanes {
                 if actual_road != expected_road {
                     test.print();
@@ -313,20 +313,20 @@ mod tests {
         let tests: Vec<TestCase> =
             serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
                 .unwrap();
-        let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is()).collect();
+        let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is_enabled()).collect();
 
         assert!(tests.iter().all(|test| {
             let locale = Locale::builder().driving_side(test.driving_side).build();
-            let input_road = test.road();
+            let input_road = test.expected_road();
             let tags = lanes_to_tags_no_roundtrip(&test.output, &locale).unwrap();
             let output_road = get_lane_specs_ltr(&tags, &locale).unwrap();
             if input_road != output_road {
-                if !test.way_id.is_none() {
+                if test.way_id.is_some() {
                     println!(
                         "For input (example from https://www.openstreetmap.org/way/{}):",
                         test.way_id.unwrap()
                     );
-                } else if !test.link.is_none() {
+                } else if test.link.is_some() {
                     println!("For input (example from {}):", test.link.as_ref().unwrap());
                 }
                 println!("From:");
