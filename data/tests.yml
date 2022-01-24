@@ -212,7 +212,43 @@
 # TODO
 
 ### Busways
-# TODO
+
+## Busway Scheme
+## https://wiki.openstreetmap.org/wiki/Bus_lanes#The_busway.3D.2A_scheme
+
+## Mixed Schemes
+
+# busway=* and lanes:bus=*
+- way_id: 988980354
+  description: busway=* and lanes:bus=*
+  driving_side: right
+  tags:
+    highway: primary
+    busway: lane
+    hgv: local
+    lanes:bus: '2'
+    lit: 'yes'
+    maxspeed: 25 mph
+    name: East 42nd Street
+    sidewalk: both
+    surface: asphalt
+  output:
+  - type: travel
+    designated: foot
+  - type: travel
+    direction: backward
+    designated: bus
+  - type: travel
+    direction: backward
+    designated: motor_vehicle
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    direction: forward
+    designated: bus
+  - type: travel
+    designated: foot
 
 ### Combination
 # TODO
@@ -377,7 +413,7 @@
 
 - way_id: 369623526
   mapillary: https://www.mapillary.com/app/?pKey=839524790321923
-  comment: 'OSM Version #9; check if cycleway:left=opposite_track for RHT is valid;
+  comment: 'OSM Version #9; check if cycleway:left=opposite_track for RHT is valid (rust);
     TODO: parking lane is not parallel'
   rust: false
   tags:
@@ -492,7 +528,6 @@
     designated: motor_vehicle
 
 - way_id: 49207928
-  rust: false
   tags:
     cycleway:right: lane
     sidewalk: both
@@ -571,39 +606,6 @@
     direction: forward
     designated: motor_vehicle
   - type: shoulder
-
-- way_id: 988980354
-  driving_side: right
-  rust: false
-  tags:
-    busway: lane
-    hgv: local
-    highway: primary
-    lanes:bus: '2'
-    lit: 'yes'
-    maxspeed: 25 mph
-    name: East 42nd Street
-    sidewalk: both
-    surface: asphalt
-    wikidata: Q110061
-    wikipedia: en:42nd Street (Manhattan)
-  output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: backward
-    designated: bus
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: bus
-  - type: travel
-    designated: foot
 
 - way_id: 13859146
   rust: false  

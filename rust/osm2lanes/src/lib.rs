@@ -7,11 +7,15 @@
 use serde::{Deserialize, Serialize};
 
 mod tags;
-pub use self::tags::{Tags, TagsRead, TagsWrite};
+pub use self::tags::{TagError, Tags, TagsRead, TagsWrite};
+
+mod locale;
+pub use self::locale::{DrivingSide, Locale};
 
 mod transform;
 pub use self::transform::{
-    get_lane_specs_ltr, get_lane_specs_ltr_with_warnings, lanes_to_tags, LaneSpecWarnings, Lanes,
+    get_lane_specs_ltr, get_lane_specs_ltr_with_warnings, lanes_to_tags, LaneError, LaneWarnings,
+    Lanes,
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -51,8 +55,6 @@ pub enum LaneDirection {
     Backward,
     #[serde(rename = "both")]
     Both,
-    #[serde(rename = "none")]
-    None,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -67,32 +69,6 @@ pub enum LaneDesignated {
     Motor,
     #[serde(rename = "bus")]
     Bus,
-}
-
-/// Configuration to give extra context about the place where an OSM way exists.
-pub struct Config {
-    pub driving_side: DrivingSide,
-    /// When sidewalks are not explicitly tagged on a way, should sidewalks or shoulder lanes be
-    /// placed anyway based on heuristics?
-    pub inferred_sidewalks: bool,
-}
-
-/// Do vehicles travel on the right or left side of a road?
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum DrivingSide {
-    #[serde(rename = "right")]
-    Right,
-    #[serde(rename = "left")]
-    Left,
-}
-
-impl DrivingSide {
-    pub fn opposite(&self) -> Self {
-        match self {
-            Self::Right => Self::Left,
-            Self::Left => Self::Right,
-        }
-    }
 }
 
 /// Display lane detail as printable characters
@@ -156,7 +132,6 @@ impl LanePrintable for LaneDirection {
             Self::Forward => '^',
             Self::Backward => 'v',
             Self::Both => '|',
-            Self::None => '-',
         }
     }
     fn as_utf8(&self) -> char {
@@ -164,13 +139,29 @@ impl LanePrintable for LaneDirection {
             Self::Forward => '↑',
             Self::Backward => '↓',
             Self::Both => '↕',
-            Self::None => '—',
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum RoadError {
+    Lane(LaneError),
+    // Internal errors
+    Tag(TagError),
+}
+
+impl ToString for RoadError {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Lane(e) => e.to_string(),
+            Self::Tag(e) => e.to_string(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use self::transform::lanes_to_tags_no_roundtrip;
     use super::*;
 
     use std::fs::File;
@@ -287,11 +278,8 @@ mod tests {
         let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is()).collect();
 
         assert!(tests.iter().all(|test| {
-            let cfg = Config {
-                driving_side: test.driving_side,
-                inferred_sidewalks: true,
-            };
-            let lanes = get_lane_specs_ltr(&test.tags, &cfg);
+            let locale = Locale::builder().driving_side(test.driving_side).build();
+            let lanes = get_lane_specs_ltr(&test.tags, &locale);
             let expected_road = test.road();
             if let Ok(actual_road) = lanes {
                 if actual_road != expected_road {
@@ -328,13 +316,10 @@ mod tests {
         let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is()).collect();
 
         assert!(tests.iter().all(|test| {
-            let cfg = Config {
-                driving_side: test.driving_side,
-                inferred_sidewalks: true,
-            };
+            let locale = Locale::builder().driving_side(test.driving_side).build();
             let input_road = test.road();
-            let tags = lanes_to_tags(&test.output, &cfg).unwrap();
-            let output_road = get_lane_specs_ltr(&tags, &cfg).unwrap();
+            let tags = lanes_to_tags_no_roundtrip(&test.output, &locale).unwrap();
+            let output_road = get_lane_specs_ltr(&tags, &locale).unwrap();
             if input_road != output_road {
                 if !test.way_id.is_none() {
                     println!(

@@ -37,6 +37,8 @@ jobs:
       run: |
         cd rust/osm2lanes
         cargo test
+        cargo fmt --check
+        cargo clippy
 
     # Kotlin
 
