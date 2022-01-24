@@ -185,13 +185,13 @@ mod tests {
 
     impl TestCase {
         fn print(&self) {
-            if !self.way_id.is_none() {
+            if self.way_id.is_some() {
                 println!(
                     "For input (example from https://www.openstreetmap.org/way/{}) with {}:",
                     self.way_id.unwrap(),
-                    self.driving_side.to_tla(),
+                    self.driving_side.as_tla(),
                 );
-            } else if !self.link.is_none() {
+            } else if self.link.is_some() {
                 println!("For input (example from {}):", self.link.as_ref().unwrap());
             }
             if let Some(comment) = self.comment.as_ref() {
@@ -208,7 +208,7 @@ mod tests {
 
     impl DrivingSide {
         /// Three-letter abbreviation
-        const fn to_tla(&self) -> &'static str {
+        const fn as_tla(&self) -> &'static str {
             match self {
                 Self::Right => "RHT",
                 Self::Left => "LHT",
@@ -250,7 +250,7 @@ mod tests {
                 .iter()
                 .any(|lane| matches!(lane, Lane::Separator))
         }) {
-            if !test.skip.is_none() && test.skip.unwrap() {
+            if test.skip.is_some() && test.skip.unwrap() {
                 continue;
             }
             let locale = Locale::builder().driving_side(test.driving_side).build();
@@ -297,7 +297,7 @@ mod tests {
                 .iter()
                 .any(|lane| matches!(lane, Lane::Separator))
         }) {
-            if !test.skip.is_none() && test.skip.unwrap() {
+            if test.skip.is_some() && test.skip.unwrap() {
                 continue;
             }
             let locale = Locale::builder().driving_side(test.driving_side).build();
@@ -308,12 +308,12 @@ mod tests {
             let output_road = get_lane_specs_ltr(&tags, &locale).unwrap();
             if input_road != output_road {
                 ok = false;
-                if !test.way_id.is_none() {
+                if test.way_id.is_some() {
                     println!(
                         "For input (example from https://www.openstreetmap.org/way/{}):",
                         test.way_id.unwrap()
                     );
-                } else if !test.link.is_none() {
+                } else if test.link.is_some() {
                     println!("For input (example from {}):", test.link.as_ref().unwrap());
                 }
                 println!("From:");
