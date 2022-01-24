@@ -112,7 +112,7 @@ impl FromStr for Tags {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut map = BTreeMap::new();
         for line in s.lines() {
-            let (key, val) = line.split_once("=").ok_or("tag must be = separated")?;
+            let (key, val) = line.split_once('=').ok_or("tag must be = separated")?;
             map.insert(key.to_owned(), val.to_owned());
         }
         Ok(Self(map))

@@ -24,7 +24,7 @@
                     },
                     {
                         "const": "shoulder",
-                        "description": "Undesignated side of road suitable for non-vehicular traffic or parked vehicles. Does not include asphalt breakdown lanes."
+                        "description": "Undesignated side of road suitable for non-vehicular traffic or parked vehicles. Does not include motorway asphalt breakdown lanes."
                     },
                     {
                         "const": "separator",

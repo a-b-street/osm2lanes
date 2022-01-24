@@ -52,9 +52,11 @@
 
 ### Trivial, Rural
 
-- way_id: 62176050
-  description: "Great Northern Highway, a 2 lane rural road."
+- description: "Great Northern Highway, a 2 lane rural road."
+  way_id: 62176050
   image: "https://upload.wikimedia.org/wikipedia/commons/4/44/Onderweg_-_Fitzroy_Crossing_-_Purnululu_%288991950691%29.jpg"
+  rust:
+    separator: false
   skip_kotlin: true
   tags:
     highway: trunk
@@ -83,9 +85,11 @@
       color: white
   - type: shoulder
 
-- way_id: 159276650
-  description: "Alaska Highway, a 2 lane rural road."
+- description: "Alaska Highway, a 2 lane rural road."
+  way_id: 159276650
   image: "https://www.travelyukon.com/sites/default/files/styles/hero_crop/public/hero/2017-10/alaskahighway_fn.jpg.jpeg?itok=GSSh7NDZ"
+  rust:
+    separator: false
   skip_kotlin: true
   tags:
     highway: trunk
@@ -116,13 +120,97 @@
   - type: shoulder
 
 ### Multi-lane Trunk
-# TODO
+
+- way_id: 380103730
+  description: Japanese Expressway
+  mapillary: https://www.mapillary.com/app/?pKey=2655760771400441
+  skip_python: true
+  skip_kotlin: true
+  rust: false
+  tags:
+    highway: motorway
+    lanes: '2'
+    oneway: 'yes'
+    maxspeed: '100'
+    ref: E1A
+  driving_side: left
+  ISO 3166-2: JP-25
+  output:
+  # TODO: emergency breakdown lane tagging
+  - type: parking
+    direction: forward
+    designated: motor_vehicle
+  - type: separator
+    markings:
+    - style: solid_line
+      color: white
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: separator
+    markings:
+    - style: dotted_line
+      color: white
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: separator
+    markings:
+    - style: solid_line
+      color: white
+
+- way_id: 560651884
+  description: Italian Autostrada, motorway in mountainous terrain with no shoulder
+  mapillary: https://www.mapillary.com/app/?pKey=998353037635549
+  rust: false
+  tags:
+    highway: motorway
+    lanes: '2'
+    oneway: 'yes'
+    surface: asphalt
+    toll: 'yes'
+    maxspeed: '110'
+    nat_ref: A12
+    int_ref: E 80
+  driving_side: right
+  ISO 3166-2: IT-42
+  output:
+  - type: separator
+    markings:
+    - style: solid_line
+      color: white
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: separator
+    markings:
+    - style: dotted_line
+      color: white
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: separator
+    markings:
+    - style: solid_line
+      color: white
 
 ### City
 # TODO
 
 ### Pedestrian
-# TODO
+
+- way_id: 40297361
+  mapillary: https://www.mapillary.com/app/?pKey=619551292322212
+  skip_python: true
+  skip_kotlin: true
+  rust: false
+  tags:
+    highway: steps
+  driving_side: right
+  ISO 3166-2: CH-VS
+  output:
+  - type: travel
+    designated: foot
 
 ### Cycleways
 # TODO
@@ -327,11 +415,11 @@
   - type: travel
     designated: foot
 
-- skip_rust: true
-  way_id: 369623526
+- way_id: 369623526
   mapillary: https://www.mapillary.com/app/?pKey=839524790321923
   comment: 'OSM Version #9; check if cycleway:left=opposite_track for RHT is valid (rust);
     TODO: parking lane is not parallel'
+  rust: false
   tags:
     highway: residential
     lanes: '1'
@@ -423,6 +511,7 @@
 
 - way_id: 4188078
   mapillary: https://www.mapillary.com/app/?pKey=270752554744918
+  rust: false
   tags:
     lanes: '2'
     cycleway:left: lane
@@ -522,10 +611,8 @@
     designated: motor_vehicle
   - type: shoulder
 
-- skip_rust: true
-  way_id: 13859146
-  mapillary: https://www.mapillary.com/app/?pKey=1491728521220443,
-  # TODO: missing parking and sidewalks
+- way_id: 13859146
+  rust: false  
   tags:
     busway:both: lane
     highway: secondary
@@ -549,8 +636,8 @@
     direction: forward
     designated: bus
 
-- skip_rust: true
-  way_id: 84867915
+- way_id: 84867915
+  rust: false
   tags:
     busway:right: lane
     cycleway:right: share_busway
@@ -569,8 +656,8 @@
     direction: forward
     designated: bus
 
-- skip_rust: true
-  way_id: 323605308
+- way_id: 323605308
+  rust: false
   tags:
     bus:lanes: yes|yes|designated
     busway:right: lane
@@ -598,10 +685,10 @@
     # TODO: psv?
     designated: bus
 
-- skip_rust: true
-  skip_python: true
+- skip_python: true
   skip_kotlin: true
   way_id: 490351863
+  rust: false
   tags:
     cycleway:right: share_busway
     highway: secondary
@@ -634,10 +721,10 @@
   - type: travel
     designated: foot
 
-- skip_rust: true
-  skip_python: true
+- skip_python: true
   skip_kotlin: true
   link: https://wiki.openstreetmap.org/wiki/Lanes
+  rust: false
   tags:
     lanes: '3'
     oneway: 'yes'
@@ -657,10 +744,10 @@
     designated: motor_vehicle
     max_speed: 80
 
-- skip_rust: true
-  skip_python: true
+- skip_python: true
   skip_kotlin: true
   link: https://wiki.openstreetmap.org/wiki/Bus_lanes
+  rust: false
   tags:
     highway: secondary
     oneway: 'yes'
