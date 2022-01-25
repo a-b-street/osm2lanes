@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufReader, Write};
 
-use osm2lanes::{get_lane_specs_ltr, Locale, Tags};
+use osm2lanes::{tags_to_lanes, Locale, Tags};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -12,7 +12,7 @@ fn main() {
     let tags: Tags =
         serde_json::from_reader(BufReader::new(File::open(&args[1]).unwrap())).unwrap();
     let locale = Locale::builder().build();
-    let lanes = get_lane_specs_ltr(&tags, &locale);
+    let lanes = tags_to_lanes(&tags, &locale);
     let mut file = File::create(&args[2]).unwrap();
     writeln!(file, "{}", serde_json::to_string_pretty(&lanes).unwrap()).unwrap();
 }

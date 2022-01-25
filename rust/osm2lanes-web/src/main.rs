@@ -9,7 +9,8 @@ use yew::prelude::*;
 mod draw;
 
 use osm2lanes::{
-    get_lane_specs_ltr_with_warnings, lanes_to_tags, Lane, LanePrintable, Lanes, Locale, Tags,
+    lanes_to_tags, tags_to_lanes_with_warnings, Lane, LanePrintable, Lanes, LanesToTagsConfig,
+    Locale, Tags,
 };
 
 // Use `wee_alloc` as the global allocator.
@@ -179,11 +180,13 @@ impl App {
     ) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
         log::trace!("Calculate: {}", value);
         match Tags::from_str(value) {
-            Ok(tags) => match get_lane_specs_ltr_with_warnings(&tags, locale) {
-                Ok(lanes) => match lanes_to_tags(&lanes.lanes, locale) {
-                    Ok(tags) => Ok((lanes, tags)),
-                    Err(e) => Err(Ok((lanes, e.to_string()))),
-                },
+            Ok(tags) => match tags_to_lanes_with_warnings(&tags, locale) {
+                Ok(lanes) => {
+                    match lanes_to_tags(&lanes.lanes, locale, &LanesToTagsConfig::default()) {
+                        Ok(tags) => Ok((lanes, tags)),
+                        Err(e) => Err(Ok((lanes, e.to_string()))),
+                    }
+                }
                 Err(e) => Err(Err(e.to_string())),
             },
             Err(_) => Err(Err("parsing tags failed".to_owned())),

@@ -14,8 +14,8 @@ pub use self::locale::{DrivingSide, Locale};
 
 mod transform;
 pub use self::transform::{
-    get_lane_specs_ltr, get_lane_specs_ltr_with_warnings, lanes_to_tags, LaneError, LaneWarnings,
-    Lanes,
+    lanes_to_tags, tags_to_lanes, tags_to_lanes_with_warnings, LaneError, LaneWarnings, Lanes,
+    LanesToTagsConfig,
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -161,7 +161,7 @@ impl ToString for RoadError {
 
 #[cfg(test)]
 mod tests {
-    use self::transform::lanes_to_tags_no_roundtrip;
+    use self::transform::{lanes_to_tags, LanesToTagsConfig};
     use super::*;
 
     use std::fs::File;
@@ -237,6 +237,7 @@ mod tests {
                 Some(RustTesting::WithOptions { separator }) => separator.unwrap_or(true),
             }
         }
+
         fn expected_road(&self) -> Road {
             Road {
                 lanes: self
@@ -279,7 +280,7 @@ mod tests {
 
         assert!(tests.iter().all(|test| {
             let locale = Locale::builder().driving_side(test.driving_side).build();
-            let lanes = get_lane_specs_ltr(&test.tags, &locale);
+            let lanes = tags_to_lanes(&test.tags, &locale);
             let expected_road = test.expected_road();
             if let Ok(actual_road) = lanes {
                 if actual_road != expected_road {
@@ -318,8 +319,15 @@ mod tests {
         assert!(tests.iter().all(|test| {
             let locale = Locale::builder().driving_side(test.driving_side).build();
             let input_road = test.expected_road();
-            let tags = lanes_to_tags_no_roundtrip(&test.output, &locale).unwrap();
-            let output_road = get_lane_specs_ltr(&tags, &locale).unwrap();
+            let tags = lanes_to_tags(
+                &test.output,
+                &locale,
+                &LanesToTagsConfig {
+                    check_roundtrip: false,
+                },
+            )
+            .unwrap();
+            let output_road = tags_to_lanes(&tags, &locale).unwrap();
             if input_road != output_road {
                 if test.way_id.is_some() {
                     println!(
