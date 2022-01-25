@@ -202,6 +202,9 @@ mod tests {
 
     impl TestCase {
         fn print(&self) {
+            if let Some(description) = self.description.as_ref() {
+                println!("Description: {}", description);
+            }
             if self.way_id.is_some() {
                 println!(
                     "For input (example from https://www.openstreetmap.org/way/{}) with {}:",
@@ -213,12 +216,6 @@ mod tests {
             }
             if let Some(comment) = self.comment.as_ref() {
                 println!("        Comment: {}", comment);
-            }
-            if let Some(description) = self.description.as_ref() {
-                println!("        Description: {}", description);
-            }
-            for (k, v) in self.tags.map() {
-                println!("    {} = {}", k, v);
             }
         }
 
@@ -278,35 +275,38 @@ mod tests {
                 .expect("invalid json");
         let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is_enabled()).collect();
 
-        assert!(tests.iter().all(|test| {
-            let locale = Locale::builder().driving_side(test.driving_side).build();
-            let lanes = tags_to_lanes(&test.tags, &locale);
-            let expected_road = test.expected_road();
-            if let Ok(actual_road) = lanes {
-                if actual_road != expected_road {
+        assert!(
+            tests.iter().all(|test| {
+                let locale = Locale::builder().driving_side(test.driving_side).build();
+                let lanes = tags_to_lanes(&test.tags, &locale);
+                let expected_road = test.expected_road();
+                if let Ok(actual_road) = lanes {
+                    if actual_road != expected_road {
+                        test.print();
+                        println!("Got:");
+                        println!("    {}", stringify_lane_types(&actual_road));
+                        println!("    {}", stringify_directions(&actual_road));
+                        println!("Expected:");
+                        println!("    {}", stringify_lane_types(&expected_road));
+                        println!("    {}", stringify_directions(&expected_road));
+                        println!();
+                        false
+                    } else {
+                        true
+                    }
+                } else {
                     test.print();
-                    println!("Got:");
-                    println!("    {}", stringify_lane_types(&actual_road));
-                    println!("    {}", stringify_directions(&actual_road));
                     println!("Expected:");
                     println!("    {}", stringify_lane_types(&expected_road));
                     println!("    {}", stringify_directions(&expected_road));
+                    println!("Panicked:");
+                    println!("{:#?}", lanes.unwrap_err());
                     println!();
                     false
-                } else {
-                    true
                 }
-            } else {
-                test.print();
-                println!("Expected:");
-                println!("    {}", stringify_lane_types(&expected_road));
-                println!("    {}", stringify_directions(&expected_road));
-                println!("Panicked:");
-                println!("{:#?}", lanes.unwrap_err());
-                println!();
-                false
-            }
-        }));
+            }),
+            "tags to lanes failed"
+        );
     }
 
     #[test]
@@ -316,42 +316,38 @@ mod tests {
                 .unwrap();
         let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is_enabled()).collect();
 
-        assert!(tests.iter().all(|test| {
-            let locale = Locale::builder().driving_side(test.driving_side).build();
-            let input_road = test.expected_road();
-            let tags = lanes_to_tags(
-                &test.output,
-                &locale,
-                &LanesToTagsConfig {
-                    check_roundtrip: false,
-                },
-            )
-            .unwrap();
-            let output_road = tags_to_lanes(&tags, &locale).unwrap();
-            if input_road != output_road {
-                if test.way_id.is_some() {
-                    println!(
-                        "For input (example from https://www.openstreetmap.org/way/{}):",
-                        test.way_id.unwrap()
-                    );
-                } else if test.link.is_some() {
-                    println!("For input (example from {}):", test.link.as_ref().unwrap());
+        assert!(
+            tests.iter().all(|test| {
+                let locale = Locale::builder().driving_side(test.driving_side).build();
+                let input_road = test.expected_road();
+                let tags = lanes_to_tags(
+                    &test.output,
+                    &locale,
+                    &LanesToTagsConfig {
+                        check_roundtrip: false,
+                    },
+                )
+                .unwrap();
+                let output_road = tags_to_lanes(&tags, &locale).unwrap();
+                if input_road != output_road {
+                    test.print();
+                    println!("From:");
+                    println!("    {}", stringify_lane_types(&input_road));
+                    println!("    {}", stringify_directions(&input_road));
+                    println!("Normalized OSM tags:");
+                    for (k, v) in tags.map() {
+                        println!("    {} = {}", k, v);
+                    }
+                    println!("Got:");
+                    println!("    {}", stringify_lane_types(&output_road));
+                    println!("    {}", stringify_directions(&output_road));
+                    println!();
+                    false
+                } else {
+                    true
                 }
-                println!("From:");
-                println!("    {}", stringify_lane_types(&input_road));
-                println!("    {}", stringify_directions(&input_road));
-                println!("Normalized OSM tags:");
-                for (k, v) in tags.map() {
-                    println!("    {} = {}", k, v);
-                }
-                println!("Got:");
-                println!("    {}", stringify_lane_types(&output_road));
-                println!("    {}", stringify_directions(&output_road));
-                println!();
-                false
-            } else {
-                true
-            }
-        }));
+            }),
+            "lanes to tags to lanes roundtrip failed"
+        );
     }
 }

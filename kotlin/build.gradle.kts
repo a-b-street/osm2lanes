@@ -17,6 +17,7 @@ dependencies {
 
 tasks.test {
     useJUnit()
+    inputs.files(file("data/tests.json"))
 }
 
 tasks.withType<KotlinCompile>() {
