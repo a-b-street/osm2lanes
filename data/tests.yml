@@ -430,6 +430,7 @@
 ## https://wiki.openstreetmap.org/wiki/Bus_lanes#The_busway.3D.2A_scheme
 
 - description: busway=lane
+  skip_python: true
   rust: false
   tags:
     highway: 'yes'
@@ -453,6 +454,7 @@
     designated: bus
 
 - description: busway:both=lane
+  skip_python: true
   rust: false
   tags:
     highway: 'yes'
@@ -476,6 +478,7 @@
     designated: bus
 
 - description: busway:FORWARD=lane
+  skip_python: true
   rust: false
   tags:
     highway: 'yes'
@@ -496,6 +499,7 @@
     designated: bus
 
 - description: busway:BACKWARD=lane
+  skip_python: true
   rust: false
   tags:
     highway: 'yes'

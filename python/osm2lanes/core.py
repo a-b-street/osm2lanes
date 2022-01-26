@@ -308,7 +308,7 @@ class Road:
             lanes = self.add_both_lanes(
                 lanes, LaneType.TRAVEL, LaneDesignation.FOOT
             )
-        elif self.tags.get("sidewalk") == "none" or is_rural:
+        elif self.tags.get("sidewalk") == "no" or is_rural:
             lanes = self.add_both_lanes(lanes, LaneType.SHOULDER, None)
         else:
             for side in sides:
