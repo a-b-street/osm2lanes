@@ -403,7 +403,6 @@
 - description: cycleway=opposite oneway=yes oneway:bicycle=no
   skip_python: true
   skip_kotlin: true
-  rust: false
   tags:
     highway: 'yes'
     lanes: '1'

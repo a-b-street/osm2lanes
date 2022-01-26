@@ -439,6 +439,15 @@ fn bicycle(
             });
             backward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }
+        // cycleway=opposite oneway=yes oneway:bicycle=no
+        if tags.is(CYCLEWAY, "opposite") {
+            if !(oneway && tags.is("oneway:bicycle", "no")) {
+                return Err(
+                    "cycleway=opposite only supported with oneway=yes oneway:bicycle=no".into(),
+                );
+            }
+            backward_side.push(Lane::backward(LaneDesignated::Bicycle));
+        }
         // cycleway:FORWARD=*
         if tags.is_cycleway(Some(locale.driving_side.into())) {
             if tags.is(CYCLEWAY + locale.driving_side.tag() + "oneway", "no")
@@ -463,6 +472,16 @@ fn bicycle(
         // cycleway:BACKWARD=*
         if tags.is_cycleway(Some(locale.driving_side.opposite().into())) {
             if tags.is(
+                CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                "yes",
+            ) {
+                forward_side.insert(0, Lane::forward(LaneDesignated::Bicycle));
+            } else if tags.is(
+                CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                "-1",
+            ) {
+                backward_side.push(Lane::backward(LaneDesignated::Bicycle));
+            } else if tags.is(
                 CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
                 "no",
             ) || tags.is("oneway:bicycle", "no")

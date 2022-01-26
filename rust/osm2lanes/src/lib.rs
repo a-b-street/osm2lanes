@@ -203,7 +203,11 @@ mod tests {
     impl TestCase {
         fn print(&self) {
             if let Some(description) = self.description.as_ref() {
-                println!("Description: {}", description);
+                println!(
+                    "Description: {} ({})",
+                    description,
+                    self.driving_side.as_tla()
+                );
             }
             if self.way_id.is_some() {
                 println!(

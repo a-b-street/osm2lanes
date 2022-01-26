@@ -23,7 +23,7 @@ impl Default for LanesToTagsConfig {
 
 pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig) -> TagsResult {
     let mut tags = Tags::default();
-    let mut _oneway = false;
+    let mut oneway = false;
     tags.checked_insert("highway", "yes")?; // TODO, what?
     {
         let lane_count = lanes
@@ -51,7 +51,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
         )
     }) {
         tags.insert("oneway", "yes");
-        _oneway = true;
+        oneway = true;
     }
     // Shoulder
     match (
@@ -101,15 +101,17 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
     }
     // Cycleway
     {
-        let left_cycle_lane = lanes
+        let left_cycle_lane: Option<LaneDirection> = lanes
             .iter()
             .take_while(|lane| !lane.is_motor())
-            .find(|lane| lane.is_bicycle());
-        let right_cycle_lane = lanes
+            .find(|lane| lane.is_bicycle())
+            .and_then(|lane| lane.get_direction());
+        let right_cycle_lane: Option<LaneDirection> = lanes
             .iter()
             .rev()
             .take_while(|lane| !lane.is_motor())
-            .find(|lane| lane.is_bicycle());
+            .find(|lane| lane.is_bicycle())
+            .and_then(|lane| lane.get_direction());
         match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
             (false, false) => {}
             (true, false) => tags.checked_insert("cycleway:left", "lane")?,
@@ -117,20 +119,41 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
             (true, true) => tags.checked_insert("cycleway:both", "lane")?,
         }
         // https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
-        // TODO, incomplete, pending testing.
-        if let Some(Lane::Travel {
-            direction: Some(LaneDirection::Both),
-            ..
-        }) = left_cycle_lane
         {
-            tags.checked_insert("cycleway:left:oneway", "no")?;
-        }
-        if let Some(Lane::Travel {
-            direction: Some(LaneDirection::Both),
-            ..
-        }) = right_cycle_lane
-        {
-            tags.checked_insert("cycleway:right:oneway", "no")?;
+            // if the way has oneway=yes and you are allowed to cycle against that oneway flow
+            // also add oneway:bicycle=no to make it easier
+            // for bicycle routers to see that the way can be used in two directions.
+            if oneway
+                && (left_cycle_lane.map_or(false, |direction| direction == LaneDirection::Backward)
+                    || right_cycle_lane
+                        .map_or(false, |direction| direction == LaneDirection::Backward))
+            {
+                tags.checked_insert("oneway:bicycle", "no")?;
+            }
+            // indicate cycling traffic direction relative to the direction the osm way is oriented
+            // yes: same direction
+            // -1: contraflow
+            // no: bidirectional
+            match left_cycle_lane {
+                Some(LaneDirection::Forward) => {
+                    tags.checked_insert("cycleway:left:oneway", "yes")?
+                }
+                Some(LaneDirection::Backward) => {
+                    tags.checked_insert("cycleway:left:oneway", "-1")?
+                }
+                Some(LaneDirection::Both) => tags.checked_insert("cycleway:left:oneway", "no")?,
+                None => {}
+            }
+            match right_cycle_lane {
+                Some(LaneDirection::Forward) => {
+                    tags.checked_insert("cycleway:right:oneway", "yes")?
+                }
+                Some(LaneDirection::Backward) => {
+                    tags.checked_insert("cycleway:right:oneway", "-1")?
+                }
+                Some(LaneDirection::Both) => tags.checked_insert("cycleway:right:oneway", "no")?,
+                None => {}
+            }
         }
     }
     // Bus Lanes

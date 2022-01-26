@@ -136,6 +136,12 @@ impl Lane {
         }
         Ok(())
     }
+    fn get_direction(&self) -> Option<LaneDirection> {
+        match self {
+            Self::Travel { direction, .. } => *direction,
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
