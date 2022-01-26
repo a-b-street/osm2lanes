@@ -53,17 +53,35 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
         tags.insert("oneway", "yes");
         _oneway = true;
     }
-    // Pedestrian
-    {
-        match (
-            lanes.first().unwrap().is_foot(),
-            lanes.last().unwrap().is_foot(),
-        ) {
-            (false, false) => {}
-            (true, false) => tags.checked_insert("sidewalk", "left")?,
-            (false, true) => tags.checked_insert("sidewalk", "right")?,
-            (true, true) => tags.checked_insert("sidewalk", "both")?,
+    // Shoulder
+    match (
+        lanes.first().unwrap() == &Lane::Shoulder,
+        lanes.last().unwrap() == &Lane::Shoulder,
+    ) {
+        (false, false) => {
+            // TODO do we want to always be explicit about this?
+            tags.checked_insert("shoulder", "no")?;
         }
+        (true, false) => {
+            tags.checked_insert("shoulder", "left")?;
+        }
+        (false, true) => {
+            tags.checked_insert("shoulder", "right")?;
+        }
+        (true, true) => tags.checked_insert("shoulder", "both")?,
+    }
+    // Pedestrian
+    match (
+        lanes.first().unwrap().is_foot(),
+        lanes.last().unwrap().is_foot(),
+    ) {
+        (false, false) => {
+            // TODO do we want to always be explicit about this?
+            tags.checked_insert("sidewalk", "no")?;
+        }
+        (true, false) => tags.checked_insert("sidewalk", "left")?,
+        (false, true) => tags.checked_insert("sidewalk", "right")?,
+        (true, true) => tags.checked_insert("sidewalk", "both")?,
     }
     // Parking
     match (

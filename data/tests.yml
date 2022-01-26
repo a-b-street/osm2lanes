@@ -16,7 +16,6 @@
 ###   - Netherlands: cycleways, and roads with only cars and busses
 ###     (a separate OSM way often exists for pedestrians and cyclists).
 ###   - TODO: more?
-### - right hand travel then left hand travel
 ###
 ### Tests are stored as a list of mappings in yaml.
 ### Prefer real examples over esoteric examples.
@@ -242,7 +241,6 @@
 - description: cycleway=lane oneway=yes
   skip_python: true
   skip_kotlin: true
-  rust: false
   tags:
     highway: 'yes'
     lanes: '2'
@@ -259,20 +257,19 @@
     direction: forward
     designated: motor_vehicle
   - type: travel
-    direction: backward
+    direction: forward
     designated: motor_vehicle
 
 - description: cycleway:FORWARD=lane
   skip_python: true
   skip_kotlin: true
-  rust: false
   tags:
     highway: 'yes'
     lanes: '2'
-    cycleway:right: lane
+    cycleway:left: lane
     sidewalk: 'no'
     shoulder: 'no'
-  driving_side: right
+  driving_side: left
   output:
   - type: travel
     direction: forward
@@ -287,7 +284,6 @@
 - description: cycleway:FORWARD=lane oneway=yes
   way_id: 4188078
   mapillary: https://www.mapillary.com/app/?pKey=270752554744918
-  rust: false
   tags:
     lanes: '2'
     cycleway:left: lane
@@ -309,7 +305,6 @@
 
 - description: cycleway:BACKWARD=lane
   way_id: 49207928
-  rust: false
   tags:
     cycleway:right: lane
     sidewalk: both
