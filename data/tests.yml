@@ -218,7 +218,6 @@
 - description: cycleway=lane
   skip_python: true
   skip_kotlin: true
-  rust: false
   tags:
     highway: 'yes'
     lanes: '2'
@@ -804,7 +803,7 @@
 # I didn't look for a real example of this
 - tags:
     lanes: '5'
-    sidewalk: none
+    sidewalk: 'no'
   driving_side: right
   output:
   - type: shoulder
@@ -828,7 +827,7 @@
 - way_id: 335668924
   tags:
     lanes: '1'
-    sidewalk: none
+    sidewalk: 'no'
   driving_side: right
   output:
   - type: shoulder

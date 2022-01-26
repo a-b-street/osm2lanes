@@ -305,7 +305,7 @@ mod tests {
                     false
                 }
             }),
-            "tags to lanes failed"
+            "test_from_data tags_to_lanes failed"
         );
     }
 
@@ -347,7 +347,7 @@ mod tests {
                     true
                 }
             }),
-            "lanes to tags to lanes roundtrip failed"
+            "test_roundtrip lanes_to_tags failed"
         );
     }
 }

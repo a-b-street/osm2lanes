@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Locale {
     pub driving_side: DrivingSide,
-    /// When sidewalks are not explicitly tagged on a way, should sidewalks or shoulder lanes be
-    /// placed anyway based on heuristics?
+    /// When sidewalks are not explicitly tagged on a way,
+    /// sidewalks may be inferred
     pub infer_sidewalks: bool,
 }
 

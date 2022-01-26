@@ -12,6 +12,8 @@ pub use lanes_to_tags::LanesToTagsConfig;
 
 const HIGHWAY: TagKey = TagKey::from("highway");
 const CYCLEWAY: TagKey = TagKey::from("cycleway");
+const SIDEWALK: TagKey = TagKey::from("sidewalk");
+const SHOULDER: TagKey = TagKey::from("shoulder");
 
 #[derive(Clone, Debug, PartialEq)]
 enum WaySide {
