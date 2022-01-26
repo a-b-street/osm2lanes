@@ -9,8 +9,8 @@ use yew::prelude::*;
 mod draw;
 
 use osm2lanes::{
-    lanes_to_tags, tags_to_lanes_with_warnings, Lane, LanePrintable, Lanes, LanesToTagsConfig,
-    Locale, Tags,
+    lanes_to_tags, tags_to_lanes_with_warnings, DrivingSide, Lane, LanePrintable, Lanes,
+    LanesToTagsConfig, Locale, Tags,
 };
 
 // Use `wee_alloc` as the global allocator.
@@ -36,6 +36,7 @@ pub struct State {
 pub enum Msg {
     Submit(String),
     Focus,
+    ToggleDrivingSide,
 }
 
 pub struct App {
@@ -71,14 +72,19 @@ impl Component for App {
         log::trace!("Message: {:?}", msg);
         match msg {
             Msg::Submit(value) => {
-                self.update_tags(&value);
                 self.state.edit_tags = value;
+                self.update_tags();
                 true
             }
             Msg::Focus => {
                 if let Some(input) = self.focus_ref.cast::<HtmlInputElement>() {
                     input.focus().unwrap();
                 }
+                true
+            }
+            Msg::ToggleDrivingSide => {
+                self.state.locale.driving_side = self.state.locale.driving_side.opposite();
+                self.update_tags();
                 true
             }
         }
@@ -97,9 +103,27 @@ impl Component for App {
             (e.key() == "Enter").then(|| edit(e.target_unchecked_into()))
         });
 
+        let onchange = ctx.link().callback(|_e: Event| Msg::ToggleDrivingSide);
+
         html! {
             <div>
                 <h1>{"osm2lanes"}</h1>
+                <section class="row">
+                    <div class="row-item">
+                        <p>{"↑↓ LHT"}</p>
+                    </div>
+                    <label class="row-item switch">
+                        <input
+                            type="checkbox"
+                            checked={self.state.locale.driving_side == DrivingSide::Right}
+                            {onchange}
+                        />
+                        <span class="slider"></span>
+                    </label>
+                    <div class="row-item">
+                        <p>{"RHT ↓↑"}</p>
+                    </div>
+                </section>
                 <section class="row">
                     <div class="row-item">
                         <textarea
@@ -111,6 +135,9 @@ impl Component for App {
                             {onblur}
                             {onkeypress}
                         />
+                    </div>
+                    <div class="row-item">
+                        <p>{"➔"}</p>
                     </div>
                     <div class="row-item">
                         <textarea
@@ -193,7 +220,8 @@ impl App {
         }
     }
 
-    fn update_tags(&mut self, value: &str) {
+    fn update_tags(&mut self) {
+        let value = &self.state.edit_tags;
         log::trace!("Update Tags: {}", value);
         let calculate = Self::calculate(value, &self.state.locale);
         log::trace!("Update: {:?}", calculate);
