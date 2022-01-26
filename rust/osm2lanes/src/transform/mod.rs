@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::tags::{TagKey, Tags};
-use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Road, RoadError};
+use crate::tags::{DuplicateKeyError, TagKey, Tags};
+use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Road};
 
 mod tags_to_lanes;
 pub use tags_to_lanes::{tags_to_lanes, tags_to_lanes_with_warnings};
@@ -136,58 +136,161 @@ impl Lane {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LaneError(String);
+// Errors
 
-impl ToString for LaneError {
-    fn to_string(&self) -> String {
-        self.0.to_string()
+/// Tranformation Logic Issue
+///
+/// ```
+/// RoadMsg::deprecated_tag("foo", "bar")
+/// RoadMsg::unsupported_tag("foo", "bar")
+/// RoadMsg::unimplemented_tag("foo", "bar")
+/// ```
+///
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum RoadMsg {
+    // Deprecated OSM tags, with suggested alternative
+    Deprecated {
+        deprecated_tags: Tags,
+        suggested_tags: Option<Tags>,
+    },
+    // Tag combination that is unsupported, and may never be supported
+    Unsupported {
+        description: Option<String>,
+        tags: Option<Tags>,
+    },
+    // Tag combination that is known, but has yet to be implemented
+    Unimplemented {
+        description: Option<String>,
+        tags: Option<Tags>,
+    },
+    // Tag combination that is unsupported, and may never be supported
+    Ambiguous {
+        description: Option<String>,
+        tags: Option<Tags>,
+    },
+    // Other issue
+    Other {
+        description: String,
+        tags: Tags,
+    },
+    // Internal Errors
+    TagsDuplicateKey(DuplicateKeyError),
+}
+
+impl RoadMsg {
+    fn unsupported_str(description: &str) -> Self {
+        Self::Unsupported {
+            description: Some(description.to_owned()),
+            tags: None,
+        }
+    }
+}
+
+impl std::fmt::Display for RoadMsg {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Deprecated {
+                deprecated_tags, ..
+            } => write!(
+                f,
+                "deprecated: {}",
+                deprecated_tags.to_vec().as_slice().join(" ")
+            ),
+            Self::Unsupported { description, tags }
+            | Self::Unimplemented { description, tags }
+            | Self::Ambiguous { description, tags } => {
+                let tags = tags.as_ref().map(|tags| tags.to_vec().as_slice().join(" "));
+                let prefix = match self {
+                    Self::Unsupported { .. } => "unsupported",
+                    Self::Unimplemented { .. } => "unimplemented",
+                    Self::Ambiguous { .. } => "ambiguous",
+                    _ => unreachable!(),
+                };
+                match (description, tags) {
+                    (None, None) => write!(f, "{}", prefix),
+                    (Some(description), None) => {
+                        write!(f, "{}: {}", prefix, description)
+                    }
+                    (None, Some(tags)) => write!(f, "{}: {}", prefix, tags),
+                    (Some(description), Some(tags)) => {
+                        write!(f, "{}: {}, {}", prefix, description, tags)
+                    }
+                }
+            }
+            Self::Other { description, .. } => write!(f, "{}", description),
+            Self::TagsDuplicateKey(e) => e.fmt(f),
+        }
     }
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct LaneWarnings(Vec<LaneSpecWarning>);
+pub struct RoadWarnings(Vec<RoadMsg>);
 
-impl LaneWarnings {
+impl RoadWarnings {
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
-}
-
-impl ToString for LaneWarnings {
-    fn to_string(&self) -> String {
-        self.0
-            .iter()
-            .map(|warn| format!("Warning: {}", warn.description))
-            .collect::<Vec<_>>()
-            .join("\n")
+    fn push(&mut self, msg: RoadMsg) {
+        self.0.push(msg)
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct LaneSpecWarning {
-    pub description: String,
-    // Tags relevant to triggering the warning
-    // TODO: investigate making this a view of keys on a Tags object instead
-    pub tags: Tags,
+impl std::fmt::Display for RoadWarnings {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.0
+                .iter()
+                .map(|warning| format!("Warning: {}", warning))
+                .collect::<Vec<_>>()
+                .join("\n")
+        )
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum RoadError {
+    Msg(RoadMsg),
+    Warnings(RoadWarnings),
+    RoundTrip,
+}
+
+impl RoadError {
+    fn unsupported_str(description: &str) -> Self {
+        RoadMsg::unsupported_str(description).into()
+    }
+    fn ambiguous_str(description: &str) -> Self {
+        RoadMsg::unsupported_str(description).into()
+    }
+}
+
+impl std::fmt::Display for RoadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Msg(msg) => msg.fmt(f),
+            Self::Warnings(warnings) => write!(f, "{} warnings", warnings.0.len()),
+            Self::RoundTrip => write!(f, "lanes to tags cannot roundtrip"),
+        }
+    }
+}
+
+impl From<RoadMsg> for RoadError {
+    fn from(msg: RoadMsg) -> Self {
+        Self::Msg(msg)
+    }
+}
+
+impl From<RoadWarnings> for RoadError {
+    fn from(warnings: RoadWarnings) -> Self {
+        Self::Warnings(warnings)
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Lanes {
     pub lanes: Vec<Lane>,
-    pub warnings: LaneWarnings,
-}
-
-impl From<String> for RoadError {
-    fn from(s: String) -> Self {
-        RoadError::Lane(LaneError(s))
-    }
-}
-
-impl From<&'static str> for RoadError {
-    fn from(s: &'static str) -> Self {
-        RoadError::Lane(LaneError(s.to_owned()))
-    }
+    pub warnings: RoadWarnings,
 }
 
 type ModeResult = Result<(), RoadError>;

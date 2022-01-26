@@ -1,7 +1,7 @@
 use std::iter;
 
 use crate::tags::{TagKey, Tags, TagsRead};
-use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Locale, Road, RoadError};
+use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Locale, Road};
 
 use super::*;
 
@@ -11,8 +11,8 @@ use super::*;
 /// To ignore warnings, use tags_to_lanes_with_warnings and ignore them explicitly.
 pub fn tags_to_lanes(tags: &Tags, locale: &Locale) -> RoadResult {
     let Lanes { lanes, warnings } = tags_to_lanes_with_warnings(tags, locale)?;
-    if !warnings.0.is_empty() {
-        return Err(format!("{} warnings found", warnings.0.len()).into());
+    if !warnings.is_empty() {
+        return Err(warnings.into());
     }
     Ok(Road { lanes })
 }
@@ -21,7 +21,7 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale) -> RoadResult {
 /// determine the lanes along the road from left to right.
 /// Warnings are produced for any ambiguity.
 pub fn tags_to_lanes_with_warnings(tags: &Tags, locale: &Locale) -> LanesResult {
-    let mut warnings = LaneWarnings::default();
+    let mut warnings = RoadWarnings::default();
 
     if let Some(spec) = non_motorized(tags, locale) {
         return spec;
@@ -111,7 +111,7 @@ fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
     if tags.is(HIGHWAY, "steps") {
         return Some(Ok(Lanes {
             lanes: vec![Lane::foot()],
-            warnings: LaneWarnings(vec![LaneSpecWarning {
+            warnings: RoadWarnings(vec![RoadMsg::Other {
                 description: "highway is steps, but lane is only a sidewalk".to_owned(),
                 tags: tags.subset(&[HIGHWAY]),
             }]),
@@ -129,7 +129,7 @@ fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
     {
         return Some(Ok(Lanes {
             lanes: vec![Lane::foot()],
-            warnings: LaneWarnings::default(),
+            warnings: RoadWarnings::default(),
         }));
     }
     // Otherwise, there'll always be a bike lane.
@@ -149,7 +149,7 @@ fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
     }
     Some(Ok(Lanes {
         lanes: assemble_ltr(forward_side, backward_side, locale.driving_side),
-        warnings: LaneWarnings::default(),
+        warnings: RoadWarnings::default(),
     }))
 }
 
@@ -234,7 +234,13 @@ fn bus(
         (true, _, false) => bus_busway(tags, locale, oneway, forward_side, backward_side)?,
         (false, true, false) => bus_bus_lanes(tags, locale, oneway, forward_side, backward_side)?,
         (false, false, true) => bus_lanes_bus(tags, locale, oneway, forward_side, backward_side)?,
-        _ => return Err("more than one bus lanes scheme used".into()),
+        _ => {
+            return Err(RoadMsg::Unsupported {
+                description: Some("more than one bus lanes scheme used".to_owned()),
+                tags: None,
+            }
+            .into())
+        }
     }
 
     Ok(())
@@ -251,48 +257,52 @@ fn bus_busway(
     if tags.is(BUSWAY, "lane") {
         forward_side
             .last_mut()
-            .ok_or_else(|| RoadError::from("no forward lanes for busway"))?
+            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
             .set_bus()?;
         if !tags.is("oneway", "yes") && !tags.is("oneway:bus", "yes") {
             backward_side
                 .last_mut()
-                .ok_or_else(|| RoadError::from("no backward lanes for busway"))?
+                .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
                 .set_bus()?;
         }
     }
     if tags.is(BUSWAY, "opposite_lane") {
         backward_side
             .last_mut()
-            .ok_or_else(|| RoadError::from("no backward lanes for busway"))?
+            .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
             .set_bus()?;
     }
     if tags.is(BUSWAY + "both", "lane") {
         forward_side
             .last_mut()
-            .ok_or_else(|| RoadError::from("no forward lanes for busway"))?
+            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
             .set_bus()?;
         backward_side
             .last_mut()
-            .ok_or_else(|| RoadError::from("no backward lanes for busway"))?
+            .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
             .set_bus()?;
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            return Err("busway:both=lane is ambiguous for oneway roads".into());
+            return Err(RoadError::ambiguous_str(
+                "busway:both=lane for oneway roads",
+            ));
         }
     }
     if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
         forward_side
             .last_mut()
-            .ok_or_else(|| RoadError::from("no forward lanes for busway"))?
+            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
             .set_bus()?;
     }
     if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             forward_side
                 .first_mut()
-                .ok_or_else(|| RoadError::from("no forward lanes for busway"))?
+                .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
                 .set_bus()?;
         } else {
-            return Err("busway:BACKWARD=lane is ambiguous for bidirectional roads".into());
+            return Err(RoadError::ambiguous_str(
+                "busway:BACKWARD=lane for bidirectional roads",
+            ));
         }
     }
     Ok(())
@@ -389,7 +399,7 @@ fn bicycle(
     oneway: bool,
     forward_side: &mut Vec<Lane>,
     backward_side: &mut Vec<Lane>,
-    warnings: &mut LaneWarnings,
+    warnings: &mut RoadWarnings,
 ) -> ModeResult {
     impl Tags {
         fn is_cycleway(&self, side: Option<WaySide>) -> bool {
@@ -406,15 +416,19 @@ fn bicycle(
             || tags.is_cycleway(Some(WaySide::Right))
             || tags.is_cycleway(Some(WaySide::Left))
         {
-            return Err("cycleway=* not supported with any cycleway:* values".into());
+            return Err(RoadError::unsupported_str(
+                "cycleway=* with any cycleway:* values",
+            ));
         }
         forward_side.push(Lane::forward(LaneDesignated::Bicycle));
         if oneway {
             if !backward_side.is_empty() {
                 // TODO safety check to be checked
-                warnings.0.push(LaneSpecWarning {
-                    description: "oneway has backwards lanes when adding cycleways".to_owned(),
-                    tags: tags.subset(&["oneway", "cycleway"]),
+                warnings.push(RoadMsg::Unimplemented {
+                    description: Some(
+                        "oneway has backwards lanes when adding cycleways".to_owned(),
+                    ),
+                    tags: Some(tags.subset(&["oneway", "cycleway"])),
                 })
             }
         } else {
@@ -425,9 +439,9 @@ fn bicycle(
     } else {
         // cycleway=opposite_lane
         if tags.is(CYCLEWAY, "opposite_lane") {
-            warnings.0.push(LaneSpecWarning {
-                description: "cycleway=opposite_lane deprecated".to_owned(),
-                tags: tags.subset(&[CYCLEWAY]),
+            warnings.push(RoadMsg::Deprecated {
+                deprecated_tags: tags.subset(&["cycleway", "oneway"]),
+                suggested_tags: None,
             });
             backward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }
@@ -446,9 +460,9 @@ fn bicycle(
             CYCLEWAY + locale.driving_side.tag(),
             &["opposite_lane", "opposite_track"],
         ) {
-            warnings.0.push(LaneSpecWarning {
-                description: "cycleway:FORWARD=opposite_lane deprecated".to_owned(),
-                tags: tags.subset(&[CYCLEWAY]), // TODO make side specific
+            warnings.push(RoadMsg::Deprecated {
+                deprecated_tags: tags.subset(&[CYCLEWAY + locale.driving_side.tag()]),
+                suggested_tags: None,
             });
             forward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }
@@ -473,7 +487,11 @@ fn bicycle(
             CYCLEWAY + locale.driving_side.opposite().tag(),
             &["opposite_lane", "opposite_track"],
         ) {
-            return Err("cycleway:BACKWARD=opposite_lane unsupported".into());
+            return Err(RoadMsg::Unsupported {
+                description: None,
+                tags: Some(tags.subset(&[CYCLEWAY + locale.driving_side.opposite().tag()])),
+            }
+            .into());
         }
     }
     Ok(())

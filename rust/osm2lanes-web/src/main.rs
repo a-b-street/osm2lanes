@@ -213,11 +213,8 @@ impl App {
                 if warnings.is_empty() {
                     self.state.message = Some(format!("Normalisation Error: {}", norm_err));
                 } else {
-                    self.state.message = Some(format!(
-                        "{}\nNormalisation Error: {}",
-                        warnings.to_string(),
-                        norm_err
-                    ));
+                    self.state.message =
+                        Some(format!("{}\nNormalisation Error: {}", warnings, norm_err));
                 }
             }
             Err(Err(lanes_err)) => {

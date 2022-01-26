@@ -7,15 +7,15 @@
 use serde::{Deserialize, Serialize};
 
 mod tags;
-pub use self::tags::{TagError, Tags, TagsRead, TagsWrite};
+pub use self::tags::{Tags, TagsRead, TagsWrite};
 
 mod locale;
 pub use self::locale::{DrivingSide, Locale};
 
 mod transform;
 pub use self::transform::{
-    lanes_to_tags, tags_to_lanes, tags_to_lanes_with_warnings, LaneError, LaneWarnings, Lanes,
-    LanesToTagsConfig,
+    lanes_to_tags, tags_to_lanes, tags_to_lanes_with_warnings, Lanes, LanesToTagsConfig, RoadError,
+    RoadWarnings,
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -139,22 +139,6 @@ impl LanePrintable for LaneDirection {
             Self::Forward => '↑',
             Self::Backward => '↓',
             Self::Both => '↕',
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RoadError {
-    Lane(LaneError),
-    // Internal errors
-    Tag(TagError),
-}
-
-impl ToString for RoadError {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Lane(e) => e.to_string(),
-            Self::Tag(e) => e.to_string(),
         }
     }
 }

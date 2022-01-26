@@ -1,11 +1,11 @@
-use crate::tags::{TagError, Tags, TagsWrite};
+use crate::tags::{DuplicateKeyError, Tags, TagsWrite};
 use crate::{Lane, LaneDesignated, LaneDirection, Locale, RoadError};
 
 use super::*;
 
-impl std::convert::From<TagError> for RoadError {
-    fn from(e: TagError) -> Self {
-        RoadError::Tag(e)
+impl std::convert::From<DuplicateKeyError> for RoadError {
+    fn from(e: DuplicateKeyError) -> Self {
+        RoadError::Msg(RoadMsg::TagsDuplicateKey(e))
     }
 }
 
@@ -152,7 +152,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
     if config.check_roundtrip {
         let rountrip = tags_to_lanes(&tags, locale)?;
         if lanes != rountrip.lanes {
-            return Err("lanes to tags cannot roundtrip".into());
+            return Err(RoadError::RoundTrip);
         }
     }
 

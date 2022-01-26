@@ -4,11 +4,11 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TagError(String);
+pub struct DuplicateKeyError(String);
 
-impl ToString for TagError {
-    fn to_string(&self) -> String {
-        self.0.to_string()
+impl std::fmt::Display for DuplicateKeyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "duplicate tag key {}", self.0)
     }
 }
 
@@ -61,6 +61,15 @@ impl std::ops::Add<&'static str> for TagKey {
 pub struct Tags(BTreeMap<String, String>);
 
 impl Tags {
+    pub fn from_str_pairs(tags: &[[&str; 2]]) -> Result<Self, DuplicateKeyError> {
+        let mut map = BTreeMap::new();
+        for tag in tags {
+            map.insert(tag[0].to_owned(), tag[1].to_owned())
+                .map_or(Ok(()), |_| Err(DuplicateKeyError(tag[0].to_owned())))?;
+        }
+        Ok(Self(map))
+    }
+
     pub fn new(map: BTreeMap<String, String>) -> Tags {
         Tags(map)
     }
@@ -68,6 +77,13 @@ impl Tags {
     /// Expose inner map
     pub fn map(&self) -> &BTreeMap<String, String> {
         &self.0
+    }
+
+    pub fn to_vec(&self) -> Vec<String> {
+        self.0
+            .iter()
+            .map(|(k, v)| format!("{}={}", k.as_str(), v.as_str()))
+            .collect::<Vec<String>>()
     }
 
     /// Get tree
@@ -131,12 +147,7 @@ impl ToString for Tags {
     /// assert_eq!(tags.to_string(), "abra=cadabra\nfoo=bar");
     /// ```
     fn to_string(&self) -> String {
-        self.0
-            .iter()
-            .map(|(k, v)| format!("{}={}", k.as_str(), v.as_str()))
-            .collect::<Vec<String>>()
-            .as_slice()
-            .join("\n")
+        self.to_vec().as_slice().join("\n")
     }
 }
 
@@ -255,26 +266,24 @@ impl TagsRead for Tags {
 pub trait TagsWrite {
     /// Returns the old value of this key, if it was already present.
     fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V) -> Option<String>;
-    fn checked_insert<K: Into<TagKey>, V: Into<String>>(
+    fn checked_insert<K: Into<TagKey> + Copy, V: Into<String>>(
         &mut self,
         k: K,
         v: V,
-    ) -> Result<(), TagError>;
+    ) -> Result<(), DuplicateKeyError>;
 }
 
 impl TagsWrite for Tags {
     fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V) -> Option<String> {
         self.0.insert(k.into().as_str().to_owned(), v.into())
     }
-    fn checked_insert<K: Into<TagKey>, V: Into<String>>(
+    fn checked_insert<K: Into<TagKey> + Copy, V: Into<String>>(
         &mut self,
         k: K,
         v: V,
-    ) -> Result<(), TagError> {
-        if self.insert(k, v).is_some() {
-            Err(TagError("duplicate key".to_owned()))
-        } else {
-            Ok(())
-        }
+    ) -> Result<(), DuplicateKeyError> {
+        self.insert(k, v).map_or(Ok(()), |_| {
+            Err(DuplicateKeyError(k.into().as_str().to_owned()))
+        })
     }
 }
