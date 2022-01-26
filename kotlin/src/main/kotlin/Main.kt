@@ -316,7 +316,7 @@ class Road(private val tags: Map<String, String>, private val drivingSide: Drivi
 
         if (tags["sidewalk"] == "both")
             addBothLanes(lanes, LaneType.TRAVEL, LaneDesignated.FOOT)
-        else if (tags["sidewalk"] == "none")
+        else if (tags["sidewalk"] == "no")
             addBothLanes(lanes, LaneType.SHOULDER, null)
         else
             for (side in sides)

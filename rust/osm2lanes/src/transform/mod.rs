@@ -12,6 +12,8 @@ pub use lanes_to_tags::LanesToTagsConfig;
 
 const HIGHWAY: TagKey = TagKey::from("highway");
 const CYCLEWAY: TagKey = TagKey::from("cycleway");
+const SIDEWALK: TagKey = TagKey::from("sidewalk");
+const SHOULDER: TagKey = TagKey::from("shoulder");
 
 #[derive(Clone, Debug, PartialEq)]
 enum WaySide {
@@ -133,6 +135,12 @@ impl Lane {
             _ => unreachable!(),
         }
         Ok(())
+    }
+    fn get_direction(&self) -> Option<LaneDirection> {
+        match self {
+            Self::Travel { direction, .. } => *direction,
+            _ => None,
+        }
     }
 }
 

@@ -15,7 +15,7 @@ const val TEST_FILE_PATH = "../data/tests.json"
 internal data class TestCase(
     @SerialName("skip_kotlin")
     val skip: Boolean = false,
-    val comment: String = "",
+    val description: String = "",
     /**
      * The OSM way unique identifier.
      */
@@ -39,7 +39,7 @@ internal class LaneTest {
                 assertEquals(
                     testCase.output.filter { it.type != LaneType.SEPARATOR },
                     parsed,
-                    "${testCase.way_id}\nGot:      ${parsed}\nExpected: ${testCase.output}\n"
+                    "${testCase.way_id ?: testCase.description}\nGot:      ${parsed}\nExpected: ${testCase.output}\n"
                 )
             }
         }
