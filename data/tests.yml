@@ -137,10 +137,7 @@
   driving_side: left
   ISO 3166-2: JP-25
   output:
-  # TODO: emergency breakdown lane tagging
-  - type: parking
-    direction: forward
-    designated: motor_vehicle
+  - type: shoulder
   - type: separator
     markings:
     - style: solid_line
