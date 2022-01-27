@@ -1,7 +1,7 @@
 use std::iter;
 
 use crate::tags::{TagKey, Tags, TagsRead};
-use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Locale, Road, RoadError};
+use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Locale, Road};
 
 use super::*;
 
@@ -11,8 +11,8 @@ use super::*;
 /// To ignore warnings, use tags_to_lanes_with_warnings and ignore them explicitly.
 pub fn tags_to_lanes(tags: &Tags, locale: &Locale) -> RoadResult {
     let Lanes { lanes, warnings } = tags_to_lanes_with_warnings(tags, locale)?;
-    if !warnings.0.is_empty() {
-        return Err(format!("{} warnings found", warnings.0.len()).into());
+    if !warnings.is_empty() {
+        return Err(warnings.into());
     }
     Ok(Road { lanes })
 }
@@ -21,7 +21,7 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale) -> RoadResult {
 /// determine the lanes along the road from left to right.
 /// Warnings are produced for any ambiguity.
 pub fn tags_to_lanes_with_warnings(tags: &Tags, locale: &Locale) -> LanesResult {
-    let mut warnings = LaneWarnings::default();
+    let mut warnings = RoadWarnings::default();
 
     if let Some(spec) = non_motorized(tags, locale) {
         return spec;
@@ -118,7 +118,7 @@ fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
     if tags.is(HIGHWAY, "steps") {
         return Some(Ok(Lanes {
             lanes: vec![Lane::foot()],
-            warnings: LaneWarnings(vec![LaneSpecWarning {
+            warnings: RoadWarnings(vec![RoadMsg::Other {
                 description: "highway is steps, but lane is only a sidewalk".to_owned(),
                 tags: tags.subset(&[HIGHWAY]),
             }]),
@@ -136,7 +136,7 @@ fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
     {
         return Some(Ok(Lanes {
             lanes: vec![Lane::foot()],
-            warnings: LaneWarnings::default(),
+            warnings: RoadWarnings::default(),
         }));
     }
     // Otherwise, there'll always be a bike lane.
@@ -156,7 +156,7 @@ fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
     }
     Some(Ok(Lanes {
         lanes: assemble_ltr(forward_side, backward_side, locale.driving_side),
-        warnings: LaneWarnings::default(),
+        warnings: RoadWarnings::default(),
     }))
 }
 
@@ -241,7 +241,13 @@ fn bus(
         (true, _, false) => bus_busway(tags, locale, oneway, forward_side, backward_side)?,
         (false, true, false) => bus_bus_lanes(tags, locale, oneway, forward_side, backward_side)?,
         (false, false, true) => bus_lanes_bus(tags, locale, oneway, forward_side, backward_side)?,
-        _ => return Err("more than one bus lanes scheme used".into()),
+        _ => {
+            return Err(RoadMsg::Unsupported {
+                description: Some("more than one bus lanes scheme used".to_owned()),
+                tags: None,
+            }
+            .into())
+        }
     }
 
     Ok(())
@@ -258,48 +264,52 @@ fn bus_busway(
     if tags.is(BUSWAY, "lane") {
         forward_side
             .last_mut()
-            .ok_or_else(|| RoadError::from("no forward lanes for busway"))?
+            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
             .set_bus()?;
         if !tags.is("oneway", "yes") && !tags.is("oneway:bus", "yes") {
             backward_side
                 .last_mut()
-                .ok_or_else(|| RoadError::from("no backward lanes for busway"))?
+                .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
                 .set_bus()?;
         }
     }
     if tags.is(BUSWAY, "opposite_lane") {
         backward_side
             .last_mut()
-            .ok_or_else(|| RoadError::from("no backward lanes for busway"))?
+            .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
             .set_bus()?;
     }
     if tags.is(BUSWAY + "both", "lane") {
         forward_side
             .last_mut()
-            .ok_or_else(|| RoadError::from("no forward lanes for busway"))?
+            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
             .set_bus()?;
         backward_side
             .last_mut()
-            .ok_or_else(|| RoadError::from("no backward lanes for busway"))?
+            .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
             .set_bus()?;
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            return Err("busway:both=lane is ambiguous for oneway roads".into());
+            return Err(RoadError::ambiguous_str(
+                "busway:both=lane for oneway roads",
+            ));
         }
     }
     if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
         forward_side
             .last_mut()
-            .ok_or_else(|| RoadError::from("no forward lanes for busway"))?
+            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
             .set_bus()?;
     }
     if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             forward_side
                 .first_mut()
-                .ok_or_else(|| RoadError::from("no forward lanes for busway"))?
+                .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
                 .set_bus()?;
         } else {
-            return Err("busway:BACKWARD=lane is ambiguous for bidirectional roads".into());
+            return Err(RoadError::ambiguous_str(
+                "busway:BACKWARD=lane for bidirectional roads",
+            ));
         }
     }
     Ok(())
@@ -396,7 +406,7 @@ fn bicycle(
     oneway: bool,
     forward_side: &mut Vec<Lane>,
     backward_side: &mut Vec<Lane>,
-    warnings: &mut LaneWarnings,
+    warnings: &mut RoadWarnings,
 ) -> ModeResult {
     impl Tags {
         fn is_cycleway(&self, side: Option<WaySide>) -> bool {
@@ -413,15 +423,19 @@ fn bicycle(
             || tags.is_cycleway(Some(WaySide::Right))
             || tags.is_cycleway(Some(WaySide::Left))
         {
-            return Err("cycleway=* not supported with any cycleway:* values".into());
+            return Err(RoadError::unsupported_str(
+                "cycleway=* with any cycleway:* values",
+            ));
         }
         forward_side.push(Lane::forward(LaneDesignated::Bicycle));
         if oneway {
             if !backward_side.is_empty() {
                 // TODO safety check to be checked
-                warnings.0.push(LaneSpecWarning {
-                    description: "oneway has backwards lanes when adding cycleways".to_owned(),
-                    tags: tags.subset(&["oneway", "cycleway"]),
+                warnings.push(RoadMsg::Unimplemented {
+                    description: Some(
+                        "oneway has backwards lanes when adding cycleways".to_owned(),
+                    ),
+                    tags: Some(tags.subset(&["oneway", "cycleway"])),
                 })
             }
         } else {
@@ -433,18 +447,18 @@ fn bicycle(
     } else {
         // cycleway=opposite_lane
         if tags.is(CYCLEWAY, "opposite_lane") {
-            warnings.0.push(LaneSpecWarning {
-                description: "cycleway=opposite_lane deprecated".to_owned(),
-                tags: tags.subset(&[CYCLEWAY]),
+            warnings.push(RoadMsg::Deprecated {
+                deprecated_tags: tags.subset(&["cycleway", "oneway"]),
+                suggested_tags: None,
             });
             backward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }
         // cycleway=opposite oneway=yes oneway:bicycle=no
         if tags.is(CYCLEWAY, "opposite") {
             if !(oneway && tags.is("oneway:bicycle", "no")) {
-                return Err(
-                    "cycleway=opposite only supported with oneway=yes oneway:bicycle=no".into(),
-                );
+                return Err(RoadError::unsupported_str(
+                    "cycleway=opposite without oneway=yes oneway:bicycle=no",
+                ));
             }
             backward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }
@@ -463,9 +477,9 @@ fn bicycle(
             CYCLEWAY + locale.driving_side.tag(),
             &["opposite_lane", "opposite_track"],
         ) {
-            warnings.0.push(LaneSpecWarning {
-                description: "cycleway:FORWARD=opposite_lane deprecated".to_owned(),
-                tags: tags.subset(&[CYCLEWAY]), // TODO make side specific
+            warnings.push(RoadMsg::Deprecated {
+                deprecated_tags: tags.subset(&[CYCLEWAY + locale.driving_side.tag()]),
+                suggested_tags: None,
             });
             forward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }
@@ -500,7 +514,11 @@ fn bicycle(
             CYCLEWAY + locale.driving_side.opposite().tag(),
             &["opposite_lane", "opposite_track"],
         ) {
-            return Err("cycleway:BACKWARD=opposite_lane unsupported".into());
+            return Err(RoadMsg::Unsupported {
+                description: None,
+                tags: Some(tags.subset(&[CYCLEWAY + locale.driving_side.opposite().tag()])),
+            }
+            .into());
         }
     }
     Ok(())
@@ -532,7 +550,7 @@ fn foot_and_shoulder(
     oneway: bool,
     forward_side: &mut Vec<Lane>,
     backward_side: &mut Vec<Lane>,
-    warnings: &mut LaneWarnings,
+    warnings: &mut RoadWarnings,
 ) -> ModeResult {
     // https://wiki.openstreetmap.org/wiki/Key:sidewalk
     // This first step processes tags by the OSM spec.
@@ -553,12 +571,14 @@ fn foot_and_shoulder(
         tags.get(SIDEWALK + locale.driving_side.opposite().tag()),
     ) {
         (None, None, None) => (Sidewalk::None, Sidewalk::None),
-        (Some("none"), None, None) => return Err("sidewalk=none is deprecated".into()),
+        (Some("none"), None, None) => {
+            return Err(RoadMsg::deprecated_tag("sidewalk", "none").into())
+        }
         (Some("no"), None, None) => (Sidewalk::No, Sidewalk::No),
         (Some("yes"), None, None) => {
-            warnings.0.push(LaneSpecWarning {
-                description: "sidewalk=yes is ambiguous".to_owned(),
-                tags: tags.subset(&[SIDEWALK]),
+            warnings.push(RoadMsg::Ambiguous {
+                description: None,
+                tags: Some(tags.subset(&[SIDEWALK])),
             });
             (Sidewalk::Yes, Sidewalk::Yes)
         }
@@ -577,59 +597,53 @@ fn foot_and_shoulder(
         (None, None, Some("separate")) => (Sidewalk::No, Sidewalk::Separate),
         // TODO: generate the rest of these automatically
         (None, Some(forward), None) => {
-            return Err(format!(
-                "sidewalk:{}={} is unsupported",
-                locale.driving_side.tag().as_str(),
-                forward,
+            return Err(
+                RoadMsg::unsupported_tag(SIDEWALK + locale.driving_side.tag(), forward).into(),
             )
-            .into())
         }
         (None, None, Some(backward)) => {
-            return Err(format!(
-                "sidewalk:{}={} is unsupported",
-                locale.driving_side.opposite().tag().as_str(),
+            return Err(RoadMsg::unsupported_tag(
+                SIDEWALK + locale.driving_side.opposite().tag(),
                 backward,
             )
             .into())
         }
-        (Some(s), Some(forward), None) => {
-            return Err(format!(
-                "sidewalk={} and sidewalk:{}={} unsupported",
-                s,
-                locale.driving_side.tag().as_str(),
-                forward,
-            )
+        (Some(_s), Some(_forward), None) => {
+            return Err(RoadMsg::Unsupported {
+                description: None,
+                tags: Some(tags.subset(&[SIDEWALK, SIDEWALK + locale.driving_side.tag()])),
+            }
             .into())
         }
-        (Some(s), None, Some(backward)) => {
-            return Err(format!(
-                "sidewalk={} and sidewalk:{}={} unsupported",
-                s,
-                locale.driving_side.opposite().tag().as_str(),
-                backward,
-            )
+        (Some(_s), None, Some(_backward)) => {
+            return Err(RoadMsg::Unsupported {
+                description: None,
+                tags: Some(
+                    tags.subset(&[SIDEWALK, SIDEWALK + locale.driving_side.opposite().tag()]),
+                ),
+            }
             .into())
         }
-        (Some(s), None, None) => return Err(format!("sidewalk={} unknown", s).into()),
-        (None, Some(forward), Some(backward)) => {
-            return Err(format!(
-                "sidewalk:{}={} and sidewalk:{}={} unknown",
-                locale.driving_side.tag().as_str(),
-                forward,
-                locale.driving_side.opposite().tag().as_str(),
-                backward
-            )
+        (Some(s), None, None) => return Err(RoadMsg::unsupported_tag(SIDEWALK, s).into()),
+        (None, Some(_forward), Some(_backward)) => {
+            return Err(RoadMsg::Unsupported {
+                description: None,
+                tags: Some(tags.subset(&[
+                    SIDEWALK + locale.driving_side.tag(),
+                    SIDEWALK + locale.driving_side.opposite().tag(),
+                ])),
+            }
             .into())
         }
-        (Some(s), Some(forward), Some(backward)) => {
-            return Err(format!(
-                "sidewalk={} and sidewalk:{}={} and sidewalk:{}={} unknown",
-                s,
-                locale.driving_side.tag().as_str(),
-                forward,
-                locale.driving_side.opposite().tag().as_str(),
-                backward
-            )
+        (Some(_s), Some(_forward), Some(_backward)) => {
+            return Err(RoadMsg::Unsupported {
+                description: None,
+                tags: Some(tags.subset(&[
+                    SIDEWALK,
+                    SIDEWALK + locale.driving_side.tag(),
+                    SIDEWALK + locale.driving_side.opposite().tag(),
+                ])),
+            }
             .into())
         }
     };
@@ -649,15 +663,13 @@ fn foot_and_shoulder(
         Some(s) if s == locale.driving_side.opposite().tag().as_str() => {
             (Shoulder::No, Shoulder::Yes)
         }
-        Some(s) => return Err(format!("Unknown shoulder={}", s).into()),
+        Some(s) => return Err(RoadMsg::unsupported_tag(SHOULDER, s).into()),
     };
 
-    fn add(
-        (sidewalk, shoulder): (Sidewalk, Shoulder),
-        side: &mut Vec<Lane>,
-        oneway: bool,
-        forward: bool,
-    ) -> ModeResult {
+    let add = |(sidewalk, shoulder): (Sidewalk, Shoulder),
+               side: &mut Vec<Lane>,
+               forward: bool|
+     -> ModeResult {
         match (sidewalk, shoulder) {
             (Sidewalk::No | Sidewalk::None, Shoulder::None) => {
                 // We assume a shoulder if there is no bike lane.
@@ -672,15 +684,21 @@ fn foot_and_shoulder(
             (Sidewalk::Yes, Shoulder::No | Shoulder::None) => side.push(Lane::foot()),
             (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => side.push(Lane::Shoulder),
             (Sidewalk::Yes, Shoulder::Yes) => {
-                return Err("shoulder=* and sidewalk=* on same side".into())
+                return Err(RoadMsg::Unsupported {
+                    description: Some("shoulder and sidewalk on same side".to_owned()),
+                    tags: Some(tags.subset(&[SIDEWALK, SHOULDER])),
+                }
+                .into());
             }
-            (Sidewalk::Separate, _) => return Err("sidewalk=separate not supported".into()),
+            (Sidewalk::Separate, _) => {
+                return Err(RoadMsg::unsupported_tag(SIDEWALK, "separate").into())
+            }
         }
         Ok(())
-    }
+    };
 
-    add((sidewalk.0, shoulder.0), forward_side, oneway, true)?;
-    add((sidewalk.1, shoulder.1), backward_side, oneway, false)?;
+    add((sidewalk.0, shoulder.0), forward_side, true)?;
+    add((sidewalk.1, shoulder.1), backward_side, false)?;
 
     Ok(())
 }
