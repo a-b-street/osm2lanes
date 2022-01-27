@@ -15,7 +15,7 @@ pub use self::locale::{DrivingSide, Locale};
 mod transform;
 pub use self::transform::{
     lanes_to_tags, tags_to_lanes, tags_to_lanes_with_warnings, Lanes, LanesToTagsConfig, RoadError,
-    RoadWarnings,
+    RoadMsg, RoadWarnings,
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

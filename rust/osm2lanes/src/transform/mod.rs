@@ -149,9 +149,10 @@ impl Lane {
 /// Tranformation Logic Issue
 ///
 /// ```
-/// RoadMsg::deprecated_tag("foo", "bar")
-/// RoadMsg::unsupported_tag("foo", "bar")
-/// RoadMsg::unimplemented_tag("foo", "bar")
+/// use osm2lanes::RoadMsg;
+/// let _ = RoadMsg::deprecated_tag("foo", "bar");
+/// let _ = RoadMsg::unsupported_tag("foo", "bar");
+/// let _ = RoadMsg::unsupported_str("foo=bar because x and y");
 /// ```
 ///
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -186,19 +187,19 @@ pub enum RoadMsg {
 }
 
 impl RoadMsg {
-    fn deprecated_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
+    pub fn deprecated_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
         Self::Unsupported {
             description: None,
             tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
         }
     }
-    fn unsupported_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
+    pub fn unsupported_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
         Self::Unsupported {
             description: None,
             tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
         }
     }
-    fn unsupported_str(description: &str) -> Self {
+    pub fn unsupported_str(description: &str) -> Self {
         Self::Unsupported {
             description: Some(description.to_owned()),
             tags: None,
