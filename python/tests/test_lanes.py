@@ -27,6 +27,7 @@ class Case:
 
     skip: bool
     # The OSM way unique identifier.
+    description: Optional[str]
     way_id: Optional[int]
     tags: Tags
     driving_side: DrivingSide
@@ -38,6 +39,7 @@ class Case:
         return cls(
             skip=bool(structure.get("skip_python")),
             way_id=structure.get("way_id"),
+            description=structure.get("description"),
             tags=structure["tags"],
             driving_side=DrivingSide(structure["driving_side"]),
             output=[
@@ -59,4 +61,4 @@ def test_lanes(test_configuration: dict[str, Any]) -> None:
 
     assert (
         output == test.output
-    ), f"\nGot:      {output}\nExpected: {test.output}\nTags:\n    {tags}"
+    ), f"{test.way_id}: {test.description}\nGot:      {output}\nExpected: {test.output}\nTags:\n    {tags}"

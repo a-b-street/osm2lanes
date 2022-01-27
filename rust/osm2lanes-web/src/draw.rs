@@ -112,13 +112,20 @@ pub fn lanes<R: RenderContext>(
                 *direction,
             )?;
         }
+        let font_size = 24.0;
         let layout = rc
             .text()
             .new_text_layout(lane.as_utf8().to_string())
-            .font(FontFamily::SYSTEM_UI, 24.0)
+            .font(FontFamily::SYSTEM_UI, font_size)
             .default_attribute(TextAttribute::TextColor(Color::WHITE))
             .build()?;
-        rc.draw_text(&layout, (x - 12.0, 0.5 * canvas_height));
+        rc.draw_text(
+            &layout,
+            (
+                x - (lane_width / 2.0) - (font_size / 2.0),
+                0.5 * canvas_height,
+            ),
+        );
     }
 
     rc.finish().unwrap();

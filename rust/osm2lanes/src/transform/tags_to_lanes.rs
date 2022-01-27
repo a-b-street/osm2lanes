@@ -83,7 +83,14 @@ pub fn tags_to_lanes_with_warnings(tags: &Tags, locale: &Locale) -> LanesResult 
         parking(tags, locale, oneway, &mut fwd_side, &mut back_side);
     }
 
-    walking(tags, locale, oneway, &mut fwd_side, &mut back_side);
+    foot_and_shoulder(
+        tags,
+        locale,
+        oneway,
+        &mut fwd_side,
+        &mut back_side,
+        &mut warnings,
+    )?;
 
     Ok(Lanes {
         lanes: assemble_ltr(fwd_side, back_side, locale.driving_side),
@@ -432,10 +439,11 @@ fn bicycle(
                 })
             }
         } else {
-            backward_side.push(Lane::forward(LaneDesignated::Bicycle));
+            backward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }
     } else if tags.is_cycleway(Some(WaySide::Both)) {
-        forward_side.push(Lane::both(LaneDesignated::Bicycle));
+        forward_side.push(Lane::forward(LaneDesignated::Bicycle));
+        backward_side.push(Lane::backward(LaneDesignated::Bicycle));
     } else {
         // cycleway=opposite_lane
         if tags.is(CYCLEWAY, "opposite_lane") {
@@ -443,6 +451,15 @@ fn bicycle(
                 deprecated_tags: tags.subset(&["cycleway", "oneway"]),
                 suggested_tags: None,
             });
+            backward_side.push(Lane::backward(LaneDesignated::Bicycle));
+        }
+        // cycleway=opposite oneway=yes oneway:bicycle=no
+        if tags.is(CYCLEWAY, "opposite") {
+            if !(oneway && tags.is("oneway:bicycle", "no")) {
+                return Err(
+                    "cycleway=opposite only supported with oneway=yes oneway:bicycle=no".into(),
+                );
+            }
             backward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }
         // cycleway:FORWARD=*
@@ -469,6 +486,16 @@ fn bicycle(
         // cycleway:BACKWARD=*
         if tags.is_cycleway(Some(locale.driving_side.opposite().into())) {
             if tags.is(
+                CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                "yes",
+            ) {
+                forward_side.insert(0, Lane::forward(LaneDesignated::Bicycle));
+            } else if tags.is(
+                CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                "-1",
+            ) {
+                backward_side.push(Lane::backward(LaneDesignated::Bicycle));
+            } else if tags.is(
                 CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
                 "no",
             ) || tags.is("oneway:bicycle", "no")
@@ -517,83 +544,163 @@ fn parking(
     }
 }
 
-fn walking(
+fn foot_and_shoulder(
     tags: &Tags,
     locale: &Locale,
-    _oneway: bool,
+    oneway: bool,
     forward_side: &mut Vec<Lane>,
     backward_side: &mut Vec<Lane>,
-) {
-    if tags.is("sidewalk", "both") {
-        forward_side.push(Lane::foot());
-        backward_side.push(Lane::foot());
-    } else if tags.is("sidewalk", "separate") && locale.infer_sidewalks {
-        // TODO Need to snap separate sidewalks to ways. Until then, just do this.
-        forward_side.push(Lane::foot());
-        if !backward_side.is_empty() {
-            backward_side.push(Lane::foot());
+    warnings: &mut LaneWarnings,
+) -> ModeResult {
+    // https://wiki.openstreetmap.org/wiki/Key:sidewalk
+    // This first step processes tags by the OSM spec.
+    // No can be implied, e.g. we assume that sidewalk:left=yes implies sidewalk:right=no
+    // None is when information may be incomplete and should be inferred,
+    // e.g. when sidewalk=* is missing altogether,
+    // but this may later become a No when combined with data from shoulder=*
+    // We catch any tag combinations that violate the OSM spec
+    enum Sidewalk {
+        None,
+        No,
+        Yes,
+        Separate,
+    }
+    let sidewalk: (Sidewalk, Sidewalk) = match (
+        tags.get(SIDEWALK),
+        tags.get(SIDEWALK + locale.driving_side.tag()),
+        tags.get(SIDEWALK + locale.driving_side.opposite().tag()),
+    ) {
+        (None, None, None) => (Sidewalk::None, Sidewalk::None),
+        (Some("none"), None, None) => return Err("sidewalk=none is deprecated".into()),
+        (Some("no"), None, None) => (Sidewalk::No, Sidewalk::No),
+        (Some("yes"), None, None) => {
+            warnings.0.push(LaneSpecWarning {
+                description: "sidewalk=yes is ambiguous".to_owned(),
+                tags: tags.subset(&[SIDEWALK]),
+            });
+            (Sidewalk::Yes, Sidewalk::Yes)
         }
-    } else if tags.is("sidewalk", "right") {
-        if locale.driving_side == DrivingSide::Right {
-            forward_side.push(Lane::foot());
-        } else {
-            backward_side.push(Lane::foot());
+        (Some("both"), None, None) => (Sidewalk::Yes, Sidewalk::Yes),
+        (None, Some("yes"), Some("yes")) => (Sidewalk::Yes, Sidewalk::Yes),
+        (Some(s), None, None) if s == locale.driving_side.tag().as_str() => {
+            (Sidewalk::Yes, Sidewalk::No)
         }
-    } else if tags.is("sidewalk", "left") {
-        if locale.driving_side == DrivingSide::Right {
-            backward_side.push(Lane::foot());
-        } else {
-            forward_side.push(Lane::foot());
+        (None, Some("yes"), None | Some("no")) => (Sidewalk::Yes, Sidewalk::No),
+        (Some(s), None, None) if s == locale.driving_side.opposite().tag().as_str() => {
+            (Sidewalk::No, Sidewalk::Yes)
         }
+        (None, None | Some("no"), Some("yes")) => (Sidewalk::No, Sidewalk::Yes),
+        (Some("separate"), None, None) => (Sidewalk::Separate, Sidewalk::Separate),
+        (None, Some("separate"), None) => (Sidewalk::Separate, Sidewalk::No),
+        (None, None, Some("separate")) => (Sidewalk::No, Sidewalk::Separate),
+        // TODO: generate the rest of these automatically
+        (None, Some(forward), None) => {
+            return Err(format!(
+                "sidewalk:{}={} is unsupported",
+                locale.driving_side.tag().as_str(),
+                forward,
+            )
+            .into())
+        }
+        (None, None, Some(backward)) => {
+            return Err(format!(
+                "sidewalk:{}={} is unsupported",
+                locale.driving_side.opposite().tag().as_str(),
+                backward,
+            )
+            .into())
+        }
+        (Some(s), Some(forward), None) => {
+            return Err(format!(
+                "sidewalk={} and sidewalk:{}={} unsupported",
+                s,
+                locale.driving_side.tag().as_str(),
+                forward,
+            )
+            .into())
+        }
+        (Some(s), None, Some(backward)) => {
+            return Err(format!(
+                "sidewalk={} and sidewalk:{}={} unsupported",
+                s,
+                locale.driving_side.opposite().tag().as_str(),
+                backward,
+            )
+            .into())
+        }
+        (Some(s), None, None) => return Err(format!("sidewalk={} unknown", s).into()),
+        (None, Some(forward), Some(backward)) => {
+            return Err(format!(
+                "sidewalk:{}={} and sidewalk:{}={} unknown",
+                locale.driving_side.tag().as_str(),
+                forward,
+                locale.driving_side.opposite().tag().as_str(),
+                backward
+            )
+            .into())
+        }
+        (Some(s), Some(forward), Some(backward)) => {
+            return Err(format!(
+                "sidewalk={} and sidewalk:{}={} and sidewalk:{}={} unknown",
+                s,
+                locale.driving_side.tag().as_str(),
+                forward,
+                locale.driving_side.opposite().tag().as_str(),
+                backward
+            )
+            .into())
+        }
+    };
+
+    // https://wiki.openstreetmap.org/wiki/Key:shoulder
+    enum Shoulder {
+        None,
+        Yes,
+        No,
+    }
+    let shoulder: (Shoulder, Shoulder) = match tags.get(SHOULDER) {
+        None => (Shoulder::None, Shoulder::None),
+        Some("no") => (Shoulder::No, Shoulder::No),
+        Some("yes") => (Shoulder::Yes, Shoulder::Yes),
+        Some("both") => (Shoulder::Yes, Shoulder::Yes),
+        Some(s) if s == locale.driving_side.tag().as_str() => (Shoulder::Yes, Shoulder::No),
+        Some(s) if s == locale.driving_side.opposite().tag().as_str() => {
+            (Shoulder::No, Shoulder::Yes)
+        }
+        Some(s) => return Err(format!("Unknown shoulder={}", s).into()),
+    };
+
+    fn add(
+        (sidewalk, shoulder): (Sidewalk, Shoulder),
+        side: &mut Vec<Lane>,
+        oneway: bool,
+        forward: bool,
+    ) -> ModeResult {
+        match (sidewalk, shoulder) {
+            (Sidewalk::No | Sidewalk::None, Shoulder::None) => {
+                // We assume a shoulder if there is no bike lane.
+                // This assumes bicycle lanes are just glorified shoulders...
+                let has_bicycle_lane = side.last().map_or(false, |lane| lane.is_bicycle());
+
+                if !has_bicycle_lane && (forward || !oneway) {
+                    side.push(Lane::Shoulder)
+                }
+            }
+            (Sidewalk::No | Sidewalk::None, Shoulder::No) => {}
+            (Sidewalk::Yes, Shoulder::No | Shoulder::None) => side.push(Lane::foot()),
+            (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => side.push(Lane::Shoulder),
+            (Sidewalk::Yes, Shoulder::Yes) => {
+                return Err("shoulder=* and sidewalk=* on same side".into())
+            }
+            (Sidewalk::Separate, _) => return Err("sidewalk=separate not supported".into()),
+        }
+        Ok(())
     }
 
-    let mut need_fwd_shoulder = forward_side
-        .last()
-        .map(|spec| {
-            !matches!(
-                spec,
-                Lane::Travel {
-                    designated: LaneDesignated::Foot,
-                    ..
-                }
-            )
-        })
-        .unwrap_or(true);
-    let mut need_back_shoulder = backward_side
-        .last()
-        .map(|spec| {
-            !matches!(
-                spec,
-                Lane::Travel {
-                    designated: LaneDesignated::Foot,
-                    ..
-                }
-            )
-        })
-        .unwrap_or(true);
-    if tags.is_any(HIGHWAY, &["motorway", "motorway_link", "construction"])
-        || tags.is("foot", "no")
-        || tags.is("access", "no")
-        || tags.is("motorroad", "yes")
-    {
-        need_fwd_shoulder = false;
-        need_back_shoulder = false;
-    }
-    // If it's a one-way, fine to not have sidewalks on both sides.
-    if tags.is("oneway", "yes") {
-        need_back_shoulder = false;
-    }
+    add((sidewalk.0, shoulder.0), forward_side, oneway, true)?;
+    add((sidewalk.1, shoulder.1), backward_side, oneway, false)?;
 
-    // For living streets in Krakow, there aren't separate footways. People can walk in the street.
-    // For now, model that by putting shoulders.
-    if locale.infer_sidewalks || tags.is(HIGHWAY, "living_street") {
-        if need_fwd_shoulder {
-            forward_side.push(Lane::Shoulder);
-        }
-        if need_back_shoulder {
-            backward_side.push(Lane::Shoulder);
-        }
-    }
+    Ok(())
 }
 
 fn assemble_ltr(
