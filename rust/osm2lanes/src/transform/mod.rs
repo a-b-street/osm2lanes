@@ -186,6 +186,18 @@ pub enum RoadMsg {
 }
 
 impl RoadMsg {
+    fn deprecated_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
+        Self::Unsupported {
+            description: None,
+            tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
+        }
+    }
+    fn unsupported_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
+        Self::Unsupported {
+            description: None,
+            tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
+        }
+    }
     fn unsupported_str(description: &str) -> Self {
         Self::Unsupported {
             description: Some(description.to_owned()),
@@ -265,10 +277,10 @@ pub enum RoadError {
 }
 
 impl RoadError {
-    fn unsupported_str(description: &str) -> Self {
+    fn ambiguous_str(description: &str) -> Self {
         RoadMsg::unsupported_str(description).into()
     }
-    fn ambiguous_str(description: &str) -> Self {
+    fn unsupported_str(description: &str) -> Self {
         RoadMsg::unsupported_str(description).into()
     }
 }
