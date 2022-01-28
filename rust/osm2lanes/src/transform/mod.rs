@@ -1,10 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::tags::{DuplicateKeyError, TagKey, Tags};
-use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Road};
+use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection};
 
 mod tags_to_lanes;
-pub use tags_to_lanes::{tags_to_lanes, tags_to_lanes_with_warnings};
+pub use tags_to_lanes::tags_to_lanes;
+pub use tags_to_lanes::TagsToLanesConfig;
 
 mod lanes_to_tags;
 pub use lanes_to_tags::lanes_to_tags;
@@ -172,7 +173,7 @@ pub enum RoadMsg {
         description: Option<String>,
         tags: Option<Tags>,
     },
-    // Tag combination that is unsupported, and may never be supported
+    // Tag combination that is ambiguous, and may never be supported
     Ambiguous {
         description: Option<String>,
         tags: Option<Tags>,
@@ -316,5 +317,4 @@ pub struct Lanes {
 
 type ModeResult = Result<(), RoadError>;
 type LanesResult = Result<Lanes, RoadError>;
-type RoadResult = Result<Road, RoadError>;
 type TagsResult = Result<Tags, RoadError>;
