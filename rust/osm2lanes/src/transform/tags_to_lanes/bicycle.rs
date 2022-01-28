@@ -1,5 +1,15 @@
 use super::*;
 
+impl Tags {
+    fn is_cycleway(&self, side: Option<WaySide>) -> bool {
+        if let Some(side) = side {
+            self.is_any(CYCLEWAY + side.as_str(), &["lane", "track"])
+        } else {
+            self.is_any(CYCLEWAY, &["lane", "track"])
+        }
+    }
+}
+
 pub fn bicycle(
     tags: &Tags,
     locale: &Locale,
@@ -8,16 +18,6 @@ pub fn bicycle(
     backward_side: &mut Vec<Lane>,
     warnings: &mut RoadWarnings,
 ) -> ModeResult {
-    impl Tags {
-        fn is_cycleway(&self, side: Option<WaySide>) -> bool {
-            if let Some(side) = side {
-                self.is_any(CYCLEWAY + side.as_str(), &["lane", "track"])
-            } else {
-                self.is_any(CYCLEWAY, &["lane", "track"])
-            }
-        }
-    }
-
     if tags.is_cycleway(None) {
         if tags.is_cycleway(Some(WaySide::Both))
             || tags.is_cycleway(Some(WaySide::Right))
