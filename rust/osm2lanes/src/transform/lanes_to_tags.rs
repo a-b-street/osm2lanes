@@ -191,7 +191,13 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
 
     // Check roundtrip!
     if config.check_roundtrip {
-        let rountrip = tags_to_lanes(&tags, locale)?;
+        let rountrip = tags_to_lanes(
+            &tags,
+            locale,
+            &TagsToLanesConfig {
+                error_on_warnings: true,
+            },
+        )?;
         if lanes != rountrip.lanes {
             return Err(RoadError::RoundTrip);
         }

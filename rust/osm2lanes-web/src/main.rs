@@ -8,10 +8,9 @@ use yew::prelude::*;
 
 mod draw;
 
-use osm2lanes::{
-    lanes_to_tags, tags_to_lanes_with_warnings, DrivingSide, Lane, LanePrintable, Lanes,
-    LanesToTagsConfig, Locale, Tags,
-};
+use osm2lanes::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
+use osm2lanes::{DrivingSide, Locale};
+use osm2lanes::{Lane, LanePrintable, Lanes, Tags};
 
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
@@ -51,7 +50,7 @@ impl Component for App {
     fn create(_ctx: &Context<Self>) -> Self {
         let locale = Locale::builder().build();
         let focus_ref = NodeRef::default();
-        let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:taxi:backward=1\nlanes:psv=1\nsidewalk=right".to_owned();
+        let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:bus=1\nsidewalk=right".to_owned();
         let state = if let Ok((Lanes { lanes, warnings }, norm_tags)) =
             Self::calculate(&edit_tags, &locale)
         {
@@ -134,6 +133,8 @@ impl Component for App {
                             {onmouseover}
                             {onblur}
                             {onkeypress}
+                            autocomplete={"off"}
+                            spellcheck={"false"}
                         />
                     </div>
                     <div class="row-item">
@@ -159,6 +160,7 @@ impl Component for App {
                                     "".to_owned()
                                 }
                             }
+                            spellcheck={"false"}
                         />
                     </div>
                 </section>
@@ -207,7 +209,7 @@ impl App {
     ) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
         log::trace!("Calculate: {}", value);
         match Tags::from_str(value) {
-            Ok(tags) => match tags_to_lanes_with_warnings(&tags, locale) {
+            Ok(tags) => match tags_to_lanes(&tags, locale, &TagsToLanesConfig::default()) {
                 Ok(lanes) => {
                     match lanes_to_tags(&lanes.lanes, locale, &LanesToTagsConfig::default()) {
                         Ok(tags) => Ok((lanes, tags)),

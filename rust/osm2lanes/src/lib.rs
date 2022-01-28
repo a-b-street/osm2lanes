@@ -14,8 +14,8 @@ pub use self::locale::{DrivingSide, Locale};
 
 mod transform;
 pub use self::transform::{
-    lanes_to_tags, tags_to_lanes, tags_to_lanes_with_warnings, Lanes, LanesToTagsConfig, RoadError,
-    RoadMsg, RoadWarnings,
+    lanes_to_tags, tags_to_lanes, Lanes, LanesToTagsConfig, RoadError, RoadMsg, RoadWarnings,
+    TagsToLanesConfig,
 };
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -119,7 +119,7 @@ impl LanePrintable for Lane {
                 designated: LaneDesignated::Bus,
                 ..
             } => '🚌',
-            Self::Shoulder => 'ˢ',
+            Self::Shoulder => '🛆',
             Self::Parking { .. } => '🅿',
             Self::Separator => todo!(),
         }
@@ -266,9 +266,16 @@ mod tests {
         assert!(
             tests.iter().all(|test| {
                 let locale = Locale::builder().driving_side(test.driving_side).build();
-                let lanes = tags_to_lanes(&test.tags, &locale);
+                let lanes = tags_to_lanes(
+                    &test.tags,
+                    &locale,
+                    &TagsToLanesConfig {
+                        error_on_warnings: true,
+                    },
+                );
                 let expected_road = test.expected_road();
-                if let Ok(actual_road) = lanes {
+                if let Ok(Lanes { lanes, .. }) = lanes {
+                    let actual_road = Road { lanes };
                     if actual_road != expected_road {
                         test.print();
                         println!("Got:");
@@ -316,7 +323,17 @@ mod tests {
                     },
                 )
                 .unwrap();
-                let output_road = tags_to_lanes(&tags, &locale).unwrap();
+                let output_lanes = tags_to_lanes(
+                    &tags,
+                    &locale,
+                    &TagsToLanesConfig {
+                        error_on_warnings: false,
+                    },
+                )
+                .unwrap();
+                let output_road = Road {
+                    lanes: output_lanes.lanes,
+                };
                 if input_road != output_road {
                     test.print();
                     println!("From:");
