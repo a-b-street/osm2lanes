@@ -53,6 +53,34 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
                 width: Some(Metre(0.2)),
             }],
         }),
+        [Lane::Travel {
+            designated: LaneDesignated::Motor,
+            ..
+        }
+        | Lane::Travel {
+            designated: LaneDesignated::Bus,
+            ..
+        }, Lane::Travel {
+            designated: LaneDesignated::Bicycle,
+            ..
+        }]
+        | [Lane::Travel {
+            designated: LaneDesignated::Bicycle,
+            ..
+        }, Lane::Travel {
+            designated: LaneDesignated::Motor,
+            ..
+        }
+        | Lane::Travel {
+            designated: LaneDesignated::Bus,
+            ..
+        }] => Some(Lane::Separator {
+            markings: vec![Marking {
+                style: MarkingStyle::SolidLine,
+                color: Some(MarkingColor::White),
+                width: Some(Metre(0.2)),
+            }],
+        }),
         [left @ Lane::Travel {
             designated: LaneDesignated::Motor,
             ..
@@ -83,11 +111,23 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
                         })
                     } else {
                         Some(Lane::Separator {
-                            markings: vec![Marking {
-                                style: MarkingStyle::SolidLine,
-                                color: Some(MarkingColor::White),
-                                width: Some(Metre(0.2)),
-                            }],
+                            markings: vec![
+                                Marking {
+                                    style: MarkingStyle::SolidLine,
+                                    color: Some(MarkingColor::White),
+                                    width: Some(Metre(0.2)),
+                                },
+                                Marking {
+                                    style: MarkingStyle::NoFill,
+                                    color: None,
+                                    width: Some(Metre(0.1)),
+                                },
+                                Marking {
+                                    style: MarkingStyle::SolidLine,
+                                    color: Some(MarkingColor::White),
+                                    width: Some(Metre(0.2)),
+                                },
+                            ],
                         })
                     }
                 }

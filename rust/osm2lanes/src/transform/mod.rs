@@ -106,7 +106,7 @@ impl Lane {
             }
         )
     }
-    fn is_foot(&self) -> bool {
+    pub fn is_foot(&self) -> bool {
         matches!(
             self,
             Lane::Travel {

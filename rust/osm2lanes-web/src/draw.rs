@@ -1,9 +1,9 @@
 use piet::{
-    kurbo::Line, kurbo::Point, kurbo::Rect, Color, Error, FontFamily, RenderContext, Text,
-    TextAttribute, TextLayoutBuilder,
+    kurbo::Line, kurbo::Point, kurbo::Rect, Color, Error, FontFamily, RenderContext, StrokeStyle,
+    Text, TextAttribute, TextLayoutBuilder,
 };
 
-use osm2lanes::{Lane, LaneDirection, LanePrintable, MarkingColor, Metre, Road};
+use osm2lanes::{Lane, LaneDirection, LanePrintable, MarkingColor, MarkingStyle, Metre, Road};
 
 // TODO: newtype + From?
 fn color_into(c: MarkingColor) -> Color {
@@ -32,7 +32,7 @@ pub fn lanes<R: RenderContext>(
     let default_lane_width = Lane::DEFAULT_WIDTH;
 
     let grassy_verge = Metre::new(1.0);
-    let asphalt_buffer = Metre::new(0.5);
+    let asphalt_buffer = Metre::new(0.1);
 
     let scale = Scale(
         canvas_width / (road.total_width() + 2.0 * grassy_verge + 2.0 * asphalt_buffer).val(),
@@ -55,28 +55,38 @@ pub fn lanes<R: RenderContext>(
 
     for lane in &road.lanes {
         match lane {
-            Lane::Travel {
-                direction: Some(direction),
-                ..
-            } => {
+            Lane::Travel { direction, .. } => {
                 let width = default_lane_width;
                 let x = scale.scale(left_edge + (0.5 * width));
-                draw_arrow(
-                    rc,
-                    Point {
-                        x,
-                        y: 0.3 * canvas_height,
-                    },
-                    *direction,
-                )?;
-                draw_arrow(
-                    rc,
-                    Point {
-                        x,
-                        y: 0.7 * canvas_height,
-                    },
-                    *direction,
-                )?;
+                if let Some(direction) = direction {
+                    draw_arrow(
+                        rc,
+                        Point {
+                            x,
+                            y: 0.3 * canvas_height,
+                        },
+                        *direction,
+                    )?;
+                    draw_arrow(
+                        rc,
+                        Point {
+                            x,
+                            y: 0.7 * canvas_height,
+                        },
+                        *direction,
+                    )?;
+                }
+                if lane.is_foot() {
+                    rc.fill(
+                        Rect::new(
+                            scale.scale(left_edge),
+                            0.0,
+                            scale.scale(left_edge + width),
+                            canvas_height,
+                        ),
+                        &Color::GRAY,
+                    );
+                }
                 let font_size = 24.0;
                 let layout = rc
                     .text()
@@ -104,7 +114,12 @@ pub fn lanes<R: RenderContext>(
                 for marking in markings {
                     let width = marking.width.unwrap_or_else(|| Metre::new(0.2));
                     let x = scale.scale(left_edge + 0.5 * width);
-                    rc.stroke(
+                    let color = match (marking.style, marking.color) {
+                        (_, Some(c)) => color_into(c),
+                        (MarkingStyle::KerbUp | MarkingStyle::KerbDown, None) => Color::GRAY,
+                        _ => Color::BLUE,
+                    };
+                    rc.stroke_styled(
                         Line::new(
                             Point { x, y: 0.0 },
                             Point {
@@ -112,8 +127,16 @@ pub fn lanes<R: RenderContext>(
                                 y: canvas_height,
                             },
                         ),
-                        &marking.color.map_or(Color::BLUE, color_into),
+                        &color,
                         scale.scale(width),
+                        &match marking.style {
+                            MarkingStyle::SolidLine => StrokeStyle::new(),
+                            MarkingStyle::DottedLine => {
+                                StrokeStyle::new().dash_pattern(&[50.0, 100.0])
+                            }
+                            MarkingStyle::KerbUp | MarkingStyle::KerbDown => StrokeStyle::new(),
+                            _ => StrokeStyle::new().dash_pattern(&[20.0, 80.0]),
+                        },
                     );
                     left_edge += width;
                 }
