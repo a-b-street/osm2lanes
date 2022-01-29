@@ -10,7 +10,7 @@ mod draw;
 
 use osm2lanes::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
 use osm2lanes::{DrivingSide, Locale};
-use osm2lanes::{Lane, LanePrintable, Lanes, Tags};
+use osm2lanes::{Lane, LanePrintable, Lanes, Road, Tags};
 
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
@@ -26,7 +26,7 @@ pub struct State {
     /// The input normalised
     pub normalized_tags: Option<String>,
     /// Lanes to visualise
-    pub lanes: Vec<Lane>,
+    pub road: Road,
     /// Message for user
     pub message: Option<String>,
 }
@@ -58,7 +58,7 @@ impl Component for App {
                 locale,
                 edit_tags,
                 normalized_tags: Some(norm_tags.to_string()),
-                lanes,
+                road: Road { lanes },
                 message: Some(warnings.to_string()),
             }
         } else {
@@ -182,12 +182,12 @@ impl Component for App {
                 <section>
                     <div class="lanes">
                         {
-                            for self.state.lanes.iter().map(|lane| self.view_lane_type(lane))
+                            for self.state.road.lanes.iter().map(|lane| self.view_lane_type(lane))
                         }
                     </div>
                     <div class="lanes">
                         {
-                            for self.state.lanes.iter().map(|lane| self.view_lane_direction(lane))
+                            for self.state.road.lanes.iter().map(|lane| self.view_lane_direction(lane))
                         }
                     </div>
                 </section>
@@ -229,7 +229,7 @@ impl App {
         log::trace!("Update: {:?}", calculate);
         match calculate {
             Ok((Lanes { lanes, warnings }, norm_tags)) => {
-                self.state.lanes = lanes;
+                self.state.road = Road { lanes };
                 self.state.normalized_tags = Some(norm_tags.to_string());
                 if warnings.is_empty() {
                     self.state.message = None;
@@ -238,7 +238,7 @@ impl App {
                 }
             }
             Err(Ok((Lanes { lanes, warnings }, norm_err))) => {
-                self.state.lanes = lanes;
+                self.state.road = Road { lanes };
                 self.state.normalized_tags = None;
                 if warnings.is_empty() {
                     self.state.message = Some(format!("Normalisation Error: {}", norm_err));
@@ -248,7 +248,7 @@ impl App {
                 }
             }
             Err(Err(lanes_err)) => {
-                self.state.lanes = Vec::new();
+                self.state.road = Road { lanes: Vec::new() };
                 self.state.normalized_tags = None;
                 self.state.message = Some(format!("Conversion Error: {}", lanes_err));
             }
@@ -297,7 +297,7 @@ impl App {
         context.scale(dpr, dpr).unwrap();
         let mut rc = WebRenderContext::new(context, window);
 
-        draw::lanes(&mut rc, (canvas_width, canvas_height), &self.state.lanes).unwrap();
+        draw::lanes(&mut rc, (canvas_width, canvas_height), &self.state.road).unwrap();
     }
 }
 

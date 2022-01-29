@@ -2,6 +2,7 @@ use std::iter;
 
 use crate::tags::{TagKey, Tags, TagsRead};
 use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Locale};
+use crate::{Marking, MarkingColor, MarkingStyle, Metre};
 
 mod bicycle;
 use bicycle::bicycle;
@@ -9,6 +10,8 @@ mod bus;
 use bus::bus;
 mod foot_shoulder;
 use foot_shoulder::foot_and_shoulder;
+mod separator;
+use separator::insert_separators;
 
 use super::*;
 
@@ -23,8 +26,9 @@ pub struct TagsToLanesConfig {
 pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -> LanesResult {
     let mut warnings = RoadWarnings::default();
 
-    if let Some(spec) = non_motorized(tags, locale) {
-        return spec;
+    // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
+    if let Some(spec) = non_motorized(tags, locale)? {
+        return Ok(spec);
     }
 
     // TODO Reversible roads should be handled differently?
@@ -42,8 +46,6 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
     // Example: 3rd Ave in downtown Seattle
     {
         LaneDesignated::Bus
-    // } else if tags.is("access", "no") || tags.is("highway", "construction") {
-    //     LaneType::Construction
     } else {
         LaneDesignated::Motor
     };
@@ -60,13 +62,6 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
     if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
         fwd_side.insert(0, Lane::both(LaneDesignated::Motor));
     }
-
-    // if driving_lane == LaneType::Construction {
-    //     return Ok(Lanes {
-    //         lanes: assemble_ltr(fwd_side, back_side, cfg.driving_side),
-    //         warnings: LaneSpecWarnings::default(),
-    //     });
-    // }
 
     bus(tags, locale, oneway, &mut fwd_side, &mut back_side)?;
 
@@ -92,18 +87,21 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
         &mut warnings,
     )?;
 
-    if config.error_on_warnings && !warnings.is_empty() {
-        return Err(warnings.into());
+    let lanes = assemble_ltr(fwd_side, back_side, locale.driving_side)?;
+
+    let lanes = Lanes { lanes, warnings };
+
+    let lanes = insert_separators(lanes)?;
+
+    if config.error_on_warnings && !lanes.warnings.is_empty() {
+        return Err(lanes.warnings.into());
     }
 
-    Ok(Lanes {
-        lanes: assemble_ltr(fwd_side, back_side, locale.driving_side),
-        warnings,
-    })
+    Ok(lanes)
 }
 
 // Handle non motorized ways
-fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
+fn non_motorized(tags: &Tags, locale: &Locale) -> Result<Option<Lanes>, RoadError> {
     if !tags.is_any(
         HIGHWAY,
         &[
@@ -116,11 +114,11 @@ fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
         ],
     ) {
         log::trace!("motorized");
-        return None;
+        return Ok(None);
     }
     // Easy special cases first.
     if tags.is(HIGHWAY, "steps") {
-        return Some(Ok(Lanes {
+        return Ok(Some(Lanes {
             lanes: vec![Lane::foot()],
             warnings: RoadWarnings(vec![RoadMsg::Other {
                 description: "highway is steps, but lane is only a sidewalk".to_owned(),
@@ -138,7 +136,7 @@ fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
     if tags.is("bicycle", "no")
         || (tags.is(HIGHWAY, "footway") && !tags.is_any("bicycle", &["designated", "yes"]))
     {
-        return Some(Ok(Lanes {
+        return Ok(Some(Lanes {
             lanes: vec![Lane::foot()],
             warnings: RoadWarnings::default(),
         }));
@@ -158,8 +156,8 @@ fn non_motorized(tags: &Tags, locale: &Locale) -> Option<LanesResult> {
             backward_side.push(Lane::Shoulder);
         }
     }
-    Some(Ok(Lanes {
-        lanes: assemble_ltr(forward_side, backward_side, locale.driving_side),
+    Ok(Some(Lanes {
+        lanes: assemble_ltr(forward_side, backward_side, locale.driving_side)?,
         warnings: RoadWarnings::default(),
     }))
 }
@@ -243,8 +241,8 @@ fn assemble_ltr(
     mut fwd_side: Vec<Lane>,
     mut back_side: Vec<Lane>,
     driving_side: DrivingSide,
-) -> Vec<Lane> {
-    match driving_side {
+) -> Result<Vec<Lane>, RoadError> {
+    Ok(match driving_side {
         DrivingSide::Right => {
             back_side.reverse();
             back_side.extend(fwd_side);
@@ -255,5 +253,5 @@ fn assemble_ltr(
             fwd_side.extend(back_side);
             fwd_side
         }
-    }
+    })
 }

@@ -55,8 +55,6 @@
 - description: "Great Northern Highway, a 2 lane rural road."
   way_id: 62176050
   image: "https://upload.wikimedia.org/wikipedia/commons/4/44/Onderweg_-_Fitzroy_Crossing_-_Purnululu_%288991950691%29.jpg"
-  rust:
-    separator: false
   skip_kotlin: true
   tags:
     highway: trunk

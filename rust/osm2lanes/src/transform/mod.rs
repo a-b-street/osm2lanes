@@ -64,6 +64,9 @@ impl DrivingSide {
 }
 
 impl Lane {
+    pub fn is_separator(&self) -> bool {
+        matches!(self, Lane::Separator { .. })
+    }
     fn forward(designated: LaneDesignated) -> Self {
         Self::Travel {
             direction: Some(LaneDirection::Forward),
@@ -137,7 +140,7 @@ impl Lane {
         }
         Ok(())
     }
-    fn get_direction(&self) -> Option<LaneDirection> {
+    fn direction(&self) -> Option<LaneDirection> {
         match self {
             Self::Travel { direction, .. } => *direction,
             _ => None,
