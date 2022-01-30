@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+use crate::road::{Lane, LaneDesignated, LaneDirection};
 use crate::tags::{DuplicateKeyError, TagKey, Tags};
-use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection};
+use crate::DrivingSide;
 
 mod tags_to_lanes;
 pub use tags_to_lanes::tags_to_lanes;
@@ -153,7 +154,7 @@ impl Lane {
 /// Tranformation Logic Issue
 ///
 /// ```
-/// use osm2lanes::RoadMsg;
+/// use osm2lanes::transform::RoadMsg;
 /// let _ = RoadMsg::deprecated_tag("foo", "bar");
 /// let _ = RoadMsg::unsupported_tag("foo", "bar");
 /// let _ = RoadMsg::unsupported_str("foo=bar because x and y");

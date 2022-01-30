@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{LaneDesignated, Metre};
+use crate::road::LaneDesignated;
+use crate::Metre;
 
 /// Context about the place where an OSM way exists.
 #[derive(Debug, Serialize, Deserialize)]

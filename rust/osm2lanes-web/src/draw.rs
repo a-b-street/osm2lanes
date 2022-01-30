@@ -3,9 +3,8 @@ use piet::{
     TextAttribute, TextLayoutBuilder,
 };
 
-use osm2lanes::{
-    Lane, LaneDirection, LanePrintable, Locale, MarkingColor, MarkingStyle, Metre, Road,
-};
+use osm2lanes::road::{Lane, LaneDirection, LanePrintable, MarkingColor, MarkingStyle, Road};
+use osm2lanes::{Locale, Metre};
 
 use super::RenderError;
 

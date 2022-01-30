@@ -92,7 +92,7 @@ impl Tags {
     ///
     /// ```
     /// use std::str::FromStr;
-    /// use osm2lanes::Tags;
+    /// use osm2lanes::tags::Tags;
     /// let tags = Tags::from_str("foo=bar\na:b:c=foobar").unwrap();
     /// let tree = tags.tree();
     /// let a = tree.get("a");
@@ -120,8 +120,8 @@ impl FromStr for Tags {
     ///
     /// ```
     /// use std::str::FromStr;
-    /// use osm2lanes::Tags;
-    /// use osm2lanes::TagsRead;
+    /// use osm2lanes::tags::Tags;
+    /// use osm2lanes::tags::TagsRead;
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
     /// assert_eq!(tags.get("foo"), Some("bar"));
     /// ```
@@ -141,8 +141,8 @@ impl ToString for Tags {
     /// ```
     /// use std::str::FromStr;
     /// use std::string::ToString;
-    /// use osm2lanes::Tags;
-    /// use osm2lanes::TagsRead;
+    /// use osm2lanes::tags::Tags;
+    /// use osm2lanes::tags::TagsRead;
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
     /// assert_eq!(tags.to_string(), "abra=cadabra\nfoo=bar");
     /// ```

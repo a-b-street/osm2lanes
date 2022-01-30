@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufReader, Write};
 
-use osm2lanes::{tags_to_lanes, Locale, Tags, TagsToLanesConfig};
+use osm2lanes::{tags::Tags, tags_to_lanes, Locale, TagsToLanesConfig};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();

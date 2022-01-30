@@ -1,5 +1,6 @@
+use crate::road::{Lane, LaneDesignated, LaneDirection};
 use crate::tags::{DuplicateKeyError, Tags, TagsWrite};
-use crate::{Lane, LaneDesignated, LaneDirection, Locale, RoadError};
+use crate::Locale;
 
 use super::*;
 
