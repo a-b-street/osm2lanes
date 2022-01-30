@@ -1,7 +1,7 @@
 # osm2lanes
 
 This project transforms OpenStreetMap tags to a specification of lanes on a
-street. Start with the [web demo](https://a-b-street.github.io/osm2lanes).
+street. Start with the [web demo](https://a-b-street.github.io/osm2lanes) ([Source](#web-demo)).
 
 See [discussion](https://github.com/a-b-street/abstreet/discussions/789) for
 context. This repo is currently just for starting this experiment. No license
@@ -202,3 +202,12 @@ cargo test
 ```shell
 cargo run -- ${INPUT_FILE} ${OUTPUT_FILE}
 ```
+
+## Web demo
+
+The web demo at https://a-b-street.github.io/osm2lanes provides an easy way to test OSM tags and see the generated results.
+
+### Dev
+
+- The web demo is updated with every push on `main`, [see Workflow](./.github/workflows/web.yml)
+- The html website is part of the rest implementation at [`/rust/osm2lanes-web` ](./rust/osm2lanes-web)
