@@ -1,25 +1,22 @@
-osm2lanes
-=========
+# osm2lanes
 
 This project transforms OpenStreetMap tags to a specification of lanes on a
 street. Start with the [web demo](https://a-b-street.github.io/osm2lanes).
 
 See [discussion](https://github.com/a-b-street/abstreet/discussions/789) for
-context.  This repo is currently just for starting this experiment.  No license
+context. This repo is currently just for starting this experiment. No license
 chosen yet.
 
-Structure
----------
+## Structure
 
-  * `data`
-    * `tests.yml`—tests, initially converted from Rust file.
-      `spec-lanes.json`—json specification.
-  * `kotlin`—[Kotlin implementation](#kotlin).
-  * `python`—[Python 3.9 implementation](#python).
-  * `rust`—[Rust implementation](#rust).
+- `data`
+  - `tests.yml`—tests, initially converted from Rust file.
+    `spec-lanes.json`—json specification.
+- `kotlin`—[Kotlin implementation](#kotlin).
+- `python`—[Python 3.9 implementation](#python).
+- `rust`—[Rust implementation](#rust).
 
-Lane Definition
----------------
+## Lane Definition
 
 It is important to determine a strict definition for a lane.
 An OpenStreetMap way, usually a `highway=*`, can in some cases be divided into lanes,
@@ -40,11 +37,12 @@ we use a fail-deadly approach to emphasize that
 osm2lanes should not be used in road safety applications.
 
 For all examples:
+
 - we omit access, this mimics the access tags for a lane in OSM.
 - we omit widths, for simplicity. osm2lanes will first try to determine widths from OSM tags, but it can fallback to making assumptions itself.
 - we omit turn markings (for now, TODO)
 
-### Example 1 ###
+### Example 1
 
 A road with 5 marked lanes.
 
@@ -69,7 +67,7 @@ Note:
 - there is no sidewalk nor verge for pedestrians to walk here.
 - lane separators are listed.
 
-### Example 2 ###
+### Example 2
 
 A road with 2 marked lanes.
 
@@ -94,7 +92,7 @@ Note:
 - the direction of the lane is the predominant direction of travel,
   overtaking vehicles could travel in the opposite direction.
 
-### Example 3 ###
+### Example 3
 
 A narrow road with one lane.
 
@@ -113,7 +111,7 @@ Note:
 - no road markings.
 - shoulders could be optional (TODO)?
 
-### Examples 4 ###
+### Examples 4
 
 Roads with no marked lanes.
 
@@ -143,7 +141,7 @@ Two (or more) directional lanes with no road markings.
 Only use this when vehicles consistently drive in lanes even though they are unmarked.
 Example: A road with markings is repaved without markings, but road users habitually maintain their lanes.
 
-### Missing Examples ###
+### Missing Examples
 
 TODO:
 
@@ -152,30 +150,28 @@ TODO:
 - More bus and taxi lane examples
 - Trunk/Motorway/Highway
 
-Kotlin
-------
+## Kotlin
 
-### Run with Gradle ###
+### Run with Gradle
 
 ```shell
 cd kotlin
 gradle run --args "${INPUT_FILE} ${OUTPUT_FILE}"
 ```
 
-### Install and test ###
+### Install and test
 
 Create JAR file with `gradle jar` and test with `gradle test`.
 
-### Run with Java ###
+### Run with Java
 
 ```shell
 java -jar kotlin/build/libs/osm2lanes.jar ${INPUT_FILE} ${OUTPUT_FILE}
 ```
 
-Python
-------
+## Python
 
-### Install and test ###
+### Install and test
 
 ```shell
 cd python
@@ -184,16 +180,15 @@ cd ..
 pytest
 ```
 
-### Run ###
+### Run
 
 ```shell
 osm2lanes ${INPUT_FILE} ${OUTPUT_FILE}
 ```
 
-Rust
-------
+## Rust
 
-### Install and test ###
+### Install and test
 
 After [installing rust](https://www.rust-lang.org/tools/install), run:
 
@@ -202,7 +197,7 @@ cd rust/osm2lanes
 cargo test
 ```
 
-### Run ###
+### Run
 
 ```shell
 cargo run -- ${INPUT_FILE} ${OUTPUT_FILE}
