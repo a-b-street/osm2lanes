@@ -105,13 +105,13 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
             .iter()
             .take_while(|lane| !lane.is_motor())
             .find(|lane| lane.is_bicycle())
-            .and_then(|lane| lane.get_direction());
+            .and_then(|lane| lane.direction());
         let right_cycle_lane: Option<LaneDirection> = lanes
             .iter()
             .rev()
             .take_while(|lane| !lane.is_motor())
             .find(|lane| lane.is_bicycle())
-            .and_then(|lane| lane.get_direction());
+            .and_then(|lane| lane.direction());
         match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
             (false, false) => {}
             (true, false) => tags.checked_insert("cycleway:left", "lane")?,

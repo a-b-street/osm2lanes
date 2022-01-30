@@ -64,6 +64,9 @@ impl DrivingSide {
 }
 
 impl Lane {
+    pub fn is_separator(&self) -> bool {
+        matches!(self, Lane::Separator { .. })
+    }
     fn forward(designated: LaneDesignated) -> Self {
         Self::Travel {
             direction: Some(LaneDirection::Forward),
@@ -103,7 +106,7 @@ impl Lane {
             }
         )
     }
-    fn is_foot(&self) -> bool {
+    pub fn is_foot(&self) -> bool {
         matches!(
             self,
             Lane::Travel {
@@ -137,7 +140,7 @@ impl Lane {
         }
         Ok(())
     }
-    fn get_direction(&self) -> Option<LaneDirection> {
+    fn direction(&self) -> Option<LaneDirection> {
         match self {
             Self::Travel { direction, .. } => *direction,
             _ => None,
@@ -286,6 +289,8 @@ impl RoadError {
         RoadMsg::unsupported_str(description).into()
     }
 }
+
+impl std::error::Error for RoadError {}
 
 impl std::fmt::Display for RoadError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

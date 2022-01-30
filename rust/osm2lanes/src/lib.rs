@@ -23,6 +23,28 @@ pub struct Road {
     pub lanes: Vec<Lane>,
 }
 
+impl Road {
+    pub fn has_separators(&self) -> bool {
+        self.lanes.iter().any(|lane| lane.is_separator())
+    }
+}
+
+impl Road {
+    pub fn total_width(&self, locale: &Locale) -> Metre {
+        self.lanes
+            .iter()
+            .map(|lane| match lane {
+                Lane::Separator { markings } => markings
+                    .iter()
+                    .map(|marking| marking.width.unwrap_or(Marking::DEFAULT_WIDTH))
+                    .sum::<Metre>(),
+                Lane::Travel { designated, .. } => locale.default_width(designated),
+                _ => Lane::DEFAULT_WIDTH,
+            })
+            .sum::<Metre>()
+    }
+}
+
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -40,11 +62,14 @@ pub enum Lane {
     },
     #[serde(rename = "shoulder")]
     Shoulder,
-    // TODO
     #[serde(rename = "separator")]
-    Separator,
-    // #[serde(rename = "separator")]
+    Separator { markings: Vec<Marking> },
+    // #[serde(rename = "construction")]
     // Construction,
+}
+
+impl Lane {
+    pub const DEFAULT_WIDTH: Metre = Metre(3.5);
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -69,6 +94,94 @@ pub enum LaneDesignated {
     Motor,
     #[serde(rename = "bus")]
     Bus,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Marking {
+    pub style: MarkingStyle,
+    pub width: Option<Metre>,
+    pub color: Option<MarkingColor>,
+}
+
+impl Marking {
+    const DEFAULT_WIDTH: Metre = Metre::new(0.2);
+    const DEFAULT_SPACE: Metre = Metre::new(0.1);
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum MarkingStyle {
+    #[serde(rename = "solid_line")]
+    SolidLine,
+    #[serde(rename = "broken_line")]
+    BrokenLine,
+    #[serde(rename = "dashed_line")]
+    DashedLine,
+    #[serde(rename = "dotted_line")]
+    DottedLine,
+    // #[serde(rename = "gore_chevron")]
+    // GoreChevron,
+    // #[serde(rename = "diagnoal_hatched")]
+    // DiagonalCross,
+    // #[serde(rename = "criss_cross")]
+    // CrissCross,
+    // #[serde(rename = "solid_fill")]
+    // SolidFill,
+    #[serde(rename = "no_fill")]
+    NoFill,
+    // up and down are left to right
+    #[serde(rename = "kerb_up")]
+    KerbUp,
+    #[serde(rename = "kerb_down")]
+    KerbDown,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Metre(f64);
+
+impl Metre {
+    pub const fn new(val: f64) -> Self {
+        Self(val)
+    }
+    pub const fn val(&self) -> f64 {
+        self.0
+    }
+}
+
+impl std::ops::Add for Metre {
+    type Output = Self;
+    fn add(self, other: Self) -> Self {
+        Self(self.0 + other.0)
+    }
+}
+impl std::ops::AddAssign for Metre {
+    fn add_assign(&mut self, other: Self) {
+        *self = Self(self.0 + other.0);
+    }
+}
+impl std::ops::Mul<Metre> for f64 {
+    // The division of rational numbers is a closed operation.
+    type Output = Metre;
+    fn mul(self, other: Metre) -> Self::Output {
+        Metre::new(self * other.val())
+    }
+}
+impl std::iter::Sum for Metre {
+    fn sum<I>(iter: I) -> Self
+    where
+        I: Iterator<Item = Metre>,
+    {
+        Self(iter.map(|m| m.0).sum())
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum MarkingColor {
+    #[serde(rename = "white")]
+    White,
+    #[serde(rename = "yellow")]
+    Yellow,
+    #[serde(rename = "red")]
+    Red,
 }
 
 /// Display lane detail as printable characters
@@ -98,7 +211,7 @@ impl LanePrintable for Lane {
             } => 'B',
             Self::Shoulder => 'S',
             Self::Parking { .. } => 'p',
-            Self::Separator => todo!(),
+            Self::Separator { .. } => '|',
         }
     }
     fn as_utf8(&self) -> char {
@@ -121,7 +234,7 @@ impl LanePrintable for Lane {
             } => '🚌',
             Self::Shoulder => '🛆',
             Self::Parking { .. } => '🅿',
-            Self::Separator => todo!(),
+            Self::Separator { .. } => '|',
         }
     }
 }
@@ -140,6 +253,33 @@ impl LanePrintable for LaneDirection {
             Self::Backward => '↓',
             Self::Both => '↕',
         }
+    }
+}
+
+impl MarkingStyle {
+    pub fn as_utf8(&self) -> char {
+        match self {
+            Self::SolidLine => '|',
+            Self::BrokenLine => '¦',
+            Self::DashedLine => ':',
+            Self::DottedLine => '᛫',
+            Self::KerbDown => '\\',
+            Self::KerbUp => '/',
+            Self::NoFill => ' ',
+        }
+    }
+}
+
+impl LanePrintable for MarkingColor {
+    fn as_ascii(&self) -> char {
+        match self {
+            Self::White => 'w',
+            Self::Yellow => 'y',
+            Self::Red => 'r',
+        }
+    }
+    fn as_utf8(&self) -> char {
+        self.as_ascii()
     }
 }
 
@@ -172,6 +312,49 @@ mod tests {
         output: Vec<Lane>,
         // Skipping
         rust: Option<RustTesting>,
+    }
+
+    impl Road {
+        /// Eq where None is treaty as always equal
+        fn approx_eq(&self, other: &Self) -> bool {
+            if self.lanes.len() != other.lanes.len() {
+                return false;
+            }
+            self.lanes
+                .iter()
+                .zip(other.lanes.iter())
+                .all(|(left, right)| left.approx_eq(right))
+        }
+    }
+
+    impl Lane {
+        /// Eq where None is treaty as always equal
+        fn approx_eq(&self, other: &Self) -> bool {
+            if let (Lane::Separator { markings: left }, Lane::Separator { markings: right }) =
+                (self, other)
+            {
+                left.iter()
+                    .zip(right.iter())
+                    .all(|(left, right)| left.approx_eq(right))
+            } else {
+                self == other
+            }
+        }
+    }
+
+    impl Marking {
+        /// Eq where None is treaty as always equal
+        fn approx_eq(&self, other: &Self) -> bool {
+            self.style == other.style
+                && match (self.color, other.color) {
+                    (None, None) | (Some(_), None) | (None, Some(_)) => true,
+                    (Some(left), Some(right)) => left == right,
+                }
+                && match (self.width, other.width) {
+                    (None, None) | (Some(_), None) | (None, Some(_)) => true,
+                    (Some(left), Some(right)) => left == right,
+                }
+        }
     }
 
     impl DrivingSide {
@@ -215,12 +398,22 @@ mod tests {
             }
         }
 
-        fn is_separators_tested(&self) -> bool {
-            match self.rust {
-                None => true,
-                Some(RustTesting::Enabled(_)) => unreachable!(),
-                Some(RustTesting::WithOptions { separator }) => separator.unwrap_or(true),
+        fn is_lane_enabled(&self, lane: &Lane) -> bool {
+            match lane {
+                Lane::Separator { .. } => {
+                    let separator_testing = match self.rust {
+                        None => true,
+                        Some(RustTesting::Enabled(b)) => b,
+                        Some(RustTesting::WithOptions { separator }) => separator.unwrap_or(true),
+                    };
+                    separator_testing && self.expected_has_separators()
+                }
+                _ => true,
             }
+        }
+
+        fn expected_has_separators(&self) -> bool {
+            self.output.iter().any(|lane| lane.is_separator())
         }
 
         fn expected_road(&self) -> Road {
@@ -228,19 +421,55 @@ mod tests {
                 lanes: self
                     .output
                     .iter()
-                    .filter(|lane| self.is_separators_tested() || !matches!(lane, Lane::Separator))
+                    .filter(|lane| self.is_lane_enabled(lane))
                     .cloned()
                     .collect(),
             }
         }
     }
 
+    impl Lanes {
+        fn into_road(self, test: &TestCase) -> Road {
+            Road {
+                lanes: self
+                    .lanes
+                    .into_iter()
+                    .filter(|lane| test.is_lane_enabled(lane))
+                    .collect(),
+            }
+        }
+    }
+
     fn stringify_lane_types(road: &Road) -> String {
-        road.lanes.iter().map(|l| l.as_ascii()).collect()
+        let simple = road.lanes.iter().map(|l| l.as_ascii()).collect();
+        if road.has_separators() {
+            let separators = road
+                .lanes
+                .iter()
+                .filter_map(|lane| {
+                    if let Lane::Separator { markings } = lane {
+                        Some(
+                            markings
+                                .iter()
+                                .map(|m| m.color.map_or(' ', |m| m.as_utf8()))
+                                .collect::<String>(),
+                        )
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<String>>()
+                .as_slice()
+                .join(" ");
+            format!("{}    {}", simple, separators)
+        } else {
+            simple
+        }
     }
 
     fn stringify_directions(road: &Road) -> String {
-        road.lanes
+        let simple = road
+            .lanes
             .iter()
             .map(|lane| {
                 if let Lane::Travel {
@@ -253,7 +482,30 @@ mod tests {
                     ' '
                 }
             })
-            .collect()
+            .collect();
+        if road.has_separators() {
+            let separators = road
+                .lanes
+                .iter()
+                .filter_map(|lane| {
+                    if let Lane::Separator { markings } = lane {
+                        Some(
+                            markings
+                                .iter()
+                                .map(|m| m.style.as_utf8())
+                                .collect::<String>(),
+                        )
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<String>>()
+                .as_slice()
+                .join(" ");
+            format!("{}    {}", simple, separators)
+        } else {
+            simple
+        }
     }
 
     #[test]
@@ -274,9 +526,11 @@ mod tests {
                     },
                 );
                 let expected_road = test.expected_road();
-                if let Ok(Lanes { lanes, .. }) = lanes {
-                    let actual_road = Road { lanes };
-                    if actual_road != expected_road {
+                if let Ok(lanes) = lanes {
+                    let actual_road = lanes.into_road(test);
+                    if actual_road.approx_eq(&expected_road) {
+                        true
+                    } else {
                         test.print();
                         println!("Got:");
                         println!("    {}", stringify_lane_types(&actual_road));
@@ -286,8 +540,6 @@ mod tests {
                         println!("    {}", stringify_directions(&expected_road));
                         println!();
                         false
-                    } else {
-                        true
                     }
                 } else {
                     test.print();
@@ -331,10 +583,10 @@ mod tests {
                     },
                 )
                 .unwrap();
-                let output_road = Road {
-                    lanes: output_lanes.lanes,
-                };
-                if input_road != output_road {
+                let output_road = output_lanes.into_road(test);
+                if input_road.approx_eq(&output_road) {
+                    true
+                } else {
                     test.print();
                     println!("From:");
                     println!("    {}", stringify_lane_types(&input_road));
@@ -348,8 +600,6 @@ mod tests {
                     println!("    {}", stringify_directions(&output_road));
                     println!();
                     false
-                } else {
-                    true
                 }
             }),
             "test_roundtrip lanes_to_tags failed"
