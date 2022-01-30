@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use piet::Error as PietError;
 use piet_web::WebRenderContext;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
@@ -17,6 +18,31 @@ use osm2lanes::{Lane, LanePrintable, Lanes, Road, Tags};
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 type ShouldRender = bool;
+
+#[derive(Debug)]
+pub enum RenderError {
+    Piet(PietError),
+    UnknownLane,
+    UnknownSeparator,
+}
+
+impl From<PietError> for RenderError {
+    fn from(e: PietError) -> Self {
+        Self::Piet(e)
+    }
+}
+
+impl std::error::Error for RenderError {}
+
+impl std::fmt::Display for RenderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnknownLane => write!(f, "error rendering unknown lane"),
+            Self::UnknownSeparator => write!(f, "error rendering unknown separator"),
+            Self::Piet(p) => write!(f, "{}", p),
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct State {
@@ -297,7 +323,13 @@ impl App {
         context.scale(dpr, dpr).unwrap();
         let mut rc = WebRenderContext::new(context, window);
 
-        draw::lanes(&mut rc, (canvas_width, canvas_height), &self.state.road).unwrap();
+        draw::lanes(
+            &mut rc,
+            (canvas_width, canvas_height),
+            &self.state.road,
+            &self.state.locale,
+        )
+        .unwrap();
     }
 }
 

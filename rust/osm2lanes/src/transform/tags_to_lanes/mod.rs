@@ -2,7 +2,7 @@ use std::iter;
 
 use crate::tags::{TagKey, Tags, TagsRead};
 use crate::{DrivingSide, Lane, LaneDesignated, LaneDirection, Locale};
-use crate::{Marking, MarkingColor, MarkingStyle, Metre};
+use crate::{Marking, MarkingColor, MarkingStyle};
 
 mod bicycle;
 use bicycle::bicycle;

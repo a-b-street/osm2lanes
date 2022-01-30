@@ -30,14 +30,15 @@ impl Road {
 }
 
 impl Road {
-    pub fn total_width(&self) -> Metre {
+    pub fn total_width(&self, locale: &Locale) -> Metre {
         self.lanes
             .iter()
             .map(|lane| match lane {
                 Lane::Separator { markings } => markings
                     .iter()
-                    .map(|marking| marking.width.unwrap_or(Metre(0.2)))
+                    .map(|marking| marking.width.unwrap_or(Marking::DEFAULT_WIDTH))
                     .sum::<Metre>(),
+                Lane::Travel { designated, .. } => locale.default_width(designated),
                 _ => Lane::DEFAULT_WIDTH,
             })
             .sum::<Metre>()
@@ -102,6 +103,11 @@ pub struct Marking {
     pub color: Option<MarkingColor>,
 }
 
+impl Marking {
+    const DEFAULT_WIDTH: Metre = Metre::new(0.2);
+    const DEFAULT_SPACE: Metre = Metre::new(0.1);
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MarkingStyle {
     #[serde(rename = "solid_line")]
@@ -112,14 +118,14 @@ pub enum MarkingStyle {
     DashedLine,
     #[serde(rename = "dotted_line")]
     DottedLine,
-    #[serde(rename = "gore_chevron")]
-    GoreChevron,
-    #[serde(rename = "diagnoal_hatched")]
-    DiagonalCross,
-    #[serde(rename = "criss_cross")]
-    CrissCross,
-    #[serde(rename = "solid_fill")]
-    SolidFill,
+    // #[serde(rename = "gore_chevron")]
+    // GoreChevron,
+    // #[serde(rename = "diagnoal_hatched")]
+    // DiagonalCross,
+    // #[serde(rename = "criss_cross")]
+    // CrissCross,
+    // #[serde(rename = "solid_fill")]
+    // SolidFill,
     #[serde(rename = "no_fill")]
     NoFill,
     // up and down are left to right
@@ -133,10 +139,10 @@ pub enum MarkingStyle {
 pub struct Metre(f64);
 
 impl Metre {
-    pub fn new(val: f64) -> Self {
+    pub const fn new(val: f64) -> Self {
         Self(val)
     }
-    pub fn val(&self) -> f64 {
+    pub const fn val(&self) -> f64 {
         self.0
     }
 }
@@ -259,7 +265,7 @@ impl MarkingStyle {
             Self::DottedLine => '᛫',
             Self::KerbDown => '\\',
             Self::KerbUp => '/',
-            _ => '|',
+            Self::NoFill => ' ',
         }
     }
 }
@@ -309,6 +315,7 @@ mod tests {
     }
 
     impl Road {
+        /// Eq where None is treaty as always equal
         fn approx_eq(&self, other: &Self) -> bool {
             if self.lanes.len() != other.lanes.len() {
                 return false;
@@ -321,6 +328,7 @@ mod tests {
     }
 
     impl Lane {
+        /// Eq where None is treaty as always equal
         fn approx_eq(&self, other: &Self) -> bool {
             if let (Lane::Separator { markings: left }, Lane::Separator { markings: right }) =
                 (self, other)
@@ -335,6 +343,7 @@ mod tests {
     }
 
     impl Marking {
+        /// Eq where None is treaty as always equal
         fn approx_eq(&self, other: &Self) -> bool {
             self.style == other.style
                 && match (self.color, other.color) {

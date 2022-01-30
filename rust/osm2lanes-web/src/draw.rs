@@ -1,9 +1,13 @@
 use piet::{
-    kurbo::Line, kurbo::Point, kurbo::Rect, Color, Error, FontFamily, RenderContext, StrokeStyle,
-    Text, TextAttribute, TextLayoutBuilder,
+    kurbo::Line, kurbo::Point, kurbo::Rect, Color, FontFamily, RenderContext, StrokeStyle, Text,
+    TextAttribute, TextLayoutBuilder,
 };
 
-use osm2lanes::{Lane, LaneDirection, LanePrintable, MarkingColor, MarkingStyle, Metre, Road};
+use osm2lanes::{
+    Lane, LaneDirection, LanePrintable, Locale, MarkingColor, MarkingStyle, Metre, Road,
+};
+
+use super::RenderError;
 
 // TODO: newtype + From?
 fn color_into(c: MarkingColor) -> Color {
@@ -26,7 +30,8 @@ pub fn lanes<R: RenderContext>(
     rc: &mut R,
     (canvas_width, canvas_height): (u32, u32),
     road: &Road,
-) -> Result<(), Error> {
+    locale: &Locale,
+) -> Result<(), RenderError> {
     let canvas_width = canvas_width as f64;
     let canvas_height = canvas_height as f64;
     let default_lane_width = Lane::DEFAULT_WIDTH;
@@ -35,7 +40,7 @@ pub fn lanes<R: RenderContext>(
     let asphalt_buffer = Metre::new(0.1);
 
     let scale = Scale(
-        canvas_width / (road.total_width() + 2.0 * grassy_verge + 2.0 * asphalt_buffer).val(),
+        canvas_width / (road.total_width(locale) + 2.0 * grassy_verge + 2.0 * asphalt_buffer).val(),
     );
 
     // Background
@@ -45,7 +50,7 @@ pub fn lanes<R: RenderContext>(
         Rect::new(
             scale.scale(grassy_verge),
             0.0,
-            scale.scale(grassy_verge + asphalt_buffer + road.total_width() + asphalt_buffer),
+            scale.scale(grassy_verge + asphalt_buffer + road.total_width(locale) + asphalt_buffer),
             canvas_height,
         ),
         &Color::BLACK,
@@ -55,8 +60,11 @@ pub fn lanes<R: RenderContext>(
 
     for lane in &road.lanes {
         match lane {
-            Lane::Travel { direction, .. } => {
-                let width = default_lane_width;
+            Lane::Travel {
+                direction,
+                designated,
+            } => {
+                let width = locale.default_width(designated);
                 let x = scale.scale(left_edge + (0.5 * width));
                 if let Some(direction) = direction {
                     draw_arrow(
@@ -117,7 +125,9 @@ pub fn lanes<R: RenderContext>(
                     let color = match (marking.style, marking.color) {
                         (_, Some(c)) => color_into(c),
                         (MarkingStyle::KerbUp | MarkingStyle::KerbDown, None) => Color::GRAY,
+                        // Remains for debugging
                         _ => Color::BLUE,
+                        // _ => return Err(RenderError::UnknownSeparator),
                     };
                     rc.stroke_styled(
                         Line::new(
@@ -135,13 +145,15 @@ pub fn lanes<R: RenderContext>(
                                 StrokeStyle::new().dash_pattern(&[50.0, 100.0])
                             }
                             MarkingStyle::KerbUp | MarkingStyle::KerbDown => StrokeStyle::new(),
+                            // Remains for debugging
                             _ => StrokeStyle::new().dash_pattern(&[20.0, 80.0]),
+                            // _ => return Err(RenderError::UnknownSeparator),
                         },
                     );
                     left_edge += width;
                 }
             }
-            _ => todo!(),
+            _ => return Err(RenderError::UnknownLane),
         }
     }
 
@@ -153,12 +165,12 @@ pub fn draw_arrow<R: RenderContext>(
     rc: &mut R,
     mid: Point,
     direction: LaneDirection,
-) -> Result<(), Error> {
+) -> Result<(), RenderError> {
     fn draw_point<R: RenderContext>(
         rc: &mut R,
         mid: Point,
         direction: LaneDirection,
-    ) -> Result<(), Error> {
+    ) -> Result<(), RenderError> {
         let dir_sign = match direction {
             LaneDirection::Forward => -1.0,
             LaneDirection::Backward => 1.0,

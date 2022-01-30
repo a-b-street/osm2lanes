@@ -22,8 +22,8 @@ pub fn insert_separators(lanes: Lanes) -> LanesResult {
     Ok(Lanes { lanes, warnings })
 }
 
-/// Given a lane on the edge of a way
-/// what should the separator be
+/// Given a pair of lanes
+/// what should the separator between them be
 fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
     match lanes {
         [Lane::Travel {
@@ -33,7 +33,7 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
             markings: vec![Marking {
                 style: MarkingStyle::KerbDown,
                 color: None,
-                width: Some(Metre(0.3)),
+                width: Some(Marking::DEFAULT_WIDTH),
             }],
         }),
         [_, Lane::Travel {
@@ -43,14 +43,14 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
             markings: vec![Marking {
                 style: MarkingStyle::KerbUp,
                 color: None,
-                width: Some(Metre(0.3)),
+                width: Some(Marking::DEFAULT_WIDTH),
             }],
         }),
         [Lane::Shoulder, _] | [_, Lane::Shoulder] => Some(Lane::Separator {
             markings: vec![Marking {
                 style: MarkingStyle::SolidLine,
                 color: Some(MarkingColor::White),
-                width: Some(Metre(0.2)),
+                width: Some(Marking::DEFAULT_WIDTH),
             }],
         }),
         [Lane::Travel {
@@ -78,7 +78,7 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
             markings: vec![Marking {
                 style: MarkingStyle::SolidLine,
                 color: Some(MarkingColor::White),
-                width: Some(Metre(0.2)),
+                width: Some(Marking::DEFAULT_WIDTH),
             }],
         }),
         [left @ Lane::Travel {
@@ -97,7 +97,7 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
                     markings: vec![Marking {
                         style: MarkingStyle::DottedLine,
                         color: Some(MarkingColor::White),
-                        width: Some(Metre(0.2)),
+                        width: Some(Marking::DEFAULT_WIDTH),
                     }],
                 }),
                 _ => {
@@ -106,7 +106,7 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
                             markings: vec![Marking {
                                 style: MarkingStyle::DottedLine,
                                 color: Some(MarkingColor::White),
-                                width: Some(Metre(0.2)),
+                                width: Some(Marking::DEFAULT_WIDTH),
                             }],
                         })
                     } else {
@@ -115,17 +115,17 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
                                 Marking {
                                     style: MarkingStyle::SolidLine,
                                     color: Some(MarkingColor::White),
-                                    width: Some(Metre(0.2)),
+                                    width: Some(Marking::DEFAULT_WIDTH),
                                 },
                                 Marking {
                                     style: MarkingStyle::NoFill,
                                     color: None,
-                                    width: Some(Metre(0.1)),
+                                    width: Some(Marking::DEFAULT_SPACE),
                                 },
                                 Marking {
                                     style: MarkingStyle::SolidLine,
                                     color: Some(MarkingColor::White),
-                                    width: Some(Metre(0.2)),
+                                    width: Some(Marking::DEFAULT_WIDTH),
                                 },
                             ],
                         })
@@ -133,11 +133,12 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
                 }
             }
         }
+        // TODO: error return
         _ => Some(Lane::Separator {
             markings: vec![Marking {
                 style: MarkingStyle::BrokenLine,
                 color: Some(MarkingColor::Red),
-                width: Some(Metre(0.1)),
+                width: Some(Marking::DEFAULT_WIDTH),
             }],
         }),
     }

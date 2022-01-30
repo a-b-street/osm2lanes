@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::{LaneDesignated, Metre};
+
 /// Context about the place where an OSM way exists.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Locale {
@@ -12,6 +14,13 @@ pub struct Locale {
 impl Locale {
     pub fn builder() -> Config {
         Config::default()
+    }
+    pub fn default_width(&self, designated: &LaneDesignated) -> Metre {
+        match designated {
+            LaneDesignated::Motor | LaneDesignated::Bus => Metre::new(3.5),
+            LaneDesignated::Foot => Metre::new(2.5),
+            LaneDesignated::Bicycle => Metre::new(2.0),
+        }
     }
 }
 

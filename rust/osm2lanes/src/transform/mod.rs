@@ -290,6 +290,8 @@ impl RoadError {
     }
 }
 
+impl std::error::Error for RoadError {}
+
 impl std::fmt::Display for RoadError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
