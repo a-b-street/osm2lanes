@@ -37,6 +37,7 @@ jobs:
       uses: hecrj/setup-rust-action@v1
       with:
         rust-version: nightly
+        components: rustfmt
     - name: Test the Rust implementation
       run: |
         cd rust/osm2lanes
