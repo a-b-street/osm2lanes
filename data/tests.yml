@@ -189,9 +189,6 @@
     - style: solid_line
       color: white
 
-### City
-# TODO
-
 ### Pedestrian
 
 - way_id: 40297361
@@ -204,6 +201,76 @@
   driving_side: right
   ISO 3166-2: CH-VS
   output:
+  - type: travel
+    designated: foot
+
+### Sidewalk
+
+- description: sidewalk=no
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '1'
+    oneway: 'yes'
+    shoulder: 'no'
+    sidewalk: 'no'
+  driving_side: left
+  output:
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+
+- description: sidewalk:both=yes
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '1'
+    oneway: 'yes'
+    shoulder: 'no'
+    sidewalk:both: 'yes'
+  driving_side: left
+  output:
+  - type: travel
+    designated: foot
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    designated: foot
+
+- description: sidewalk:left=yes
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '1'
+    oneway: 'yes'
+    shoulder: 'no'
+    sidewalk:left: 'yes'
+  driving_side: left
+  output:
+  - type: travel
+    designated: foot
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+
+- description: sidewalk:right=yes
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '1'
+    oneway: 'yes'
+    shoulder: 'no'
+    sidewalk:right: 'yes'
+  driving_side: left
+  output:
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
   - type: travel
     designated: foot
 
