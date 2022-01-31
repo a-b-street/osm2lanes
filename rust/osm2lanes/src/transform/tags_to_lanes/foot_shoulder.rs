@@ -23,41 +23,49 @@ pub fn foot_and_shoulder(
     }
     let sidewalk: (Sidewalk, Sidewalk) = match (
         tags.get(SIDEWALK),
+        tags.get(SIDEWALK + "both"),
         tags.get(SIDEWALK + locale.driving_side.tag()),
         tags.get(SIDEWALK + locale.driving_side.opposite().tag()),
     ) {
-        (None, None, None) => (Sidewalk::None, Sidewalk::None),
-        (Some("none"), None, None) => {
+        (None, None, None, None) => (Sidewalk::None, Sidewalk::None),
+        (Some("none"), None, None, None) => {
             return Err(RoadMsg::deprecated_tag("sidewalk", "none").into())
         }
-        (Some("no"), None, None) => (Sidewalk::No, Sidewalk::No),
-        (Some("yes"), None, None) => {
+        (Some("no"), None, None, None) | (None, Some("no"), None, None) => {
+            (Sidewalk::No, Sidewalk::No)
+        }
+        (Some("yes"), None, None, None) => {
             warnings.push(RoadMsg::Ambiguous {
                 description: None,
-                tags: Some(tags.subset(&[SIDEWALK])),
+                tags: Some(tags.subset(&[SIDEWALK, SIDEWALK + "both"])),
             });
             (Sidewalk::Yes, Sidewalk::Yes)
         }
-        (Some("both"), None, None) => (Sidewalk::Yes, Sidewalk::Yes),
-        (None, Some("yes"), Some("yes")) => (Sidewalk::Yes, Sidewalk::Yes),
-        (Some(s), None, None) if s == locale.driving_side.tag().as_str() => {
+        (Some("both"), None, None, None) | (None, Some("yes"), None, None) => {
+            (Sidewalk::Yes, Sidewalk::Yes)
+        }
+        (None, None, Some("yes"), Some("yes")) => (Sidewalk::Yes, Sidewalk::Yes),
+        (Some(s), None, None, None) if s == locale.driving_side.tag().as_str() => {
             (Sidewalk::Yes, Sidewalk::No)
         }
-        (None, Some("yes"), None | Some("no")) => (Sidewalk::Yes, Sidewalk::No),
-        (Some(s), None, None) if s == locale.driving_side.opposite().tag().as_str() => {
+        (None, None, Some("yes"), None | Some("no")) => (Sidewalk::Yes, Sidewalk::No),
+        (Some(s), None, None, None) if s == locale.driving_side.opposite().tag().as_str() => {
             (Sidewalk::No, Sidewalk::Yes)
         }
-        (None, None | Some("no"), Some("yes")) => (Sidewalk::No, Sidewalk::Yes),
-        (Some("separate"), None, None) => (Sidewalk::Separate, Sidewalk::Separate),
-        (None, Some("separate"), None) => (Sidewalk::Separate, Sidewalk::No),
-        (None, None, Some("separate")) => (Sidewalk::No, Sidewalk::Separate),
-        (None, Some(_), None)
-        | (None, None, Some(_))
-        | (Some(_), Some(_), None)
-        | (Some(_), None, Some(_))
-        | (Some(_), None, None)
-        | (None, Some(_), Some(_))
-        | (Some(_), Some(_), Some(_)) => {
+        (None, None, None | Some("no"), Some("yes")) => (Sidewalk::No, Sidewalk::Yes),
+        (Some("separate"), None, None, None) => (Sidewalk::Separate, Sidewalk::Separate),
+        (None, None, Some("separate"), None) => (Sidewalk::Separate, Sidewalk::No),
+        (None, None, None, Some("separate")) => (Sidewalk::No, Sidewalk::Separate),
+        (Some(_), None, None, None)
+        | (None, Some(_), None, None)
+        | (None, None, Some(_), None)
+        | (None, None, None, Some(_))
+        | (Some(_), Some(_), _, _)
+        | (Some(_), _, Some(_), _)
+        | (Some(_), _, _, Some(_))
+        | (_, Some(_), Some(_), _)
+        | (_, Some(_), _, Some(_))
+        | (_, _, Some(_), Some(_)) => {
             return Err(RoadMsg::Unsupported {
                 description: None,
                 tags: Some(tags.subset(&[
