@@ -1,0 +1,9 @@
+[package]
+name = "osm2lanes-bin"
+version = "0.1.0"
+edition = "2021"
+default-run = "osm2lanes-bin"
+
+[dependencies]
+clap = { version = "3", features = ["derive"] }
+osm2lanes = { path = "../osm2lanes", features = ["overpass"] }
