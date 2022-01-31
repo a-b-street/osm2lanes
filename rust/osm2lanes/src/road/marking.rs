@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::Metre;
-
 use super::LanePrintable;
+use crate::Metre;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Marking {

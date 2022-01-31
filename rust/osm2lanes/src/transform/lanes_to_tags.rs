@@ -1,8 +1,7 @@
+use super::*;
 use crate::road::{Lane, LaneDesignated, LaneDirection};
 use crate::tags::{DuplicateKeyError, Tags, TagsWrite};
 use crate::Locale;
-
-use super::*;
 
 impl std::convert::From<DuplicateKeyError> for RoadError {
     fn from(e: DuplicateKeyError) -> Self {
