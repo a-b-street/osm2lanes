@@ -40,29 +40,27 @@ pub fn foot_and_shoulder(
     ) {
         // No scheme
         (None, None, (None, None)) => (Sidewalk::None, Sidewalk::None),
-        // sidewalk= or sidewalk:both=
-        (val, both, (None, None)) => match (val, both) {
-            (None, None) => unreachable!(),
-            (Some("none"), None) => return Err(RoadMsg::deprecated_tag("sidewalk", "none").into()),
-            (Some("no"), None) | (None, Some("no")) => (Sidewalk::No, Sidewalk::No),
-            (Some("yes"), None) => {
+        // sidewalk=
+        (Some(v), None, (None, None)) => match v {
+            "none" => return Err(RoadMsg::deprecated_tag("sidewalk", "none").into()),
+            "no" => (Sidewalk::No, Sidewalk::No),
+            "yes" => {
                 warnings.push(RoadMsg::Ambiguous {
                     description: None,
                     tags: Some(tags.subset(&[SIDEWALK, SIDEWALK + "both"])),
                 });
                 (Sidewalk::Yes, Sidewalk::Yes)
             }
-            (Some("both"), None) | (None, Some("yes")) => (Sidewalk::Yes, Sidewalk::Yes),
-            (Some(s), None) if s == locale.driving_side.tag().as_str() => {
-                (Sidewalk::Yes, Sidewalk::No)
-            }
-            (Some(s), None) if s == locale.driving_side.opposite().tag().as_str() => {
-                (Sidewalk::No, Sidewalk::Yes)
-            }
-            (Some("separate"), None) => (Sidewalk::Separate, Sidewalk::Separate),
-            (Some(_), None) | (None, Some(_)) | (Some(_), Some(_)) => {
-                return err;
-            }
+            "both" => (Sidewalk::Yes, Sidewalk::Yes),
+            "separate" => (Sidewalk::Separate, Sidewalk::Separate),
+            _ => return err,
+        },
+        // sidewalk:both=
+        (None, Some(v), (None, None)) => match v {
+            "no" => (Sidewalk::No, Sidewalk::No),
+            "yes" => (Sidewalk::Yes, Sidewalk::Yes),
+            "separate" => (Sidewalk::Separate, Sidewalk::Separate),
+            _ => return err,
         },
         // sidewalk:left= and/or sidewalk:right=
         (None, None, (forward, backward)) => match (forward, backward) {
