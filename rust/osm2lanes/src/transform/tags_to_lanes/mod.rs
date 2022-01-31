@@ -205,6 +205,7 @@ pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -
         );
     }
 
+    // https://wiki.openstreetmap.org/wiki/Key:access#Transport_mode_restrictions
     const ACCESS_KEYS: [&'static str; 43] = [
         "access",
         "dog",
