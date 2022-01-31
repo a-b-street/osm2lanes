@@ -51,47 +51,13 @@ pub fn foot_and_shoulder(
         (Some("separate"), None, None) => (Sidewalk::Separate, Sidewalk::Separate),
         (None, Some("separate"), None) => (Sidewalk::Separate, Sidewalk::No),
         (None, None, Some("separate")) => (Sidewalk::No, Sidewalk::Separate),
-        // TODO: generate the rest of these automatically
-        (None, Some(forward), None) => {
-            return Err(
-                RoadMsg::unsupported_tag(SIDEWALK + locale.driving_side.tag(), forward).into(),
-            )
-        }
-        (None, None, Some(backward)) => {
-            return Err(RoadMsg::unsupported_tag(
-                SIDEWALK + locale.driving_side.opposite().tag(),
-                backward,
-            )
-            .into())
-        }
-        (Some(_s), Some(_forward), None) => {
-            return Err(RoadMsg::Unsupported {
-                description: None,
-                tags: Some(tags.subset(&[SIDEWALK, SIDEWALK + locale.driving_side.tag()])),
-            }
-            .into())
-        }
-        (Some(_s), None, Some(_backward)) => {
-            return Err(RoadMsg::Unsupported {
-                description: None,
-                tags: Some(
-                    tags.subset(&[SIDEWALK, SIDEWALK + locale.driving_side.opposite().tag()]),
-                ),
-            }
-            .into())
-        }
-        (Some(s), None, None) => return Err(RoadMsg::unsupported_tag(SIDEWALK, s).into()),
-        (None, Some(_forward), Some(_backward)) => {
-            return Err(RoadMsg::Unsupported {
-                description: None,
-                tags: Some(tags.subset(&[
-                    SIDEWALK + locale.driving_side.tag(),
-                    SIDEWALK + locale.driving_side.opposite().tag(),
-                ])),
-            }
-            .into())
-        }
-        (Some(_s), Some(_forward), Some(_backward)) => {
+        (None, Some(_), None)
+        | (None, None, Some(_))
+        | (Some(_), Some(_), None)
+        | (Some(_), None, Some(_))
+        | (Some(_), None, None)
+        | (None, Some(_), Some(_))
+        | (Some(_), Some(_), Some(_)) => {
             return Err(RoadMsg::Unsupported {
                 description: None,
                 tags: Some(tags.subset(&[
