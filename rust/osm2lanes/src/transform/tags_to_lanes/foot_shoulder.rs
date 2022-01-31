@@ -52,6 +52,10 @@ pub fn foot_and_shoulder(
                 (Sidewalk::Yes, Sidewalk::Yes)
             }
             "both" => (Sidewalk::Yes, Sidewalk::Yes),
+            s if s == locale.driving_side.tag().as_str() => (Sidewalk::Yes, Sidewalk::No),
+            s if s == locale.driving_side.opposite().tag().as_str() => {
+                (Sidewalk::No, Sidewalk::Yes)
+            }
             "separate" => (Sidewalk::Separate, Sidewalk::Separate),
             _ => return err,
         },

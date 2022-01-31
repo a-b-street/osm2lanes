@@ -221,6 +221,76 @@
     direction: forward
     designated: motor_vehicle
 
+- description: sidewalk=both
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '1'
+    oneway: 'yes'
+    shoulder: 'no'
+    sidewalk: 'both'
+  driving_side: left
+  output:
+  - type: travel
+    designated: foot
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    designated: foot
+
+- description: sidewalk=left (forward)
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '1'
+    oneway: 'yes'
+    shoulder: 'no'
+    sidewalk: 'left'
+  driving_side: left
+  output:
+  - type: travel
+    designated: foot
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+
+- description: sidewalk=right (forward)
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '1'
+    oneway: 'yes'
+    shoulder: 'no'
+    sidewalk: 'right'
+  driving_side: right
+  output:
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    designated: foot
+
+- description: sidewalk=right (backward)
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '1'
+    oneway: 'yes'
+    shoulder: 'no'
+    sidewalk: 'right'
+  driving_side: left
+  output:
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    designated: foot
+
 - description: sidewalk:both=yes
   skip_python: true
   skip_kotlin: true
