@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::Metre;
-
 use super::Marking;
+use crate::Metre;
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

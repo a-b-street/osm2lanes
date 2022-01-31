@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use self::transform::{lanes_to_tags, LanesToTagsConfig};
-    use super::*;
-
     use std::fs::File;
     use std::io::BufReader;
+
+    use self::transform::{lanes_to_tags, LanesToTagsConfig};
+    use super::*;
 
     #[derive(Deserialize)]
     #[serde(untagged)]

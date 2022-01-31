@@ -10,10 +10,11 @@ use yew::prelude::*;
 mod draw;
 
 use osm2lanes::road::{Lane, LanePrintable, Road};
+use osm2lanes::tags::Tags;
+use osm2lanes::transform::Lanes;
 use osm2lanes::{
-    lanes_to_tags, tags_to_lanes, transform::Lanes, LanesToTagsConfig, TagsToLanesConfig,
+    lanes_to_tags, tags_to_lanes, DrivingSide, LanesToTagsConfig, Locale, TagsToLanesConfig,
 };
-use osm2lanes::{tags::Tags, DrivingSide, Locale};
 
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]

@@ -1,10 +1,7 @@
-use piet::{
-    kurbo::Line, kurbo::Point, kurbo::Rect, Color, FontFamily, RenderContext, StrokeStyle, Text,
-    TextAttribute, TextLayoutBuilder,
-};
-
 use osm2lanes::road::{Lane, LaneDirection, LanePrintable, MarkingColor, MarkingStyle, Road};
 use osm2lanes::{Locale, Metre};
+use piet::kurbo::{Line, Point, Rect};
+use piet::{Color, FontFamily, RenderContext, StrokeStyle, Text, TextAttribute, TextLayoutBuilder};
 
 use super::RenderError;
 

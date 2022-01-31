@@ -5,12 +5,10 @@ use crate::tags::{DuplicateKeyError, TagKey, Tags};
 use crate::DrivingSide;
 
 mod tags_to_lanes;
-pub use tags_to_lanes::tags_to_lanes;
-pub use tags_to_lanes::TagsToLanesConfig;
+pub use tags_to_lanes::{tags_to_lanes, TagsToLanesConfig};
 
 mod lanes_to_tags;
-pub use lanes_to_tags::lanes_to_tags;
-pub use lanes_to_tags::LanesToTagsConfig;
+pub use lanes_to_tags::{lanes_to_tags, LanesToTagsConfig};
 
 const HIGHWAY: TagKey = TagKey::from("highway");
 const CYCLEWAY: TagKey = TagKey::from("cycleway");
