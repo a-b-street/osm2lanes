@@ -220,6 +220,7 @@ pub trait TagsRead {
     fn is<T: Into<TagKey>>(&self, k: T, v: &str) -> bool;
     fn is_any<T: Into<TagKey>>(&self, k: T, values: &[&str]) -> bool;
     // Filtering
+    /// Create a subset of the tags. Missing keys are ignored.
     fn subset<T>(&self, keys: &[T]) -> Self
     where
         T: Clone,
