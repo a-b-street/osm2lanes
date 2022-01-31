@@ -1,5 +1,13 @@
 use super::*;
 
+const LANES: TagKey = TagKey::from("lanes");
+
+impl RoadError {
+    fn unsupported_str(description: &str) -> Self {
+        RoadMsg::unsupported_str(description).into()
+    }
+}
+
 pub fn bus(
     tags: &Tags,
     locale: &Locale,
@@ -14,8 +22,8 @@ pub fn bus(
     match (
         tag_tree.get("busway").is_some(),
         tag_tree
-            .get("lanes:psv")
-            .or_else(|| tag_tree.get("lanes:bus"))
+            .get("lanes:bus")
+            .or_else(|| tag_tree.get("lanes:psv"))
             .is_some(),
         tag_tree
             .get("bus:lanes")
@@ -23,9 +31,9 @@ pub fn bus(
             .is_some(),
     ) {
         (false, false, false) => {}
-        (true, _, false) => bus_busway(tags, locale, oneway, forward_side, backward_side)?,
-        (false, true, false) => bus_bus_lanes(tags, locale, oneway, forward_side, backward_side)?,
-        (false, false, true) => bus_lanes_bus(tags, locale, oneway, forward_side, backward_side)?,
+        (true, _, false) => busway(tags, locale, oneway, forward_side, backward_side)?,
+        (false, true, false) => lanes_bus(tags, locale, oneway, forward_side, backward_side)?,
+        (false, false, true) => bus_lanes(tags, locale, oneway, forward_side, backward_side)?,
         _ => {
             return Err(RoadMsg::Unsupported {
                 description: Some("more than one bus lanes scheme used".to_owned()),
@@ -38,7 +46,7 @@ pub fn bus(
     Ok(())
 }
 
-fn bus_busway(
+fn busway(
     tags: &Tags,
     locale: &Locale,
     _oneway: bool,
@@ -100,17 +108,32 @@ fn bus_busway(
     Ok(())
 }
 
-fn bus_lanes_bus(
-    _tags: &Tags,
+fn lanes_bus(
+    tags: &Tags,
     _locale: &Locale,
     _oneway: bool,
     _forward_side: &mut Vec<Lane>,
     _backward_side: &mut Vec<Lane>,
 ) -> ModeResult {
-    Ok(())
+    return Err(RoadMsg::Unimplemented {
+        description: None,
+        tags: Some(tags.subset(&[
+            LANES + "psv",
+            LANES + "psv" + "forward",
+            LANES + "psv" + "backward",
+            LANES + "psv" + "left",
+            LANES + "psv" + "right",
+            LANES + "bus",
+            LANES + "bus" + "forward",
+            LANES + "bus" + "backward",
+            LANES + "bus" + "left",
+            LANES + "bus" + "right",
+        ])),
+    }
+    .into());
 }
 
-fn bus_bus_lanes(
+fn bus_lanes(
     tags: &Tags,
     _locale: &Locale,
     oneway: bool,
