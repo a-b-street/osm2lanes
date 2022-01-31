@@ -6,12 +6,21 @@ use crate::{DrivingSide, Locale};
 
 mod bicycle;
 use bicycle::bicycle;
+
 mod bus;
 use bus::bus;
+
 mod foot_shoulder;
 use foot_shoulder::foot_and_shoulder;
+
+mod parking;
+use parking::parking;
+
 mod separator;
 use separator::insert_separators;
+
+mod non_motorized;
+use non_motorized::non_motorized;
 
 use super::*;
 
@@ -26,13 +35,14 @@ pub struct TagsToLanesConfig {
 pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -> LanesResult {
     let mut warnings = RoadWarnings::default();
 
+    unsupported(tags, locale, &mut warnings)?;
+
     // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
     if let Some(spec) = non_motorized(tags, locale)? {
         return Ok(spec);
     }
 
-    // TODO Reversible roads should be handled differently?
-    let oneway = tags.is_any("oneway", &["yes", "reversible"]) || tags.is("junction", "roundabout");
+    let oneway = tags.is("oneway", "yes") || tags.is("junction", "roundabout");
 
     let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
 
@@ -100,68 +110,6 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
     Ok(lanes)
 }
 
-// Handle non motorized ways
-fn non_motorized(tags: &Tags, locale: &Locale) -> Result<Option<Lanes>, RoadError> {
-    if !tags.is_any(
-        HIGHWAY,
-        &[
-            "cycleway",
-            "footway",
-            "path",
-            "pedestrian",
-            "steps",
-            "track",
-        ],
-    ) {
-        log::trace!("motorized");
-        return Ok(None);
-    }
-    // Easy special cases first.
-    if tags.is(HIGHWAY, "steps") {
-        return Ok(Some(Lanes {
-            lanes: vec![Lane::foot()],
-            warnings: RoadWarnings(vec![RoadMsg::Other {
-                description: "highway is steps, but lane is only a sidewalk".to_owned(),
-                tags: tags.subset(&[HIGHWAY]),
-            }]),
-        }));
-    }
-
-    // Eventually, we should have some kind of special LaneType for shared walking/cycling paths of
-    // different kinds. Until then, model by making bike lanes and a shoulder for walking.
-
-    // If it just allows foot traffic, simply make it a sidewalk. For most of the above highway
-    // types, assume bikes are allowed, except for footways, where they must be explicitly
-    // allowed.
-    if tags.is("bicycle", "no")
-        || (tags.is(HIGHWAY, "footway") && !tags.is_any("bicycle", &["designated", "yes"]))
-    {
-        return Ok(Some(Lanes {
-            lanes: vec![Lane::foot()],
-            warnings: RoadWarnings::default(),
-        }));
-    }
-    // Otherwise, there'll always be a bike lane.
-
-    let mut forward_side = vec![Lane::forward(LaneDesignated::Bicycle)];
-    let mut backward_side = if tags.is("oneway", "yes") {
-        vec![]
-    } else {
-        vec![Lane::backward(LaneDesignated::Bicycle)]
-    };
-
-    if !tags.is("foot", "no") {
-        forward_side.push(Lane::Shoulder);
-        if !backward_side.is_empty() {
-            backward_side.push(Lane::Shoulder);
-        }
-    }
-    Ok(Some(Lanes {
-        lanes: assemble_ltr(forward_side, backward_side, locale.driving_side)?,
-        warnings: RoadWarnings::default(),
-    }))
-}
-
 fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: bool) -> (usize, usize) {
     let both_ways = if let Some(n) = tags
         .get("lanes:both_ways")
@@ -217,26 +165,6 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: bool) -> (usiz
     (num_driving_fwd, num_driving_back)
 }
 
-fn parking(
-    tags: &Tags,
-    _locale: &Locale,
-    _oneway: bool,
-    forward_side: &mut Vec<Lane>,
-    backward_side: &mut Vec<Lane>,
-) {
-    let has_parking = vec!["parallel", "diagonal", "perpendicular"];
-    let parking_lane_fwd = tags.is_any("parking:lane:right", &has_parking)
-        || tags.is_any("parking:lane:both", &has_parking);
-    let parking_lane_back = tags.is_any("parking:lane:left", &has_parking)
-        || tags.is_any("parking:lane:both", &has_parking);
-    if parking_lane_fwd {
-        forward_side.push(Lane::parking(LaneDirection::Forward));
-    }
-    if parking_lane_back {
-        backward_side.push(Lane::parking(LaneDirection::Backward));
-    }
-}
-
 fn assemble_ltr(
     mut fwd_side: Vec<Lane>,
     mut back_side: Vec<Lane>,
@@ -254,4 +182,92 @@ fn assemble_ltr(
             fwd_side
         }
     })
+}
+
+pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -> ModeResult {
+    if tags.is("highway", "bus_guideway") {
+        return Err(RoadMsg::unimplemented_tag("highway", "bus_guideway").into());
+    }
+
+    if tags.is("highway", "construction") {
+        return Err(RoadMsg::unimplemented_tag("highway", "construction").into());
+    }
+
+    let tag_tree = tags.tree();
+    if tag_tree.get("lanes").is_some() {
+        warnings.push(
+            RoadMsg::Unimplemented {
+                description: Some("lanes=*".to_owned()),
+                // TODO, TagTree should support subset
+                tags: Some(tags.subset(&["lanes"])),
+            }
+            .into(),
+        );
+    }
+
+    const ACCESS_KEYS: [&'static str; 43] = [
+        "access",
+        "dog",
+        "ski",
+        "inline_skates",
+        "horse",
+        "vehicle",
+        "bicycle",
+        "electric_bicycle",
+        "carriage",
+        "hand_cart",
+        "quadracycle",
+        "trailer",
+        "caravan",
+        "motor_vehicle",
+        "motorcycle",
+        "moped",
+        "mofa",
+        "motorcar",
+        "motorhome",
+        "tourist_bus",
+        "coach",
+        "goods",
+        "hgv",
+        "hgv_articulated",
+        "bdouble",
+        "agricultural",
+        "golf_cart",
+        "atv",
+        "snowmobile",
+        "psv",
+        "bus",
+        "taxi",
+        "minibus",
+        "share_taxi",
+        "hov",
+        "car_sharing",
+        "emergency",
+        "hazmat",
+        "disabled",
+        "roadtrain",
+        "hgv_caravan",
+        "lhv",
+        "tank",
+    ];
+    if ACCESS_KEYS
+        .iter()
+        .any(|k| tags.get(TagKey::from(k)).is_some())
+    {
+        warnings.push(
+            RoadMsg::Unimplemented {
+                description: Some("access".to_owned()),
+                // TODO, TagTree should support subset
+                tags: Some(tags.subset(&ACCESS_KEYS)),
+            }
+            .into(),
+        );
+    }
+
+    if tags.is("oneway", "reversible") {
+        // TODO reversible roads should be handled differently
+        return Err(RoadMsg::unimplemented_tag("oneway", "reversible").into());
+    }
+
+    Ok(())
 }

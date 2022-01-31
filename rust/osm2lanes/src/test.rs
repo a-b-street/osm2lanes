@@ -261,8 +261,7 @@ mod tests {
                     println!("Expected:");
                     println!("    {}", stringify_lane_types(&expected_road));
                     println!("    {}", stringify_directions(&expected_road));
-                    println!("Panicked:");
-                    println!("{:#?}", lanes.unwrap_err());
+                    println!("{}", lanes.unwrap_err());
                     println!();
                     false
                 }

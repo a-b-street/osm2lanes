@@ -204,6 +204,12 @@ impl RoadMsg {
             tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
         }
     }
+    pub fn unimplemented_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
+        Self::Unimplemented {
+            description: None,
+            tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
+        }
+    }
     pub fn unsupported_str(description: &str) -> Self {
         Self::Unsupported {
             description: Some(description.to_owned()),
@@ -284,9 +290,6 @@ pub enum RoadError {
 
 impl RoadError {
     fn ambiguous_str(description: &str) -> Self {
-        RoadMsg::unsupported_str(description).into()
-    }
-    fn unsupported_str(description: &str) -> Self {
         RoadMsg::unsupported_str(description).into()
     }
 }
