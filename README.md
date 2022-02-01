@@ -3,9 +3,7 @@
 This project transforms OpenStreetMap tags to a specification of lanes on a
 street. Start with the [web demo](https://a-b-street.github.io/osm2lanes) ([Source](#web-demo)).
 
-See [discussion](https://github.com/a-b-street/abstreet/discussions/789) for
-context. This repo is currently just for starting this experiment. No license
-chosen yet.
+See [discussion](https://github.com/a-b-street/abstreet/discussions/789) for further motivation. This repository is undr lots of active churn. Please get in touch before taking a dependency on it; we will clearly communicate a first public release.
 
 ## Structure
 
@@ -211,3 +209,7 @@ The web demo at https://a-b-street.github.io/osm2lanes provides an easy way to t
 
 - The web demo is updated with every push on `main`, [see Workflow](./.github/workflows/web.yml)
 - The html website is part of the rest implementation at [`/rust/osm2lanes-web` ](./rust/osm2lanes-web)
+
+## Contributing
+
+Pull requests very welcome! Once the dust from initial development settles, we'll have a better TODO list. All contributors agree to license their work under Apache 2.0.
