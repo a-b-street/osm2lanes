@@ -2,7 +2,7 @@
 name = "osm2lanes"
 version = "0.1.0"
 edition = "2021"
-authors = ["Dustin Carlino <dabreegster@gmail.com>"]
+authors = ["Dustin Carlino <dabreegster@gmail.com>", "Michael Droogleever Fortuyn <droogmic@gmail.com>"]
 license = "Apache 2.0"
 
 [dependencies]
