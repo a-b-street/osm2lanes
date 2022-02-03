@@ -23,9 +23,7 @@ pub fn bicycle(
             || tags.is_cycleway(Some(WaySide::Right))
             || tags.is_cycleway(Some(WaySide::Left))
         {
-            return Err(RoadError::unsupported_str(
-                "cycleway=* with any cycleway:* values",
-            ));
+            return Err(RoadMsg::unsupported_str("cycleway=* with any cycleway:* values").into());
         }
         forward_side.push(Lane::forward(LaneDesignated::Bicycle));
         if oneway {
@@ -56,9 +54,10 @@ pub fn bicycle(
         // cycleway=opposite oneway=yes oneway:bicycle=no
         if tags.is(CYCLEWAY, "opposite") {
             if !(oneway && tags.is("oneway:bicycle", "no")) {
-                return Err(RoadError::unsupported_str(
+                return Err(RoadMsg::unsupported_str(
                     "cycleway=opposite without oneway=yes oneway:bicycle=no",
-                ));
+                )
+                .into());
             }
             backward_side.push(Lane::backward(LaneDesignated::Bicycle));
         }

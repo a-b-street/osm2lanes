@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests {
-    use self::transform::{lanes_to_tags, LanesToTagsConfig};
-    use super::*;
-
     use std::fs::File;
     use std::io::BufReader;
+
+    use self::transform::{lanes_to_tags, LanesToTagsConfig};
+    use super::*;
 
     #[derive(Deserialize)]
     #[serde(untagged)]
@@ -261,8 +261,7 @@ mod tests {
                     println!("Expected:");
                     println!("    {}", stringify_lane_types(&expected_road));
                     println!("    {}", stringify_directions(&expected_road));
-                    println!("Panicked:");
-                    println!("{:#?}", lanes.unwrap_err());
+                    println!("{}", lanes.unwrap_err());
                     println!();
                     false
                 }

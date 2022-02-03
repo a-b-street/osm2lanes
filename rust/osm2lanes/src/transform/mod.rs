@@ -5,12 +5,10 @@ use crate::tags::{DuplicateKeyError, TagKey, Tags};
 use crate::DrivingSide;
 
 mod tags_to_lanes;
-pub use tags_to_lanes::tags_to_lanes;
-pub use tags_to_lanes::TagsToLanesConfig;
+pub use tags_to_lanes::{tags_to_lanes, TagsToLanesConfig};
 
 mod lanes_to_tags;
-pub use lanes_to_tags::lanes_to_tags;
-pub use lanes_to_tags::LanesToTagsConfig;
+pub use lanes_to_tags::{lanes_to_tags, LanesToTagsConfig};
 
 const HIGHWAY: TagKey = TagKey::from("highway");
 const CYCLEWAY: TagKey = TagKey::from("cycleway");
@@ -204,6 +202,12 @@ impl RoadMsg {
             tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
         }
     }
+    pub fn unimplemented_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
+        Self::Unimplemented {
+            description: None,
+            tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
+        }
+    }
     pub fn unsupported_str(description: &str) -> Self {
         Self::Unsupported {
             description: Some(description.to_owned()),
@@ -284,9 +288,6 @@ pub enum RoadError {
 
 impl RoadError {
     fn ambiguous_str(description: &str) -> Self {
-        RoadMsg::unsupported_str(description).into()
-    }
-    fn unsupported_str(description: &str) -> Self {
         RoadMsg::unsupported_str(description).into()
     }
 }

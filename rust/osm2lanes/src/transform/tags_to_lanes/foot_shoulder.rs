@@ -21,86 +21,69 @@ pub fn foot_and_shoulder(
         Yes,
         Separate,
     }
+    let err = Err(RoadMsg::Unsupported {
+        description: None,
+        tags: Some(tags.subset(&[
+            SIDEWALK,
+            SIDEWALK + locale.driving_side.tag(),
+            SIDEWALK + locale.driving_side.opposite().tag(),
+        ])),
+    }
+    .into());
     let sidewalk: (Sidewalk, Sidewalk) = match (
         tags.get(SIDEWALK),
-        tags.get(SIDEWALK + locale.driving_side.tag()),
-        tags.get(SIDEWALK + locale.driving_side.opposite().tag()),
+        tags.get(SIDEWALK + "both"),
+        (
+            tags.get(SIDEWALK + locale.driving_side.tag()),
+            tags.get(SIDEWALK + locale.driving_side.opposite().tag()),
+        ),
     ) {
-        (None, None, None) => (Sidewalk::None, Sidewalk::None),
-        (Some("none"), None, None) => {
-            return Err(RoadMsg::deprecated_tag("sidewalk", "none").into())
-        }
-        (Some("no"), None, None) => (Sidewalk::No, Sidewalk::No),
-        (Some("yes"), None, None) => {
-            warnings.push(RoadMsg::Ambiguous {
-                description: None,
-                tags: Some(tags.subset(&[SIDEWALK])),
-            });
-            (Sidewalk::Yes, Sidewalk::Yes)
-        }
-        (Some("both"), None, None) => (Sidewalk::Yes, Sidewalk::Yes),
-        (None, Some("yes"), Some("yes")) => (Sidewalk::Yes, Sidewalk::Yes),
-        (Some(s), None, None) if s == locale.driving_side.tag().as_str() => {
-            (Sidewalk::Yes, Sidewalk::No)
-        }
-        (None, Some("yes"), None | Some("no")) => (Sidewalk::Yes, Sidewalk::No),
-        (Some(s), None, None) if s == locale.driving_side.opposite().tag().as_str() => {
-            (Sidewalk::No, Sidewalk::Yes)
-        }
-        (None, None | Some("no"), Some("yes")) => (Sidewalk::No, Sidewalk::Yes),
-        (Some("separate"), None, None) => (Sidewalk::Separate, Sidewalk::Separate),
-        (None, Some("separate"), None) => (Sidewalk::Separate, Sidewalk::No),
-        (None, None, Some("separate")) => (Sidewalk::No, Sidewalk::Separate),
-        // TODO: generate the rest of these automatically
-        (None, Some(forward), None) => {
-            return Err(
-                RoadMsg::unsupported_tag(SIDEWALK + locale.driving_side.tag(), forward).into(),
-            )
-        }
-        (None, None, Some(backward)) => {
-            return Err(RoadMsg::unsupported_tag(
-                SIDEWALK + locale.driving_side.opposite().tag(),
-                backward,
-            )
-            .into())
-        }
-        (Some(_s), Some(_forward), None) => {
-            return Err(RoadMsg::Unsupported {
-                description: None,
-                tags: Some(tags.subset(&[SIDEWALK, SIDEWALK + locale.driving_side.tag()])),
+        // No scheme
+        (None, None, (None, None)) => (Sidewalk::None, Sidewalk::None),
+        // sidewalk=
+        (Some(v), None, (None, None)) => match v {
+            "none" => return Err(RoadMsg::deprecated_tag("sidewalk", "none").into()),
+            "no" => (Sidewalk::No, Sidewalk::No),
+            "yes" => {
+                warnings.push(RoadMsg::Ambiguous {
+                    description: None,
+                    tags: Some(tags.subset(&[SIDEWALK, SIDEWALK + "both"])),
+                });
+                (Sidewalk::Yes, Sidewalk::Yes)
             }
-            .into())
-        }
-        (Some(_s), None, Some(_backward)) => {
-            return Err(RoadMsg::Unsupported {
-                description: None,
-                tags: Some(
-                    tags.subset(&[SIDEWALK, SIDEWALK + locale.driving_side.opposite().tag()]),
-                ),
+            "both" => (Sidewalk::Yes, Sidewalk::Yes),
+            s if s == locale.driving_side.tag().as_str() => (Sidewalk::Yes, Sidewalk::No),
+            s if s == locale.driving_side.opposite().tag().as_str() => {
+                (Sidewalk::No, Sidewalk::Yes)
             }
-            .into())
-        }
-        (Some(s), None, None) => return Err(RoadMsg::unsupported_tag(SIDEWALK, s).into()),
-        (None, Some(_forward), Some(_backward)) => {
-            return Err(RoadMsg::Unsupported {
-                description: None,
-                tags: Some(tags.subset(&[
-                    SIDEWALK + locale.driving_side.tag(),
-                    SIDEWALK + locale.driving_side.opposite().tag(),
-                ])),
+            "separate" => (Sidewalk::Separate, Sidewalk::Separate),
+            _ => return err,
+        },
+        // sidewalk:both=
+        (None, Some(v), (None, None)) => match v {
+            "no" => (Sidewalk::No, Sidewalk::No),
+            "yes" => (Sidewalk::Yes, Sidewalk::Yes),
+            "separate" => (Sidewalk::Separate, Sidewalk::Separate),
+            _ => return err,
+        },
+        // sidewalk:left= and/or sidewalk:right=
+        (None, None, (forward, backward)) => match (forward, backward) {
+            (None, None) => unreachable!(),
+            (Some("yes"), Some("yes")) => (Sidewalk::Yes, Sidewalk::Yes),
+
+            (Some("yes"), None | Some("no")) => (Sidewalk::Yes, Sidewalk::No),
+            (None | Some("no"), Some("yes")) => (Sidewalk::No, Sidewalk::Yes),
+
+            (Some("separate"), None) => (Sidewalk::Separate, Sidewalk::No),
+            (None, Some("separate")) => (Sidewalk::No, Sidewalk::Separate),
+            (Some(_), None) | (None, Some(_)) | (Some(_), Some(_)) => {
+                return err;
             }
-            .into())
-        }
-        (Some(_s), Some(_forward), Some(_backward)) => {
-            return Err(RoadMsg::Unsupported {
-                description: None,
-                tags: Some(tags.subset(&[
-                    SIDEWALK,
-                    SIDEWALK + locale.driving_side.tag(),
-                    SIDEWALK + locale.driving_side.opposite().tag(),
-                ])),
-            }
-            .into())
+        },
+        (Some(_), Some(_), (_, _))
+        | (Some(_), _, (_, Some(_)) | (Some(_), _))
+        | (_, Some(_), (_, Some(_)) | (Some(_), _)) => {
+            return err;
         }
     };
 
