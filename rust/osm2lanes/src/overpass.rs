@@ -32,7 +32,7 @@ pub fn get_way(id: ElementId) -> Tags {
     .unwrap()
     .json::<OverpassResult>()
     .unwrap();
-    println!("{:#?}", resp);
+    log::debug!("{:#?}", resp);
     assert_eq!(resp.elements.len(), 1);
     let element = resp.elements.pop().unwrap();
     assert_eq!(element.r#type, ElementType::Way);
