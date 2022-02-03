@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::road::Lane;
 use crate::tags::{DuplicateKeyError, TagKey, Tags};
@@ -12,37 +12,34 @@ use crate::tags::{DuplicateKeyError, TagKey, Tags};
 /// let _ = RoadMsg::unsupported_str("foo=bar because x and y");
 /// ```
 ///
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub enum RoadMsg {
     // Deprecated OSM tags, with suggested alternative
-    #[serde(rename = "deprecated")]
     Deprecated {
         deprecated_tags: Tags,
         suggested_tags: Option<Tags>,
     },
     // Tag combination that is unsupported, and may never be supported
-    #[serde(rename = "unsupported")]
     Unsupported {
         description: Option<String>,
         tags: Option<Tags>,
     },
     // Tag combination that is known, but has yet to be implemented
-    #[serde(rename = "unimplemented")]
     Unimplemented {
         description: Option<String>,
         tags: Option<Tags>,
     },
     // Tag combination that is ambiguous, and may never be supported
-    #[serde(rename = "ambiguous")]
     Ambiguous {
         description: Option<String>,
         tags: Option<Tags>,
     },
     // Other issue
-    #[serde(rename = "other")]
-    Other { description: String, tags: Tags },
+    Other {
+        description: String,
+        tags: Tags,
+    },
     // Internal Errors
-    #[serde(rename = "internal_tags_duplicate_key")]
     TagsDuplicateKey(DuplicateKeyError),
 }
 
@@ -110,7 +107,24 @@ impl std::fmt::Display for RoadMsg {
     }
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+fn use_display<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
+where
+    T: std::fmt::Display,
+    S: serde::Serializer,
+{
+    serializer.collect_str(value)
+}
+
+impl Serialize for RoadMsg {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.collect_str(self)
+    }
+}
+
+#[derive(Clone, Debug, Default, Serialize)]
 pub struct RoadWarnings(Vec<RoadMsg>);
 
 impl RoadWarnings {
@@ -139,8 +153,9 @@ impl std::fmt::Display for RoadWarnings {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub enum RoadError {
+    #[serde(serialize_with = "use_display")]
     Msg(RoadMsg),
     Warnings(RoadWarnings),
     RoundTrip,
@@ -176,17 +191,8 @@ impl From<RoadWarnings> for RoadError {
     }
 }
 
-fn use_display<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
-where
-    T: std::fmt::Display,
-    S: serde::Serializer,
-{
-    serializer.collect_str(value)
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Lanes {
     pub lanes: Vec<Lane>,
-    #[serde(serialize_with = "use_display")]
     pub warnings: RoadWarnings,
 }
