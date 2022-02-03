@@ -200,13 +200,12 @@ pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -
                 description: Some("lanes=*".to_owned()),
                 // TODO, TagTree should support subset
                 tags: Some(tags.subset(&["lanes"])),
-            }
-            .into(),
+            },
         );
     }
 
     // https://wiki.openstreetmap.org/wiki/Key:access#Transport_mode_restrictions
-    const ACCESS_KEYS: [&'static str; 43] = [
+    const ACCESS_KEYS: [&str; 43] = [
         "access",
         "dog",
         "ski",
@@ -260,8 +259,7 @@ pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -
                 description: Some("access".to_owned()),
                 // TODO, TagTree should support subset
                 tags: Some(tags.subset(&ACCESS_KEYS)),
-            }
-            .into(),
+            },
         );
     }
 

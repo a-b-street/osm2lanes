@@ -115,7 +115,7 @@ fn lanes_bus(
     _forward_side: &mut Vec<Lane>,
     _backward_side: &mut Vec<Lane>,
 ) -> ModeResult {
-    return Err(RoadMsg::Unimplemented {
+    Err(RoadMsg::Unimplemented {
         description: None,
         tags: Some(tags.subset(&[
             LANES + "psv",
@@ -130,7 +130,7 @@ fn lanes_bus(
             LANES + "bus" + "right",
         ])),
     }
-    .into());
+    .into())
 }
 
 fn bus_lanes(
