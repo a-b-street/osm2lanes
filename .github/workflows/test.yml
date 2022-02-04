@@ -27,6 +27,7 @@ jobs:
   kotlin:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v2
     - name: Set up Kotlin
       uses: fwilhe2/setup-kotlin@main
     - name: Test the Kotlin implementation
@@ -34,6 +35,8 @@ jobs:
         cd kotlin
         gradle test
 
+  # TODO: danielhenrymantilla/cargo@v1
+  # move away from actions-rs because of (https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186)
   rust:
     runs-on: ubuntu-latest
     steps:
@@ -46,25 +49,29 @@ jobs:
         toolchain: nightly-2022-02-03
         override: true
     - name: Run cargo check
-      uses: actions-rs/cargo@v1
+      uses: danielhenrymantilla/cargo@v1
       with:
         command: test
+        working-directory: ./rust
     - name: Run cargo fmt
-      uses: actions-rs/cargo@v1
+      uses: danielhenrymantilla/cargo@v1
       with:
         command: fmt
         args: --check
+        working-directory: ./rust
     - name: Run cargo clippy
-      uses: actions-rs/cargo@v1
+      uses: danielhenrymantilla/cargo@v1
       with:
         command: clippy
         args: -- -D warnings
+        working-directory: ./rust
   rust-stable:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Run test
-      uses: actions-rs/cargo@v1
+      uses: danielhenrymantilla/cargo@v1
       with:
         toolchain: stable
         command: test
+        working-directory: ./rust
