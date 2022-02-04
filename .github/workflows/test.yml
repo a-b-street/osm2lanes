@@ -59,6 +59,7 @@ jobs:
         # waiting for https://github.com/actions-rs/toolchain/pull/209
         # and rust/rust-toolchain.toml
         toolchain: nightly-2022-02-03
+        profile: default
         override: true
     - name: Run cargo check
       uses: actions-rs/cargo@v1
