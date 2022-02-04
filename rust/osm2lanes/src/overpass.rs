@@ -24,18 +24,20 @@ enum ElementType {
 
 type ElementId = u64;
 
-pub fn get_way(id: ElementId) -> Tags {
-    let mut resp = reqwest::blocking::get(format!(
-        "https://overpass-api.de/api/interpreter?data=[out:json][timeout:2];way(id:{});out tags;",
-        id
-    ))
-    .unwrap()
-    .json::<OverpassResult>()
-    .unwrap();
+pub async fn get_way(id: ElementId) -> Result<Tags, reqwest::Error> {
+    let mut resp = reqwest::Client::new()
+        .get(format!(
+            "https://overpass-api.de/api/interpreter?data=[out:json][timeout:2];way(id:{});out tags;",
+            id
+        ))
+        .send()
+        .await?
+        .json::<OverpassResult>()
+        .await?;
     log::debug!("{:#?}", resp);
     assert_eq!(resp.elements.len(), 1);
     let element = resp.elements.pop().unwrap();
     assert_eq!(element.r#type, ElementType::Way);
     assert_eq!(element.id, id);
-    element.tags
+    Ok(element.tags)
 }

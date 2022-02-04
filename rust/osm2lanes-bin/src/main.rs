@@ -3,6 +3,7 @@ use std::io::BufReader;
 use std::path::PathBuf;
 
 use clap::{AppSettings, Parser, Subcommand};
+use futures::executor::block_on;
 use osm2lanes::overpass::get_way;
 use osm2lanes::tags::Tags;
 use osm2lanes::{tags_to_lanes, Locale, TagsToLanesConfig};
@@ -43,7 +44,7 @@ fn main() {
     let args = Cli::parse();
     match &args.command {
         Command::Way { id } => {
-            let tags = get_way(*id);
+            let tags = block_on(get_way(*id)).unwrap();
             log::info!("{:#?}", tags);
             let locale = Locale::builder().build();
             let lanes = tags_to_lanes(&tags, &locale, &TagsToLanesConfig::default());

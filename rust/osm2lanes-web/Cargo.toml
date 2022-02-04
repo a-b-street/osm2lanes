@@ -7,7 +7,7 @@ license = "Apache 2.0"
 [dependencies]
 console_log = { version = "0.2", optional = true, features = ["color"] }
 log = "0.4"
-osm2lanes = { path = "../osm2lanes" }
+osm2lanes = { path = "../osm2lanes", features = ["overpass"] }
 piet = { version = "0.5", features = ["samples"] }
 piet-web = "0.5"
 serde = { version = "1", features = ["derive"] }

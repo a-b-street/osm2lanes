@@ -2,13 +2,13 @@ use std::str::FromStr;
 
 use piet::Error as PietError;
 use piet_web::WebRenderContext;
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use web_sys::{window, HtmlCanvasElement, HtmlInputElement};
 use yew::prelude::*;
 
 mod draw;
 
+use osm2lanes::overpass::get_way;
 use osm2lanes::road::{Lane, LanePrintable, Road};
 use osm2lanes::tags::Tags;
 use osm2lanes::transform::Lanes;
@@ -47,7 +47,7 @@ impl std::fmt::Display for RenderError {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct State {
     pub locale: Locale,
     /// The editable input, line and equal separated tags
@@ -58,6 +58,8 @@ pub struct State {
     pub road: Option<Road>,
     /// Message for user
     pub message: Option<String>,
+    /// Ref to input for way id
+    pub way_ref: NodeRef,
 }
 
 #[derive(Debug)]
@@ -65,6 +67,7 @@ pub enum Msg {
     Submit(String),
     Focus,
     ToggleDrivingSide,
+    WayFetch,
 }
 
 pub struct App {
@@ -87,6 +90,7 @@ impl Component for App {
             normalized_tags: None,
             road: None,
             message: None,
+            way_ref: NodeRef::default(),
         };
         let mut app = Self { focus_ref, state };
         app.update_tags();
@@ -112,6 +116,24 @@ impl Component for App {
                 self.update_tags();
                 true
             }
+            Msg::WayFetch => {
+                let way_id = self
+                    .state
+                    .way_ref
+                    .cast::<HtmlInputElement>()
+                    .unwrap()
+                    .value();
+                log::debug!("WayFetch {}", way_id);
+                match way_id.parse() {
+                    Ok(way_id) => {
+                        let tags = get_way(way_id);
+                        self.state.edit_tags = tags.to_string();
+                        self.update_tags();
+                    }
+                    Err(_) => self.state.message = Some("Invalid way id".to_owned()),
+                }
+                true
+            }
         }
     }
 
@@ -130,13 +152,19 @@ impl Component for App {
 
         let onchange = ctx.link().callback(|_e: Event| Msg::ToggleDrivingSide);
 
+        let way_id_onclick = ctx.link().callback(|_| Msg::WayFetch);
+
         html! {
             <div>
                 <h1>{"osm2lanes"}</h1>
                 <section class="row">
-                    <div class="row-item">
-                        <p>{"↑↓ LHT"}</p>
-                    </div>
+                    <button class="row-item">
+                        {"Calculate"}
+                    </button>
+                    <hr/>
+                    <p class="row-item">
+                        {"↑↓ LHT"}
+                    </p>
                     <label class="row-item switch">
                         <input
                             type="checkbox"
@@ -145,9 +173,15 @@ impl Component for App {
                         />
                         <span class="slider"></span>
                     </label>
-                    <div class="row-item">
-                        <p>{"RHT ↓↑"}</p>
-                    </div>
+                    <p class="row-item">
+                        {"RHT ↓↑"}
+                    </p>
+                    <hr/>
+                    <label class="row-item" for="way">{"OSM Way ID"}</label>
+                    <input class="row-item" type="text" id="way" name="way" size="12" ref={self.state.way_ref.clone()}/>
+                    <button class="row-item" onclick={way_id_onclick}>
+                        {"Fetch"}
+                    </button>
                 </section>
                 <section class="row">
                     <div class="row-item">
@@ -189,8 +223,8 @@ impl Component for App {
                             spellcheck={"false"}
                         />
                     </div>
-                    <hr/>
                 </section>
+                <hr/>
                 {
                     if let Some(message) = &self.state.message {
                         html!{
