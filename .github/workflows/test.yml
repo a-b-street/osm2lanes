@@ -43,8 +43,9 @@ jobs:
       run: python data/test_spec.py
     # END
     - name: Test kotlin
-      uses: burrunan/gradle-cache-action@v1
-      build-root-directory: ./kotlin
+      run: |
+        cd kotlin
+        gradle test
 
   # TODO, find a better action: https://github.com/actions-rs/cargo/issues/6
   # move away from actions-rs because of https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186
