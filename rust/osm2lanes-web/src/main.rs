@@ -81,32 +81,16 @@ impl Component for App {
         let focus_ref = NodeRef::default();
         let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:bus=1\nsidewalk=right".to_owned();
         // let state = if let Ok((Lanes { lanes, warnings }, norm_tags)) =
-        let state = match Self::calculate(&edit_tags, &locale) {
-            Ok((Lanes { lanes, warnings }, norm_tags)) => State {
-                locale,
-                edit_tags,
-                normalized_tags: Some(norm_tags.to_string()),
-                road: Some(Road { lanes }),
-                message: Some(warnings.to_string()),
-            },
-            Err(e) => match e {
-                Ok((Lanes { lanes, .. }, e)) => State {
-                    locale,
-                    edit_tags,
-                    normalized_tags: None,
-                    road: Some(Road { lanes }),
-                    message: Some(e.to_string()),
-                },
-                Err(e) => State {
-                    locale,
-                    edit_tags,
-                    normalized_tags: None,
-                    road: None,
-                    message: Some(e.to_string()),
-                },
-            },
+        let state = State {
+            locale,
+            edit_tags,
+            normalized_tags: None,
+            road: None,
+            message: None,
         };
-        Self { focus_ref, state }
+        let mut app = Self { focus_ref, state };
+        app.update_tags();
+        app
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> ShouldRender {
@@ -298,7 +282,7 @@ impl App {
                 }
             }
             Err(Err(lanes_err)) => {
-                self.state.road = Some(Road { lanes: Vec::new() });
+                self.state.road = None;
                 self.state.normalized_tags = None;
                 self.state.message = Some(format!("Conversion Error: {}", lanes_err));
             }
