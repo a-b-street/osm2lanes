@@ -35,10 +35,7 @@ pub enum RoadMsg {
         tags: Option<Tags>,
     },
     /// Other issue
-    Other {
-        description: String,
-        tags: Tags,
-    },
+    Other { description: String, tags: Tags },
     /// Internal error
     TagsDuplicateKey(DuplicateKeyError),
 }
