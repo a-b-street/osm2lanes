@@ -12,8 +12,8 @@ pub fn bus(
     tags: &Tags,
     locale: &Locale,
     oneway: bool,
-    forward_side: &mut Vec<Lane>,
-    backward_side: &mut Vec<Lane>,
+    forward_side: &mut [Lane],
+    backward_side: &mut [Lane],
 ) -> ModeResult {
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
     // 3 schemes, for simplicity we only allow one at a time
@@ -50,8 +50,8 @@ fn busway(
     tags: &Tags,
     locale: &Locale,
     _oneway: bool,
-    forward_side: &mut Vec<Lane>,
-    backward_side: &mut Vec<Lane>,
+    forward_side: &mut [Lane],
+    backward_side: &mut [Lane],
 ) -> ModeResult {
     const BUSWAY: TagKey = TagKey::from("busway");
     if tags.is(BUSWAY, "lane") {
@@ -112,8 +112,8 @@ fn lanes_bus(
     tags: &Tags,
     _locale: &Locale,
     _oneway: bool,
-    _forward_side: &mut Vec<Lane>,
-    _backward_side: &mut Vec<Lane>,
+    _forward_side: &mut [Lane],
+    _backward_side: &mut [Lane],
 ) -> ModeResult {
     Err(RoadMsg::Unimplemented {
         description: None,
@@ -137,8 +137,8 @@ fn bus_lanes(
     tags: &Tags,
     _locale: &Locale,
     oneway: bool,
-    forward_side: &mut Vec<Lane>,
-    backward_side: &mut Vec<Lane>,
+    forward_side: &mut [Lane],
+    backward_side: &mut [Lane],
 ) -> ModeResult {
     let fwd_bus_spec = if let Some(s) = tags.get("bus:lanes:forward") {
         s
