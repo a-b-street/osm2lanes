@@ -71,12 +71,11 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --manifest-path rust/Cargo.toml -- -D warnings
+        args: --manifest-path rust/Cargo.toml --no-deps -- -D warnings
     - name: Run cargo fmt
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --check --manifest-path rust/Cargo.toml
+      runs: |
+        cd rust/
+        cargo fmt --check
   rust-stable:
     runs-on: ubuntu-latest
     steps:
