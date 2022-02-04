@@ -73,7 +73,7 @@ jobs:
         command: clippy
         args: --manifest-path rust/Cargo.toml --no-deps -- -D warnings
     - name: Run cargo fmt
-      runs: |
+      run: |
         cd rust/
         cargo fmt --check
   rust-stable:
