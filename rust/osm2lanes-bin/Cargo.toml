@@ -7,7 +7,8 @@ default-run = "osm2lanes-bin"
 [dependencies]
 clap = { version = "3", features = ["derive"] }
 flexi_logger = "0.22"
+futures = { version = "0.3" }
 log = "0.4"
 osm2lanes = { path = "../osm2lanes", features = ["overpass"] }
 serde_json = "1"
-futures = { version = "0.3" }
+tokio = { version = "1", features = ["rt", "macros"] }

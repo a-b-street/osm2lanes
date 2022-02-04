@@ -64,7 +64,7 @@ pub struct State {
 
 #[derive(Debug)]
 pub enum Msg {
-    Submit(String),
+    TagsSet(String),
     Focus,
     ToggleDrivingSide,
     WayFetch,
@@ -97,10 +97,10 @@ impl Component for App {
         app
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> ShouldRender {
         log::trace!("Message: {:?}", msg);
         match msg {
-            Msg::Submit(value) => {
+            Msg::TagsSet(value) => {
                 self.state.edit_tags = value;
                 self.update_tags();
                 true
@@ -126,9 +126,10 @@ impl Component for App {
                 log::debug!("WayFetch {}", way_id);
                 match way_id.parse() {
                     Ok(way_id) => {
-                        let tags = get_way(way_id);
-                        self.state.edit_tags = tags.to_string();
-                        self.update_tags();
+                        ctx.link().send_future(async move {
+                            let tags = get_way(way_id).await.unwrap();
+                            Msg::TagsSet(tags.to_string())
+                        });
                     }
                     Err(_) => self.state.message = Some("Invalid way id".to_owned()),
                 }
@@ -138,7 +139,7 @@ impl Component for App {
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let edit = move |input: HtmlInputElement| Msg::Submit(input.value());
+        let edit = move |input: HtmlInputElement| Msg::TagsSet(input.value());
 
         let onmouseover = ctx.link().callback(|_| Msg::Focus);
 

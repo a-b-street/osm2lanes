@@ -36,7 +36,8 @@ enum Command {
     },
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     flexi_logger::Logger::try_with_env()
         .unwrap()
         .start()
