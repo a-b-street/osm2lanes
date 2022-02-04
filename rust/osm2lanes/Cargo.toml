@@ -12,3 +12,6 @@ reqwest = { version = "0.11", optional = true, features = ["blocking", "json"] }
 
 [features]
 overpass = ["reqwest", "reqwest/blocking", "reqwest/json"]
+
+[dev-dependencies]
+serde_yaml = "0.8"
