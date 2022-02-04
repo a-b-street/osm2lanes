@@ -29,15 +29,20 @@ jobs:
 
     # Rust
 
-    - name: Install Rust
+    - name: Install Rust stable
       uses: hecrj/setup-rust-action@v1
       with:
         rust-version: stable
+    - name: Install Rust nightly
+      uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: nightly
+        components: rustfmt
     - name: Test the Rust implementation
       run: |
         cd rust/osm2lanes
         cargo test
-        cargo fmt --check
+        cargo +nightly fmt --check
         cargo clippy
 
     # Kotlin
