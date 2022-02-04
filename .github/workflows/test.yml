@@ -35,8 +35,8 @@ jobs:
         cd kotlin
         gradle test
 
-  # TODO: danielhenrymantilla/cargo@v1
-  # move away from actions-rs because of (https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186)
+  # TODO: https://github.com/actions-rs/cargo/issues/6
+  # move away from actions-rs because of https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186
   rust:
     runs-on: ubuntu-latest
     steps:
@@ -49,29 +49,30 @@ jobs:
         toolchain: nightly-2022-02-03
         override: true
     - name: Run cargo check
-      uses: danielhenrymantilla/cargo@v1
+      uses: actions-rs/cargo@v1
       with:
         command: test
-        working-directory: ./rust
+        args: --manifest-path rust/Cargo.toml
     - name: Run cargo fmt
-      uses: danielhenrymantilla/cargo@v1
+      uses: actions-rs/cargo@v1
       with:
         command: fmt
-        args: --check
+        args: --manifest-path rust/Cargo.toml --check
         working-directory: ./rust
     - name: Run cargo clippy
-      uses: danielhenrymantilla/cargo@v1
+      uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: -- -D warnings
+        args: --manifest-path rust/Cargo.toml -- -D warnings
         working-directory: ./rust
   rust-stable:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Run test
-      uses: danielhenrymantilla/cargo@v1
+      uses: actions-rs/cargo@v1
       with:
         toolchain: stable
         command: test
+        args: --manifest-path rust/Cargo.toml
         working-directory: ./rust
