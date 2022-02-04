@@ -21,7 +21,7 @@ jobs:
         python -m pip install --requirement requirements.txt
     - name: Test the schema
       run: python data/test_spec.py
-    - name: Test the Python implementation
+    - name: Test python
       run: pytest -v
 
   kotlin:
@@ -42,10 +42,9 @@ jobs:
     - name: Test the schema
       run: python data/test_spec.py
     # END
-    - name: Test the Kotlin implementation
-      run: |
-        cd kotlin
-        gradle test
+    - name: Test kotlin
+      uses: burrunan/gradle-cache-action@v1
+      build-root-directory: ./kotlin
 
   # TODO, find a better action: https://github.com/actions-rs/cargo/issues/6
   # move away from actions-rs because of https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186
@@ -62,22 +61,21 @@ jobs:
         toolchain: nightly-2022-02-03
         profile: default
         override: true
-    - name: Run cargo check
+    - name: Run cargo test
       uses: actions-rs/cargo@v1
       with:
         command: test
         args: --manifest-path rust/Cargo.toml
-    - name: Run cargo fmt
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: --manifest-path rust/Cargo.toml --check
     - name: Run cargo clippy
       uses: actions-rs/cargo@v1
       with:
         command: clippy
         args: --manifest-path rust/Cargo.toml -- -D warnings
-        working-directory: ./rust
+    - name: Run cargo fmt
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --check --manifest-path rust/Cargo.toml
   rust-stable:
     runs-on: ubuntu-latest
     steps:
@@ -89,4 +87,3 @@ jobs:
         toolchain: stable
         command: test
         args: --manifest-path rust/Cargo.toml
-        working-directory: ./rust
