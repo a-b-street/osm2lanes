@@ -7,13 +7,10 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  python:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-
-    # Python
-
     - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
@@ -27,29 +24,47 @@ jobs:
     - name: Test the Python implementation
       run: pytest -v
 
-    # Rust
-
-    - name: Install Rust stable
-      uses: hecrj/setup-rust-action@v1
-      with:
-        rust-version: stable
-    - name: Install Rust nightly
-      uses: hecrj/setup-rust-action@v1
-      with:
-        rust-version: nightly
-        components: rustfmt
-    - name: Test the Rust implementation
-      run: |
-        cd rust/osm2lanes
-        cargo test
-        cargo +nightly fmt --check
-        cargo clippy
-
-    # Kotlin
-
+  kotlin:
+    runs-on: ubuntu-latest
+    steps:
     - name: Set up Kotlin
       uses: fwilhe2/setup-kotlin@main
     - name: Test the Kotlin implementation
       run: |
         cd kotlin
         gradle test
+
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install
+      uses: actions-rs/toolchain@v1
+      with:
+        # waiting for https://github.com/actions-rs/toolchain/pull/209
+        # and rust/rust-toolchain.toml
+        toolchain: nightly-2022-02-03
+        override: true
+    - name: Run cargo check
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+    - name: Run cargo fmt
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --check
+    - name: Run cargo clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: -- -D warnings
+  rust-stable:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run test
+      uses: actions-rs/cargo@v1
+      with:
+        toolchain: stable
+        command: test
