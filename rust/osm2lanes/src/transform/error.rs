@@ -14,32 +14,32 @@ use crate::tags::{DuplicateKeyError, TagKey, Tags};
 ///
 #[derive(Debug, Clone)]
 pub enum RoadMsg {
-    // Deprecated OSM tags, with suggested alternative
+    /// Deprecated OSM tags, with suggested alternative
     Deprecated {
         deprecated_tags: Tags,
         suggested_tags: Option<Tags>,
     },
-    // Tag combination that is unsupported, and may never be supported
+    /// Tag combination that is unsupported, and may never be supported
     Unsupported {
         description: Option<String>,
         tags: Option<Tags>,
     },
-    // Tag combination that is known, but has yet to be implemented
+    /// Tag combination that is known, but has yet to be implemented
     Unimplemented {
         description: Option<String>,
         tags: Option<Tags>,
     },
-    // Tag combination that is ambiguous, and may never be supported
+    /// Tag combination that is ambiguous, and may never be supported
     Ambiguous {
         description: Option<String>,
         tags: Option<Tags>,
     },
-    // Other issue
+    /// Other issue
     Other {
         description: String,
         tags: Tags,
     },
-    // Internal Errors
+    /// Internal error
     TagsDuplicateKey(DuplicateKeyError),
 }
 
@@ -107,14 +107,6 @@ impl std::fmt::Display for RoadMsg {
     }
 }
 
-fn use_display<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
-where
-    T: std::fmt::Display,
-    S: serde::Serializer,
-{
-    serializer.collect_str(value)
-}
-
 impl Serialize for RoadMsg {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -154,10 +146,20 @@ impl std::fmt::Display for RoadWarnings {
 }
 
 #[derive(Debug, Clone, Serialize)]
+/// Error for transformation
+/// ```
+/// use osm2lanes::transform::{RoadMsg, RoadError};
+/// let msg: RoadMsg = RoadMsg::deprecated_tag("foo", "bar");
+/// assert_eq!("\"unsupported: foo=bar\"", serde_json::to_string(&msg).unwrap());
+/// let err: RoadError = msg.into();
+/// assert_eq!("{\"error\":\"unsupported: foo=bar\"}", serde_json::to_string(&err).unwrap());
+/// ```
 pub enum RoadError {
-    #[serde(serialize_with = "use_display")]
+    #[serde(rename = "error")]
     Msg(RoadMsg),
+    #[serde(rename = "warnings")]
     Warnings(RoadWarnings),
+    #[serde(rename = "round_trip")]
     RoundTrip,
 }
 
