@@ -55,7 +55,7 @@ pub struct State {
     /// The input normalised
     pub normalized_tags: Option<String>,
     /// Lanes to visualise
-    pub road: Road,
+    pub road: Option<Road>,
     /// Message for user
     pub message: Option<String>,
 }
@@ -80,18 +80,31 @@ impl Component for App {
         let locale = Locale::builder().build();
         let focus_ref = NodeRef::default();
         let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:bus=1\nsidewalk=right".to_owned();
-        let state = if let Ok((Lanes { lanes, warnings }, norm_tags)) =
-            Self::calculate(&edit_tags, &locale)
-        {
-            State {
+        // let state = if let Ok((Lanes { lanes, warnings }, norm_tags)) =
+        let state = match Self::calculate(&edit_tags, &locale) {
+            Ok((Lanes { lanes, warnings }, norm_tags)) => State {
                 locale,
                 edit_tags,
                 normalized_tags: Some(norm_tags.to_string()),
-                road: Road { lanes },
+                road: Some(Road { lanes }),
                 message: Some(warnings.to_string()),
-            }
-        } else {
-            unreachable!();
+            },
+            Err(e) => match e {
+                Ok((Lanes { lanes, .. }, e)) => State {
+                    locale,
+                    edit_tags,
+                    normalized_tags: None,
+                    road: Some(Road { lanes }),
+                    message: Some(e.to_string()),
+                },
+                Err(e) => State {
+                    locale,
+                    edit_tags,
+                    normalized_tags: None,
+                    road: None,
+                    message: Some(e.to_string()),
+                },
+            },
         };
         Self { focus_ref, state }
     }
@@ -192,8 +205,8 @@ impl Component for App {
                             spellcheck={"false"}
                         />
                     </div>
+                    <hr/>
                 </section>
-                <hr/>
                 {
                     if let Some(message) = &self.state.message {
                         html!{
@@ -201,26 +214,34 @@ impl Component for App {
                                 <pre>
                                     {message}
                                 </pre>
+                                <hr/>
                             </section>
                         }
                     } else {
                         html!{}
                     }
                 }
-                <hr/>
-                <section>
-                    <div class="lanes">
-                        {
-                            for self.state.road.lanes.iter().map(|lane| self.view_lane_type(lane))
+                {
+                    if let Some(road) = &self.state.road {
+                        html!{
+                            <section>
+                                <div class="lanes">
+                                    {
+                                        for road.lanes.iter().map(|lane| self.view_lane_type(lane))
+                                    }
+                                </div>
+                                <div class="lanes">
+                                    {
+                                        for road.lanes.iter().map(|lane| self.view_lane_direction(lane))
+                                    }
+                                </div>
+                                <hr/>
+                            </section>
                         }
-                    </div>
-                    <div class="lanes">
-                        {
-                            for self.state.road.lanes.iter().map(|lane| self.view_lane_direction(lane))
-                        }
-                    </div>
-                </section>
-                <hr/>
+                    } else {
+                        html!{}
+                    }
+                }
                 <canvas id="canvas" width="960px" height="480px"></canvas>
             </div>
         }
@@ -258,7 +279,7 @@ impl App {
         log::trace!("Update: {:?}", calculate);
         match calculate {
             Ok((Lanes { lanes, warnings }, norm_tags)) => {
-                self.state.road = Road { lanes };
+                self.state.road = Some(Road { lanes });
                 self.state.normalized_tags = Some(norm_tags.to_string());
                 if warnings.is_empty() {
                     self.state.message = None;
@@ -267,7 +288,7 @@ impl App {
                 }
             }
             Err(Ok((Lanes { lanes, warnings }, norm_err))) => {
-                self.state.road = Road { lanes };
+                self.state.road = Some(Road { lanes });
                 self.state.normalized_tags = None;
                 if warnings.is_empty() {
                     self.state.message = Some(format!("Normalisation Error: {}", norm_err));
@@ -277,7 +298,7 @@ impl App {
                 }
             }
             Err(Err(lanes_err)) => {
-                self.state.road = Road { lanes: Vec::new() };
+                self.state.road = Some(Road { lanes: Vec::new() });
                 self.state.normalized_tags = None;
                 self.state.message = Some(format!("Conversion Error: {}", lanes_err));
             }
@@ -303,36 +324,38 @@ impl App {
         }
     }
     fn draw_canvas(&self) {
-        let window = window().unwrap();
-        let canvas = window
-            .document()
-            .unwrap()
-            .get_element_by_id("canvas")
-            .unwrap()
-            .dyn_into::<HtmlCanvasElement>()
-            .unwrap();
-        let context = canvas
-            .get_context("2d")
-            .unwrap()
-            .unwrap()
-            .dyn_into::<web_sys::CanvasRenderingContext2d>()
-            .unwrap();
+        if let Some(road) = &self.state.road {
+            let window = window().unwrap();
+            let canvas = window
+                .document()
+                .unwrap()
+                .get_element_by_id("canvas")
+                .unwrap()
+                .dyn_into::<HtmlCanvasElement>()
+                .unwrap();
+            let context = canvas
+                .get_context("2d")
+                .unwrap()
+                .unwrap()
+                .dyn_into::<web_sys::CanvasRenderingContext2d>()
+                .unwrap();
 
-        let dpr = window.device_pixel_ratio();
-        let canvas_width = (canvas.offset_width() as f64 * dpr) as u32;
-        let canvas_height = (canvas.offset_height() as f64 * dpr) as u32;
-        canvas.set_width(canvas_width);
-        canvas.set_height(canvas_height);
-        context.scale(dpr, dpr).unwrap();
-        let mut rc = WebRenderContext::new(context, window);
+            let dpr = window.device_pixel_ratio();
+            let canvas_width = (canvas.offset_width() as f64 * dpr) as u32;
+            let canvas_height = (canvas.offset_height() as f64 * dpr) as u32;
+            canvas.set_width(canvas_width);
+            canvas.set_height(canvas_height);
+            context.scale(dpr, dpr).unwrap();
+            let mut rc = WebRenderContext::new(context, window);
 
-        draw::lanes(
-            &mut rc,
-            (canvas_width, canvas_height),
-            &self.state.road,
-            &self.state.locale,
-        )
-        .unwrap();
+            draw::lanes(
+                &mut rc,
+                (canvas_width, canvas_height),
+                &road,
+                &self.state.locale,
+            )
+            .unwrap();
+        }
     }
 }
 
