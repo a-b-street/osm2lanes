@@ -1,5 +1,5 @@
 [workspace]
-members = ["osm2lanes", "osm2lanes-web"]
+members = ["osm2lanes", "osm2lanes-web", "osm2lanes-npm"]
 
 [profile.release]
 # less code to include into binary

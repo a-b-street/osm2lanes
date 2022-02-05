@@ -1,5 +1,11 @@
 use std::str::FromStr;
 
+use osm2lanes::road::{Lane, LanePrintable, Road};
+use osm2lanes::tags::Tags;
+use osm2lanes::transform::Lanes;
+use osm2lanes::{
+    lanes_to_tags, tags_to_lanes, DrivingSide, LanesToTagsConfig, Locale, TagsToLanesConfig,
+};
 use piet::Error as PietError;
 use piet_web::WebRenderContext;
 use serde::{Deserialize, Serialize};
@@ -8,13 +14,6 @@ use web_sys::{window, HtmlCanvasElement, HtmlInputElement};
 use yew::prelude::*;
 
 mod draw;
-
-use osm2lanes::road::{Lane, LanePrintable, Road};
-use osm2lanes::tags::Tags;
-use osm2lanes::transform::Lanes;
-use osm2lanes::{
-    lanes_to_tags, tags_to_lanes, DrivingSide, LanesToTagsConfig, Locale, TagsToLanesConfig,
-};
 
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
