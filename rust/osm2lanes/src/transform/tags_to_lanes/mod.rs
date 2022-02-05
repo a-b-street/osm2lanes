@@ -24,9 +24,19 @@ use non_motorized::non_motorized;
 
 use super::*;
 
-#[derive(Default)]
+#[non_exhaustive]
 pub struct TagsToLanesConfig {
     pub error_on_warnings: bool,
+    pub include_separators: bool,
+}
+
+impl Default for TagsToLanesConfig {
+    fn default() -> Self {
+        Self {
+            error_on_warnings: false,
+            include_separators: true,
+        }
+    }
 }
 
 /// From an OpenStreetMap way's tags,
@@ -101,7 +111,11 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
 
     let lanes = Lanes { lanes, warnings };
 
-    let lanes = insert_separators(lanes)?;
+    let lanes = if config.include_separators {
+        insert_separators(lanes)?
+    } else {
+        lanes
+    };
 
     if config.error_on_warnings && !lanes.warnings.is_empty() {
         return Err(lanes.warnings.into());
