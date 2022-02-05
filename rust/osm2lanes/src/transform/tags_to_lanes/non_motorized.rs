@@ -19,7 +19,7 @@ pub fn non_motorized(tags: &Tags, locale: &Locale) -> Result<Option<Lanes>, Road
     if tags.is(HIGHWAY, "steps") {
         return Ok(Some(Lanes {
             lanes: vec![Lane::foot()],
-            warnings: RoadWarnings(vec![RoadMsg::Other {
+            warnings: RoadWarnings::new(vec![RoadMsg::Other {
                 description: "highway is steps, but lane is only a sidewalk".to_owned(),
                 tags: tags.subset(&[HIGHWAY]),
             }]),
