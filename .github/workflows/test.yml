@@ -7,13 +7,10 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  python:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-
-    # Python
-
     - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
@@ -24,27 +21,69 @@ jobs:
         python -m pip install --requirement requirements.txt
     - name: Test the schema
       run: python data/test_spec.py
-    - name: Test the Python implementation
+    - name: Test python
       run: pytest -v
 
-    # Rust
-
-    - name: Install Rust
-      uses: hecrj/setup-rust-action@v1
-      with:
-        rust-version: stable
-    - name: Test the Rust implementation
-      run: |
-        cd rust/osm2lanes
-        cargo test
-        cargo fmt --check
-        cargo clippy
-
-    # Kotlin
-
+  kotlin:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
     - name: Set up Kotlin
       uses: fwilhe2/setup-kotlin@main
-    - name: Test the Kotlin implementation
+    # START: For YAML to JSON conversion
+    - name: Set up Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install --requirement requirements.txt
+    - name: Test the schema
+      run: python data/test_spec.py
+    # END
+    - name: Test kotlin
       run: |
         cd kotlin
         gradle test
+
+  # TODO, find a better action: https://github.com/actions-rs/cargo/issues/6
+  # move away from actions-rs because of https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186
+  # TODO, fix subdirectory hack --manifest-path
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install
+      uses: actions-rs/toolchain@v1
+      with:
+        # waiting for https://github.com/actions-rs/toolchain/pull/209
+        # and rust/rust-toolchain.toml
+        toolchain: nightly-2022-02-03
+        profile: default
+        override: true
+    - name: Run cargo test
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --manifest-path rust/Cargo.toml
+    - name: Run cargo clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --manifest-path rust/Cargo.toml --no-deps -- -D warnings
+    - name: Run cargo fmt
+      run: |
+        cd rust/
+        cargo fmt --check
+  rust-stable:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: Swatinem/rust-cache@v1
+    - name: Run test
+      uses: actions-rs/cargo@v1
+      with:
+        toolchain: stable
+        command: test
+        args: --manifest-path rust/Cargo.toml

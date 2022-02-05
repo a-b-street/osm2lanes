@@ -195,18 +195,15 @@ pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -
 
     let tag_tree = tags.tree();
     if tag_tree.get("lanes").is_some() {
-        warnings.push(
-            RoadMsg::Unimplemented {
-                description: Some("lanes=*".to_owned()),
-                // TODO, TagTree should support subset
-                tags: Some(tags.subset(&["lanes"])),
-            }
-            .into(),
-        );
+        warnings.push(RoadMsg::Unimplemented {
+            description: Some("lanes=*".to_owned()),
+            // TODO, TagTree should support subset
+            tags: Some(tags.subset(&["lanes"])),
+        });
     }
 
     // https://wiki.openstreetmap.org/wiki/Key:access#Transport_mode_restrictions
-    const ACCESS_KEYS: [&'static str; 43] = [
+    const ACCESS_KEYS: [&str; 43] = [
         "access",
         "dog",
         "ski",
@@ -255,14 +252,11 @@ pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -
         .iter()
         .any(|k| tags.get(TagKey::from(k)).is_some())
     {
-        warnings.push(
-            RoadMsg::Unimplemented {
-                description: Some("access".to_owned()),
-                // TODO, TagTree should support subset
-                tags: Some(tags.subset(&ACCESS_KEYS)),
-            }
-            .into(),
-        );
+        warnings.push(RoadMsg::Unimplemented {
+            description: Some("access".to_owned()),
+            // TODO, TagTree should support subset
+            tags: Some(tags.subset(&ACCESS_KEYS)),
+        });
     }
 
     if tags.is("oneway", "reversible") {
