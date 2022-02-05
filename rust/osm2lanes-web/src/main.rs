@@ -68,6 +68,7 @@ pub enum Msg {
     Focus,
     ToggleDrivingSide,
     WayFetch,
+    Error(String),
 }
 
 pub struct App {
@@ -127,12 +128,18 @@ impl Component for App {
                 match way_id.parse() {
                     Ok(way_id) => {
                         ctx.link().send_future(async move {
-                            let tags = get_way(way_id).await.unwrap();
-                            Msg::TagsSet(tags.to_string())
+                            match get_way(way_id).await {
+                                Ok(tags) => Msg::TagsSet(tags.to_string()),
+                                Err(e) => Msg::Error(e.to_string()),
+                            }
                         });
                     }
-                    Err(_) => self.state.message = Some("Invalid way id".to_owned()),
+                    Err(e) => self.state.message = Some(format!("Invalid way id: {}", e)),
                 }
+                true
+            }
+            Msg::Error(e) => {
+                self.state.message = Some(format!("Error: {}", e));
                 true
             }
         }
