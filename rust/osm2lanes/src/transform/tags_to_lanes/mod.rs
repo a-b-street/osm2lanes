@@ -24,6 +24,7 @@ use non_motorized::non_motorized;
 
 use super::*;
 
+#[non_exhaustive]
 pub struct TagsToLanesConfig {
     pub error_on_warnings: bool,
     pub include_separators: bool,
