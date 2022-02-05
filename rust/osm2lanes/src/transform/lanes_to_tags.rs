@@ -9,6 +9,7 @@ impl std::convert::From<DuplicateKeyError> for RoadError {
     }
 }
 
+#[non_exhaustive]
 pub struct LanesToTagsConfig {
     pub check_roundtrip: bool,
 }
@@ -196,6 +197,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
             locale,
             &TagsToLanesConfig {
                 error_on_warnings: true,
+                ..TagsToLanesConfig::default()
             },
         )?;
         if lanes != rountrip.lanes {
