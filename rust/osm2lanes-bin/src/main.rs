@@ -8,7 +8,7 @@ use osm2lanes::overpass::get_way;
 use osm2lanes::tags::Tags;
 use osm2lanes::{tags_to_lanes, Locale, TagsToLanesConfig};
 
-/// Simple program to greet a person
+/// Generate lanes from an OSM way
 #[derive(Parser, Debug)]
 #[clap(name = "osm2lanes", author, version, about, long_about = None)]
 struct Cli {
