@@ -1,5 +1,7 @@
-body, h1, h2, h3, h4, h5, a, button, input, textarea, .button {
+body, h1, h2, h3, h4, h5, a, button, input, textarea, .button, label, p {
   font-family: "Source Code Pro", monospace;
+  margin: 1ex 0.5em;
+  padding: 0.5ex 0em;
 }
 
 body {
@@ -8,10 +10,19 @@ body {
 }
 
 section {
-  margin: 1em;
+  margin: 1ex 1em;
 }
 
-span, pre, button, input, textarea, .button {
+label, p {
+  margin: 2ex 0.5em;
+  padding: 0.5ex 0em;
+}
+
+button, .button {
+  font-size: 16px;
+}
+
+span, pre, input, textarea {
   font-size: 24px;
 }
 
@@ -41,8 +52,6 @@ button:active, input:active, .button:active {
   display: flex;
   max-width: 1040px;
 }
-/* .row-item, .lane {
-} */
 
 .lanes {
   flex-wrap: wrap;
@@ -66,7 +75,8 @@ canvas {
   display: inline-block;
   width: 60px;
   height: 34px;
-  margin: 1ex 2em;
+  margin: 2ex 1em;
+  padding: 0;
 }
 
 /* Hide default HTML checkbox */
