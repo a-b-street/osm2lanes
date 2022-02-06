@@ -377,7 +377,7 @@ impl App {
             draw::lanes(
                 &mut rc,
                 (canvas_width, canvas_height),
-                &road,
+                road,
                 &self.state.locale,
             )
             .unwrap();
