@@ -65,7 +65,6 @@ pub struct State {
 #[derive(Debug)]
 pub enum Msg {
     TagsSet(String),
-    Focus,
     ToggleDrivingSide,
     WayFetch,
     Error(String),
@@ -106,12 +105,6 @@ impl Component for App {
                 self.update_tags();
                 true
             }
-            Msg::Focus => {
-                if let Some(input) = self.focus_ref.cast::<HtmlInputElement>() {
-                    input.focus().unwrap();
-                }
-                true
-            }
             Msg::ToggleDrivingSide => {
                 self.state.locale.driving_side = self.state.locale.driving_side.opposite();
                 self.update_tags();
@@ -147,8 +140,6 @@ impl Component for App {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let edit = move |input: HtmlInputElement| Msg::TagsSet(input.value());
-
-        let onmouseover = ctx.link().callback(|_| Msg::Focus);
 
         let onblur = ctx
             .link()
@@ -198,7 +189,6 @@ impl Component for App {
                             cols="48"
                             ref={self.focus_ref.clone()}
                             value={self.state.edit_tags.clone()}
-                            {onmouseover}
                             {onblur}
                             {onkeypress}
                             autocomplete={"off"}
