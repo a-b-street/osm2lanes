@@ -1,0 +1,14 @@
+#!/bin/sh
+
+set -e -u -o pipefail
+
+dir="$(dirname "$0")"
+
+ktlint
+
+cd "$dir/../kotlin/"
+
+gradle clean
+gradle test
+
+cd -
