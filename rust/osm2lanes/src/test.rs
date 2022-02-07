@@ -3,14 +3,23 @@ mod tests {
     use std::fs::File;
     use std::io::BufReader;
 
-    use self::transform::{lanes_to_tags, LanesToTagsConfig};
-    use super::*;
+    use serde::Deserialize;
+
+    use crate::road::{Lane, LanePrintable, Marking, Road};
+    use crate::tags::Tags;
+    use crate::transform::{
+        lanes_to_tags, tags_to_lanes, Lanes, LanesToTagsConfig, RoadError, TagsToLanesConfig,
+    };
+    use crate::{DrivingSide, Locale};
 
     #[derive(Deserialize)]
     #[serde(untagged)]
     enum RustTesting {
         Enabled(bool),
-        WithOptions { separator: Option<bool> },
+        WithOptions {
+            separator: Option<bool>,
+            ignore_warnings: Option<bool>,
+        },
     }
 
     #[derive(Deserialize)]
@@ -119,7 +128,9 @@ mod tests {
                     let separator_testing = match self.rust {
                         None => true,
                         Some(RustTesting::Enabled(b)) => b,
-                        Some(RustTesting::WithOptions { separator }) => separator.unwrap_or(true),
+                        Some(RustTesting::WithOptions { separator, .. }) => {
+                            separator.unwrap_or(true)
+                        }
                     };
                     separator_testing && self.expected_has_separators()
                 }
@@ -139,6 +150,16 @@ mod tests {
                     .filter(|lane| self.is_lane_enabled(lane))
                     .cloned()
                     .collect(),
+            }
+        }
+
+        fn ignore_warnings(&self) -> bool {
+            match self.rust {
+                None => false,
+                Some(RustTesting::Enabled(_)) => false,
+                Some(RustTesting::WithOptions {
+                    ignore_warnings, ..
+                }) => ignore_warnings.unwrap_or(false),
             }
         }
     }
@@ -237,33 +258,46 @@ mod tests {
                     &test.tags,
                     &locale,
                     &TagsToLanesConfig {
-                        error_on_warnings: true,
+                        error_on_warnings: !test.ignore_warnings(),
+                        ..TagsToLanesConfig::default()
                     },
                 );
                 let expected_road = test.expected_road();
-                if let Ok(lanes) = lanes {
-                    let actual_road = lanes.into_road(test);
-                    if actual_road.approx_eq(&expected_road) {
-                        true
-                    } else {
+                match lanes {
+                    Ok(lanes) => {
+                        let actual_road = lanes.into_road(test);
+                        if actual_road.approx_eq(&expected_road) {
+                            true
+                        } else {
+                            test.print();
+                            println!("Got:");
+                            println!("    {}", stringify_lane_types(&actual_road));
+                            println!("    {}", stringify_directions(&actual_road));
+                            println!("Expected:");
+                            println!("    {}", stringify_lane_types(&expected_road));
+                            println!("    {}", stringify_directions(&expected_road));
+                            println!();
+                            false
+                        }
+                    }
+                    Err(RoadError::Warnings(warnings)) => {
                         test.print();
-                        println!("Got:");
-                        println!("    {}", stringify_lane_types(&actual_road));
-                        println!("    {}", stringify_directions(&actual_road));
                         println!("Expected:");
                         println!("    {}", stringify_lane_types(&expected_road));
                         println!("    {}", stringify_directions(&expected_road));
+                        println!("{}", warnings);
                         println!();
                         false
                     }
-                } else {
-                    test.print();
-                    println!("Expected:");
-                    println!("    {}", stringify_lane_types(&expected_road));
-                    println!("    {}", stringify_directions(&expected_road));
-                    println!("{}", lanes.unwrap_err());
-                    println!();
-                    false
+                    Err(e) => {
+                        test.print();
+                        println!("Expected:");
+                        println!("    {}", stringify_lane_types(&expected_road));
+                        println!("    {}", stringify_directions(&expected_road));
+                        println!("{}", e);
+                        println!();
+                        false
+                    }
                 }
             }),
             "test_from_data tags_to_lanes failed"
@@ -294,6 +328,7 @@ mod tests {
                     &locale,
                     &TagsToLanesConfig {
                         error_on_warnings: false,
+                        ..TagsToLanesConfig::default()
                     },
                 )
                 .unwrap();

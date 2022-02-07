@@ -19,3 +19,5 @@ pub mod overpass;
 
 pub mod transform;
 pub use self::transform::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
+
+mod test;
