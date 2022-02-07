@@ -85,8 +85,8 @@ jobs:
     - name: "Rustup"
       run: |
         cd ./rust/
-        rustup toolchain install default
-        rustup override set default
+        rustup toolchain install stable
+        rustup override set stable
     - name: "Cache"
       uses: Swatinem/rust-cache@v1
       with:
