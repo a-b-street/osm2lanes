@@ -24,7 +24,7 @@ jobs:
     - name: "Test Schema"
       run: test_schema
     - name: "Test Python"
-      run: .githooks/test_python
+      run: sh .githooks/test_python
 
   kotlin:
     runs-on: ubuntu-latest
@@ -43,10 +43,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install --requirement requirements.txt
-        .githooks/test_schema
+        sh .githooks/test_schema
     # END
     - name: "Test Kotlin"
-      run: .githooks/test_kotlin
+      run: sh .githooks/test_kotlin
 
   # Moved away from actions-rs because of
   # https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186
@@ -64,7 +64,7 @@ jobs:
         cd rust
         rustup show
         cd -
-        .githooks/test_rust
+        sh d.githooks/test_rust
   
   rust-stable:
     runs-on: ubuntu-latest
