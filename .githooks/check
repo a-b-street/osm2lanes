@@ -1,29 +1,26 @@
 #!/bin/sh
 
-# Spec.
+set -e -u -o pipefail
 
-python data/test_spec.py || { echo "FAIL"; exit 1; }
+dir="$(dirname "$0")"
 
-# Python.
+parallel_1 () {
+  "$dir/test_schema"
+  "$dir/test_kotlin"
+}
+parallel_2 () {
+  "$dir/test_python"
+}
+parallel_3 () {
+  "$dir/test_rust"
 
-black --check python || { echo "FAIL"; exit 1; }
-pytest || { echo "FAIL"; exit 1; }
+  cd rust
+  cargo +stable test
+  cd ..
+}
 
-# Rust.
+parallel_1 &
+parallel_2 &
+parallel_3 &
 
-cd rust
-cargo test || { echo "FAIL"; exit 1; }
-cargo fmt --check || { echo "FAIL"; exit 1; }
-cargo clippy --no-deps -- -D warnings || { echo "FAIL"; exit 1; }
-cargo +stable test || { echo "FAIL"; exit 1; }
-cd ..
-
-# Kotlin.
-
-ktlint || { echo "FAIL"; exit 1; }
-cd kotlin
-gradle clean
-gradle test || { echo "FAIL"; exit 1; }
-cd ..
-
-exit 0
+wait
