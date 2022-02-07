@@ -11,7 +11,7 @@ mod draw;
 use osm2lanes::overpass::get_way;
 use osm2lanes::road::{Lane, LanePrintable, Road};
 use osm2lanes::tags::Tags;
-use osm2lanes::transform::Lanes;
+use osm2lanes::transform::{Lanes, RoadError};
 use osm2lanes::{
     lanes_to_tags, tags_to_lanes, DrivingSide, LanesToTagsConfig, Locale, TagsToLanesConfig,
 };
@@ -279,29 +279,28 @@ impl Component for App {
 }
 
 impl App {
-    fn calculate(
-        value: &str,
-        locale: &Locale,
-    ) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
-        log::trace!("Calculate: {}", value);
-        match Tags::from_str(value) {
+    fn update_tags(&mut self) {
+        let value = &self.state.edit_tags;
+        let locale = &self.state.locale;
+        log::trace!("Update Tags: {}", value);
+        let calculate = match Tags::from_str(value) {
             Ok(tags) => match tags_to_lanes(&tags, locale, &TagsToLanesConfig::default()) {
                 Ok(lanes) => {
                     match lanes_to_tags(&lanes.lanes, locale, &LanesToTagsConfig::default()) {
                         Ok(tags) => Ok((lanes, tags)),
-                        Err(e) => Err(Ok((lanes, e.to_string()))),
+                        Err(e) => {
+                            if let RoadError::Warnings(warnings) = &e {
+                                Err(Ok((lanes, format!("{}\n{}", e, warnings))))
+                            } else {
+                                Err(Ok((lanes, e.to_string())))
+                            }
+                        }
                     }
                 }
                 Err(e) => Err(Err(e.to_string())),
             },
             Err(_) => Err(Err("parsing tags failed".to_owned())),
-        }
-    }
-
-    fn update_tags(&mut self) {
-        let value = &self.state.edit_tags;
-        log::trace!("Update Tags: {}", value);
-        let calculate = Self::calculate(value, &self.state.locale);
+        };
         log::trace!("Update: {:?}", calculate);
         match calculate {
             Ok((Lanes { lanes, warnings }, norm_tags)) => {
@@ -317,10 +316,10 @@ impl App {
                 self.state.road = Some(Road { lanes });
                 self.state.normalized_tags = None;
                 if warnings.is_empty() {
-                    self.state.message = Some(format!("Normalisation Error: {}", norm_err));
+                    self.state.message = Some(format!("Lanes to Tags Error: {}", norm_err));
                 } else {
                     self.state.message =
-                        Some(format!("{}\nNormalisation Error: {}", warnings, norm_err));
+                        Some(format!("{}\nLanes to Tags Error: {}", warnings, norm_err));
                 }
             }
             Err(Err(lanes_err)) => {
