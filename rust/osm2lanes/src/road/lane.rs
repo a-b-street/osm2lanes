@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use super::Marking;
-use crate::Metre;
+use super::Markings;
+use crate::{Locale, Metre};
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -21,13 +21,22 @@ pub enum Lane {
     #[serde(rename = "shoulder")]
     Shoulder,
     #[serde(rename = "separator")]
-    Separator { markings: Vec<Marking> },
+    Separator { markings: Markings },
     // #[serde(rename = "construction")]
     // Construction,
 }
 
 impl Lane {
     pub const DEFAULT_WIDTH: Metre = Metre::new(3.5);
+
+    /// Width in metres
+    pub fn width(&self, locale: &Locale) -> Metre {
+        match self {
+            Lane::Separator { markings } => markings.width(locale),
+            Lane::Travel { designated, .. } => locale.default_width(designated),
+            _ => Lane::DEFAULT_WIDTH,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
