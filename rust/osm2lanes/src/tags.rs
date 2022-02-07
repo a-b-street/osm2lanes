@@ -215,7 +215,7 @@ impl TagTreeVal {
     }
     /// Get tree
     pub fn tree(&self) -> Option<&TagTree> {
-        Some(self.tree.as_ref()?)
+        self.tree.as_ref()
     }
 }
 
