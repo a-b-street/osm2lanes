@@ -307,7 +307,7 @@ mod tests {
     #[test]
     fn test_roundtrip() {
         let tests: Vec<TestCase> =
-            serde_json::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
+            serde_yaml::from_reader(BufReader::new(File::open("../../data/tests.json").unwrap()))
                 .unwrap();
         let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is_enabled()).collect();
 
