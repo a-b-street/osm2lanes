@@ -205,11 +205,17 @@ impl TagTreeVal {
         }
         self.val = Some(input);
     }
+    /// Get nested value from tree given key
     pub fn get<K: Into<TagKey>>(&self, key: K) -> Option<&TagTreeVal> {
         self.tree.as_ref()?.get(key)
     }
+    /// Get value of root
     pub fn val(&self) -> Option<&str> {
         Some(self.val.as_ref()?.as_str())
+    }
+    /// Get tree
+    pub fn tree(&self) -> Option<&TagTree> {
+        self.tree.as_ref()
     }
 }
 

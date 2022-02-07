@@ -208,7 +208,10 @@ pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -
     }
 
     let tag_tree = tags.tree();
-    if tag_tree.get("lanes").is_some() {
+    if tag_tree
+        .get("lanes")
+        .map_or(false, |val| val.tree().is_some())
+    {
         warnings.push(RoadMsg::Unimplemented {
             description: Some("lanes=*".to_owned()),
             // TODO, TagTree should support subset

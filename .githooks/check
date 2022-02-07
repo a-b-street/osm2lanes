@@ -14,7 +14,7 @@ pytest || { echo "FAIL"; exit 1; }
 cd rust
 cargo test || { echo "FAIL"; exit 1; }
 cargo fmt --check || { echo "FAIL"; exit 1; }
-cargo clippy || { echo "FAIL"; exit 1; }
+cargo clippy --no-deps -- -D warnings || { echo "FAIL"; exit 1; }
 cargo +stable test || { echo "FAIL"; exit 1; }
 cd ..
 
