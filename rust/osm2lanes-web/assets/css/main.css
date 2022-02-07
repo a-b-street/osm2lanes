@@ -55,13 +55,13 @@ button:active, input:active, .button:active {
 
 .lanes {
   flex-wrap: wrap;
-  max-width: 1040px;
+  max-width: 960px;
 }
 .lane {
   padding: 0;
-  margin: 0 1em;
+  margin: 0 0.5em;
   align-self: center;
-  flex-basis: 2em;
+  flex-basis: 1.5em;
 }
 
 canvas {
