@@ -76,14 +76,22 @@ jobs:
       run: |
         cd rust/
         cargo fmt --check
+  
   rust-stable:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: Swatinem/rust-cache@v1
-    - name: Run test
-      uses: actions-rs/cargo@v1
+    - name: "Checkout"
+      uses: actions/checkout@v2
+    - name: "Rustup"
+      run: |
+        cd ./rust/
+        rustup toolchain install default
+        rustup override set default
+    - name: "Cache"
+      uses: Swatinem/rust-cache@v1
       with:
-        toolchain: stable
-        command: test
-        args: --manifest-path rust/Cargo.toml
+        working-directory: rust
+    - name: "Test"
+      run: |
+        cd ./rust/
+        cargo test
