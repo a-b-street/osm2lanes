@@ -10,7 +10,7 @@ mod draw;
 
 use osm2lanes::overpass::get_way;
 use osm2lanes::road::{Lane, LanePrintable, Road};
-use osm2lanes::tags::Tags;
+use osm2lanes::tag::Tags;
 use osm2lanes::transform::{Lanes, RoadError};
 use osm2lanes::{
     lanes_to_tags, tags_to_lanes, DrivingSide, LanesToTagsConfig, Locale, TagsToLanesConfig,

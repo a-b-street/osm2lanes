@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use clap::{AppSettings, Parser, Subcommand};
 use futures::executor::block_on;
 use osm2lanes::overpass::get_way;
-use osm2lanes::tags::Tags;
+use osm2lanes::tag::Tags;
 use osm2lanes::{tags_to_lanes, Locale, TagsToLanesConfig};
 
 /// Generate lanes from an OSM way

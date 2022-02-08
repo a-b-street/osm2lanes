@@ -6,7 +6,7 @@ mod tests {
     use serde::Deserialize;
 
     use crate::road::{Lane, LanePrintable, Marking, Road};
-    use crate::tags::Tags;
+    use crate::tag::Tags;
     use crate::transform::{
         lanes_to_tags, tags_to_lanes, Lanes, LanesToTagsConfig, RoadError, TagsToLanesConfig,
     };

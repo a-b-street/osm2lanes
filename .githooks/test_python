@@ -4,7 +4,7 @@ dir="$(dirname "$0")"
 
 cd "$dir/../"
 
-black --check python
-pytest
+black --check python || { echo "FAIL BLACK"; exit 1; }
+pytest --color=yes || { echo "FAIL PYTHON"; exit 1; }
 
 cd -

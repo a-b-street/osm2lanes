@@ -3,52 +3,15 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
+mod key;
+pub use key::TagKey;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DuplicateKeyError(String);
 
 impl std::fmt::Display for DuplicateKeyError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "duplicate tag key {}", self.0)
-    }
-}
-
-/// A representation for a OSM tags key
-#[derive(Clone)]
-pub enum TagKey {
-    Static(&'static str),
-    String(String),
-}
-
-impl TagKey {
-    pub const fn from(string: &'static str) -> Self {
-        TagKey::Static(string)
-    }
-    pub fn as_str(&self) -> &str {
-        match self {
-            Self::Static(v) => v,
-            Self::String(v) => v.as_str(),
-        }
-    }
-}
-
-impl From<&'static str> for TagKey {
-    fn from(string: &'static str) -> Self {
-        TagKey::from(string)
-    }
-}
-
-impl std::ops::Add for TagKey {
-    type Output = Self;
-    fn add(self, other: Self) -> Self {
-        let val = format!("{}:{}", self.as_str(), other.as_str());
-        TagKey::String(val)
-    }
-}
-
-impl std::ops::Add<&'static str> for TagKey {
-    type Output = Self;
-    fn add(self, other: &'static str) -> Self {
-        self.add(TagKey::from(other))
     }
 }
 
@@ -70,6 +33,7 @@ impl Tags {
         Ok(Self(map))
     }
 
+    // TODO deprecate, as it exposes the type of map used
     pub fn new(map: BTreeMap<String, String>) -> Tags {
         Tags(map)
     }
@@ -79,6 +43,7 @@ impl Tags {
         &self.0
     }
 
+    /// Vector of `=` separated strings
     pub fn to_vec(&self) -> Vec<String> {
         self.0
             .iter()
@@ -92,7 +57,7 @@ impl Tags {
     ///
     /// ```
     /// use std::str::FromStr;
-    /// use osm2lanes::tags::Tags;
+    /// use osm2lanes::tag::Tags;
     /// let tags = Tags::from_str("foo=bar\na:b:c=foobar").unwrap();
     /// let tree = tags.tree();
     /// let a = tree.get("a");
@@ -120,8 +85,8 @@ impl FromStr for Tags {
     ///
     /// ```
     /// use std::str::FromStr;
-    /// use osm2lanes::tags::Tags;
-    /// use osm2lanes::tags::TagsRead;
+    /// use osm2lanes::tag::Tags;
+    /// use osm2lanes::tag::TagsRead;
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
     /// assert_eq!(tags.get("foo"), Some("bar"));
     /// ```
@@ -141,8 +106,8 @@ impl ToString for Tags {
     /// ```
     /// use std::str::FromStr;
     /// use std::string::ToString;
-    /// use osm2lanes::tags::Tags;
-    /// use osm2lanes::tags::TagsRead;
+    /// use osm2lanes::tag::Tags;
+    /// use osm2lanes::tag::TagsRead;
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
     /// assert_eq!(tags.to_string(), "abra=cadabra\nfoo=bar");
     /// ```
@@ -292,5 +257,16 @@ impl TagsWrite for Tags {
         self.insert(k, v).map_or(Ok(()), |_| {
             Err(DuplicateKeyError(k.into().as_str().to_owned()))
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tag::Tags;
+
+    #[test]
+    fn test_tags() {
+        let tags = Tags::from_str_pairs(&[["foo", "bar"], ["abra", "cadabra"]]).unwrap();
+        assert_eq!(tags.to_vec(), vec!["abra=cadabra", "foo=bar"]);
     }
 }
