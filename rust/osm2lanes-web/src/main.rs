@@ -82,8 +82,7 @@ impl Component for App {
     fn create(_ctx: &Context<Self>) -> Self {
         let locale = Locale::builder().build();
         let focus_ref = NodeRef::default();
-        let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:bus=1\nsidewalk=right".to_owned();
-        // let state = if let Ok((Lanes { lanes, warnings }, norm_tags)) =
+        let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nbusway=lane\nsidewalk=right".to_owned();
         let state = State {
             locale,
             edit_tags,

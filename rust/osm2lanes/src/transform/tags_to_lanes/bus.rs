@@ -14,6 +14,7 @@ pub fn bus(
     oneway: bool,
     forward_side: &mut [Lane],
     backward_side: &mut [Lane],
+    warnings: &mut RoadWarnings,
 ) -> ModeResult {
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
     // 3 schemes, for simplicity we only allow one at a time
@@ -31,9 +32,13 @@ pub fn bus(
             .is_some(),
     ) {
         (false, false, false) => {}
-        (true, _, false) => busway(tags, locale, oneway, forward_side, backward_side)?,
-        (false, true, false) => lanes_bus(tags, locale, oneway, forward_side, backward_side)?,
-        (false, false, true) => bus_lanes(tags, locale, oneway, forward_side, backward_side)?,
+        (true, _, false) => busway(tags, locale, oneway, forward_side, backward_side, warnings)?,
+        (false, true, false) => {
+            lanes_bus(tags, locale, oneway, forward_side, backward_side, warnings)?
+        }
+        (false, false, true) => {
+            bus_lanes(tags, locale, oneway, forward_side, backward_side, warnings)?
+        }
         _ => {
             return Err(RoadMsg::Unsupported {
                 description: Some("more than one bus lanes scheme used".to_owned()),
@@ -52,6 +57,7 @@ fn busway(
     _oneway: bool,
     forward_side: &mut [Lane],
     backward_side: &mut [Lane],
+    _warnings: &mut RoadWarnings,
 ) -> ModeResult {
     const BUSWAY: TagKey = TagKey::from("busway");
     if tags.is(BUSWAY, "lane") {
@@ -114,8 +120,9 @@ fn lanes_bus(
     _oneway: bool,
     _forward_side: &mut [Lane],
     _backward_side: &mut [Lane],
+    warnings: &mut RoadWarnings,
 ) -> ModeResult {
-    Err(RoadMsg::Unimplemented {
+    warnings.push(RoadMsg::Unimplemented {
         description: None,
         tags: Some(tags.subset(&[
             LANES + "psv",
@@ -129,8 +136,8 @@ fn lanes_bus(
             LANES + "bus" + "left",
             LANES + "bus" + "right",
         ])),
-    }
-    .into())
+    });
+    Ok(())
 }
 
 fn bus_lanes(
@@ -139,6 +146,7 @@ fn bus_lanes(
     oneway: bool,
     forward_side: &mut [Lane],
     backward_side: &mut [Lane],
+    _warnings: &mut RoadWarnings,
 ) -> ModeResult {
     let fwd_bus_spec = if let Some(s) = tags.get("bus:lanes:forward") {
         s

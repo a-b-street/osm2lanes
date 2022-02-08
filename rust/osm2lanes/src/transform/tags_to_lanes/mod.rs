@@ -83,7 +83,14 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
         fwd_side.insert(0, Lane::both(LaneDesignated::Motor));
     }
 
-    bus(tags, locale, oneway, &mut fwd_side, &mut back_side)?;
+    bus(
+        tags,
+        locale,
+        oneway,
+        &mut fwd_side,
+        &mut back_side,
+        &mut warnings,
+    )?;
 
     bicycle(
         tags,
@@ -205,18 +212,6 @@ pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -
 
     if tags.is("highway", "construction") {
         return Err(RoadMsg::unimplemented_tag("highway", "construction").into());
-    }
-
-    let tag_tree = tags.tree();
-    if tag_tree
-        .get("lanes")
-        .map_or(false, |val| val.tree().is_some())
-    {
-        warnings.push(RoadMsg::Unimplemented {
-            description: Some("lanes=*".to_owned()),
-            // TODO, TagTree should support subset
-            tags: Some(tags.subset(&["lanes"])),
-        });
     }
 
     // https://wiki.openstreetmap.org/wiki/Key:access#Transport_mode_restrictions
