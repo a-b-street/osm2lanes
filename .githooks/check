@@ -1,4 +1,4 @@
-#! /usr/bin/env bash
+#!/bin/env bash
 
 set -e
 set -u
@@ -6,23 +6,33 @@ set -o pipefail
 
 dir="$(dirname "$0")"
 
-parallel_1 () {
-  "$dir/test_schema"
-  "$dir/test_kotlin"
-}
-parallel_2 () {
-  "$dir/test_python"
-}
-parallel_3 () {
-  "$dir/test_rust"
-
-  cd rust
-  cargo +stable test || { echo "FAIL RUST STABLE"; exit 1; }
-  cd ..
-}
-
-parallel_1 &
-parallel_2 &
-parallel_3 &
-
-wait
+if ! command -v parallel &> /dev/null
+then
+    "$dir/test_schema"
+    "$dir/test_kotlin"
+    "$dir/test_python"
+    "$dir/test_rust"
+    cd rust
+    cargo +stable test || { echo "FAIL RUST STABLE"; exit 1; }
+    cd ..
+else
+    test_kotlin() {
+      $dir/test_schema && $dir/test_kotlin
+    }
+    test_python() {
+      $dir/test_python
+    }
+    test_rust() {
+      $dir/test_rust && {
+        cd $dir/../rust && {
+          cargo +stable --color=always test -- --color=always || {
+            echo FAIL RUST STABLE; exit 1; 
+          };
+        } && cd - ;
+      }
+    }
+    export dir
+    export -f test_kotlin test_python test_rust
+    parallel --keep-order --halt soon,fail=1 ::: \
+      test_kotlin test_python test_rust
+fi

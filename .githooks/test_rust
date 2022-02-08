@@ -4,8 +4,8 @@ dir="$(dirname "$0")"
 
 cd "$dir/../rust/"
 
-cargo test || { echo "FAIL RUST"; exit 1; }
-cargo fmt --check || { echo "FAIL FMT"; exit 1; }
-cargo clippy --no-deps -- -D warnings || { echo "FAIL CLIPPY"; exit 1; }
+cargo --color=always test -- --color=always || { echo "FAIL RUST"; exit 1; }
+cargo --color=always fmt --check -- --color=always || { echo "FAIL FMT"; exit 1; }
+cargo --color=always clippy --no-deps -- --color=always -D warnings || { echo "FAIL CLIPPY"; exit 1; }
 
 cd -
