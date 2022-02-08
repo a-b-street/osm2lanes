@@ -1,9 +1,5 @@
-#!/bin/env bash
-
-set -e
-set -u
-set -o pipefail
+#!/bin/sh
 
 dir="$(dirname "$0")"
 
-python "$dir/../data/test_spec.py"
+python "$dir/../data/test_spec.py" || { echo "FAIL SCHEMA"; exit 1; }

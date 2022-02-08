@@ -1,8 +1,4 @@
-#!/bin/env bash
-
-set -e
-set -u
-set -o pipefail
+#!/bin/sh
 
 dir="$(dirname "$0")"
 
@@ -17,7 +13,7 @@ parallel_3 () {
   "$dir/test_rust"
 
   cd rust
-  cargo +stable test
+  cargo +stable test || { echo "FAIL RUST STABLE"; exit 1; }
   cd ..
 }
 

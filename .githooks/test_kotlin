@@ -1,16 +1,12 @@
-#!/bin/env bash
-
-set -e
-set -u
-set -o pipefail
+#!/bin/sh
 
 dir="$(dirname "$0")"
 
-ktlint
+ktlint || { echo "FAIL KTLINT"; exit 1; }
 
 cd "$dir/../kotlin/"
 
-gradle clean
-gradle test
+gradle clean || { echo "FAIL"; exit 1; }
+gradle test || { echo "FAIL KOTLIN"; exit 1; }
 
 cd -
