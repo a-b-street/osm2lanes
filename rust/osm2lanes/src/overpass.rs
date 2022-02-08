@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::tags::Tags;
+use crate::tag::Tags;
 
 #[derive(Debug, Clone, Deserialize)]
 struct OverpassResult {

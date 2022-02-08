@@ -1,5 +1,5 @@
 use crate::road::{Lane, LaneDesignated, LaneDirection};
-use crate::tags::{TagKey, Tags};
+use crate::tag::{TagKey, Tags};
 use crate::DrivingSide;
 
 mod error;

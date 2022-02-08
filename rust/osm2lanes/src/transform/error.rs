@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::road::Lane;
-use crate::tags::{DuplicateKeyError, TagKey, Tags};
+use crate::tag::{DuplicateKeyError, TagKey, Tags};
 
 /// Tranformation Logic Issue
 ///

@@ -9,7 +9,7 @@ pub use metre::Metre;
 
 pub mod road;
 
-pub mod tags;
+pub mod tag;
 
 mod locale;
 pub use self::locale::{DrivingSide, Locale};
