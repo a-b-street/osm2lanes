@@ -1,7 +1,7 @@
 /// A representation for the key of an OSM tag
 ///
 /// ```
-/// use osm2lanes::tags::TagKey;
+/// use osm2lanes::tag::TagKey;
 /// const example_key: TagKey = TagKey::from("example");
 /// assert_eq!(example_key.as_str(), "example");
 /// assert_eq!((example_key + "foo").as_str(), "example:foo");
