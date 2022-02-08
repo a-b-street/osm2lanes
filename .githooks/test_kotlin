@@ -1,0 +1,12 @@
+#!/bin/sh
+
+dir="$(dirname "$0")"
+
+ktlint
+
+cd "$dir/../kotlin/"
+
+gradle clean
+gradle test
+
+cd -

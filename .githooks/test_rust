@@ -1,0 +1,11 @@
+#!/bin/sh
+
+dir="$(dirname "$0")"
+
+cd "$dir/../rust/"
+
+cargo test
+cargo fmt --check
+cargo clippy --no-deps -- -D warnings
+
+cd -

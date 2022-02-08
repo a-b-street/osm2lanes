@@ -214,4 +214,4 @@ The web demo at https://a-b-street.github.io/osm2lanes provides an easy way to t
 
 ## Contributing
 
-Pull requests very welcome! Once the dust from initial development settles, we'll have a better TODO list. All contributors agree to license their work under Apache 2.0.
+[See the contribution guidelines.](./CONTRIBUTING.md)
