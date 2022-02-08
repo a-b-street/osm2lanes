@@ -1,6 +1,8 @@
-#!/bin/sh
+#!/bin/env bash
 
-set -e -u -o pipefail
+set -e
+set -u
+set -o pipefail
 
 dir="$(dirname "$0")"
 
