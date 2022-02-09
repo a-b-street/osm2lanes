@@ -38,6 +38,8 @@ impl Tags {
         Tags(map)
     }
 
+    // TODO deprecate, as it exposes the type of map used
+    // return something like &[[&str; 2]]
     /// Expose inner map
     pub fn map(&self) -> &BTreeMap<String, String> {
         &self.0
@@ -262,11 +264,76 @@ impl TagsWrite for Tags {
 
 #[cfg(test)]
 mod tests {
-    use crate::tag::Tags;
+    use crate::tag::{TagKey, Tags, TagsRead};
 
     #[test]
     fn test_tags() {
-        let tags = Tags::from_str_pairs(&[["foo", "bar"], ["abra", "cadabra"]]).unwrap();
-        assert_eq!(tags.to_vec(), vec!["abra=cadabra", "foo=bar"]);
+        let tags = Tags::from_str_pairs(&[
+            ["foo", "bar"],
+            ["abra", "cadabra"],
+            ["foo:multi:key", "value"],
+            ["multivalue", "apple;banana;chocolate covered capybara"],
+        ])
+        .unwrap();
+        assert_eq!(
+            tags.to_vec(),
+            vec![
+                "abra=cadabra",
+                "foo=bar",
+                "foo:multi:key=value",
+                "multivalue=apple;banana;chocolate covered capybara"
+            ]
+        );
+
+        // String interfaces
+        assert_eq!(tags.get("foo"), Some("bar"));
+        assert_eq!(tags.get("bar"), None);
+        assert!(tags.is("foo", "bar"));
+        assert!(!tags.is("foo", "foo"));
+        assert!(!tags.is("bar", "foo"));
+        assert!(tags.is_any("foo", &["bar"]));
+        assert!(tags.is_any("foo", &["foo", "bar"]));
+        assert!(!tags.is_any("foo", &["foo"]));
+        assert!(!tags.is_any("bar", &["foo", "bar"]));
+        assert_eq!(tags.subset(&["foo"]).to_vec(), vec!["foo=bar"]);
+        assert_eq!(
+            tags.subset(&["foo", "abra"]).to_vec(),
+            vec!["abra=cadabra", "foo=bar"]
+        );
+        assert_eq!(tags.subset(&["foo", "bar"]).to_vec(), vec!["foo=bar"]);
+        assert!(tags.subset(&["bar"]).to_vec().is_empty());
+
+        // Key interfaces
+        const FOO_KEY: TagKey = TagKey::from("foo");
+        assert!(tags.is(FOO_KEY, "bar"));
+        assert!(!tags.is(FOO_KEY, "foo"));
+        assert_eq!(tags.subset(&[FOO_KEY]).to_vec(), vec!["foo=bar"]);
+
+        // Tree interfaces
+        let tree = tags.tree();
+
+        let abra = tree.get("abra");
+        assert!(abra.is_some());
+        let abra = abra.unwrap();
+        assert_eq!(abra.val(), Some("cadabra"));
+        assert!(abra.tree().is_none());
+
+        let foo = tree.get(FOO_KEY);
+        assert!(foo.is_some());
+        let foo = foo.unwrap();
+        assert_eq!(foo.val(), Some("bar"));
+        assert!(foo.tree().is_some());
+
+        let multi = foo.get("multi:key");
+        assert!(multi.is_some());
+        let multi = multi.unwrap();
+        assert_eq!(multi.val(), Some("value"));
+        assert!(multi.tree().is_none());
+        assert_eq!(
+            multi.val(),
+            foo.get("multi").unwrap().get("key").unwrap().val()
+        );
+
+        // TODO: Multi Value
     }
 }
