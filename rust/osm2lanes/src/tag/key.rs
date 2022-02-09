@@ -7,19 +7,22 @@
 /// assert_eq!((example_key + "foo").as_str(), "example:foo");
 /// ```
 #[derive(Clone)]
-pub enum TagKey {
+pub struct TagKey(TagKeyEnum);
+
+#[derive(Clone)]
+enum TagKeyEnum {
     Static(&'static str),
     String(String),
 }
 
 impl TagKey {
     pub const fn from(string: &'static str) -> Self {
-        TagKey::Static(string)
+        TagKey(TagKeyEnum::Static(string))
     }
     pub fn as_str(&self) -> &str {
-        match self {
-            Self::Static(v) => v,
-            Self::String(v) => v.as_str(),
+        match &self.0 {
+            TagKeyEnum::Static(v) => v,
+            TagKeyEnum::String(v) => v.as_str(),
         }
     }
 }
@@ -30,11 +33,17 @@ impl From<&'static str> for TagKey {
     }
 }
 
+impl From<String> for TagKey {
+    fn from(string: String) -> Self {
+        TagKey(TagKeyEnum::String(string))
+    }
+}
+
 impl std::ops::Add for TagKey {
     type Output = Self;
     fn add(self, other: Self) -> Self {
         let val = format!("{}:{}", self.as_str(), other.as_str());
-        TagKey::String(val)
+        val.into()
     }
 }
 

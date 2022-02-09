@@ -24,6 +24,7 @@ impl std::fmt::Display for DuplicateKeyError {
 pub struct Tags(BTreeMap<String, String>);
 
 impl Tags {
+    /// Construct from slice of pairs
     pub fn from_str_pairs(tags: &[[&str; 2]]) -> Result<Self, DuplicateKeyError> {
         let mut map = BTreeMap::new();
         for tag in tags {
@@ -33,16 +34,12 @@ impl Tags {
         Ok(Self(map))
     }
 
-    // TODO deprecate, as it exposes the type of map used
-    pub fn new(map: BTreeMap<String, String>) -> Tags {
-        Tags(map)
-    }
-
-    // TODO deprecate, as it exposes the type of map used
-    // return something like &[[&str; 2]]
-    /// Expose inner map
-    pub fn map(&self) -> &BTreeMap<String, String> {
-        &self.0
+    /// Expose data as vector of pairs
+    pub fn to_str_pairs(&self) -> Vec<[&str; 2]> {
+        self.0
+            .iter()
+            .map(|(k, v)| [k.as_str(), v.as_str()])
+            .collect::<Vec<[&str; 2]>>()
     }
 
     /// Vector of `=` separated strings
@@ -53,6 +50,50 @@ impl Tags {
             .collect::<Vec<String>>()
     }
 
+    // TODO, shouldn't TagKey be passed by reference?
+    /// Get value from tags given a key
+    pub fn get<T: Into<TagKey>>(&self, k: T) -> Option<&str> {
+        self.0.get(k.into().as_str()).map(|v| v.as_str())
+    }
+
+    // TODO, shouldn't TagKey be passed by reference?
+    /// Return if tags key has value,
+    /// return false if key does not exist.
+    pub fn is<T: Into<TagKey>>(&self, k: T, v: &str) -> bool {
+        self.get(k) == Some(v)
+    }
+
+    // TODO, shouldn't TagKey be passed by reference?
+    /// Return if tags key has any of the values,
+    /// return false if the key does not exist.
+    pub fn is_any<T: Into<TagKey>>(&self, k: T, values: &[&str]) -> bool {
+        if let Some(v) = self.get(k) {
+            values.contains(&v)
+        } else {
+            false
+        }
+    }
+
+    // TODO, find a way to do this without so many clones
+    pub fn subset<T>(&self, keys: &[T]) -> Self
+    where
+        T: Clone,
+        T: Into<TagKey>,
+    {
+        let mut map = Self::default();
+        for key in keys {
+            let tag_key: TagKey = key.clone().into();
+            if let Some(val) = self.get(tag_key.clone()) {
+                assert!(map
+                    .0
+                    .insert(tag_key.as_str().to_owned(), val.to_owned())
+                    .is_none());
+            }
+        }
+        map
+    }
+
+    // TODO: bake into the type
     /// Get tree
     ///
     /// Parses colon separated keys like `cycleway:right:oneway` as a tree.
@@ -88,7 +129,6 @@ impl FromStr for Tags {
     /// ```
     /// use std::str::FromStr;
     /// use osm2lanes::tag::Tags;
-    /// use osm2lanes::tag::TagsRead;
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
     /// assert_eq!(tags.get("foo"), Some("bar"));
     /// ```
@@ -109,7 +149,6 @@ impl ToString for Tags {
     /// use std::str::FromStr;
     /// use std::string::ToString;
     /// use osm2lanes::tag::Tags;
-    /// use osm2lanes::tag::TagsRead;
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
     /// assert_eq!(tags.to_string(), "abra=cadabra\nfoo=bar");
     /// ```
@@ -143,7 +182,7 @@ impl TagTree {
             next?
                 .tree
                 .as_ref()?
-                .get(TagKey::String(rest_key.to_owned()))
+                .get::<TagKey>(rest_key.to_owned().into())
         } else {
             next
         }
@@ -186,57 +225,6 @@ impl TagTreeVal {
     }
 }
 
-// TODO, shouldn't TagKey be passed by reference?
-pub trait TagsRead {
-    // Basic read operations
-    fn get<T: Into<TagKey>>(&self, k: T) -> Option<&str>;
-    fn is<T: Into<TagKey>>(&self, k: T, v: &str) -> bool;
-    fn is_any<T: Into<TagKey>>(&self, k: T, values: &[&str]) -> bool;
-    // Filtering
-    /// Create a subset of the tags. Missing keys are ignored.
-    fn subset<T>(&self, keys: &[T]) -> Self
-    where
-        T: Clone,
-        T: Into<TagKey>;
-}
-
-impl TagsRead for Tags {
-    fn get<T: Into<TagKey>>(&self, k: T) -> Option<&str> {
-        self.0.get(k.into().as_str()).map(|v| v.as_str())
-    }
-
-    fn is<T: Into<TagKey>>(&self, k: T, v: &str) -> bool {
-        self.get(k) == Some(v)
-    }
-
-    fn is_any<T: Into<TagKey>>(&self, k: T, values: &[&str]) -> bool {
-        if let Some(v) = self.get(k) {
-            values.contains(&v)
-        } else {
-            false
-        }
-    }
-
-    // TODO, find a way to do this without so many clones
-    fn subset<T>(&self, keys: &[T]) -> Self
-    where
-        T: Clone,
-        T: Into<TagKey>,
-    {
-        let mut map = Self::default();
-        for key in keys {
-            let tag_key: TagKey = key.clone().into();
-            if let Some(val) = self.get(tag_key.clone()) {
-                assert!(map
-                    .0
-                    .insert(tag_key.as_str().to_owned(), val.to_owned())
-                    .is_none());
-            }
-        }
-        map
-    }
-}
-
 pub trait TagsWrite {
     /// Returns the old value of this key, if it was already present.
     fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V) -> Option<String>;
@@ -264,7 +252,7 @@ impl TagsWrite for Tags {
 
 #[cfg(test)]
 mod tests {
-    use crate::tag::{TagKey, Tags, TagsRead};
+    use crate::tag::{TagKey, Tags};
 
     #[test]
     fn test_tags() {
