@@ -52,21 +52,21 @@ impl Tags {
 
     // TODO, shouldn't TagKey be passed by reference?
     /// Get value from tags given a key
-    pub fn get<T: Into<TagKey>>(&self, k: T) -> Option<&str> {
-        self.0.get(k.into().as_str()).map(|v| v.as_str())
+    pub fn get<T: AsRef<str>>(&self, k: T) -> Option<&str> {
+        self.0.get(k.as_ref()).map(|v| v.as_str())
     }
 
     // TODO, shouldn't TagKey be passed by reference?
     /// Return if tags key has value,
     /// return false if key does not exist.
-    pub fn is<T: Into<TagKey>>(&self, k: T, v: &str) -> bool {
+    pub fn is<T: AsRef<str>>(&self, k: T, v: &str) -> bool {
         self.get(k) == Some(v)
     }
 
     // TODO, shouldn't TagKey be passed by reference?
     /// Return if tags key has any of the values,
     /// return false if the key does not exist.
-    pub fn is_any<T: Into<TagKey>>(&self, k: T, values: &[&str]) -> bool {
+    pub fn is_any<T: AsRef<str>>(&self, k: T, values: &[&str]) -> bool {
         if let Some(v) = self.get(k) {
             values.contains(&v)
         } else {
@@ -78,15 +78,14 @@ impl Tags {
     pub fn subset<T>(&self, keys: &[T]) -> Self
     where
         T: Clone,
-        T: Into<TagKey>,
+        T: AsRef<str>,
     {
         let mut map = Self::default();
         for key in keys {
-            let tag_key: TagKey = key.clone().into();
-            if let Some(val) = self.get(tag_key.clone()) {
+            if let Some(val) = self.get(key) {
                 assert!(map
                     .0
-                    .insert(tag_key.as_str().to_owned(), val.to_owned())
+                    .insert(key.as_ref().to_owned(), val.to_owned())
                     .is_none());
             }
         }
@@ -296,6 +295,9 @@ mod tests {
         assert!(tags.is(FOO_KEY, "bar"));
         assert!(!tags.is(FOO_KEY, "foo"));
         assert_eq!(tags.subset(&[FOO_KEY]).to_vec(), vec!["foo=bar"]);
+        assert!(tags.is(FOO_KEY + "multi" + "key", "value"));
+        let foo_key = FOO_KEY + "multi" + "key";
+        assert!(tags.is(&foo_key, "value"));
 
         // Tree interfaces
         let tree = tags.tree();
