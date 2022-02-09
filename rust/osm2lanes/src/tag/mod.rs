@@ -39,7 +39,7 @@ impl Tags {
         self.0
             .iter()
             .map(|(k, v)| [k.as_str(), v.as_str()])
-            .collect::<Vec<[&str; 2]>>()
+            .collect::<Vec<_>>()
     }
 
     /// Vector of `=` separated strings
