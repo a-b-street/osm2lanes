@@ -51,7 +51,7 @@ impl Tags {
         self.map
             .iter()
             .map(|(k, v)| [k.as_str(), v.as_str()])
-            .collect::<Vec<[&str; 2]>>()
+            .collect::<Vec<_>>()
     }
 
     /// Vector of `=` separated strings
@@ -124,7 +124,7 @@ impl FromStr for Tags {
                 let (key, val) = line.split_once('=').ok_or("tag must be = separated")?;
                 Ok([key, val])
             })
-            .collect::<Result<Vec<[&str; 2]>, Self::Err>>()?;
+            .collect::<Result<Vec<_>, Self::Err>>()?;
         // TODO: better error handling
         Self::from_str_pairs(&tags).map_err(|_| "Duplicate Key Error".to_owned())
     }
