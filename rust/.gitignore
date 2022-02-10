@@ -1,3 +1,7 @@
-dist
-target
+**/*.rs.bk
+/target
+bin/
 Cargo.lock
+dist/
+pkg/
+wasm-pack.log

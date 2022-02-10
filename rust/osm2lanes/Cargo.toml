@@ -5,13 +5,22 @@ edition = "2021"
 authors = ["Dustin Carlino <dabreegster@gmail.com>", "Michael Droogleever Fortuyn <droogmic@gmail.com>"]
 license = "Apache 2.0"
 
+[lib]
+# cdylib for WASM
+crate-type = ["lib", "cdylib"]
+
 [dependencies]
+console_error_panic_hook = { version = "0.1", optional = true }
 log = "0.4"
-serde = { version = "1", features = ["derive"] }
 reqwest = { version = "0.11", optional = true, features = ["blocking", "json"] }
+serde = { version = "1", features = ["derive"] }
+wasm-bindgen = { version = "0.2", optional = true, features = ["serde-serialize"] }
+wee_alloc = { version = "0.4", optional = true }
 
 [features]
+default = ["console_error_panic_hook"]
 overpass = ["reqwest", "reqwest/blocking", "reqwest/json"]
+wasm = ["wasm-bindgen", wasm-bindgen/serde-serialize", "wee_alloc", "console_error_panic_hook"]
 
 [dev-dependencies]
 serde_json = "1"
