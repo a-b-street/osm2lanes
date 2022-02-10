@@ -1,14 +1,14 @@
 use std::str::FromStr;
 
+use osm2lanes::overpass::get_way;
 use osm2lanes::road::{Lane, LanePrintable, Road};
-use osm2lanes::tags::Tags;
-use osm2lanes::transform::Lanes;
+use osm2lanes::tag::Tags;
+use osm2lanes::transform::{Lanes, RoadError};
 use osm2lanes::{
     lanes_to_tags, tags_to_lanes, DrivingSide, LanesToTagsConfig, Locale, TagsToLanesConfig,
 };
 use piet::Error as PietError;
 use piet_web::WebRenderContext;
-use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsCast;
 use web_sys::{window, HtmlCanvasElement, HtmlInputElement};
 use yew::prelude::*;
@@ -46,7 +46,7 @@ impl std::fmt::Display for RenderError {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
 pub struct State {
     pub locale: Locale,
     /// The editable input, line and equal separated tags
@@ -54,16 +54,19 @@ pub struct State {
     /// The input normalised
     pub normalized_tags: Option<String>,
     /// Lanes to visualise
-    pub road: Road,
+    pub road: Option<Road>,
     /// Message for user
     pub message: Option<String>,
+    /// Ref to input for way id
+    pub way_ref: NodeRef,
 }
 
 #[derive(Debug)]
 pub enum Msg {
-    Submit(String),
-    Focus,
+    TagsSet(String),
     ToggleDrivingSide,
+    WayFetch,
+    Error(String),
 }
 
 pub struct App {
@@ -78,35 +81,26 @@ impl Component for App {
     fn create(_ctx: &Context<Self>) -> Self {
         let locale = Locale::builder().build();
         let focus_ref = NodeRef::default();
-        let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nlanes:bus=1\nsidewalk=right".to_owned();
-        let state = if let Ok((Lanes { lanes, warnings }, norm_tags)) =
-            Self::calculate(&edit_tags, &locale)
-        {
-            State {
-                locale,
-                edit_tags,
-                normalized_tags: Some(norm_tags.to_string()),
-                road: Road { lanes },
-                message: Some(warnings.to_string()),
-            }
-        } else {
-            unreachable!();
+        let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nbusway=lane\nsidewalk=right".to_owned();
+        let state = State {
+            locale,
+            edit_tags,
+            normalized_tags: None,
+            road: None,
+            message: None,
+            way_ref: NodeRef::default(),
         };
-        Self { focus_ref, state }
+        let mut app = Self { focus_ref, state };
+        app.update_tags();
+        app
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> ShouldRender {
         log::trace!("Message: {:?}", msg);
         match msg {
-            Msg::Submit(value) => {
+            Msg::TagsSet(value) => {
                 self.state.edit_tags = value;
                 self.update_tags();
-                true
-            }
-            Msg::Focus => {
-                if let Some(input) = self.focus_ref.cast::<HtmlInputElement>() {
-                    input.focus().unwrap();
-                }
                 true
             }
             Msg::ToggleDrivingSide => {
@@ -114,13 +108,36 @@ impl Component for App {
                 self.update_tags();
                 true
             }
+            Msg::WayFetch => {
+                let way_id = self
+                    .state
+                    .way_ref
+                    .cast::<HtmlInputElement>()
+                    .unwrap()
+                    .value();
+                log::debug!("WayFetch {}", way_id);
+                match way_id.parse() {
+                    Ok(way_id) => {
+                        ctx.link().send_future(async move {
+                            match get_way(way_id).await {
+                                Ok(tags) => Msg::TagsSet(tags.to_string()),
+                                Err(e) => Msg::Error(e.to_string()),
+                            }
+                        });
+                    }
+                    Err(e) => self.state.message = Some(format!("Invalid way id: {}", e)),
+                }
+                true
+            }
+            Msg::Error(e) => {
+                self.state.message = Some(format!("Error: {}", e));
+                true
+            }
         }
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {
-        let edit = move |input: HtmlInputElement| Msg::Submit(input.value());
-
-        let onmouseover = ctx.link().callback(|_| Msg::Focus);
+        let edit = move |input: HtmlInputElement| Msg::TagsSet(input.value());
 
         let onblur = ctx
             .link()
@@ -132,13 +149,19 @@ impl Component for App {
 
         let onchange = ctx.link().callback(|_e: Event| Msg::ToggleDrivingSide);
 
+        let way_id_onclick = ctx.link().callback(|_| Msg::WayFetch);
+
         html! {
             <div>
                 <h1>{"osm2lanes"}</h1>
                 <section class="row">
-                    <div class="row-item">
-                        <p>{"↑↓ LHT"}</p>
-                    </div>
+                    <button class="row-item">
+                        {"Calculate"}
+                    </button>
+                    <hr/>
+                    <p class="row-item">
+                        {"↑↓ LHT"}
+                    </p>
                     <label class="row-item switch">
                         <input
                             type="checkbox"
@@ -147,9 +170,15 @@ impl Component for App {
                         />
                         <span class="slider"></span>
                     </label>
-                    <div class="row-item">
-                        <p>{"RHT ↓↑"}</p>
-                    </div>
+                    <p class="row-item">
+                        {"RHT ↓↑"}
+                    </p>
+                    <hr/>
+                    <label class="row-item" for="way">{"OSM Way ID"}</label>
+                    <input class="row-item" type="text" id="way" name="way" size="12" ref={self.state.way_ref.clone()}/>
+                    <button class="row-item" onclick={way_id_onclick}>
+                        {"Fetch"}
+                    </button>
                 </section>
                 <section class="row">
                     <div class="row-item">
@@ -158,7 +187,6 @@ impl Component for App {
                             cols="48"
                             ref={self.focus_ref.clone()}
                             value={self.state.edit_tags.clone()}
-                            {onmouseover}
                             {onblur}
                             {onkeypress}
                             autocomplete={"off"}
@@ -200,26 +228,34 @@ impl Component for App {
                                 <pre>
                                     {message}
                                 </pre>
+                                <hr/>
                             </section>
                         }
                     } else {
                         html!{}
                     }
                 }
-                <hr/>
-                <section>
-                    <div class="lanes">
-                        {
-                            for self.state.road.lanes.iter().map(|lane| self.view_lane_type(lane))
+                {
+                    if let Some(road) = &self.state.road {
+                        html!{
+                            <section>
+                                <div class="lanes">
+                                    {
+                                        for road.lanes.iter().map(|lane| self.view_lane_type(lane))
+                                    }
+                                </div>
+                                <div class="lanes">
+                                    {
+                                        for road.lanes.iter().map(|lane| self.view_lane_direction(lane))
+                                    }
+                                </div>
+                                <hr/>
+                            </section>
                         }
-                    </div>
-                    <div class="lanes">
-                        {
-                            for self.state.road.lanes.iter().map(|lane| self.view_lane_direction(lane))
-                        }
-                    </div>
-                </section>
-                <hr/>
+                    } else {
+                        html!{}
+                    }
+                }
                 <canvas id="canvas" width="960px" height="480px"></canvas>
             </div>
         }
@@ -231,33 +267,32 @@ impl Component for App {
 }
 
 impl App {
-    fn calculate(
-        value: &str,
-        locale: &Locale,
-    ) -> Result<(Lanes, Tags), Result<(Lanes, String), String>> {
-        log::trace!("Calculate: {}", value);
-        match Tags::from_str(value) {
+    fn update_tags(&mut self) {
+        let value = &self.state.edit_tags;
+        let locale = &self.state.locale;
+        log::trace!("Update Tags: {}", value);
+        let calculate = match Tags::from_str(value) {
             Ok(tags) => match tags_to_lanes(&tags, locale, &TagsToLanesConfig::default()) {
                 Ok(lanes) => {
                     match lanes_to_tags(&lanes.lanes, locale, &LanesToTagsConfig::default()) {
                         Ok(tags) => Ok((lanes, tags)),
-                        Err(e) => Err(Ok((lanes, e.to_string()))),
+                        Err(e) => {
+                            if let RoadError::Warnings(warnings) = &e {
+                                Err(Ok((lanes, format!("{}\n{}", e, warnings))))
+                            } else {
+                                Err(Ok((lanes, e.to_string())))
+                            }
+                        }
                     }
                 }
                 Err(e) => Err(Err(e.to_string())),
             },
             Err(_) => Err(Err("parsing tags failed".to_owned())),
-        }
-    }
-
-    fn update_tags(&mut self) {
-        let value = &self.state.edit_tags;
-        log::trace!("Update Tags: {}", value);
-        let calculate = Self::calculate(value, &self.state.locale);
+        };
         log::trace!("Update: {:?}", calculate);
         match calculate {
             Ok((Lanes { lanes, warnings }, norm_tags)) => {
-                self.state.road = Road { lanes };
+                self.state.road = Some(Road { lanes });
                 self.state.normalized_tags = Some(norm_tags.to_string());
                 if warnings.is_empty() {
                     self.state.message = None;
@@ -266,17 +301,17 @@ impl App {
                 }
             }
             Err(Ok((Lanes { lanes, warnings }, norm_err))) => {
-                self.state.road = Road { lanes };
+                self.state.road = Some(Road { lanes });
                 self.state.normalized_tags = None;
                 if warnings.is_empty() {
-                    self.state.message = Some(format!("Normalisation Error: {}", norm_err));
+                    self.state.message = Some(format!("Lanes to Tags Error: {}", norm_err));
                 } else {
                     self.state.message =
-                        Some(format!("{}\nNormalisation Error: {}", warnings, norm_err));
+                        Some(format!("{}\nLanes to Tags Error: {}", warnings, norm_err));
                 }
             }
             Err(Err(lanes_err)) => {
-                self.state.road = Road { lanes: Vec::new() };
+                self.state.road = None;
                 self.state.normalized_tags = None;
                 self.state.message = Some(format!("Conversion Error: {}", lanes_err));
             }
@@ -302,36 +337,38 @@ impl App {
         }
     }
     fn draw_canvas(&self) {
-        let window = window().unwrap();
-        let canvas = window
-            .document()
-            .unwrap()
-            .get_element_by_id("canvas")
-            .unwrap()
-            .dyn_into::<HtmlCanvasElement>()
-            .unwrap();
-        let context = canvas
-            .get_context("2d")
-            .unwrap()
-            .unwrap()
-            .dyn_into::<web_sys::CanvasRenderingContext2d>()
-            .unwrap();
+        if let Some(road) = &self.state.road {
+            let window = window().unwrap();
+            let canvas = window
+                .document()
+                .unwrap()
+                .get_element_by_id("canvas")
+                .unwrap()
+                .dyn_into::<HtmlCanvasElement>()
+                .unwrap();
+            let context = canvas
+                .get_context("2d")
+                .unwrap()
+                .unwrap()
+                .dyn_into::<web_sys::CanvasRenderingContext2d>()
+                .unwrap();
 
-        let dpr = window.device_pixel_ratio();
-        let canvas_width = (canvas.offset_width() as f64 * dpr) as u32;
-        let canvas_height = (canvas.offset_height() as f64 * dpr) as u32;
-        canvas.set_width(canvas_width);
-        canvas.set_height(canvas_height);
-        context.scale(dpr, dpr).unwrap();
-        let mut rc = WebRenderContext::new(context, window);
+            let dpr = window.device_pixel_ratio();
+            let canvas_width = (canvas.offset_width() as f64 * dpr) as u32;
+            let canvas_height = (canvas.offset_height() as f64 * dpr) as u32;
+            canvas.set_width(canvas_width);
+            canvas.set_height(canvas_height);
+            context.scale(dpr, dpr).unwrap();
+            let mut rc = WebRenderContext::new(context, window);
 
-        draw::lanes(
-            &mut rc,
-            (canvas_width, canvas_height),
-            &self.state.road,
-            &self.state.locale,
-        )
-        .unwrap();
+            draw::lanes(
+                &mut rc,
+                (canvas_width, canvas_height),
+                road,
+                &self.state.locale,
+            )
+            .unwrap();
+        }
     }
 }
 

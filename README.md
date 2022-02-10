@@ -195,6 +195,8 @@ cd rust/osm2lanes
 cargo test
 ```
 
+Before sending a PR, please run `cargo +nightly fmt` to format the code. Note that while the crate targets the current stable Rust, the project requires the nightly toolchain for formatting. You can install it by doing `rustup toolchain install nightly` -- this won't change the default toolchain from stable.
+
 ### Run
 
 ```shell
@@ -212,4 +214,4 @@ The web demo at https://a-b-street.github.io/osm2lanes provides an easy way to t
 
 ## Contributing
 
-Pull requests very welcome! Once the dust from initial development settles, we'll have a better TODO list. All contributors agree to license their work under Apache 2.0.
+[See the contribution guidelines.](./CONTRIBUTING.md)

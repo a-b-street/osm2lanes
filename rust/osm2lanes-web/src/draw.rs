@@ -36,7 +36,7 @@ pub fn lanes<R: RenderContext>(
     let asphalt_buffer = Metre::new(0.1);
 
     let scale = Scale(
-        canvas_width / (road.total_width(locale) + 2.0 * grassy_verge + 2.0 * asphalt_buffer).val(),
+        canvas_width / (road.width(locale) + 2.0 * grassy_verge + 2.0 * asphalt_buffer).val(),
     );
 
     // Background
@@ -46,7 +46,7 @@ pub fn lanes<R: RenderContext>(
         Rect::new(
             scale.scale(grassy_verge),
             0.0,
-            scale.scale(grassy_verge + asphalt_buffer + road.total_width(locale) + asphalt_buffer),
+            scale.scale(grassy_verge + asphalt_buffer + road.width(locale) + asphalt_buffer),
             canvas_height,
         ),
         &Color::BLACK,
@@ -115,7 +115,7 @@ pub fn lanes<R: RenderContext>(
                 left_edge += width;
             }
             Lane::Separator { markings } => {
-                for marking in markings {
+                for marking in markings.iter() {
                     let width = marking.width.unwrap_or_else(|| Metre::new(0.2));
                     let x = scale.scale(left_edge + 0.5 * width);
                     let color = match (marking.style, marking.color) {

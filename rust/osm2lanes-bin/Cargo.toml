@@ -1,0 +1,14 @@
+[package]
+name = "osm2lanes-bin"
+version = "0.1.0"
+edition = "2021"
+default-run = "osm2lanes-bin"
+
+[dependencies]
+clap = { version = "3", features = ["derive"] }
+flexi_logger = "0.22"
+futures = { version = "0.3" }
+log = "0.4"
+osm2lanes = { path = "../osm2lanes", features = ["overpass"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt", "macros"] }

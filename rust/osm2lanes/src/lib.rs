@@ -9,10 +9,15 @@ pub use metre::Metre;
 
 pub mod road;
 
-pub mod tags;
+pub mod tag;
 
 mod locale;
 pub use self::locale::{DrivingSide, Locale};
 
+#[cfg(feature = "overpass")]
+pub mod overpass;
+
 pub mod transform;
 pub use self::transform::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
+
+mod test;

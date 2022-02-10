@@ -12,28 +12,31 @@ pub fn bus(
     tags: &Tags,
     locale: &Locale,
     oneway: bool,
-    forward_side: &mut Vec<Lane>,
-    backward_side: &mut Vec<Lane>,
+    forward_side: &mut [Lane],
+    backward_side: &mut [Lane],
+    warnings: &mut RoadWarnings,
 ) -> ModeResult {
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
     // 3 schemes, for simplicity we only allow one at a time
-    let tag_tree = tags.tree();
-
     match (
-        tag_tree.get("busway").is_some(),
-        tag_tree
+        tags.tree().get("busway").is_some(),
+        tags.tree()
             .get("lanes:bus")
-            .or_else(|| tag_tree.get("lanes:psv"))
+            .or_else(|| tags.tree().get("lanes:psv"))
             .is_some(),
-        tag_tree
+        tags.tree()
             .get("bus:lanes")
-            .or_else(|| tag_tree.get("psv:lanes"))
+            .or_else(|| tags.tree().get("psv:lanes"))
             .is_some(),
     ) {
         (false, false, false) => {}
-        (true, _, false) => busway(tags, locale, oneway, forward_side, backward_side)?,
-        (false, true, false) => lanes_bus(tags, locale, oneway, forward_side, backward_side)?,
-        (false, false, true) => bus_lanes(tags, locale, oneway, forward_side, backward_side)?,
+        (true, _, false) => busway(tags, locale, oneway, forward_side, backward_side, warnings)?,
+        (false, true, false) => {
+            lanes_bus(tags, locale, oneway, forward_side, backward_side, warnings)?
+        }
+        (false, false, true) => {
+            bus_lanes(tags, locale, oneway, forward_side, backward_side, warnings)?
+        }
         _ => {
             return Err(RoadMsg::Unsupported {
                 description: Some("more than one bus lanes scheme used".to_owned()),
@@ -50,8 +53,9 @@ fn busway(
     tags: &Tags,
     locale: &Locale,
     _oneway: bool,
-    forward_side: &mut Vec<Lane>,
-    backward_side: &mut Vec<Lane>,
+    forward_side: &mut [Lane],
+    backward_side: &mut [Lane],
+    _warnings: &mut RoadWarnings,
 ) -> ModeResult {
     const BUSWAY: TagKey = TagKey::from("busway");
     if tags.is(BUSWAY, "lane") {
@@ -112,10 +116,11 @@ fn lanes_bus(
     tags: &Tags,
     _locale: &Locale,
     _oneway: bool,
-    _forward_side: &mut Vec<Lane>,
-    _backward_side: &mut Vec<Lane>,
+    _forward_side: &mut [Lane],
+    _backward_side: &mut [Lane],
+    warnings: &mut RoadWarnings,
 ) -> ModeResult {
-    return Err(RoadMsg::Unimplemented {
+    warnings.push(RoadMsg::Unimplemented {
         description: None,
         tags: Some(tags.subset(&[
             LANES + "psv",
@@ -129,16 +134,17 @@ fn lanes_bus(
             LANES + "bus" + "left",
             LANES + "bus" + "right",
         ])),
-    }
-    .into());
+    });
+    Ok(())
 }
 
 fn bus_lanes(
     tags: &Tags,
     _locale: &Locale,
     oneway: bool,
-    forward_side: &mut Vec<Lane>,
-    backward_side: &mut Vec<Lane>,
+    forward_side: &mut [Lane],
+    backward_side: &mut [Lane],
+    _warnings: &mut RoadWarnings,
 ) -> ModeResult {
     let fwd_bus_spec = if let Some(s) = tags.get("bus:lanes:forward") {
         s

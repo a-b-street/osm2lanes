@@ -459,6 +459,8 @@
 - description: cycleway:BACKWARD=lane oneway=yes, cycleway is in the forward direction
   way_id: 428294122
   mapillary: https://www.mapillary.com/app/?pKey=503446704131825
+  rust:
+    ignore_warnings: true
   # https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
   # TODO: OSM tags do not accurately reflect parking situation
   tags:
@@ -680,6 +682,8 @@
 - way_id: 988980354
   description: busway=* and lanes:bus=*
   driving_side: right
+  rust:
+    ignore_warnings: true
   tags:
     highway: primary
     busway: lane

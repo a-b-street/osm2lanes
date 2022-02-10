@@ -1,0 +1,12 @@
+#!/bin/sh
+
+dir="$(dirname "$0")"
+
+ktlint || { echo "FAIL KTLINT"; exit 1; }
+
+cd "$dir/../kotlin/"
+
+gradle clean || { echo "FAIL"; exit 1; }
+gradle --console rich test || { echo "FAIL KOTLIN"; exit 1; }
+
+cd -

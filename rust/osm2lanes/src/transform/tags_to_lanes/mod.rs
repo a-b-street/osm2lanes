@@ -1,7 +1,7 @@
 use std::iter;
 
 use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle};
-use crate::tags::{TagKey, Tags, TagsRead};
+use crate::tag::{TagKey, Tags};
 use crate::{DrivingSide, Locale};
 
 mod bicycle;
@@ -24,9 +24,19 @@ use non_motorized::non_motorized;
 
 use super::*;
 
-#[derive(Default)]
+#[non_exhaustive]
 pub struct TagsToLanesConfig {
     pub error_on_warnings: bool,
+    pub include_separators: bool,
+}
+
+impl Default for TagsToLanesConfig {
+    fn default() -> Self {
+        Self {
+            error_on_warnings: false,
+            include_separators: true,
+        }
+    }
 }
 
 /// From an OpenStreetMap way's tags,
@@ -73,7 +83,14 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
         fwd_side.insert(0, Lane::both(LaneDesignated::Motor));
     }
 
-    bus(tags, locale, oneway, &mut fwd_side, &mut back_side)?;
+    bus(
+        tags,
+        locale,
+        oneway,
+        &mut fwd_side,
+        &mut back_side,
+        &mut warnings,
+    )?;
 
     bicycle(
         tags,
@@ -101,7 +118,11 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
 
     let lanes = Lanes { lanes, warnings };
 
-    let lanes = insert_separators(lanes)?;
+    let lanes = if config.include_separators {
+        insert_separators(lanes)?
+    } else {
+        lanes
+    };
 
     if config.error_on_warnings && !lanes.warnings.is_empty() {
         return Err(lanes.warnings.into());
@@ -193,20 +214,8 @@ pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -
         return Err(RoadMsg::unimplemented_tag("highway", "construction").into());
     }
 
-    let tag_tree = tags.tree();
-    if tag_tree.get("lanes").is_some() {
-        warnings.push(
-            RoadMsg::Unimplemented {
-                description: Some("lanes=*".to_owned()),
-                // TODO, TagTree should support subset
-                tags: Some(tags.subset(&["lanes"])),
-            }
-            .into(),
-        );
-    }
-
     // https://wiki.openstreetmap.org/wiki/Key:access#Transport_mode_restrictions
-    const ACCESS_KEYS: [&'static str; 43] = [
+    const ACCESS_KEYS: [&str; 43] = [
         "access",
         "dog",
         "ski",
@@ -255,14 +264,11 @@ pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -
         .iter()
         .any(|k| tags.get(TagKey::from(k)).is_some())
     {
-        warnings.push(
-            RoadMsg::Unimplemented {
-                description: Some("access".to_owned()),
-                // TODO, TagTree should support subset
-                tags: Some(tags.subset(&ACCESS_KEYS)),
-            }
-            .into(),
-        );
+        warnings.push(RoadMsg::Unimplemented {
+            description: Some("access".to_owned()),
+            // TODO, TagTree should support subset
+            tags: Some(tags.subset(&ACCESS_KEYS)),
+        });
     }
 
     if tags.is("oneway", "reversible") {

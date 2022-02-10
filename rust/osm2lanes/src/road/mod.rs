@@ -6,7 +6,7 @@ mod lane;
 pub use lane::{Lane, LaneDesignated, LaneDirection, LanePrintable};
 
 mod marking;
-pub use marking::{Marking, MarkingColor, MarkingStyle};
+pub use marking::{Marking, MarkingColor, MarkingStyle, Markings};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Road {
@@ -20,17 +20,11 @@ impl Road {
 }
 
 impl Road {
-    pub fn total_width(&self, locale: &Locale) -> Metre {
+    /// Width in metres
+    pub fn width(&self, locale: &Locale) -> Metre {
         self.lanes
             .iter()
-            .map(|lane| match lane {
-                Lane::Separator { markings } => markings
-                    .iter()
-                    .map(|marking| marking.width.unwrap_or(Marking::DEFAULT_WIDTH))
-                    .sum::<Metre>(),
-                Lane::Travel { designated, .. } => locale.default_width(designated),
-                _ => Lane::DEFAULT_WIDTH,
-            })
+            .map(|lane| lane.width(locale))
             .sum::<Metre>()
     }
 }
