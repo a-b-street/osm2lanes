@@ -27,5 +27,7 @@ pub mod overpass;
 
 #[cfg(feature = "wasm")]
 mod wasm;
+#[cfg(feature = "wasm")]
+use wasm::tags_to_lanes_tmp;
 
 mod test;

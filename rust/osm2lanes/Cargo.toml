@@ -1,9 +1,11 @@
 [package]
 name = "osm2lanes"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2021"
 authors = ["Dustin Carlino <dabreegster@gmail.com>", "Michael Droogleever Fortuyn <droogmic@gmail.com>"]
 license = "Apache 2.0"
+description = "Transform tags from an OpenStreetMap (OSM) way into a description of the lanes"
+repository = "https://github.com/a-b-street/osm2lanes/"
 
 [lib]
 # cdylib for WASM
@@ -20,8 +22,9 @@ wee_alloc = { version = "0.4", optional = true }
 [features]
 default = ["console_error_panic_hook"]
 overpass = ["reqwest", "reqwest/blocking", "reqwest/json"]
-wasm = ["wasm-bindgen", wasm-bindgen/serde-serialize", "wee_alloc", "console_error_panic_hook"]
+wasm = ["wasm-bindgen", "wasm-bindgen/serde-serialize", "wee_alloc", "console_error_panic_hook"]
 
 [dev-dependencies]
 serde_json = "1"
 serde_yaml = "0.8"
+wasm-bindgen-test = "0.3"
