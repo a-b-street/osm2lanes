@@ -59,8 +59,9 @@ pub fn lanes<R: RenderContext>(
             Lane::Travel {
                 direction,
                 designated,
+                width,
             } => {
-                let width = locale.default_width(designated);
+                let width = width.unwrap_or_else(|| locale.travel_width(designated));
                 let x = scale.scale(left_edge + (0.5 * width));
                 if let Some(direction) = direction {
                     draw_arrow(
@@ -101,8 +102,8 @@ pub fn lanes<R: RenderContext>(
                 rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
                 left_edge += width;
             }
-            Lane::Shoulder => {
-                let width = default_lane_width;
+            Lane::Shoulder { width } => {
+                let width = width.unwrap_or(default_lane_width);
                 let x = scale.scale(left_edge + (0.5 * width));
                 let font_size = 24.0;
                 let layout = rc

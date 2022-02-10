@@ -140,7 +140,7 @@ fn lanes_bus(
 
 fn bus_lanes(
     tags: &Tags,
-    _locale: &Locale,
+    locale: &Locale,
     oneway: bool,
     forward_side: &mut [Lane],
     backward_side: &mut [Lane],
@@ -181,9 +181,11 @@ fn bus_lanes(
                         } else {
                             unreachable!()
                         };
+                    let designated = LaneDesignated::Bus;
                     forward_side[idx + offset] = Lane::Travel {
                         direction,
-                        designated: LaneDesignated::Bus,
+                        designated,
+                        width: Some(locale.travel_width(&designated)),
                     };
                 }
             }
@@ -202,9 +204,11 @@ fn bus_lanes(
                     } else {
                         unreachable!()
                     };
+                    let designated = LaneDesignated::Bus;
                     backward_side[idx] = Lane::Travel {
                         direction,
-                        designated: LaneDesignated::Bus,
+                        designated,
+                        width: Some(locale.travel_width(&designated)),
                     };
                 }
             }

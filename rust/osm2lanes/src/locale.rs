@@ -16,7 +16,7 @@ impl Locale {
     pub fn builder() -> Config {
         Config::default()
     }
-    pub fn default_width(&self, designated: &LaneDesignated) -> Metre {
+    pub const fn travel_width(&self, designated: &LaneDesignated) -> Metre {
         match designated {
             LaneDesignated::Motor | LaneDesignated::Bus => Metre::new(3.5),
             LaneDesignated::Foot => Metre::new(2.5),

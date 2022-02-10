@@ -116,12 +116,12 @@ pub fn foot_and_shoulder(
                 let has_bicycle_lane = side.last().map_or(false, |lane| lane.is_bicycle());
 
                 if !has_bicycle_lane && (forward || !oneway) {
-                    side.push(Lane::Shoulder)
+                    side.push(Lane::shoulder(locale))
                 }
             }
             (Sidewalk::No | Sidewalk::None, Shoulder::No) => {}
-            (Sidewalk::Yes, Shoulder::No | Shoulder::None) => side.push(Lane::foot()),
-            (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => side.push(Lane::Shoulder),
+            (Sidewalk::Yes, Shoulder::No | Shoulder::None) => side.push(Lane::foot(locale)),
+            (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => side.push(Lane::shoulder(locale)),
             (Sidewalk::Yes, Shoulder::Yes) => {
                 return Err(RoadMsg::Unsupported {
                     description: Some("shoulder and sidewalk on same side".to_owned()),

@@ -56,8 +56,8 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
     }
     // Shoulder
     match (
-        lanes.first().unwrap() == &Lane::Shoulder,
-        lanes.last().unwrap() == &Lane::Shoulder,
+        lanes.first().unwrap().is_shoulder(),
+        lanes.last().unwrap().is_shoulder(),
     ) {
         (false, false) => {
             // TODO do we want to always be explicit about this?
@@ -182,6 +182,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
             Lane::Travel {
                 designated: LaneDesignated::Motor,
                 direction: Some(LaneDirection::Both),
+                ..
             }
         )
     }) {

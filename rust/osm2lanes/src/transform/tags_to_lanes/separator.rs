@@ -47,7 +47,7 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
                 width: Some(Marking::DEFAULT_WIDTH),
             }]),
         }),
-        [Lane::Shoulder, _] | [_, Lane::Shoulder] => Some(Lane::Separator {
+        [Lane::Shoulder { .. }, _] | [_, Lane::Shoulder { .. }] => Some(Lane::Separator {
             markings: Markings::new(vec![Marking {
                 style: MarkingStyle::SolidLine,
                 color: Some(MarkingColor::White),

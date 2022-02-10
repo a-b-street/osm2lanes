@@ -72,15 +72,15 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
 
     // These are ordered from the road center, going outwards. Most of the members of fwd_side will
     // have Direction::Forward, but there can be exceptions with two-way cycletracks.
-    let mut fwd_side: Vec<Lane> = iter::repeat_with(|| Lane::forward(driving_lane))
+    let mut fwd_side: Vec<Lane> = iter::repeat_with(|| Lane::forward(driving_lane, locale))
         .take(num_driving_fwd)
         .collect();
-    let mut back_side: Vec<Lane> = iter::repeat_with(|| Lane::backward(driving_lane))
+    let mut back_side: Vec<Lane> = iter::repeat_with(|| Lane::backward(driving_lane, locale))
         .take(num_driving_back)
         .collect();
     // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
     if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
-        fwd_side.insert(0, Lane::both(LaneDesignated::Motor));
+        fwd_side.insert(0, Lane::both(LaneDesignated::Motor, locale));
     }
 
     bus(

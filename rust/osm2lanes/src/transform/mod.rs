@@ -1,6 +1,6 @@
 use crate::road::{Lane, LaneDesignated, LaneDirection};
 use crate::tag::{TagKey, Tags};
-use crate::DrivingSide;
+use crate::{DrivingSide, Locale};
 
 mod error;
 pub use error::{Lanes, RoadError, RoadMsg, RoadWarnings};
@@ -71,34 +71,47 @@ impl Lane {
     pub fn is_separator(&self) -> bool {
         matches!(self, Lane::Separator { .. })
     }
-    fn forward(designated: LaneDesignated) -> Self {
+    fn forward(designated: LaneDesignated, locale: &Locale) -> Self {
         Self::Travel {
             direction: Some(LaneDirection::Forward),
             designated,
+            width: Some(locale.travel_width(&designated)),
         }
     }
-    fn backward(designated: LaneDesignated) -> Self {
+    fn backward(designated: LaneDesignated, locale: &Locale) -> Self {
         Self::Travel {
             direction: Some(LaneDirection::Backward),
             designated,
+            width: Some(locale.travel_width(&designated)),
         }
     }
-    fn both(designated: LaneDesignated) -> Self {
+    fn both(designated: LaneDesignated, locale: &Locale) -> Self {
         Self::Travel {
             direction: Some(LaneDirection::Both),
             designated,
+            width: Some(locale.travel_width(&designated)),
         }
     }
-    fn foot() -> Self {
+    fn foot(locale: &Locale) -> Self {
+        let designated = LaneDesignated::Foot;
         Self::Travel {
             direction: None,
-            designated: LaneDesignated::Foot,
+            designated,
+            width: Some(locale.travel_width(&designated)),
         }
     }
-    fn parking(direction: LaneDirection) -> Self {
+    fn parking(direction: LaneDirection, locale: &Locale) -> Self {
         Self::Parking {
             direction,
             designated: LaneDesignated::Motor,
+            // TODO: width not just motor
+            width: Some(locale.travel_width(&LaneDesignated::Motor)),
+        }
+    }
+    fn shoulder(locale: &Locale) -> Self {
+        Self::Shoulder {
+            // TODO: width not just motor
+            width: Some(locale.travel_width(&LaneDesignated::Motor)),
         }
     }
     fn is_motor(&self) -> bool {
@@ -136,6 +149,9 @@ impl Lane {
                 ..
             }
         )
+    }
+    fn is_shoulder(&self) -> bool {
+        matches!(self, Lane::Shoulder { .. })
     }
     fn set_bus(&mut self) -> ModeResult {
         match self {
