@@ -39,6 +39,12 @@ impl From<String> for TagKey {
     }
 }
 
+impl AsRef<str> for TagKey {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
 impl std::ops::Add for TagKey {
     type Output = Self;
     fn add(self, other: Self) -> Self {

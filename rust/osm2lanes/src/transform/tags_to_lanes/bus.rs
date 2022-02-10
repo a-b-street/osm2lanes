@@ -18,17 +18,15 @@ pub fn bus(
 ) -> ModeResult {
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
     // 3 schemes, for simplicity we only allow one at a time
-    let tag_tree = tags.tree();
-
     match (
-        tag_tree.get("busway").is_some(),
-        tag_tree
+        tags.tree().get("busway").is_some(),
+        tags.tree()
             .get("lanes:bus")
-            .or_else(|| tag_tree.get("lanes:psv"))
+            .or_else(|| tags.tree().get("lanes:psv"))
             .is_some(),
-        tag_tree
+        tags.tree()
             .get("bus:lanes")
-            .or_else(|| tag_tree.get("psv:lanes"))
+            .or_else(|| tags.tree().get("psv:lanes"))
             .is_some(),
     ) {
         (false, false, false) => {}

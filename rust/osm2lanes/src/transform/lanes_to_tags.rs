@@ -51,7 +51,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
             }
         )
     }) {
-        tags.insert("oneway", "yes");
+        tags.checked_insert("oneway", "yes")?;
         oneway = true;
     }
     // Shoulder

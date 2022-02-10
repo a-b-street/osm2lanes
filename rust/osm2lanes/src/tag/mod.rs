@@ -17,11 +17,19 @@ impl std::fmt::Display for DuplicateKeyError {
 
 /// A map from string keys to string values. This makes copies of strings for
 /// convenience; don't use in performance sensitive contexts.
+//
 // BTreeMap chosen for deterministic serialization.
 // We often need to compare output directly, so cannot tolerate reordering
+//
 // TODO: fix this in the serialization by having the keys sorted.
-#[derive(Clone, Debug, Deserialize, Default, Serialize)]
-pub struct Tags(BTreeMap<String, String>);
+//
+// TODO: use only one of map or tree, with a zero-cost API for the other at runtime
+//
+#[derive(Clone, Debug, Default)]
+pub struct Tags {
+    map: BTreeMap<String, String>,
+    tree: TagTree,
+}
 
 impl Tags {
     /// Construct from slice of pairs
@@ -31,12 +39,16 @@ impl Tags {
             map.insert(tag[0].to_owned(), tag[1].to_owned())
                 .map_or(Ok(()), |_| Err(DuplicateKeyError(tag[0].to_owned())))?;
         }
-        Ok(Self(map))
+        let mut tree = TagTree::default();
+        for (k, v) in map.iter() {
+            tree.insert(k, v.to_owned())?;
+        }
+        Ok(Self { map, tree })
     }
 
     /// Expose data as vector of pairs
     pub fn to_str_pairs(&self) -> Vec<[&str; 2]> {
-        self.0
+        self.map
             .iter()
             .map(|(k, v)| [k.as_str(), v.as_str()])
             .collect::<Vec<_>>()
@@ -44,29 +56,26 @@ impl Tags {
 
     /// Vector of `=` separated strings
     pub fn to_vec(&self) -> Vec<String> {
-        self.0
+        self.map
             .iter()
             .map(|(k, v)| format!("{}={}", k.as_str(), v.as_str()))
             .collect::<Vec<String>>()
     }
 
-    // TODO, shouldn't TagKey be passed by reference?
     /// Get value from tags given a key
-    pub fn get<T: Into<TagKey>>(&self, k: T) -> Option<&str> {
-        self.0.get(k.into().as_str()).map(|v| v.as_str())
+    pub fn get<T: AsRef<str>>(&self, k: T) -> Option<&str> {
+        self.map.get(k.as_ref()).map(|v| v.as_str())
     }
 
-    // TODO, shouldn't TagKey be passed by reference?
     /// Return if tags key has value,
     /// return false if key does not exist.
-    pub fn is<T: Into<TagKey>>(&self, k: T, v: &str) -> bool {
+    pub fn is<T: AsRef<str>>(&self, k: T, v: &str) -> bool {
         self.get(k) == Some(v)
     }
 
-    // TODO, shouldn't TagKey be passed by reference?
     /// Return if tags key has any of the values,
     /// return false if the key does not exist.
-    pub fn is_any<T: Into<TagKey>>(&self, k: T, values: &[&str]) -> bool {
+    pub fn is_any<T: AsRef<str>>(&self, k: T, values: &[&str]) -> bool {
         if let Some(v) = self.get(k) {
             values.contains(&v)
         } else {
@@ -78,46 +87,22 @@ impl Tags {
     pub fn subset<T>(&self, keys: &[T]) -> Self
     where
         T: Clone,
-        T: Into<TagKey>,
+        T: AsRef<str>,
     {
         let mut map = Self::default();
         for key in keys {
-            let tag_key: TagKey = key.clone().into();
-            if let Some(val) = self.get(tag_key.clone()) {
+            if let Some(val) = self.get(key) {
                 assert!(map
-                    .0
-                    .insert(tag_key.as_str().to_owned(), val.to_owned())
+                    .map
+                    .insert(key.as_ref().to_owned(), val.to_owned())
                     .is_none());
             }
         }
         map
     }
 
-    // TODO: bake into the type
-    /// Get tree
-    ///
-    /// Parses colon separated keys like `cycleway:right:oneway` as a tree.
-    ///
-    /// ```
-    /// use std::str::FromStr;
-    /// use osm2lanes::tag::Tags;
-    /// let tags = Tags::from_str("foo=bar\na:b:c=foobar").unwrap();
-    /// let tree = tags.tree();
-    /// let a = tree.get("a");
-    /// assert!(a.is_some());
-    /// let a = a.unwrap();
-    /// assert!(a.val().is_none());
-    /// let c = a.get("b:c");
-    /// assert!(c.is_some());
-    /// let c = c.unwrap();
-    /// assert_eq!(c.val(), Some("foobar"))
-    /// ```
-    pub fn tree(&self) -> TagTree {
-        let mut tag_tree = TagTree::default();
-        for (k, v) in self.0.iter() {
-            tag_tree.insert(k, v.to_owned());
-        }
-        tag_tree
+    pub fn tree(&self) -> &TagTree {
+        &self.tree
     }
 }
 
@@ -133,12 +118,15 @@ impl FromStr for Tags {
     /// assert_eq!(tags.get("foo"), Some("bar"));
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut map = BTreeMap::new();
-        for line in s.lines() {
-            let (key, val) = line.split_once('=').ok_or("tag must be = separated")?;
-            map.insert(key.to_owned(), val.to_owned());
-        }
-        Ok(Self(map))
+        let tags = s
+            .lines()
+            .map(|line| {
+                let (key, val) = line.split_once('=').ok_or("tag must be = separated")?;
+                Ok([key, val])
+            })
+            .collect::<Result<Vec<_>, Self::Err>>()?;
+        // TODO: better error handling
+        Self::from_str_pairs(&tags).map_err(|_| "Duplicate Key Error".to_owned())
     }
 }
 
@@ -157,11 +145,59 @@ impl ToString for Tags {
     }
 }
 
-#[derive(Clone, Default)]
+/// A Visitor holds methods that a Deserializer can drive
+struct TagsVisitor {
+    marker: std::marker::PhantomData<fn() -> Tags>,
+}
+
+impl TagsVisitor {
+    fn new() -> Self {
+        TagsVisitor {
+            marker: std::marker::PhantomData,
+        }
+    }
+}
+
+/// Trait for Deserializers of Tags.
+impl<'de> serde::de::Visitor<'de> for TagsVisitor {
+    type Value = Tags;
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("OSM Tags")
+    }
+    fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
+    where
+        M: serde::de::MapAccess<'de>,
+    {
+        let mut tags = Tags::default();
+        // For when this becomes important:
+        //let mut map = Tags::with_capacity(access.size_hint().unwrap_or(0));
+
+        while let Some((key, value)) = access.next_entry::<String, String>()? {
+            // TODO
+            tags.checked_insert(key, value).unwrap();
+        }
+
+        Ok(tags)
+    }
+}
+
+/// Informs Serde how to deserialize Tags.
+impl<'de> Deserialize<'de> for Tags {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        // Instantiate our Visitor and ask the Deserializer to drive
+        // it over the input data, resulting in an instance of MyMap.
+        deserializer.deserialize_map(TagsVisitor::new())
+    }
+}
+
+#[derive(Clone, Default, Debug)]
 pub struct TagTree(BTreeMap<String, TagTreeVal>);
 
 impl TagTree {
-    fn insert(&mut self, key: &str, val: String) {
+    fn insert(&mut self, key: &str, val: String) -> Result<(), DuplicateKeyError> {
         let (root_key, rest_key) = match key.split_once(':') {
             Some((left, right)) => (left, Some(right)),
             None => (key, None),
@@ -189,14 +225,14 @@ impl TagTree {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct TagTreeVal {
     tree: Option<TagTree>,
     val: Option<String>,
 }
 
 impl TagTreeVal {
-    fn insert(&mut self, key: Option<&str>, val: String) {
+    fn insert(&mut self, key: Option<&str>, val: String) -> Result<(), DuplicateKeyError> {
         match key {
             Some(key) => self
                 .tree
@@ -205,11 +241,12 @@ impl TagTreeVal {
             None => self.set(val),
         }
     }
-    fn set(&mut self, input: String) {
+    fn set(&mut self, input: String) -> Result<(), DuplicateKeyError> {
         if let Some(val) = &self.val {
-            panic!("TagTreeVal already contains value {}", val);
+            return Err(DuplicateKeyError(val.to_owned()));
         }
         self.val = Some(input);
+        Ok(())
     }
     /// Get nested value from tree given key
     pub fn get<K: Into<TagKey>>(&self, key: K) -> Option<&TagTreeVal> {
@@ -226,9 +263,7 @@ impl TagTreeVal {
 }
 
 pub trait TagsWrite {
-    /// Returns the old value of this key, if it was already present.
-    fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V) -> Option<String>;
-    fn checked_insert<K: Into<TagKey> + Copy, V: Into<String>>(
+    fn checked_insert<K: Into<TagKey>, V: Into<String>>(
         &mut self,
         k: K,
         v: V,
@@ -236,17 +271,19 @@ pub trait TagsWrite {
 }
 
 impl TagsWrite for Tags {
-    fn insert<K: Into<TagKey>, V: Into<String>>(&mut self, k: K, v: V) -> Option<String> {
-        self.0.insert(k.into().as_str().to_owned(), v.into())
-    }
-    fn checked_insert<K: Into<TagKey> + Copy, V: Into<String>>(
+    fn checked_insert<K: Into<TagKey>, V: Into<String>>(
         &mut self,
         k: K,
         v: V,
     ) -> Result<(), DuplicateKeyError> {
-        self.insert(k, v).map_or(Ok(()), |_| {
-            Err(DuplicateKeyError(k.into().as_str().to_owned()))
-        })
+        let tag_key = k.into();
+        let key = tag_key.as_str();
+        let val: String = v.into();
+        self.map
+            .insert(key.to_owned(), val.clone())
+            .map_or(Ok(()), |_| Err(DuplicateKeyError(key.to_owned())))?;
+        self.tree.insert(key, val)?;
+        Ok(())
     }
 }
 
@@ -296,6 +333,9 @@ mod tests {
         assert!(tags.is(FOO_KEY, "bar"));
         assert!(!tags.is(FOO_KEY, "foo"));
         assert_eq!(tags.subset(&[FOO_KEY]).to_vec(), vec!["foo=bar"]);
+        assert!(tags.is(FOO_KEY + "multi" + "key", "value"));
+        let foo_key = FOO_KEY + "multi" + "key";
+        assert!(tags.is(&foo_key, "value"));
 
         // Tree interfaces
         let tree = tags.tree();
