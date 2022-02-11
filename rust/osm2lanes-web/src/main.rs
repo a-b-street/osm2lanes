@@ -3,18 +3,17 @@ use std::str::FromStr;
 use piet::Error as PietError;
 use piet_web::WebRenderContext;
 use wasm_bindgen::JsCast;
-use web_sys::{window, HtmlCanvasElement, HtmlInputElement};
+use web_sys::{window, HtmlCanvasElement, HtmlInputElement, HtmlSelectElement};
 use yew::prelude::*;
 
 mod draw;
 
+use osm2lanes::locale::{Country, DrivingSide, Locale};
 use osm2lanes::overpass::get_way;
 use osm2lanes::road::{Lane, LanePrintable, Road};
 use osm2lanes::tag::Tags;
 use osm2lanes::transform::{Lanes, RoadError};
-use osm2lanes::{
-    lanes_to_tags, tags_to_lanes, DrivingSide, LanesToTagsConfig, Locale, TagsToLanesConfig,
-};
+use osm2lanes::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
 
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
@@ -66,6 +65,7 @@ pub struct State {
 pub enum Msg {
     TagsSet(String),
     ToggleDrivingSide,
+    CountrySet(Result<Country, &'static str>),
     WayFetch,
     Error(String),
 }
@@ -109,6 +109,15 @@ impl Component for App {
                 self.update_tags();
                 true
             }
+            Msg::CountrySet(Ok(country)) => {
+                self.state.locale.country = Some(country);
+                self.update_tags();
+                true
+            }
+            Msg::CountrySet(Err(country_err)) => {
+                self.state.message = Some(country_err.to_owned());
+                true
+            }
             Msg::WayFetch => {
                 let way_id = self
                     .state
@@ -148,7 +157,12 @@ impl Component for App {
             (e.key() == "Enter").then(|| edit(e.target_unchecked_into()))
         });
 
-        let onchange = ctx.link().callback(|_e: Event| Msg::ToggleDrivingSide);
+        let driving_side_onchange = ctx.link().callback(|_e: Event| Msg::ToggleDrivingSide);
+        let country_onchange = ctx.link().callback(move |e: Event| {
+            let selected: String = e.target_unchecked_into::<HtmlSelectElement>().value();
+            let selected = Country::from_alpha2(selected);
+            Msg::CountrySet(selected)
+        });
 
         let way_id_onclick = ctx.link().callback(|_| Msg::WayFetch);
 
@@ -167,13 +181,27 @@ impl Component for App {
                         <input
                             type="checkbox"
                             checked={self.state.locale.driving_side == DrivingSide::Right}
-                            {onchange}
+                            onchange={driving_side_onchange}
                         />
                         <span class="slider"></span>
                     </label>
                     <p class="row-item">
                         {"RHT ↓↑"}
                     </p>
+                    <hr/>
+                    <select onchange={country_onchange}>
+                    {
+                        for Country::get_countries().iter().map(|country| html!{
+                            <option
+                                value={country.alpha2}
+                                checked={
+                                    self.state.locale.country.map_or(false, |c| c == country)
+                                }>
+                                {country.alpha2}
+                            </option>
+                        })
+                    }
+                    </select>
                     <hr/>
                     <label class="row-item" for="way">{"OSM Way ID"}</label>
                     <input class="row-item" type="text" id="way" name="way" size="12" ref={self.state.way_ref.clone()}/>
@@ -272,6 +300,7 @@ impl App {
         let value = &self.state.edit_tags;
         let locale = &self.state.locale;
         log::trace!("Update Tags: {}", value);
+        log::trace!("Locale: {:?}", locale);
         let calculate = match Tags::from_str(value) {
             Ok(tags) => match tags_to_lanes(&tags, locale, &TagsToLanesConfig::default()) {
                 Ok(lanes) => {
