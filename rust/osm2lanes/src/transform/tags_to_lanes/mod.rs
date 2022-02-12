@@ -64,6 +64,49 @@ impl std::convert::From<Oneway> for bool {
     }
 }
 
+// TODO: implement try when this is closed: https://github.com/rust-lang/rust/issues/84277
+/// A value with various levels of inference
+pub enum Infer<T> {
+    None,
+    Default(T),
+    // Locale(T),
+    // Calculated(T),
+    // Direct(T),
+}
+
+impl<T> Infer<T> {
+    pub fn some(self) -> Option<T> {
+        match self {
+            Self::None => None,
+            Self::Default(v) => Some(v),
+            // Self::Locale(v) => Some(v),
+            // Self::Calculated(v) => Some(v),
+            // Self::Direct(v) => Some(v),
+        }
+    }
+}
+
+impl<T> Default for Infer<T> {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+#[derive(Default)]
+pub struct LaneBuilder {
+    direction: Infer<LaneDirection>,
+    designated: Infer<LaneDesignated>,
+}
+
+impl LaneBuilder {
+    pub fn build(self) -> Lane {
+        Lane::Travel {
+            direction: self.direction.some(),
+            designated: self.designated.some().unwrap(),
+        }
+    }
+}
+
 /// From an OpenStreetMap way's tags,
 /// determine the lanes along the road from left to right.
 /// Warnings are produced for situations that maybe result in accurate lanes.
@@ -79,7 +122,19 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
 
     let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
 
-    let (mut forward_side, mut backward_side) = initial_forward_backward(tags, locale, oneway);
+    let (forward_side, backward_side) = initial_forward_backward(tags, locale, oneway);
+
+    // Temporary intermediate conversion
+    let (mut forward_side, mut backward_side) = (
+        forward_side
+            .into_iter()
+            .map(|lane| lane.build())
+            .collect::<Vec<_>>(),
+        backward_side
+            .into_iter()
+            .map(|lane| lane.build())
+            .collect::<Vec<_>>(),
+    );
 
     bus(
         tags,
@@ -133,10 +188,10 @@ fn initial_forward_backward(
     tags: &Tags,
     locale: &Locale,
     oneway: Oneway,
-) -> (Vec<Lane>, Vec<Lane>) {
+) -> (Vec<LaneBuilder>, Vec<LaneBuilder>) {
     let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
 
-    let driving_lane = if tags.is("access", "no")
+    let designated = if tags.is("access", "no")
         && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
         || tags
             .get("motor_vehicle:conditional")
@@ -152,15 +207,27 @@ fn initial_forward_backward(
 
     // These are ordered from the road center, going outwards. Most of the members of fwd_side will
     // have Direction::Forward, but there can be exceptions with two-way cycletracks.
-    let mut fwd_side: Vec<Lane> = iter::repeat_with(|| Lane::forward(driving_lane))
-        .take(num_driving_fwd)
-        .collect();
-    let back_side: Vec<Lane> = iter::repeat_with(|| Lane::backward(driving_lane))
-        .take(num_driving_back)
-        .collect();
+    let mut fwd_side: Vec<LaneBuilder> = iter::repeat_with(|| LaneBuilder {
+        direction: Infer::Default(LaneDirection::Forward),
+        designated: Infer::Default(designated),
+    })
+    .take(num_driving_fwd)
+    .collect();
+    let back_side: Vec<LaneBuilder> = iter::repeat_with(|| LaneBuilder {
+        direction: Infer::Default(LaneDirection::Backward),
+        designated: Infer::Default(designated),
+    })
+    .take(num_driving_back)
+    .collect();
     // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
     if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
-        fwd_side.insert(0, Lane::both(LaneDesignated::Motor));
+        fwd_side.insert(
+            0,
+            LaneBuilder {
+                direction: Infer::Default(LaneDirection::Both),
+                designated: Infer::Default(designated),
+            },
+        );
     }
 
     (fwd_side, back_side)
