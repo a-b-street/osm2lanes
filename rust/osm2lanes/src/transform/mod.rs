@@ -150,4 +150,18 @@ impl Lane {
             _ => None,
         }
     }
+    pub fn builder() -> LaneBuilder {
+        LaneBuilder::default()
+    }
+}
+
+#[derive(Default)]
+pub struct LaneBuilder {
+    lane: Option<Lane>,
+}
+
+impl LaneBuilder {
+    pub fn build(self) -> Lane {
+        self.lane.unwrap()
+    }
 }

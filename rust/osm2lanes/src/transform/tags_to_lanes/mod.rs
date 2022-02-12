@@ -39,6 +39,31 @@ impl Default for TagsToLanesConfig {
     }
 }
 
+#[derive(Clone, Copy)]
+enum Oneway {
+    Yes,
+    No,
+}
+
+impl std::convert::From<bool> for Oneway {
+    fn from(oneway: bool) -> Self {
+        if oneway {
+            Oneway::Yes
+        } else {
+            Oneway::No
+        }
+    }
+}
+
+impl std::convert::From<Oneway> for bool {
+    fn from(oneway: Oneway) -> Self {
+        match oneway {
+            Oneway::Yes => true,
+            Oneway::No => false,
+        }
+    }
+}
+
 /// From an OpenStreetMap way's tags,
 /// determine the lanes along the road from left to right.
 /// Warnings are produced for situations that maybe result in accurate lanes.
@@ -52,8 +77,63 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
         return Ok(spec);
     }
 
-    let oneway = tags.is("oneway", "yes") || tags.is("junction", "roundabout");
+    let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
 
+    let (mut forward_side, mut backward_side) = initial_forward_backward(tags, locale, oneway);
+
+    bus(
+        tags,
+        locale,
+        oneway,
+        &mut forward_side,
+        &mut backward_side,
+        &mut warnings,
+    )?;
+
+    bicycle(
+        tags,
+        locale,
+        oneway,
+        &mut forward_side,
+        &mut backward_side,
+        &mut warnings,
+    )?;
+
+    // if driving_lane == LaneDesignated::Motor {
+    parking(tags, locale, oneway, &mut forward_side, &mut backward_side);
+    // }
+
+    foot_and_shoulder(
+        tags,
+        locale,
+        oneway,
+        &mut forward_side,
+        &mut backward_side,
+        &mut warnings,
+    )?;
+
+    let lanes = assemble_ltr(forward_side, backward_side, locale.driving_side)?;
+
+    let lanes = Lanes { lanes, warnings };
+
+    let lanes = if config.include_separators {
+        insert_separators(lanes)?
+    } else {
+        lanes
+    };
+
+    if config.error_on_warnings && !lanes.warnings.is_empty() {
+        return Err(lanes.warnings.into());
+    }
+
+    Ok(lanes)
+}
+
+fn initial_forward_backward(
+    tags: &Tags,
+    locale: &Locale,
+    oneway: Oneway,
+) -> (Vec<Lane>, Vec<Lane>) {
     let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
 
     let driving_lane = if tags.is("access", "no")
@@ -75,7 +155,7 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
     let mut fwd_side: Vec<Lane> = iter::repeat_with(|| Lane::forward(driving_lane))
         .take(num_driving_fwd)
         .collect();
-    let mut back_side: Vec<Lane> = iter::repeat_with(|| Lane::backward(driving_lane))
+    let back_side: Vec<Lane> = iter::repeat_with(|| Lane::backward(driving_lane))
         .take(num_driving_back)
         .collect();
     // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
@@ -83,55 +163,10 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
         fwd_side.insert(0, Lane::both(LaneDesignated::Motor));
     }
 
-    bus(
-        tags,
-        locale,
-        oneway,
-        &mut fwd_side,
-        &mut back_side,
-        &mut warnings,
-    )?;
-
-    bicycle(
-        tags,
-        locale,
-        oneway,
-        &mut fwd_side,
-        &mut back_side,
-        &mut warnings,
-    )?;
-
-    if driving_lane == LaneDesignated::Motor {
-        parking(tags, locale, oneway, &mut fwd_side, &mut back_side);
-    }
-
-    foot_and_shoulder(
-        tags,
-        locale,
-        oneway,
-        &mut fwd_side,
-        &mut back_side,
-        &mut warnings,
-    )?;
-
-    let lanes = assemble_ltr(fwd_side, back_side, locale.driving_side)?;
-
-    let lanes = Lanes { lanes, warnings };
-
-    let lanes = if config.include_separators {
-        insert_separators(lanes)?
-    } else {
-        lanes
-    };
-
-    if config.error_on_warnings && !lanes.warnings.is_empty() {
-        return Err(lanes.warnings.into());
-    }
-
-    Ok(lanes)
+    (fwd_side, back_side)
 }
 
-fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: bool) -> (usize, usize) {
+fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (usize, usize) {
     let both_ways = if let Some(n) = tags
         .get("lanes:both_ways")
         .and_then(|num| num.parse::<usize>().ok())
@@ -146,7 +181,7 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: bool) -> (usiz
     {
         n
     } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
-        let half = if oneway {
+        let half = if oneway.into() {
             n
         } else {
             // usize division rounded up
@@ -165,7 +200,7 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: bool) -> (usiz
         n
     } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
         let base = n - num_driving_fwd;
-        let half = if oneway {
+        let half = if oneway.into() {
             base
         } else {
             // lanes=1 but not oneway... what is this supposed to mean?
@@ -173,12 +208,12 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: bool) -> (usiz
         };
         half - both_ways
     } else if tags.is("lanes:bus", "2") {
-        if oneway {
+        if oneway.into() {
             1
         } else {
             2
         }
-    } else if oneway {
+    } else if oneway.into() {
         0
     } else {
         1

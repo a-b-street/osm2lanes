@@ -10,10 +10,10 @@ impl Tags {
     }
 }
 
-pub fn bicycle(
+pub(super) fn bicycle(
     tags: &Tags,
     locale: &Locale,
-    oneway: bool,
+    oneway: Oneway,
     forward_side: &mut Vec<Lane>,
     backward_side: &mut Vec<Lane>,
     warnings: &mut RoadWarnings,
@@ -26,7 +26,7 @@ pub fn bicycle(
             return Err(RoadMsg::unsupported_str("cycleway=* with any cycleway:* values").into());
         }
         forward_side.push(Lane::forward(LaneDesignated::Bicycle));
-        if oneway {
+        if oneway.into() {
             if !backward_side.is_empty() {
                 // TODO safety check to be checked
                 warnings.push(RoadMsg::Unimplemented {
@@ -53,7 +53,7 @@ pub fn bicycle(
         }
         // cycleway=opposite oneway=yes oneway:bicycle=no
         if tags.is(CYCLEWAY, "opposite") {
-            if !(oneway && tags.is("oneway:bicycle", "no")) {
+            if !(oneway.into() && tags.is("oneway:bicycle", "no")) {
                 return Err(RoadMsg::unsupported_str(
                     "cycleway=opposite without oneway=yes oneway:bicycle=no",
                 )
@@ -100,7 +100,7 @@ pub fn bicycle(
             ) || tags.is("oneway:bicycle", "no")
             {
                 backward_side.push(Lane::both(LaneDesignated::Bicycle));
-            } else if oneway {
+            } else if oneway.into() {
                 // A oneway road with a cycleway on the wrong side
                 forward_side.insert(0, Lane::forward(LaneDesignated::Bicycle));
             } else {
