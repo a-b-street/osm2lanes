@@ -1,9 +1,9 @@
 use super::*;
 
-pub fn parking(
+pub(super) fn parking(
     tags: &Tags,
     _locale: &Locale,
-    _oneway: bool,
+    _oneway: Oneway,
     forward_side: &mut Vec<Lane>,
     backward_side: &mut Vec<Lane>,
 ) {

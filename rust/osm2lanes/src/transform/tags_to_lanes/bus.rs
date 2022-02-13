@@ -8,10 +8,10 @@ impl RoadError {
     }
 }
 
-pub fn bus(
+pub(super) fn bus(
     tags: &Tags,
     locale: &Locale,
-    oneway: bool,
+    oneway: Oneway,
     forward_side: &mut [Lane],
     backward_side: &mut [Lane],
     warnings: &mut RoadWarnings,
@@ -52,7 +52,7 @@ pub fn bus(
 fn busway(
     tags: &Tags,
     locale: &Locale,
-    _oneway: bool,
+    _oneway: Oneway,
     forward_side: &mut [Lane],
     backward_side: &mut [Lane],
     _warnings: &mut RoadWarnings,
@@ -115,7 +115,7 @@ fn busway(
 fn lanes_bus(
     tags: &Tags,
     _locale: &Locale,
-    _oneway: bool,
+    _oneway: Oneway,
     _forward_side: &mut [Lane],
     _backward_side: &mut [Lane],
     warnings: &mut RoadWarnings,
@@ -141,7 +141,7 @@ fn lanes_bus(
 fn bus_lanes(
     tags: &Tags,
     _locale: &Locale,
-    oneway: bool,
+    oneway: Oneway,
     forward_side: &mut [Lane],
     backward_side: &mut [Lane],
     _warnings: &mut RoadWarnings,
@@ -150,7 +150,7 @@ fn bus_lanes(
         s
     } else if let Some(s) = tags.get("psv:lanes:forward") {
         s
-    } else if oneway {
+    } else if oneway.into() {
         if let Some(s) = tags.get("bus:lanes") {
             s
         } else if let Some(s) = tags.get("psv:lanes") {

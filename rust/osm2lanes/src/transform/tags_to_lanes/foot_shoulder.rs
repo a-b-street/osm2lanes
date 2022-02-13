@@ -1,9 +1,9 @@
 use super::*;
 
-pub fn foot_and_shoulder(
+pub(super) fn foot_and_shoulder(
     tags: &Tags,
     locale: &Locale,
-    oneway: bool,
+    oneway: Oneway,
     forward_side: &mut Vec<Lane>,
     backward_side: &mut Vec<Lane>,
     warnings: &mut RoadWarnings,
@@ -115,7 +115,7 @@ pub fn foot_and_shoulder(
                 // This assumes bicycle lanes are just glorified shoulders...
                 let has_bicycle_lane = side.last().map_or(false, |lane| lane.is_bicycle());
 
-                if !has_bicycle_lane && (forward || !oneway) {
+                if !has_bicycle_lane && (forward || !bool::from(oneway)) {
                     side.push(Lane::Shoulder)
                 }
             }
