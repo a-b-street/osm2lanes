@@ -66,12 +66,13 @@ impl std::convert::From<Oneway> for bool {
 
 // TODO: implement try when this is closed: https://github.com/rust-lang/rust/issues/84277
 /// A value with various levels of inference
+#[derive(Copy, Clone)]
 pub enum Infer<T> {
     None,
     Default(T),
     // Locale(T),
     // Calculated(T),
-    // Direct(T),
+    Direct(T),
 }
 
 impl<T> Infer<T> {
@@ -81,7 +82,7 @@ impl<T> Infer<T> {
             Self::Default(v) => Some(v),
             // Self::Locale(v) => Some(v),
             // Self::Calculated(v) => Some(v),
-            // Self::Direct(v) => Some(v),
+            Self::Direct(v) => Some(v),
         }
     }
 }
@@ -89,6 +90,23 @@ impl<T> Infer<T> {
 impl<T> Default for Infer<T> {
     fn default() -> Self {
         Self::None
+    }
+}
+
+#[derive(Debug)]
+pub struct LaneBuilderError(&'static str);
+
+impl std::fmt::Display for LaneBuilderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::error::Error for LaneBuilderError {}
+
+impl std::convert::From<LaneBuilderError> for RoadError {
+    fn from(error: LaneBuilderError) -> Self {
+        Self::Msg(RoadMsg::Internal(error.0))
     }
 }
 
@@ -104,6 +122,10 @@ impl LaneBuilder {
             direction: self.direction.some(),
             designated: self.designated.some().unwrap(),
         }
+    }
+    fn set_bus(&mut self) -> Result<(), LaneBuilderError> {
+        self.designated = Infer::Direct(LaneDesignated::Bus);
+        Ok(())
     }
 }
 
@@ -122,7 +144,16 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
 
     let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
 
-    let (forward_side, backward_side) = initial_forward_backward(tags, locale, oneway);
+    let (mut forward_side, mut backward_side) = initial_forward_backward(tags, locale, oneway);
+
+    bus(
+        tags,
+        locale,
+        oneway,
+        &mut forward_side,
+        &mut backward_side,
+        &mut warnings,
+    )?;
 
     // Temporary intermediate conversion
     let (mut forward_side, mut backward_side) = (
@@ -136,15 +167,6 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
             .collect::<Vec<_>>(),
     );
 
-    bus(
-        tags,
-        locale,
-        oneway,
-        &mut forward_side,
-        &mut backward_side,
-        &mut warnings,
-    )?;
-
     bicycle(
         tags,
         locale,
@@ -154,9 +176,7 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
         &mut warnings,
     )?;
 
-    // if driving_lane == LaneDesignated::Motor {
     parking(tags, locale, oneway, &mut forward_side, &mut backward_side);
-    // }
 
     foot_and_shoulder(
         tags,

@@ -137,13 +137,6 @@ impl Lane {
             }
         )
     }
-    fn set_bus(&mut self) -> ModeResult {
-        match self {
-            Self::Travel { designated, .. } => *designated = LaneDesignated::Bus,
-            _ => unreachable!(),
-        }
-        Ok(())
-    }
     fn direction(&self) -> Option<LaneDirection> {
         match self {
             Self::Travel { direction, .. } => *direction,
