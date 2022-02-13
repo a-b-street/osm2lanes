@@ -117,15 +117,11 @@ pub struct LaneBuilder {
 }
 
 impl LaneBuilder {
-    pub fn build(self) -> Lane {
+    fn build(self) -> Lane {
         Lane::Travel {
             direction: self.direction.some(),
             designated: self.designated.some().unwrap(),
         }
-    }
-    fn set_bus(&mut self) -> Result<(), LaneBuilderError> {
-        self.designated = Infer::Direct(LaneDesignated::Bus);
-        Ok(())
     }
 }
 
@@ -155,6 +151,15 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
         &mut warnings,
     )?;
 
+    bicycle(
+        tags,
+        locale,
+        oneway,
+        &mut forward_side,
+        &mut backward_side,
+        &mut warnings,
+    )?;
+
     // Temporary intermediate conversion
     let (mut forward_side, mut backward_side) = (
         forward_side
@@ -166,15 +171,6 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
             .map(|lane| lane.build())
             .collect::<Vec<_>>(),
     );
-
-    bicycle(
-        tags,
-        locale,
-        oneway,
-        &mut forward_side,
-        &mut backward_side,
-        &mut warnings,
-    )?;
 
     parking(tags, locale, oneway, &mut forward_side, &mut backward_side);
 

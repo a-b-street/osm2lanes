@@ -8,6 +8,13 @@ impl RoadError {
     }
 }
 
+impl LaneBuilder {
+    fn set_bus(&mut self) -> Result<(), LaneBuilderError> {
+        self.designated = Infer::Direct(LaneDesignated::Bus);
+        Ok(())
+    }
+}
+
 pub(super) fn bus(
     tags: &Tags,
     locale: &Locale,

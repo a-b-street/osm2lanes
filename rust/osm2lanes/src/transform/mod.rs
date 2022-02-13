@@ -83,12 +83,6 @@ impl Lane {
             designated,
         }
     }
-    fn both(designated: LaneDesignated) -> Self {
-        Self::Travel {
-            direction: Some(LaneDirection::Both),
-            designated,
-        }
-    }
     fn foot() -> Self {
         Self::Travel {
             direction: None,
