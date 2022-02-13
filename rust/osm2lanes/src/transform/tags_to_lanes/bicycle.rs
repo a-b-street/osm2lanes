@@ -11,20 +11,23 @@ impl Tags {
 }
 
 impl LaneBuilder {
-    fn forward() -> Self {
+    fn cycle_forward() -> Self {
         Self {
+            r#type: Infer::Direct(LaneType::Travel),
             direction: Infer::Direct(LaneDirection::Forward),
             designated: Infer::Direct(LaneDesignated::Bicycle),
         }
     }
-    fn backward() -> Self {
+    fn cycle_backward() -> Self {
         Self {
+            r#type: Infer::Direct(LaneType::Travel),
             direction: Infer::Direct(LaneDirection::Backward),
             designated: Infer::Direct(LaneDesignated::Bicycle),
         }
     }
-    fn both() -> Self {
+    fn cycle_both() -> Self {
         Self {
+            r#type: Infer::Direct(LaneType::Travel),
             direction: Infer::Direct(LaneDirection::Both),
             designated: Infer::Direct(LaneDesignated::Bicycle),
         }
@@ -46,7 +49,7 @@ pub(super) fn bicycle(
         {
             return Err(RoadMsg::unsupported_str("cycleway=* with any cycleway:* values").into());
         }
-        forward_side.push(LaneBuilder::forward());
+        forward_side.push(LaneBuilder::cycle_forward());
         if oneway.into() {
             if !backward_side.is_empty() {
                 // TODO safety check to be checked
@@ -58,11 +61,11 @@ pub(super) fn bicycle(
                 })
             }
         } else {
-            backward_side.push(LaneBuilder::backward());
+            backward_side.push(LaneBuilder::cycle_backward());
         }
     } else if tags.is_cycleway(Some(WaySide::Both)) {
-        forward_side.push(LaneBuilder::forward());
-        backward_side.push(LaneBuilder::backward());
+        forward_side.push(LaneBuilder::cycle_forward());
+        backward_side.push(LaneBuilder::cycle_backward());
     } else {
         // cycleway=opposite_lane
         if tags.is(CYCLEWAY, "opposite_lane") {
@@ -70,7 +73,7 @@ pub(super) fn bicycle(
                 deprecated_tags: tags.subset(&["cycleway", "oneway"]),
                 suggested_tags: None,
             });
-            backward_side.push(LaneBuilder::backward());
+            backward_side.push(LaneBuilder::cycle_backward());
         }
         // cycleway=opposite oneway=yes oneway:bicycle=no
         if tags.is(CYCLEWAY, "opposite") {
@@ -80,16 +83,16 @@ pub(super) fn bicycle(
                 )
                 .into());
             }
-            backward_side.push(LaneBuilder::backward());
+            backward_side.push(LaneBuilder::cycle_backward());
         }
         // cycleway:FORWARD=*
         if tags.is_cycleway(Some(locale.driving_side.into())) {
             if tags.is(CYCLEWAY + locale.driving_side.tag() + "oneway", "no")
                 || tags.is("oneway:bicycle", "no")
             {
-                forward_side.push(LaneBuilder::both());
+                forward_side.push(LaneBuilder::cycle_both());
             } else {
-                forward_side.push(LaneBuilder::forward());
+                forward_side.push(LaneBuilder::cycle_forward());
             }
         }
         // cycleway:FORWARD=opposite_lane
@@ -101,7 +104,7 @@ pub(super) fn bicycle(
                 deprecated_tags: tags.subset(&[CYCLEWAY + locale.driving_side.tag()]),
                 suggested_tags: None,
             });
-            forward_side.push(LaneBuilder::backward());
+            forward_side.push(LaneBuilder::cycle_backward());
         }
         // cycleway:BACKWARD=*
         if tags.is_cycleway(Some(locale.driving_side.opposite().into())) {
@@ -109,24 +112,24 @@ pub(super) fn bicycle(
                 CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
                 "yes",
             ) {
-                forward_side.insert(0, LaneBuilder::forward());
+                forward_side.insert(0, LaneBuilder::cycle_forward());
             } else if tags.is(
                 CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
                 "-1",
             ) {
-                backward_side.push(LaneBuilder::backward());
+                backward_side.push(LaneBuilder::cycle_backward());
             } else if tags.is(
                 CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
                 "no",
             ) || tags.is("oneway:bicycle", "no")
             {
-                backward_side.push(LaneBuilder::both());
+                backward_side.push(LaneBuilder::cycle_both());
             } else if oneway.into() {
                 // A oneway road with a cycleway on the wrong side
-                forward_side.insert(0, LaneBuilder::forward());
+                forward_side.insert(0, LaneBuilder::cycle_forward());
             } else {
                 // A contraflow bicycle lane
-                backward_side.push(LaneBuilder::backward());
+                backward_side.push(LaneBuilder::cycle_backward());
             }
         }
         // cycleway:BACKWARD=opposite_lane

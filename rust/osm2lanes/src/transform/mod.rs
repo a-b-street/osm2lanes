@@ -89,12 +89,6 @@ impl Lane {
             designated: LaneDesignated::Foot,
         }
     }
-    fn parking(direction: LaneDirection) -> Self {
-        Self::Parking {
-            direction,
-            designated: LaneDesignated::Motor,
-        }
-    }
     fn is_motor(&self) -> bool {
         matches!(
             self,
