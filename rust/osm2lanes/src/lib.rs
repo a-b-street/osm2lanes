@@ -11,13 +11,13 @@ pub mod road;
 
 pub mod tag;
 
-mod locale;
-pub use self::locale::{DrivingSide, Locale};
+pub mod locale;
+pub use locale::{DrivingSide, Locale};
 
 #[cfg(feature = "overpass")]
 pub mod overpass;
 
 pub mod transform;
-pub use self::transform::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
+pub use transform::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
 
 mod test;

@@ -1,4 +1,4 @@
-body, h1, h2, h3, h4, h5, a, button, input, textarea, .button, label, p {
+body, h1, h2, h3, h4, h5, a, button, input, textarea, .button, label, p, select {
   font-family: "Source Code Pro", monospace;
   margin: 1ex 0.5em;
   padding: 0.5ex 0em;
