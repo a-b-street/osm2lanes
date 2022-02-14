@@ -22,6 +22,12 @@ impl Default for LanesToTagsConfig {
     }
 }
 
+impl Lane {
+    fn is_shoulder(&self) -> bool {
+        matches!(self, Lane::Shoulder { .. })
+    }
+}
+
 pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig) -> TagsResult {
     let mut tags = Tags::default();
     let mut oneway = false;

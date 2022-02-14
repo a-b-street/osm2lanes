@@ -1,5 +1,22 @@
 use super::*;
 
+impl Lane {
+    fn shoulder(locale: &Locale) -> Self {
+        Self::Shoulder {
+            // TODO: width not just motor
+            width: Some(locale.travel_width(&LaneDesignated::Motor)),
+        }
+    }
+    fn foot(locale: &Locale) -> Self {
+        let designated = LaneDesignated::Foot;
+        Self::Travel {
+            direction: None,
+            designated,
+            width: Some(locale.travel_width(&designated)),
+        }
+    }
+}
+
 pub fn non_motorized(tags: &Tags, locale: &Locale) -> Result<Option<Lanes>, RoadError> {
     if !tags.is_any(
         HIGHWAY,

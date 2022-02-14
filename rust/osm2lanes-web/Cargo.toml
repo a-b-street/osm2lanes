@@ -17,7 +17,7 @@ yew = "0.19"
 
 [dependencies.web-sys]
 version = "0.3"
-features = ["HtmlInputElement", "HtmlCanvasElement"]
+features = ["HtmlInputElement", "HtmlCanvasElement", "HtmlSelectElement"]
 
 [features]
 default = ["console_log", "wee_alloc"]

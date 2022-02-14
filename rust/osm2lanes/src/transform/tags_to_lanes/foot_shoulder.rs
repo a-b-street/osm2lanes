@@ -1,11 +1,30 @@
 use super::*;
 
-pub fn foot_and_shoulder(
+impl LaneBuilder {
+    fn shoulder(locale: &Locale) -> Self {
+        Self {
+            r#type: Infer::Direct(LaneType::Shoulder),
+            ..Default::default()
+        }
+    }
+    fn foot(locale: &Locale) -> Self {
+        Self {
+            r#type: Infer::Direct(LaneType::Travel),
+            designated: Infer::Direct(LaneDesignated::Foot),
+            ..Default::default()
+        }
+    }
+    fn is_bicycle(&self) -> bool {
+        self.designated.some() == Some(LaneDesignated::Bicycle)
+    }
+}
+
+pub(super) fn foot_and_shoulder(
     tags: &Tags,
     locale: &Locale,
-    oneway: bool,
-    forward_side: &mut Vec<Lane>,
-    backward_side: &mut Vec<Lane>,
+    oneway: Oneway,
+    forward_side: &mut Vec<LaneBuilder>,
+    backward_side: &mut Vec<LaneBuilder>,
     warnings: &mut RoadWarnings,
 ) -> ModeResult {
     // https://wiki.openstreetmap.org/wiki/Key:sidewalk
@@ -106,7 +125,7 @@ pub fn foot_and_shoulder(
     };
 
     let add = |(sidewalk, shoulder): (Sidewalk, Shoulder),
-               side: &mut Vec<Lane>,
+               side: &mut Vec<LaneBuilder>,
                forward: bool|
      -> ModeResult {
         match (sidewalk, shoulder) {
@@ -115,13 +134,15 @@ pub fn foot_and_shoulder(
                 // This assumes bicycle lanes are just glorified shoulders...
                 let has_bicycle_lane = side.last().map_or(false, |lane| lane.is_bicycle());
 
-                if !has_bicycle_lane && (forward || !oneway) {
-                    side.push(Lane::shoulder(locale))
+                if !has_bicycle_lane && (forward || !bool::from(oneway)) {
+                    side.push(LaneBuilder::shoulder(locale))
                 }
             }
             (Sidewalk::No | Sidewalk::None, Shoulder::No) => {}
-            (Sidewalk::Yes, Shoulder::No | Shoulder::None) => side.push(Lane::foot(locale)),
-            (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => side.push(Lane::shoulder(locale)),
+            (Sidewalk::Yes, Shoulder::No | Shoulder::None) => side.push(LaneBuilder::foot(locale)),
+            (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => {
+                side.push(LaneBuilder::shoulder(locale))
+            }
             (Sidewalk::Yes, Shoulder::Yes) => {
                 return Err(RoadMsg::Unsupported {
                     description: Some("shoulder and sidewalk on same side".to_owned()),

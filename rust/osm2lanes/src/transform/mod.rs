@@ -85,35 +85,6 @@ impl Lane {
             width: Some(locale.travel_width(&designated)),
         }
     }
-    fn both(designated: LaneDesignated, locale: &Locale) -> Self {
-        Self::Travel {
-            direction: Some(LaneDirection::Both),
-            designated,
-            width: Some(locale.travel_width(&designated)),
-        }
-    }
-    fn foot(locale: &Locale) -> Self {
-        let designated = LaneDesignated::Foot;
-        Self::Travel {
-            direction: None,
-            designated,
-            width: Some(locale.travel_width(&designated)),
-        }
-    }
-    fn parking(direction: LaneDirection, locale: &Locale) -> Self {
-        Self::Parking {
-            direction,
-            designated: LaneDesignated::Motor,
-            // TODO: width not just motor
-            width: Some(locale.travel_width(&LaneDesignated::Motor)),
-        }
-    }
-    fn shoulder(locale: &Locale) -> Self {
-        Self::Shoulder {
-            // TODO: width not just motor
-            width: Some(locale.travel_width(&LaneDesignated::Motor)),
-        }
-    }
     fn is_motor(&self) -> bool {
         matches!(
             self,
@@ -149,16 +120,6 @@ impl Lane {
                 ..
             }
         )
-    }
-    fn is_shoulder(&self) -> bool {
-        matches!(self, Lane::Shoulder { .. })
-    }
-    fn set_bus(&mut self) -> ModeResult {
-        match self {
-            Self::Travel { designated, .. } => *designated = LaneDesignated::Bus,
-            _ => unreachable!(),
-        }
-        Ok(())
     }
     fn direction(&self) -> Option<LaneDirection> {
         match self {

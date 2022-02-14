@@ -8,12 +8,19 @@ impl RoadError {
     }
 }
 
-pub fn bus(
+impl LaneBuilder {
+    fn set_bus(&mut self, locale: &Locale) -> Result<(), LaneBuilderError> {
+        self.designated = Infer::Direct(LaneDesignated::Bus);
+        Ok(())
+    }
+}
+
+pub(super) fn bus(
     tags: &Tags,
     locale: &Locale,
-    oneway: bool,
-    forward_side: &mut [Lane],
-    backward_side: &mut [Lane],
+    oneway: Oneway,
+    forward_side: &mut [LaneBuilder],
+    backward_side: &mut [LaneBuilder],
     warnings: &mut RoadWarnings,
 ) -> ModeResult {
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
@@ -52,39 +59,39 @@ pub fn bus(
 fn busway(
     tags: &Tags,
     locale: &Locale,
-    _oneway: bool,
-    forward_side: &mut [Lane],
-    backward_side: &mut [Lane],
+    _oneway: Oneway,
+    forward_side: &mut [LaneBuilder],
+    backward_side: &mut [LaneBuilder],
     _warnings: &mut RoadWarnings,
-) -> ModeResult {
+) -> Result<(), RoadError> {
     const BUSWAY: TagKey = TagKey::from("busway");
     if tags.is(BUSWAY, "lane") {
         forward_side
             .last_mut()
             .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus()?;
+            .set_bus(locale)?;
         if !tags.is("oneway", "yes") && !tags.is("oneway:bus", "yes") {
             backward_side
                 .last_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-                .set_bus()?;
+                .set_bus(locale)?;
         }
     }
     if tags.is(BUSWAY, "opposite_lane") {
         backward_side
             .last_mut()
             .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-            .set_bus()?;
+            .set_bus(locale)?;
     }
     if tags.is(BUSWAY + "both", "lane") {
         forward_side
             .last_mut()
             .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus()?;
+            .set_bus(locale)?;
         backward_side
             .last_mut()
             .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-            .set_bus()?;
+            .set_bus(locale)?;
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             return Err(RoadError::ambiguous_str(
                 "busway:both=lane for oneway roads",
@@ -95,14 +102,14 @@ fn busway(
         forward_side
             .last_mut()
             .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus()?;
+            .set_bus(locale)?;
     }
     if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             forward_side
                 .first_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-                .set_bus()?;
+                .set_bus(locale)?;
         } else {
             return Err(RoadError::ambiguous_str(
                 "busway:BACKWARD=lane for bidirectional roads",
@@ -115,9 +122,9 @@ fn busway(
 fn lanes_bus(
     tags: &Tags,
     _locale: &Locale,
-    _oneway: bool,
-    _forward_side: &mut [Lane],
-    _backward_side: &mut [Lane],
+    _oneway: Oneway,
+    _forward_side: &mut [LaneBuilder],
+    _backward_side: &mut [LaneBuilder],
     warnings: &mut RoadWarnings,
 ) -> ModeResult {
     warnings.push(RoadMsg::Unimplemented {
@@ -141,16 +148,16 @@ fn lanes_bus(
 fn bus_lanes(
     tags: &Tags,
     locale: &Locale,
-    oneway: bool,
-    forward_side: &mut [Lane],
-    backward_side: &mut [Lane],
+    oneway: Oneway,
+    forward_side: &mut [LaneBuilder],
+    backward_side: &mut [LaneBuilder],
     _warnings: &mut RoadWarnings,
 ) -> ModeResult {
     let fwd_bus_spec = if let Some(s) = tags.get("bus:lanes:forward") {
         s
     } else if let Some(s) = tags.get("psv:lanes:forward") {
         s
-    } else if oneway {
+    } else if oneway.into() {
         if let Some(s) = tags.get("bus:lanes") {
             s
         } else if let Some(s) = tags.get("psv:lanes") {
@@ -163,11 +170,7 @@ fn bus_lanes(
     };
     if !fwd_bus_spec.is_empty() {
         let parts: Vec<&str> = fwd_bus_spec.split('|').collect();
-        let offset = if let Lane::Travel {
-            direction: Some(LaneDirection::Both),
-            ..
-        } = forward_side[0]
-        {
+        let offset = if forward_side[0].direction.some() == Some(LaneDirection::Both) {
             1
         } else {
             0
@@ -175,18 +178,7 @@ fn bus_lanes(
         if parts.len() == forward_side.len() - offset {
             for (idx, part) in parts.into_iter().enumerate() {
                 if part == "designated" {
-                    let direction =
-                        if let Lane::Travel { direction, .. } = forward_side[idx + offset] {
-                            direction
-                        } else {
-                            unreachable!()
-                        };
-                    let designated = LaneDesignated::Bus;
-                    forward_side[idx + offset] = Lane::Travel {
-                        direction,
-                        designated,
-                        width: Some(locale.travel_width(&designated)),
-                    };
+                    forward_side[idx + offset].set_bus(locale)?;
                 }
             }
         }
@@ -199,17 +191,7 @@ fn bus_lanes(
         if parts.len() == backward_side.len() {
             for (idx, part) in parts.into_iter().enumerate() {
                 if part == "designated" {
-                    let direction = if let Lane::Travel { direction, .. } = forward_side[idx] {
-                        direction
-                    } else {
-                        unreachable!()
-                    };
-                    let designated = LaneDesignated::Bus;
-                    backward_side[idx] = Lane::Travel {
-                        direction,
-                        designated,
-                        width: Some(locale.travel_width(&designated)),
-                    };
+                    backward_side[idx].set_bus(locale)?;
                 }
             }
         }

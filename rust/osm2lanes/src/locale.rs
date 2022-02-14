@@ -1,3 +1,4 @@
+pub use celes::Country;
 use serde::{Deserialize, Serialize};
 
 use crate::road::LaneDesignated;
@@ -6,6 +7,9 @@ use crate::Metre;
 /// Context about the place where an OSM way exists.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Locale {
+    /// The ISO 3166 Country
+    pub country: Option<Country>,
+    /// The driving side
     pub driving_side: DrivingSide,
     /// When sidewalks are not explicitly tagged on a way,
     /// sidewalks may be inferred
@@ -63,6 +67,7 @@ impl Config {
     pub fn build(&self) -> Locale {
         // TODO, more business logic
         Locale {
+            country: None,
             driving_side: self.driving_side.unwrap_or(DrivingSide::Right),
             infer_sidewalks: self.infer_sidewalks.unwrap_or(true), // TODO?
         }

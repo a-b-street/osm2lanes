@@ -250,6 +250,7 @@ mod tests {
             .lanes
             .iter()
             .map(|lane| {
+                // TODO: direction on lane parking
                 if let Lane::Travel {
                     direction: Some(direction),
                     ..
