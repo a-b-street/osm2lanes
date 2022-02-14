@@ -35,9 +35,13 @@ pub enum RoadMsg {
         tags: Option<Tags>,
     },
     /// Other issue
-    Other { description: String, tags: Tags },
-    /// Internal error
+    Other {
+        description: String,
+        tags: Tags,
+    },
+    /// Internal errors
     TagsDuplicateKey(DuplicateKeyError),
+    Internal(&'static str),
 }
 
 impl RoadMsg {
@@ -100,6 +104,7 @@ impl std::fmt::Display for RoadMsg {
             }
             Self::Other { description, .. } => write!(f, "{}", description),
             Self::TagsDuplicateKey(e) => e.fmt(f),
+            Self::Internal(e) => e.fmt(f),
         }
     }
 }

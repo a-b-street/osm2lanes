@@ -66,12 +66,13 @@ impl std::convert::From<Oneway> for bool {
 
 // TODO: implement try when this is closed: https://github.com/rust-lang/rust/issues/84277
 /// A value with various levels of inference
+#[derive(Copy, Clone)]
 pub enum Infer<T> {
     None,
     Default(T),
     // Locale(T),
     // Calculated(T),
-    // Direct(T),
+    Direct(T),
 }
 
 impl<T> Infer<T> {
@@ -81,7 +82,7 @@ impl<T> Infer<T> {
             Self::Default(v) => Some(v),
             // Self::Locale(v) => Some(v),
             // Self::Calculated(v) => Some(v),
-            // Self::Direct(v) => Some(v),
+            Self::Direct(v) => Some(v),
         }
     }
 }
@@ -92,17 +93,49 @@ impl<T> Default for Infer<T> {
     }
 }
 
+#[derive(Debug)]
+pub struct LaneBuilderError(&'static str);
+
+impl std::fmt::Display for LaneBuilderError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::error::Error for LaneBuilderError {}
+
+impl std::convert::From<LaneBuilderError> for RoadError {
+    fn from(error: LaneBuilderError) -> Self {
+        Self::Msg(RoadMsg::Internal(error.0))
+    }
+}
+
+enum LaneType {
+    Travel,
+    Parking,
+    Shoulder,
+}
+
 #[derive(Default)]
-pub struct LaneBuilder {
+struct LaneBuilder {
+    r#type: Infer<LaneType>,
     direction: Infer<LaneDirection>,
     designated: Infer<LaneDesignated>,
 }
 
 impl LaneBuilder {
-    pub fn build(self) -> Lane {
-        Lane::Travel {
-            direction: self.direction.some(),
-            designated: self.designated.some().unwrap(),
+    fn build(self) -> Lane {
+        match self.r#type.some() {
+            Some(LaneType::Travel) => Lane::Travel {
+                direction: self.direction.some(),
+                designated: self.designated.some().unwrap(),
+            },
+            Some(LaneType::Parking) => Lane::Parking {
+                direction: self.direction.some().unwrap(),
+                designated: self.designated.some().unwrap(),
+            },
+            Some(LaneType::Shoulder) => Lane::Shoulder,
+            None => panic!(),
         }
     }
 }
@@ -122,19 +155,7 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
 
     let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
 
-    let (forward_side, backward_side) = initial_forward_backward(tags, locale, oneway);
-
-    // Temporary intermediate conversion
-    let (mut forward_side, mut backward_side) = (
-        forward_side
-            .into_iter()
-            .map(|lane| lane.build())
-            .collect::<Vec<_>>(),
-        backward_side
-            .into_iter()
-            .map(|lane| lane.build())
-            .collect::<Vec<_>>(),
-    );
+    let (mut forward_side, mut backward_side) = initial_forward_backward(tags, locale, oneway);
 
     bus(
         tags,
@@ -154,9 +175,7 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
         &mut warnings,
     )?;
 
-    // if driving_lane == LaneDesignated::Motor {
-    parking(tags, locale, oneway, &mut forward_side, &mut backward_side);
-    // }
+    parking(tags, locale, oneway, &mut forward_side, &mut backward_side)?;
 
     foot_and_shoulder(
         tags,
@@ -166,6 +185,18 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
         &mut backward_side,
         &mut warnings,
     )?;
+
+    // Temporary intermediate conversion
+    let (forward_side, backward_side) = (
+        forward_side
+            .into_iter()
+            .map(|lane| lane.build())
+            .collect::<Vec<_>>(),
+        backward_side
+            .into_iter()
+            .map(|lane| lane.build())
+            .collect::<Vec<_>>(),
+    );
 
     let lanes = assemble_ltr(forward_side, backward_side, locale.driving_side)?;
 
@@ -208,12 +239,14 @@ fn initial_forward_backward(
     // These are ordered from the road center, going outwards. Most of the members of fwd_side will
     // have Direction::Forward, but there can be exceptions with two-way cycletracks.
     let mut fwd_side: Vec<LaneBuilder> = iter::repeat_with(|| LaneBuilder {
+        r#type: Infer::Default(LaneType::Travel),
         direction: Infer::Default(LaneDirection::Forward),
         designated: Infer::Default(designated),
     })
     .take(num_driving_fwd)
     .collect();
     let back_side: Vec<LaneBuilder> = iter::repeat_with(|| LaneBuilder {
+        r#type: Infer::Default(LaneType::Travel),
         direction: Infer::Default(LaneDirection::Backward),
         designated: Infer::Default(designated),
     })
@@ -224,6 +257,7 @@ fn initial_forward_backward(
         fwd_side.insert(
             0,
             LaneBuilder {
+                r#type: Infer::Default(LaneType::Travel),
                 direction: Infer::Default(LaneDirection::Both),
                 designated: Infer::Default(designated),
             },

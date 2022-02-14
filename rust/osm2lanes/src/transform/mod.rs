@@ -83,22 +83,10 @@ impl Lane {
             designated,
         }
     }
-    fn both(designated: LaneDesignated) -> Self {
-        Self::Travel {
-            direction: Some(LaneDirection::Both),
-            designated,
-        }
-    }
     fn foot() -> Self {
         Self::Travel {
             direction: None,
             designated: LaneDesignated::Foot,
-        }
-    }
-    fn parking(direction: LaneDirection) -> Self {
-        Self::Parking {
-            direction,
-            designated: LaneDesignated::Motor,
         }
     }
     fn is_motor(&self) -> bool {
@@ -136,13 +124,6 @@ impl Lane {
                 ..
             }
         )
-    }
-    fn set_bus(&mut self) -> ModeResult {
-        match self {
-            Self::Travel { designated, .. } => *designated = LaneDesignated::Bus,
-            _ => unreachable!(),
-        }
-        Ok(())
     }
     fn direction(&self) -> Option<LaneDirection> {
         match self {

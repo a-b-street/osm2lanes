@@ -8,12 +8,19 @@ impl RoadError {
     }
 }
 
+impl LaneBuilder {
+    fn set_bus(&mut self) -> Result<(), LaneBuilderError> {
+        self.designated = Infer::Direct(LaneDesignated::Bus);
+        Ok(())
+    }
+}
+
 pub(super) fn bus(
     tags: &Tags,
     locale: &Locale,
     oneway: Oneway,
-    forward_side: &mut [Lane],
-    backward_side: &mut [Lane],
+    forward_side: &mut [LaneBuilder],
+    backward_side: &mut [LaneBuilder],
     warnings: &mut RoadWarnings,
 ) -> ModeResult {
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
@@ -53,10 +60,10 @@ fn busway(
     tags: &Tags,
     locale: &Locale,
     _oneway: Oneway,
-    forward_side: &mut [Lane],
-    backward_side: &mut [Lane],
+    forward_side: &mut [LaneBuilder],
+    backward_side: &mut [LaneBuilder],
     _warnings: &mut RoadWarnings,
-) -> ModeResult {
+) -> Result<(), RoadError> {
     const BUSWAY: TagKey = TagKey::from("busway");
     if tags.is(BUSWAY, "lane") {
         forward_side
@@ -116,8 +123,8 @@ fn lanes_bus(
     tags: &Tags,
     _locale: &Locale,
     _oneway: Oneway,
-    _forward_side: &mut [Lane],
-    _backward_side: &mut [Lane],
+    _forward_side: &mut [LaneBuilder],
+    _backward_side: &mut [LaneBuilder],
     warnings: &mut RoadWarnings,
 ) -> ModeResult {
     warnings.push(RoadMsg::Unimplemented {
@@ -142,8 +149,8 @@ fn bus_lanes(
     tags: &Tags,
     _locale: &Locale,
     oneway: Oneway,
-    forward_side: &mut [Lane],
-    backward_side: &mut [Lane],
+    forward_side: &mut [LaneBuilder],
+    backward_side: &mut [LaneBuilder],
     _warnings: &mut RoadWarnings,
 ) -> ModeResult {
     let fwd_bus_spec = if let Some(s) = tags.get("bus:lanes:forward") {
@@ -163,11 +170,7 @@ fn bus_lanes(
     };
     if !fwd_bus_spec.is_empty() {
         let parts: Vec<&str> = fwd_bus_spec.split('|').collect();
-        let offset = if let Lane::Travel {
-            direction: Some(LaneDirection::Both),
-            ..
-        } = forward_side[0]
-        {
+        let offset = if forward_side[0].direction.some() == Some(LaneDirection::Both) {
             1
         } else {
             0
@@ -175,16 +178,7 @@ fn bus_lanes(
         if parts.len() == forward_side.len() - offset {
             for (idx, part) in parts.into_iter().enumerate() {
                 if part == "designated" {
-                    let direction =
-                        if let Lane::Travel { direction, .. } = forward_side[idx + offset] {
-                            direction
-                        } else {
-                            unreachable!()
-                        };
-                    forward_side[idx + offset] = Lane::Travel {
-                        direction,
-                        designated: LaneDesignated::Bus,
-                    };
+                    forward_side[idx + offset].set_bus()?;
                 }
             }
         }
@@ -197,15 +191,7 @@ fn bus_lanes(
         if parts.len() == backward_side.len() {
             for (idx, part) in parts.into_iter().enumerate() {
                 if part == "designated" {
-                    let direction = if let Lane::Travel { direction, .. } = forward_side[idx] {
-                        direction
-                    } else {
-                        unreachable!()
-                    };
-                    backward_side[idx] = Lane::Travel {
-                        direction,
-                        designated: LaneDesignated::Bus,
-                    };
+                    backward_side[idx].set_bus()?;
                 }
             }
         }
