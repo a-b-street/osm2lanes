@@ -11,25 +11,28 @@ impl Tags {
 }
 
 impl LaneBuilder {
-    fn cycle_forward(locale: &Locale) -> Self {
+    fn cycle_forward(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
             direction: Infer::Direct(LaneDirection::Forward),
             designated: Infer::Direct(LaneDesignated::Bicycle),
+            ..Default::default()
         }
     }
-    fn cycle_backward(locale: &Locale) -> Self {
+    fn cycle_backward(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
             direction: Infer::Direct(LaneDirection::Backward),
             designated: Infer::Direct(LaneDesignated::Bicycle),
+            ..Default::default()
         }
     }
-    fn cycle_both(locale: &Locale) -> Self {
+    fn cycle_both(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
             direction: Infer::Direct(LaneDirection::Both),
             designated: Infer::Direct(LaneDesignated::Bicycle),
+            ..Default::default()
         }
     }
 }

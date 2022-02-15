@@ -2,7 +2,7 @@ use std::iter;
 
 use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle};
 use crate::tag::{TagKey, Tags};
-use crate::{DrivingSide, Locale};
+use crate::{DrivingSide, Locale, Metre};
 
 mod bicycle;
 use bicycle::bicycle;
@@ -117,26 +117,43 @@ enum LaneType {
 }
 
 #[derive(Default)]
+struct Width {
+    min: Infer<Metre>,
+    target: Infer<Metre>,
+    max: Infer<Metre>,
+}
+
+#[derive(Default)]
 struct LaneBuilder {
     r#type: Infer<LaneType>,
     direction: Infer<LaneDirection>,
     designated: Infer<LaneDesignated>,
+    width: Width,
 }
 
 impl LaneBuilder {
     fn build(self) -> Lane {
+        let width = self.width.target.some();
+        assert!(
+            width.unwrap_or(Lane::DEFAULT_WIDTH).val()
+                >= self.width.min.some().unwrap_or(Lane::DEFAULT_WIDTH).val()
+        );
+        assert!(
+            width.unwrap_or(Lane::DEFAULT_WIDTH).val()
+                <= self.width.max.some().unwrap_or(Lane::DEFAULT_WIDTH).val()
+        );
         match self.r#type.some() {
             Some(LaneType::Travel) => Lane::Travel {
                 direction: self.direction.some(),
                 designated: self.designated.some().unwrap(),
-                width: None,
+                width,
             },
             Some(LaneType::Parking) => Lane::Parking {
                 direction: self.direction.some().unwrap(),
                 designated: self.designated.some().unwrap(),
-                width: None,
+                width,
             },
-            Some(LaneType::Shoulder) => Lane::Shoulder { width: None },
+            Some(LaneType::Shoulder) => Lane::Shoulder { width },
             None => panic!(),
         }
     }
@@ -244,6 +261,7 @@ fn initial_forward_backward(
         r#type: Infer::Default(LaneType::Travel),
         direction: Infer::Default(LaneDirection::Forward),
         designated: Infer::Default(designated),
+        ..Default::default()
     })
     .take(num_driving_fwd)
     .collect();
@@ -251,6 +269,7 @@ fn initial_forward_backward(
         r#type: Infer::Default(LaneType::Travel),
         direction: Infer::Default(LaneDirection::Backward),
         designated: Infer::Default(designated),
+        ..Default::default()
     })
     .take(num_driving_back)
     .collect();
@@ -262,6 +281,7 @@ fn initial_forward_backward(
                 r#type: Infer::Default(LaneType::Travel),
                 direction: Infer::Default(LaneDirection::Both),
                 designated: Infer::Default(designated),
+                ..Default::default()
             },
         );
     }

@@ -1,18 +1,20 @@
 use super::*;
 
 impl LaneBuilder {
-    fn parking_forward(locale: &Locale) -> Self {
+    fn parking_forward(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Parking),
             direction: Infer::Direct(LaneDirection::Forward),
             designated: Infer::Direct(LaneDesignated::Motor),
+            ..Default::default()
         }
     }
-    fn parking_backward(locale: &Locale) -> Self {
+    fn parking_backward(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Parking),
             direction: Infer::Direct(LaneDirection::Backward),
             designated: Infer::Direct(LaneDesignated::Motor),
+            ..Default::default()
         }
     }
 }

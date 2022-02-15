@@ -1,13 +1,13 @@
 use super::*;
 
 impl LaneBuilder {
-    fn shoulder(locale: &Locale) -> Self {
+    fn shoulder(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Shoulder),
             ..Default::default()
         }
     }
-    fn foot(locale: &Locale) -> Self {
+    fn foot(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
             designated: Infer::Direct(LaneDesignated::Foot),
