@@ -558,15 +558,14 @@
 
 ## TODO: cycle tracks
 
-### Busway
+### Bus Lanes
 
-## Busway Scheme
+## `busway` Scheme
 ## https://wiki.openstreetmap.org/wiki/Bus_lanes#The_busway.3D.2A_scheme
 
 - description: busway=lane
   skip_kotlin: true
   skip_python: true
-  rust: false
   tags:
     highway: 'yes'
     lanes: '4'
@@ -591,7 +590,6 @@
 - description: busway:both=lane
   skip_kotlin: true
   skip_python: true
-  rust: false
   tags:
     highway: 'yes'
     lanes: '4'
@@ -616,7 +614,6 @@
 - description: busway:FORWARD=lane
   skip_kotlin: true
   skip_python: true
-  rust: false
   tags:
     highway: 'yes'
     lanes: '3'
@@ -667,6 +664,91 @@
     sidewalk: 'no'
     shoulder: 'no'
     busway: opposite_lane
+  driving_side: left
+  output:
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    direction: backward
+    designated: bus
+
+## `bus:lanes` Scheme
+## https://wiki.openstreetmap.org/wiki/Bus_lanes#The_bus:lanes.3D.2A_scheme
+
+- description: bus:lanes=designated|
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '2'
+    sidewalk: 'no'
+    shoulder: 'no'
+    bus:lanes: 'designated|'
+  driving_side: left
+  output:
+  - type: travel
+    direction: forward
+    designated: bus
+  - type: travel
+    direction: backward
+    designated: motor_vehicle
+
+- description: psv:lanes=|yes|designated|no
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '4'
+    sidewalk: 'no'
+    shoulder: 'no'
+    psv:lanes: '|yes|designated|no'
+  driving_side: right
+  output:
+  - type: travel
+    direction: backward
+    designated: motor_vehicle
+  - type: travel
+    direction: backward
+    designated: motor_vehicle
+  - type: travel
+    direction: forward
+    designated: bus
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+
+
+- description: bus:lanes:forward=designated|
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '3'
+    sidewalk: 'no'
+    shoulder: 'no'
+    bus:lanes:forward: 'designated|'
+  driving_side: right
+  output:
+  - type: travel
+    direction: backward
+    designated: motor_vehicle
+  - type: travel
+    direction: forward
+    designated: bus
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+
+- description: bus:lanes:backward=designated
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'yes'
+    lanes: '2'
+    sidewalk: 'no'
+    shoulder: 'no'
+    bus:lanes:backward: 'designated'
   driving_side: left
   output:
   - type: travel

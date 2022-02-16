@@ -63,8 +63,20 @@ impl RoadMsg {
             tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
         }
     }
+    pub fn ambiguous_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
+        Self::Ambiguous {
+            description: None,
+            tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
+        }
+    }
     pub fn unsupported_str(description: &str) -> Self {
         Self::Unsupported {
+            description: Some(description.to_owned()),
+            tags: None,
+        }
+    }
+    pub fn ambiguous_str(description: &str) -> Self {
+        Self::Ambiguous {
             description: Some(description.to_owned()),
             tags: None,
         }
@@ -163,12 +175,6 @@ pub enum RoadError {
     Warnings(RoadWarnings),
     #[serde(rename = "round_trip")]
     RoundTrip,
-}
-
-impl RoadError {
-    pub fn ambiguous_str(description: &str) -> Self {
-        RoadMsg::unsupported_str(description).into()
-    }
 }
 
 impl std::error::Error for RoadError {}
