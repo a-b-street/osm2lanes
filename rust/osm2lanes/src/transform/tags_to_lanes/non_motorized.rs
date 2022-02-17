@@ -1,5 +1,22 @@
 use super::*;
 
+impl Lane {
+    fn shoulder(locale: &Locale) -> Self {
+        Self::Shoulder {
+            // TODO: width not just motor
+            width: Some(locale.travel_width(&LaneDesignated::Motor)),
+        }
+    }
+    fn foot(locale: &Locale) -> Self {
+        let designated = LaneDesignated::Foot;
+        Self::Travel {
+            direction: None,
+            designated,
+            width: Some(locale.travel_width(&designated)),
+        }
+    }
+}
+
 pub fn non_motorized(tags: &Tags, locale: &Locale) -> Result<Option<Lanes>, RoadError> {
     if !tags.is_any(
         HIGHWAY,
@@ -18,7 +35,7 @@ pub fn non_motorized(tags: &Tags, locale: &Locale) -> Result<Option<Lanes>, Road
     // Easy special cases first.
     if tags.is(HIGHWAY, "steps") {
         return Ok(Some(Lanes {
-            lanes: vec![Lane::foot()],
+            lanes: vec![Lane::foot(locale)],
             warnings: RoadWarnings::new(vec![RoadMsg::Other {
                 description: "highway is steps, but lane is only a sidewalk".to_owned(),
                 tags: tags.subset(&[HIGHWAY]),
@@ -36,23 +53,23 @@ pub fn non_motorized(tags: &Tags, locale: &Locale) -> Result<Option<Lanes>, Road
         || (tags.is(HIGHWAY, "footway") && !tags.is_any("bicycle", &["designated", "yes"]))
     {
         return Ok(Some(Lanes {
-            lanes: vec![Lane::foot()],
+            lanes: vec![Lane::foot(locale)],
             warnings: RoadWarnings::default(),
         }));
     }
     // Otherwise, there'll always be a bike lane.
 
-    let mut forward_side = vec![Lane::forward(LaneDesignated::Bicycle)];
+    let mut forward_side = vec![Lane::forward(LaneDesignated::Bicycle, locale)];
     let mut backward_side = if tags.is("oneway", "yes") {
         vec![]
     } else {
-        vec![Lane::backward(LaneDesignated::Bicycle)]
+        vec![Lane::backward(LaneDesignated::Bicycle, locale)]
     };
 
     if !tags.is("foot", "no") {
-        forward_side.push(Lane::Shoulder);
+        forward_side.push(Lane::shoulder(locale));
         if !backward_side.is_empty() {
-            backward_side.push(Lane::Shoulder);
+            backward_side.push(Lane::shoulder(locale));
         }
     }
     Ok(Some(Lanes {

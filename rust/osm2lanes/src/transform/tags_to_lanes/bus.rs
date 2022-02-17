@@ -9,7 +9,7 @@ impl RoadError {
 }
 
 impl LaneBuilder {
-    fn set_bus(&mut self) -> Result<(), LaneBuilderError> {
+    fn set_bus(&mut self, _locale: &Locale) -> Result<(), LaneBuilderError> {
         self.designated = Infer::Direct(LaneDesignated::Bus);
         Ok(())
     }
@@ -69,29 +69,29 @@ fn busway(
         forward_side
             .last_mut()
             .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus()?;
+            .set_bus(locale)?;
         if !tags.is("oneway", "yes") && !tags.is("oneway:bus", "yes") {
             backward_side
                 .last_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-                .set_bus()?;
+                .set_bus(locale)?;
         }
     }
     if tags.is(BUSWAY, "opposite_lane") {
         backward_side
             .last_mut()
             .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-            .set_bus()?;
+            .set_bus(locale)?;
     }
     if tags.is(BUSWAY + "both", "lane") {
         forward_side
             .last_mut()
             .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus()?;
+            .set_bus(locale)?;
         backward_side
             .last_mut()
             .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-            .set_bus()?;
+            .set_bus(locale)?;
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             return Err(RoadError::ambiguous_str(
                 "busway:both=lane for oneway roads",
@@ -102,14 +102,14 @@ fn busway(
         forward_side
             .last_mut()
             .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus()?;
+            .set_bus(locale)?;
     }
     if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             forward_side
                 .first_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-                .set_bus()?;
+                .set_bus(locale)?;
         } else {
             return Err(RoadError::ambiguous_str(
                 "busway:BACKWARD=lane for bidirectional roads",
@@ -147,7 +147,7 @@ fn lanes_bus(
 
 fn bus_lanes(
     tags: &Tags,
-    _locale: &Locale,
+    locale: &Locale,
     oneway: Oneway,
     forward_side: &mut [LaneBuilder],
     backward_side: &mut [LaneBuilder],
@@ -178,7 +178,7 @@ fn bus_lanes(
         if parts.len() == forward_side.len() - offset {
             for (idx, part) in parts.into_iter().enumerate() {
                 if part == "designated" {
-                    forward_side[idx + offset].set_bus()?;
+                    forward_side[idx + offset].set_bus(locale)?;
                 }
             }
         }
@@ -191,7 +191,7 @@ fn bus_lanes(
         if parts.len() == backward_side.len() {
             for (idx, part) in parts.into_iter().enumerate() {
                 if part == "designated" {
-                    backward_side[idx].set_bus()?;
+                    backward_side[idx].set_bus(locale)?;
                 }
             }
         }
