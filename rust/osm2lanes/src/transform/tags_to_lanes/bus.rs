@@ -294,7 +294,26 @@ fn bus_lanes(
                 }
             }
         }
-        _ => todo!(),
+        // Don't try to understand this
+        (Some(_), (Some(_), _) | (_, Some(_)), _, _)
+        | (Some(_), _, Some(_), _)
+        | (Some(_), _, _, (Some(_), _) | (_, Some(_)))
+        | (_, (Some(_), _) | (_, Some(_)), _, (Some(_), _) | (_, Some(_)))
+        | (_, (Some(_), _) | (_, Some(_)), Some(_), _)
+        | (_, _, Some(_), (Some(_), _) | (_, Some(_))) => {
+            return Err(RoadMsg::Unsupported {
+                description: Some("more than one bus:lanes used".to_owned()),
+                tags: Some(tags.subset(&[
+                    "bus:lanes",
+                    "bus:lanes:forward",
+                    "psv:lanes:backward",
+                    "psv:lanes",
+                    "psv:lanes:forward",
+                    "psv:lanes:backward",
+                ])),
+            }
+            .into())
+        }
     }
 
     Ok(())
