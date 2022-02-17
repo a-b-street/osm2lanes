@@ -22,6 +22,12 @@ impl Default for LanesToTagsConfig {
     }
 }
 
+impl Lane {
+    fn is_shoulder(&self) -> bool {
+        matches!(self, Lane::Shoulder { .. })
+    }
+}
+
 pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig) -> TagsResult {
     let mut tags = Tags::default();
     let mut oneway = false;
@@ -56,8 +62,8 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
     }
     // Shoulder
     match (
-        lanes.first().unwrap() == &Lane::Shoulder,
-        lanes.last().unwrap() == &Lane::Shoulder,
+        lanes.first().unwrap().is_shoulder(),
+        lanes.last().unwrap().is_shoulder(),
     ) {
         (false, false) => {
             // TODO do we want to always be explicit about this?
@@ -204,6 +210,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
             Lane::Travel {
                 designated: LaneDesignated::Motor,
                 direction: Some(LaneDirection::Both),
+                ..
             }
         )
     }) {

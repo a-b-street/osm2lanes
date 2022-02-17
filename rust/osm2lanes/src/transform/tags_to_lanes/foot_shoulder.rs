@@ -1,13 +1,13 @@
 use super::*;
 
 impl LaneBuilder {
-    fn shoulder() -> Self {
+    fn shoulder(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Shoulder),
             ..Default::default()
         }
     }
-    fn foot() -> Self {
+    fn foot(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
             designated: Infer::Direct(LaneDesignated::Foot),
@@ -135,12 +135,14 @@ pub(super) fn foot_and_shoulder(
                 let has_bicycle_lane = side.last().map_or(false, |lane| lane.is_bicycle());
 
                 if !has_bicycle_lane && (forward || !bool::from(oneway)) {
-                    side.push(LaneBuilder::shoulder())
+                    side.push(LaneBuilder::shoulder(locale))
                 }
             }
             (Sidewalk::No | Sidewalk::None, Shoulder::No) => {}
-            (Sidewalk::Yes, Shoulder::No | Shoulder::None) => side.push(LaneBuilder::foot()),
-            (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => side.push(LaneBuilder::shoulder()),
+            (Sidewalk::Yes, Shoulder::No | Shoulder::None) => side.push(LaneBuilder::foot(locale)),
+            (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => {
+                side.push(LaneBuilder::shoulder(locale))
+            }
             (Sidewalk::Yes, Shoulder::Yes) => {
                 return Err(RoadMsg::Unsupported {
                     description: Some("shoulder and sidewalk on same side".to_owned()),

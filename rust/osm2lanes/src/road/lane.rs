@@ -12,14 +12,16 @@ pub enum Lane {
         // TODO, we could make this non-optional, but remove the field for designated=foot?
         direction: Option<LaneDirection>,
         designated: LaneDesignated,
+        width: Option<Metre>,
     },
     #[serde(rename = "parking")]
     Parking {
         direction: LaneDirection,
         designated: LaneDesignated,
+        width: Option<Metre>,
     },
     #[serde(rename = "shoulder")]
-    Shoulder,
+    Shoulder { width: Option<Metre> },
     #[serde(rename = "separator")]
     Separator { markings: Markings },
     // #[serde(rename = "construction")]
@@ -33,8 +35,14 @@ impl Lane {
     pub fn width(&self, locale: &Locale) -> Metre {
         match self {
             Lane::Separator { markings } => markings.width(locale),
-            Lane::Travel { designated, .. } => locale.default_width(designated),
-            _ => Lane::DEFAULT_WIDTH,
+            Lane::Travel {
+                width, designated, ..
+            } => width.unwrap_or_else(|| locale.travel_width(designated)),
+            // TODO: parking different from travel?
+            Lane::Parking {
+                width, designated, ..
+            } => width.unwrap_or_else(|| locale.travel_width(designated)),
+            Lane::Shoulder { width, .. } => width.unwrap_or(Lane::DEFAULT_WIDTH),
         }
     }
 }
@@ -88,7 +96,7 @@ impl LanePrintable for Lane {
                 designated: LaneDesignated::Bus,
                 ..
             } => 'B',
-            Self::Shoulder => 'S',
+            Self::Shoulder { .. } => 'S',
             Self::Parking { .. } => 'p',
             Self::Separator { .. } => '|',
         }
@@ -111,7 +119,7 @@ impl LanePrintable for Lane {
                 designated: LaneDesignated::Bus,
                 ..
             } => '🚌',
-            Self::Shoulder => '🛆',
+            Self::Shoulder { .. } => '🛆',
             Self::Parking { .. } => '🅿',
             Self::Separator { .. } => '|',
         }

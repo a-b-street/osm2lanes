@@ -1,25 +1,27 @@
 use super::*;
 
 impl LaneBuilder {
-    fn parking_forward() -> Self {
+    fn parking_forward(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Parking),
             direction: Infer::Direct(LaneDirection::Forward),
             designated: Infer::Direct(LaneDesignated::Motor),
+            ..Default::default()
         }
     }
-    fn parking_backward() -> Self {
+    fn parking_backward(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Parking),
             direction: Infer::Direct(LaneDirection::Backward),
             designated: Infer::Direct(LaneDesignated::Motor),
+            ..Default::default()
         }
     }
 }
 
 pub(super) fn parking(
     tags: &Tags,
-    _locale: &Locale,
+    locale: &Locale,
     _oneway: Oneway,
     forward_side: &mut Vec<LaneBuilder>,
     backward_side: &mut Vec<LaneBuilder>,
@@ -30,10 +32,10 @@ pub(super) fn parking(
     let parking_lane_back = tags.is_any("parking:lane:left", &has_parking)
         || tags.is_any("parking:lane:both", &has_parking);
     if parking_lane_fwd {
-        forward_side.push(LaneBuilder::parking_forward());
+        forward_side.push(LaneBuilder::parking_forward(locale));
     }
     if parking_lane_back {
-        backward_side.push(LaneBuilder::parking_backward());
+        backward_side.push(LaneBuilder::parking_backward(locale));
     }
     Ok(())
 }

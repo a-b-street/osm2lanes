@@ -1,6 +1,6 @@
 use crate::road::{Lane, LaneDesignated, LaneDirection};
 use crate::tag::{TagKey, Tags};
-use crate::DrivingSide;
+use crate::{DrivingSide, Locale};
 
 mod error;
 pub use error::{Lanes, RoadError, RoadMsg, RoadWarnings};
@@ -71,22 +71,18 @@ impl Lane {
     pub fn is_separator(&self) -> bool {
         matches!(self, Lane::Separator { .. })
     }
-    fn forward(designated: LaneDesignated) -> Self {
+    fn forward(designated: LaneDesignated, locale: &Locale) -> Self {
         Self::Travel {
             direction: Some(LaneDirection::Forward),
             designated,
+            width: Some(locale.travel_width(&designated)),
         }
     }
-    fn backward(designated: LaneDesignated) -> Self {
+    fn backward(designated: LaneDesignated, locale: &Locale) -> Self {
         Self::Travel {
             direction: Some(LaneDirection::Backward),
             designated,
-        }
-    }
-    fn foot() -> Self {
-        Self::Travel {
-            direction: None,
-            designated: LaneDesignated::Foot,
+            width: Some(locale.travel_width(&designated)),
         }
     }
     fn is_motor(&self) -> bool {

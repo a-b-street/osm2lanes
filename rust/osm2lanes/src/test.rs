@@ -54,14 +54,56 @@ mod tests {
     impl Lane {
         /// Eq where None is treaty as always equal
         fn approx_eq(&self, other: &Self) -> bool {
-            if let (Lane::Separator { markings: left }, Lane::Separator { markings: right }) =
-                (self, other)
-            {
-                left.iter()
+            match (self, other) {
+                (Lane::Separator { markings: left }, Lane::Separator { markings: right }) => left
+                    .iter()
                     .zip(right.iter())
-                    .all(|(left, right)| left.approx_eq(right))
-            } else {
-                self == other
+                    .all(|(left, right)| left.approx_eq(right)),
+                (
+                    Lane::Travel {
+                        designated: left_designated,
+                        direction: left_direction,
+                        width: left_width,
+                    },
+                    Lane::Travel {
+                        designated: right_designated,
+                        direction: right_direction,
+                        width: right_width,
+                    },
+                ) => {
+                    left_designated == right_designated
+                        && left_direction == right_direction
+                        && match (left_width, right_width) {
+                            (None, None) | (Some(_), None) | (None, Some(_)) => true,
+                            (Some(left), Some(right)) => left == right,
+                        }
+                }
+                (
+                    Lane::Parking {
+                        designated: left_designated,
+                        direction: left_direction,
+                        width: left_width,
+                    },
+                    Lane::Parking {
+                        designated: right_designated,
+                        direction: right_direction,
+                        width: right_width,
+                    },
+                ) => {
+                    left_designated == right_designated
+                        && left_direction == right_direction
+                        && match (left_width, right_width) {
+                            (None, None) | (Some(_), None) | (None, Some(_)) => true,
+                            (Some(left), Some(right)) => left == right,
+                        }
+                }
+                (Lane::Shoulder { width: left_width }, Lane::Shoulder { width: right_width }) => {
+                    match (left_width, right_width) {
+                        (None, None) | (Some(_), None) | (None, Some(_)) => true,
+                        (Some(left), Some(right)) => left == right,
+                    }
+                }
+                (left, right) => left == right,
             }
         }
     }
