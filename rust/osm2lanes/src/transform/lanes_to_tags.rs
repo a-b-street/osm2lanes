@@ -174,11 +174,33 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
             .rev()
             .take_while(|lane| !lane.is_motor())
             .find(|lane| lane.is_bus());
-        match (left_bus_lane.is_some(), right_bus_lane.is_some()) {
-            (false, false) => {}
-            (true, false) => tags.checked_insert("busway:left", "lane")?,
-            (false, true) => tags.checked_insert("busway:right", "lane")?,
-            (true, true) => tags.checked_insert("busway:both", "lane")?,
+        if left_bus_lane.is_none()
+            && right_bus_lane.is_none()
+            && lanes.iter().any(|lane| lane.is_bus())
+        {
+            tags.checked_insert(
+                "bus:lanes",
+                lanes
+                    .iter()
+                    .map(|lane| if lane.is_bus() { "designated" } else { "" })
+                    .collect::<Vec<_>>()
+                    .as_slice()
+                    .join("|"),
+            )?
+        } else {
+            let value = |lane: &Lane| -> &'static str {
+                if oneway && lane.direction() == Some(LaneDirection::Backward) {
+                    "opposite_lane"
+                } else {
+                    "lane"
+                }
+            };
+            match (left_bus_lane, right_bus_lane) {
+                (None, None) => {}
+                (Some(left), None) => tags.checked_insert("busway:left", value(left))?,
+                (None, Some(right)) => tags.checked_insert("busway:right", value(right))?,
+                (Some(_left), Some(_right)) => tags.checked_insert("busway:both", "lane")?,
+            }
         }
     }
 
