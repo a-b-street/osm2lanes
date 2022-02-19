@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
 
-use clap::{AppSettings, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use futures::executor::block_on;
 use osm2lanes::overpass::get_way;
 use osm2lanes::tag::Tags;
@@ -21,14 +21,14 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Command {
     /// Retrieve lanes given OSM way ID
-    #[clap(setting(AppSettings::ArgRequiredElseHelp))]
+    #[clap(arg_required_else_help = true)]
     Way {
         /// Way ID
         #[clap(required = true)]
         id: u64,
     },
     /// Convert OSM way tags to lanes
-    #[clap(setting(AppSettings::ArgRequiredElseHelp))]
+    #[clap(arg_required_else_help = true)]
     Convert {
         /// JSON of OSM Tags
         #[clap(required = true, parse(from_os_str))]
