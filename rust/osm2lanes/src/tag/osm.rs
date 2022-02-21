@@ -150,8 +150,13 @@ impl Highway {
             .and_then(|s| s.parse().map_err(Some))
     }
 
-    /// Is Highway Predominantly Motorized
-    pub const fn is_road(&self) -> bool {
+    /// Is Highway Supported
+    pub const fn is_supported(&self) -> bool {
+        self.is_supported_road() || self.is_supported_non_motorized()
+    }
+
+    /// Is Highway Supported and Predominantly Motorized
+    pub const fn is_supported_road(&self) -> bool {
         matches!(
             self,
             Highway::Classified(_)
@@ -163,8 +168,8 @@ impl Highway {
         )
     }
 
-    /// Is Highway Predominantly Non-Motorized
-    pub const fn is_non_motorized(&self) -> bool {
+    /// Is Highway Supported and Predominantly Non-Motorized
+    pub const fn is_supported_non_motorized(&self) -> bool {
         matches!(
             self,
             Self::Cycleway
