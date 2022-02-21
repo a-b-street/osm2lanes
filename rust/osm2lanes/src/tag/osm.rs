@@ -3,46 +3,75 @@ use crate::tag::{TagKey, Tags};
 pub const HIGHWAY: TagKey = TagKey::from("highway");
 
 pub enum Highway {
-    Road(Road),
-    Link(Road),
-    Bridleway,
-    BusGuideway,
-    Construction,
-    Corridor,
-    Cycleway,
-    Escape,
-    Footway,
-    LivingStreet,
-    Path,
-    Pedestrian,
-    Proposed,
-    Raceway,
+    Classified(HighwayImportance),
+    Link(HighwayImportance),
+    Lifecycle(Lifecycle),
+    NonTravel(NonTravel),
+    // Roads
     Residential,
     Service,
-    Steps,
+    Unclassified,
+    UnknownRoad, // https://wiki.openstreetmap.org/wiki/Tag:highway%3Droad
+    // Mixed
     Track,
+    LivingStreet,
+    // Motorized
+    BusGuideway,
+    // Non-motorized
+    Bridleway,
+    Corridor,
+    Cycleway,
+    Footway,
+    Path,
+    Pedestrian,
+    Steps,
 }
 
-pub enum Road {
+#[derive(PartialEq, PartialOrd)]
+pub enum HighwayImportance {
     Motorway,
     Trunk,
     Primary,
     Secondary,
     Tertiary,
-    Unclassified,
-    Unknown, // https://wiki.openstreetmap.org/wiki/Tag:highway%3Droad
 }
 
-impl std::fmt::Display for Road {
+impl std::fmt::Display for HighwayImportance {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Road::Motorway => write!(f, "motorway"),
-            Road::Trunk => write!(f, "trunk"),
-            Road::Primary => write!(f, "primary"),
-            Road::Secondary => write!(f, "secondary"),
-            Road::Tertiary => write!(f, "tertiary"),
-            Road::Unclassified => write!(f, "unclassified"),
-            Road::Unknown => write!(f, "road"),
+            Self::Motorway => write!(f, "motorway"),
+            Self::Trunk => write!(f, "trunk"),
+            Self::Primary => write!(f, "primary"),
+            Self::Secondary => write!(f, "secondary"),
+            Self::Tertiary => write!(f, "tertiary"),
+        }
+    }
+}
+
+pub enum Lifecycle {
+    Construction,
+    Proposed,
+}
+
+impl std::fmt::Display for Lifecycle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Construction => write!(f, "construction"),
+            Self::Proposed => write!(f, "proposed"),
+        }
+    }
+}
+
+pub enum NonTravel {
+    Escape,
+    Raceway,
+}
+
+impl std::fmt::Display for NonTravel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Escape => write!(f, "escape"),
+            Self::Raceway => write!(f, "raceway"),
         }
     }
 }
@@ -52,34 +81,34 @@ impl std::str::FromStr for Highway {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
-            "motorway" => Self::Road(Road::Motorway),
-            "trunk" => Self::Road(Road::Trunk),
-            "primary" => Self::Road(Road::Primary),
-            "secondary" => Self::Road(Road::Secondary),
-            "tertiary" => Self::Road(Road::Tertiary),
-            "unclassified" => Self::Road(Road::Unclassified),
-            "road" => Self::Road(Road::Unknown),
-            "motorway_link" => Self::Link(Road::Motorway),
-            "trunk_link" => Self::Link(Road::Trunk),
-            "primary_link" => Self::Link(Road::Primary),
-            "secondary_link" => Self::Link(Road::Secondary),
-            "tertiary_link" => Self::Link(Road::Tertiary),
+            "motorway" => Self::Classified(HighwayImportance::Motorway),
+            "trunk" => Self::Classified(HighwayImportance::Trunk),
+            "primary" => Self::Classified(HighwayImportance::Primary),
+            "secondary" => Self::Classified(HighwayImportance::Secondary),
+            "tertiary" => Self::Classified(HighwayImportance::Tertiary),
+            "motorway_link" => Self::Link(HighwayImportance::Motorway),
+            "trunk_link" => Self::Link(HighwayImportance::Trunk),
+            "primary_link" => Self::Link(HighwayImportance::Primary),
+            "secondary_link" => Self::Link(HighwayImportance::Secondary),
+            "tertiary_link" => Self::Link(HighwayImportance::Tertiary),
+            "construction" => Self::Lifecycle(Lifecycle::Construction),
+            "proposed" => Self::Lifecycle(Lifecycle::Proposed),
+            "raceway" => Self::NonTravel(NonTravel::Raceway),
+            "escape" => Self::NonTravel(NonTravel::Escape),
             "bridleway" => Self::Bridleway,
             "bus_guideway" => Self::BusGuideway,
-            "construction" => Self::Construction,
             "corridor" => Self::Corridor,
             "cycleway" => Self::Cycleway,
-            "escape" => Self::Escape,
             "footway" => Self::Footway,
             "living_street" => Self::LivingStreet,
             "path" => Self::Path,
             "pedestrian" => Self::Pedestrian,
-            "proposed" => Self::Proposed,
-            "raceway" => Self::Raceway,
             "residential" => Self::Residential,
+            "road" => Self::UnknownRoad,
             "service" => Self::Service,
             "steps" => Self::Steps,
             "track" => Self::Track,
+            "unclassified" => Self::Unclassified,
             _ => return Err(s.to_owned()),
         })
     }
@@ -88,24 +117,24 @@ impl std::str::FromStr for Highway {
 impl std::fmt::Display for Highway {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Road(road) => write!(f, "{}", road),
-            Self::Link(road) => write!(f, "{}_link", road),
+            Self::Classified(importance) => write!(f, "{}", importance),
+            Self::Link(importance) => write!(f, "{}_link", importance),
+            Self::Lifecycle(v) => write!(f, "{}", v),
+            Self::NonTravel(v) => write!(f, "{}", v),
             Self::Bridleway => write!(f, "bridleway"),
             Self::BusGuideway => write!(f, "bus_guideway"),
-            Self::Construction => write!(f, "construction"),
             Self::Corridor => write!(f, "corridor"),
             Self::Cycleway => write!(f, "cycleway"),
-            Self::Escape => write!(f, "escape"),
             Self::Footway => write!(f, "footway"),
             Self::LivingStreet => write!(f, "living_street"),
             Self::Path => write!(f, "path"),
             Self::Pedestrian => write!(f, "pedestrian"),
-            Self::Proposed => write!(f, "proposed"),
-            Self::Raceway => write!(f, "raceway"),
             Self::Residential => write!(f, "residential"),
             Self::Service => write!(f, "service"),
             Self::Steps => write!(f, "steps"),
             Self::Track => write!(f, "track"),
+            Self::Unclassified => write!(f, "unclassified"),
+            Self::UnknownRoad => write!(f, "road"),
         }
     }
 }
@@ -119,6 +148,19 @@ impl Highway {
         tags.get(HIGHWAY)
             .ok_or(None)
             .and_then(|s| s.parse().map_err(Some))
+    }
+
+    /// Is Highway Predominantly Motorized
+    pub const fn is_road(&self) -> bool {
+        matches!(
+            self,
+            Highway::Classified(_)
+                | Highway::Link(_)
+                | Highway::Residential
+                | Highway::Service
+                | Highway::Unclassified
+                | Highway::UnknownRoad
+        )
     }
 
     /// Is Highway Predominantly Non-Motorized
