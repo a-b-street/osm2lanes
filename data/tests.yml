@@ -210,7 +210,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '1'
     oneway: 'yes'
     shoulder: 'no'
@@ -225,7 +225,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '1'
     oneway: 'yes'
     shoulder: 'no'
@@ -244,7 +244,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '1'
     oneway: 'yes'
     shoulder: 'no'
@@ -261,7 +261,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '1'
     oneway: 'yes'
     shoulder: 'no'
@@ -278,7 +278,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '1'
     oneway: 'yes'
     shoulder: 'no'
@@ -295,7 +295,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '1'
     oneway: 'yes'
     shoulder: 'no'
@@ -314,7 +314,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '1'
     oneway: 'yes'
     shoulder: 'no'
@@ -331,7 +331,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '1'
     oneway: 'yes'
     shoulder: 'no'
@@ -350,7 +350,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '2'
     cycleway: lane
     sidewalk: 'no'
@@ -374,7 +374,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '2'
     oneway: 'yes'
     cycleway:left: lane
@@ -396,7 +396,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '2'
     cycleway:left: lane
     sidewalk: 'no'
@@ -417,6 +417,7 @@
   way_id: 4188078
   mapillary: https://www.mapillary.com/app/?pKey=270752554744918
   tags:
+    highway: 'road'
     lanes: '2'
     cycleway:left: lane
     oneway: 'yes'
@@ -438,6 +439,7 @@
 - description: cycleway:BACKWARD=lane
   way_id: 49207928
   tags:
+    highway: 'road'
     cycleway:right: lane
     sidewalk: both
   driving_side: left
@@ -464,12 +466,12 @@
   # https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
   # TODO: OSM tags do not accurately reflect parking situation
   tags:
-    highway: secondary
-    bicycle: designated
+    highway: 'secondary'
+    bicycle: 'designated'
     lanes: '2'
     oneway: 'yes'
-    sidewalk: both
-    cycleway:left: lane
+    sidewalk: 'both'
+    cycleway:left: 'lane'
   driving_side: right
   ISO 3166-2: US-WA
   output:
@@ -492,10 +494,11 @@
   mapillary: https://www.mapillary.com/app/?pKey=1848856645291310
   # TODO: find better example with same tags
   tags:
+    highway: 'road'
     lanes: '2'
     oneway: 'yes'
-    sidewalk: both
-    cycleway:right: track
+    sidewalk: 'both'
+    cycleway:right: 'track'
     cycleway:right:oneway: 'no'
     oneway:bicycle: 'no'
   driving_side: right
@@ -519,7 +522,7 @@
   skip_kotlin: true
   rust: false
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '1'
     oneway: 'yes'
     cycleway: opposite_lane
@@ -538,7 +541,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '1'
     oneway: 'yes'
     oneway:bicycle: 'no'
@@ -567,7 +570,7 @@
   skip_kotlin: true
   skip_python: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '4'
     sidewalk: 'no'
     shoulder: 'no'
@@ -591,7 +594,7 @@
   skip_kotlin: true
   skip_python: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '4'
     sidewalk: 'no'
     shoulder: 'no'
@@ -615,7 +618,7 @@
   skip_kotlin: true
   skip_python: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '3'
     sidewalk: 'no'
     shoulder: 'no'
@@ -637,7 +640,7 @@
   skip_python: true
   rust: false
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '3'
     sidewalk: 'no'
     shoulder: 'no'
@@ -659,7 +662,7 @@
   skip_kotlin: true
   rust: false
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '2'
     sidewalk: 'no'
     shoulder: 'no'
@@ -680,7 +683,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '2'
     sidewalk: 'no'
     shoulder: 'no'
@@ -698,7 +701,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '4'
     sidewalk: 'no'
     shoulder: 'no'
@@ -723,7 +726,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '3'
     sidewalk: 'no'
     shoulder: 'no'
@@ -744,7 +747,7 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'yes'
+    highway: 'road'
     lanes: '2'
     sidewalk: 'no'
     shoulder: 'no'
@@ -1002,9 +1005,10 @@
 - way_id: 898731283
   comment: how should an odd number of lanes forward/backwards be split without any clues?
   tags:
+    highway: 'road'
     lanes: '3'
-    sidewalk: both
-  driving_side: left
+    sidewalk: 'both'
+  driving_side: 'left'
   output:
   - type: travel
     designated: foot
@@ -1022,6 +1026,7 @@
 
 # I didn't look for a real example of this
 - tags:
+    highway: 'road'
     lanes: '5'
     sidewalk: 'no'
   driving_side: right
@@ -1046,6 +1051,7 @@
 
 - way_id: 335668924
   tags:
+    highway: 'road'
     lanes: '1'
     sidewalk: 'no'
   driving_side: right
@@ -1062,8 +1068,8 @@
 - way_id: 13859146
   rust: false  
   tags:
-    busway:both: lane
-    highway: secondary
+    highway: 'secondary'
+    busway:both: 'lane'
     lanes: '4'
     maxspeed: '50'
     name: Rue Gabriel Péri
@@ -1087,9 +1093,9 @@
 - way_id: 84867915
   rust: false
   tags:
+    highway: 'secondary'
     busway:right: lane
     cycleway:right: share_busway
-    highway: secondary
     lanes: '2'
     maxspeed: '30'
     name: Boulevard Raspail
@@ -1107,19 +1113,19 @@
 - way_id: 323605308
   rust: false
   tags:
-    bus:lanes: yes|yes|designated
-    busway:right: lane
-    cycleway:right: share_busway
-    highway: primary
+    highway: 'primary'
+    bus:lanes: 'yes|yes|designated'
+    busway:right: 'lane'
+    cycleway:right: 'share_busway'
     lanes: '3'
     lanes:psv: '1'
     lit: 'yes'
     maxspeed: '30'
-    name: Quai Aimé Césaire
+    name: 'Quai Aimé Césaire'
     oneway: 'yes'
-    psv:lanes: yes|yes|designated
-    surface: asphalt
-    taxi:lanes: yes|yes|designated
+    psv:lanes: 'yes|yes|designated'
+    surface: 'asphalt'
+    taxi:lanes: 'yes|yes|designated'
   driving_side: right
   output:
   - type: travel

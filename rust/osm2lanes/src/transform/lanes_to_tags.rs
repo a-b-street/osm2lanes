@@ -31,7 +31,7 @@ impl Lane {
 pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig) -> TagsResult {
     let mut tags = Tags::default();
     let mut oneway = false;
-    tags.checked_insert("highway", "yes")?; // TODO, what?
+    tags.checked_insert("highway", "road")?; // TODO, add `highway` to `Lanes`
     {
         let lane_count = lanes
             .iter()

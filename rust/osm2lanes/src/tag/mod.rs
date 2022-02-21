@@ -6,6 +6,9 @@ use serde::{Deserialize, Serialize};
 mod key;
 pub use key::TagKey;
 
+mod osm;
+pub use osm::{Highway, HIGHWAY};
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DuplicateKeyError(String);
 
