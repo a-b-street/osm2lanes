@@ -1,5 +1,5 @@
 use crate::road::{Lane, LaneDesignated, LaneDirection};
-use crate::tag::{TagKey, Tags};
+use crate::tag::{TagKey, Tags, HIGHWAY};
 use crate::{DrivingSide, Locale};
 
 mod error;
@@ -11,7 +11,6 @@ pub use tags_to_lanes::{tags_to_lanes, TagsToLanesConfig};
 mod lanes_to_tags;
 pub use lanes_to_tags::{lanes_to_tags, LanesToTagsConfig};
 
-const HIGHWAY: TagKey = TagKey::from("highway");
 const CYCLEWAY: TagKey = TagKey::from("cycleway");
 const SIDEWALK: TagKey = TagKey::from("sidewalk");
 const SHOULDER: TagKey = TagKey::from("shoulder");

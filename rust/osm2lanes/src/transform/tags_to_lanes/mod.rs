@@ -1,7 +1,7 @@
 use std::iter;
 
 use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle};
-use crate::tag::{TagKey, Tags};
+use crate::tag::{Highway, TagKey, Tags};
 use crate::{DrivingSide, Locale, Metre};
 
 mod bicycle;
@@ -165,10 +165,10 @@ impl LaneBuilder {
 pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -> LanesResult {
     let mut warnings = RoadWarnings::default();
 
-    unsupported(tags, locale, &mut warnings)?;
+    let highway = unsupported(tags, locale, &mut warnings)?;
 
     // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
-    if let Some(spec) = non_motorized(tags, locale)? {
+    if let Some(spec) = non_motorized(tags, locale, highway)? {
         return Ok(spec);
     }
 
@@ -363,14 +363,31 @@ fn assemble_ltr(
     })
 }
 
-pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -> ModeResult {
-    if tags.is("highway", "bus_guideway") {
-        return Err(RoadMsg::unimplemented_tag("highway", "bus_guideway").into());
-    }
-
-    if tags.is("highway", "construction") {
-        return Err(RoadMsg::unimplemented_tag("highway", "construction").into());
-    }
+pub fn unsupported(
+    tags: &Tags,
+    _locale: &Locale,
+    warnings: &mut RoadWarnings,
+) -> Result<Highway, RoadError> {
+    let highway = Highway::from_tags(tags);
+    let highway = match highway {
+        Err(None) => return Err(RoadMsg::unsupported_str("way is not highway").into()),
+        Err(Some(s)) => return Err(RoadMsg::unsupported_tag(HIGHWAY, &s).into()),
+        Ok(highway) => match highway {
+            Highway::Road(_)
+                | Highway::Link(_)
+                | Highway::Service
+                | Highway::Residential
+                // Non motorized
+                | Highway::Pedestrian
+                | Highway::Footway
+                | Highway::Cycleway
+                | Highway::Path
+                | Highway::Steps
+                | Highway::Track
+             => highway,
+            highway => return Err(RoadMsg::unimplemented_tag(HIGHWAY, &highway.to_string()).into()),
+        },
+    };
 
     // https://wiki.openstreetmap.org/wiki/Key:access#Transport_mode_restrictions
     const ACCESS_KEYS: [&str; 43] = [
@@ -434,5 +451,5 @@ pub fn unsupported(tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) -
         return Err(RoadMsg::unimplemented_tag("oneway", "reversible").into());
     }
 
-    Ok(())
+    Ok(highway)
 }

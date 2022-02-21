@@ -17,18 +17,20 @@ impl Lane {
     }
 }
 
-pub fn non_motorized(tags: &Tags, locale: &Locale) -> Result<Option<Lanes>, RoadError> {
-    if !tags.is_any(
-        HIGHWAY,
-        &[
-            "cycleway",
-            "footway",
-            "path",
-            "pedestrian",
-            "steps",
-            "track",
-        ],
-    ) {
+pub fn non_motorized(
+    tags: &Tags,
+    locale: &Locale,
+    highway: Highway,
+) -> Result<Option<Lanes>, RoadError> {
+    if let Highway::Cycleway
+    | Highway::Footway
+    | Highway::Path
+    | Highway::Pedestrian
+    | Highway::Steps
+    | Highway::Track = highway
+    {
+        log::trace!("non-motorized");
+    } else {
         log::trace!("motorized");
         return Ok(None);
     }
