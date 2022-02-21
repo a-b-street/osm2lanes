@@ -373,18 +373,10 @@ pub fn unsupported(
         Err(None) => return Err(RoadMsg::unsupported_str("way is not highway").into()),
         Err(Some(s)) => return Err(RoadMsg::unsupported_tag(HIGHWAY, &s).into()),
         Ok(highway) => match highway {
-            Highway::Road(_)
-                | Highway::Link(_)
-                | Highway::Service
-                | Highway::Residential
-                // Non motorized
-                | Highway::Pedestrian
-                | Highway::Footway
-                | Highway::Cycleway
-                | Highway::Path
-                | Highway::Steps
-                | Highway::Track
-             => highway,
+            Highway::Road(_) | Highway::Link(_) | Highway::Service | Highway::Residential => {
+                highway
+            }
+            highway if highway.is_non_motorized() => highway,
             highway => return Err(RoadMsg::unimplemented_tag(HIGHWAY, &highway.to_string()).into()),
         },
     };

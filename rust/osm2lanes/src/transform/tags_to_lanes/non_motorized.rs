@@ -22,13 +22,7 @@ pub fn non_motorized(
     locale: &Locale,
     highway: Highway,
 ) -> Result<Option<Lanes>, RoadError> {
-    if let Highway::Cycleway
-    | Highway::Footway
-    | Highway::Path
-    | Highway::Pedestrian
-    | Highway::Steps
-    | Highway::Track = highway
-    {
+    if highway.is_non_motorized() {
         log::trace!("non-motorized");
     } else {
         log::trace!("motorized");

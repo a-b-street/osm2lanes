@@ -1113,19 +1113,19 @@
 - way_id: 323605308
   rust: false
   tags:
-    highway: primary
-    bus:lanes: yes|yes|designated
-    busway:right: lane
-    cycleway:right: share_busway
+    highway: 'primary'
+    bus:lanes: 'yes|yes|designated'
+    busway:right: 'lane'
+    cycleway:right: 'share_busway'
     lanes: '3'
     lanes:psv: '1'
     lit: 'yes'
     maxspeed: '30'
-    name: Quai Aimé Césaire
+    name: 'Quai Aimé Césaire'
     oneway: 'yes'
-    psv:lanes: yes|yes|designated
-    surface: asphalt
-    taxi:lanes: yes|yes|designated
+    psv:lanes: 'yes|yes|designated'
+    surface: 'asphalt'
+    taxi:lanes: 'yes|yes|designated'
   driving_side: right
   output:
   - type: travel
