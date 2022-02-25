@@ -17,12 +17,12 @@ impl Lane {
     }
 }
 
-pub fn non_motorized(
+pub(super) fn non_motorized(
     tags: &Tags,
     locale: &Locale,
-    highway: Highway,
+    road: &RoadBuilder,
 ) -> Result<Option<Lanes>, RoadError> {
-    if highway.is_supported_non_motorized() {
+    if road.highway.is_supported_non_motorized() {
         log::trace!("non-motorized");
     } else {
         log::trace!("motorized");

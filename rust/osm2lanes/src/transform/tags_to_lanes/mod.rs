@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::iter;
 
 use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle};
@@ -159,59 +160,252 @@ impl LaneBuilder {
     }
 }
 
+struct RoadBuilder {
+    forward_lanes: VecDeque<LaneBuilder>,
+    backward_lanes: VecDeque<LaneBuilder>,
+    pub highway: Highway,
+    pub oneway: Oneway,
+}
+
+impl RoadBuilder {
+    pub fn from(tags: &Tags, locale: &Locale) -> Result<Self, RoadError> {
+        let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
+
+        let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
+
+        let designated = if tags.is("access", "no")
+            && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
+            || tags
+                .get("motor_vehicle:conditional")
+                .map(|x| x.starts_with("no"))
+                .unwrap_or(false)
+                && tags.is("bus", "yes")
+        // Example: 3rd Ave in downtown Seattle
+        {
+            LaneDesignated::Bus
+        } else {
+            LaneDesignated::Motor
+        };
+
+        // These are ordered from the road center, going outwards. Most of the members of fwd_side will
+        // have Direction::Forward, but there can be exceptions with two-way cycletracks.
+        let mut forward_lanes: VecDeque<_> = iter::repeat_with(|| LaneBuilder {
+            r#type: Infer::Default(LaneType::Travel),
+            direction: Infer::Default(LaneDirection::Forward),
+            designated: Infer::Default(designated),
+            ..Default::default()
+        })
+        .take(num_driving_fwd)
+        .collect();
+        let backward_lanes = iter::repeat_with(|| LaneBuilder {
+            r#type: Infer::Default(LaneType::Travel),
+            direction: Infer::Default(LaneDirection::Backward),
+            designated: Infer::Default(designated),
+            ..Default::default()
+        })
+        .take(num_driving_back)
+        .collect();
+        // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
+        if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
+            forward_lanes.push_front(LaneBuilder {
+                r#type: Infer::Default(LaneType::Travel),
+                direction: Infer::Default(LaneDirection::Both),
+                designated: Infer::Default(designated),
+                ..Default::default()
+            });
+        }
+
+        let highway = Highway::from_tags(tags);
+        let highway = match highway {
+            Err(None) => return Err(RoadMsg::unsupported_str("way is not highway").into()),
+            Err(Some(s)) => return Err(RoadMsg::unsupported_tag(HIGHWAY, &s).into()),
+            Ok(highway) => match highway {
+                highway if highway.is_supported() => highway,
+                highway => {
+                    return Err(RoadMsg::unimplemented_tag(HIGHWAY, &highway.to_string()).into())
+                }
+            },
+        };
+
+        Ok(RoadBuilder {
+            forward_lanes,
+            backward_lanes,
+            highway,
+            oneway,
+        })
+    }
+    /// Number of lanes
+    pub fn len(&self) -> usize {
+        self.forward_len() + self.backward_len()
+    }
+    /// Number of forward lanes
+    pub fn forward_len(&self) -> usize {
+        self.forward_lanes.len()
+    }
+    /// Number of backward lanes
+    pub fn backward_len(&self) -> usize {
+        self.backward_lanes.len()
+    }
+    /// Get inner-most forward lane
+    pub fn _forward_inside(&self) -> Option<&LaneBuilder> {
+        self.forward_lanes.front()
+    }
+    /// Get outer-most forward lane
+    pub fn _forward_outside(&self) -> Option<&LaneBuilder> {
+        self.forward_lanes.back()
+    }
+    /// Get inner-most backward lane
+    pub fn _backward_inside(&self) -> Option<&LaneBuilder> {
+        self.backward_lanes.front()
+    }
+    /// Get outer-most backward lane
+    pub fn backward_outside(&self) -> Option<&LaneBuilder> {
+        self.backward_lanes.back()
+    }
+    /// Get inner-most forward lane
+    pub fn forward_inside_mut(&mut self) -> Option<&mut LaneBuilder> {
+        self.forward_lanes.front_mut()
+    }
+    /// Get outer-most forward lane
+    pub fn forward_outside_mut(&mut self) -> Option<&mut LaneBuilder> {
+        self.forward_lanes.back_mut()
+    }
+    /// Get inner-most backward lane
+    pub fn _backward_inside_mut(&mut self) -> Option<&mut LaneBuilder> {
+        self.backward_lanes.front_mut()
+    }
+    /// Get outer-most backward lane
+    pub fn backward_outside_mut(&mut self) -> Option<&mut LaneBuilder> {
+        self.backward_lanes.back_mut()
+    }
+    /// Push new inner-most forward lane
+    pub fn push_forward_inside(&mut self, lane: LaneBuilder) {
+        self.forward_lanes.push_front(lane);
+    }
+    /// Push new outer-most forward lane
+    pub fn push_forward_outside(&mut self, lane: LaneBuilder) {
+        self.forward_lanes.push_back(lane);
+    }
+    /// Push new inner-most backward lane
+    pub fn _push_backward_inside(&mut self, lane: LaneBuilder) {
+        self.backward_lanes.push_front(lane);
+    }
+    /// Push new outer-most backward lane
+    pub fn push_backward_outside(&mut self, lane: LaneBuilder) {
+        self.backward_lanes.push_back(lane);
+    }
+    /// Get lanes left to right
+    pub fn _lanes_ltr<'a>(
+        &'a self,
+        locale: &Locale,
+    ) -> Box<dyn Iterator<Item = &LaneBuilder> + 'a> {
+        match locale.driving_side {
+            DrivingSide::Left => Box::new(
+                self.forward_lanes
+                    .iter()
+                    .rev()
+                    .chain(self.backward_lanes.iter()),
+            ),
+            DrivingSide::Right => Box::new(
+                self.backward_lanes
+                    .iter()
+                    .rev()
+                    .chain(self.forward_lanes.iter()),
+            ),
+        }
+    }
+    /// Get lanes left to right
+    pub fn lanes_ltr_mut<'a>(
+        &'a mut self,
+        locale: &Locale,
+    ) -> Box<dyn Iterator<Item = &mut LaneBuilder> + 'a> {
+        match locale.driving_side {
+            DrivingSide::Left => Box::new(
+                self.forward_lanes
+                    .iter_mut()
+                    .rev()
+                    .chain(self.backward_lanes.iter_mut()),
+            ),
+            DrivingSide::Right => Box::new(
+                self.backward_lanes
+                    .iter_mut()
+                    .rev()
+                    .chain(self.forward_lanes.iter_mut()),
+            ),
+        }
+    }
+    /// Get forward lanes left to right
+    pub fn _forward_ltr<'a>(
+        &'a self,
+        locale: &Locale,
+    ) -> Box<dyn Iterator<Item = &LaneBuilder> + 'a> {
+        match locale.driving_side {
+            DrivingSide::Left => Box::new(self.forward_lanes.iter().rev()),
+            DrivingSide::Right => Box::new(self.forward_lanes.iter()),
+        }
+    }
+    /// Get forward lanes left to right
+    pub fn forward_ltr_mut<'a>(
+        &'a mut self,
+        locale: &Locale,
+    ) -> Box<dyn Iterator<Item = &mut LaneBuilder> + 'a> {
+        match locale.driving_side {
+            DrivingSide::Left => Box::new(self.forward_lanes.iter_mut().rev()),
+            DrivingSide::Right => Box::new(self.forward_lanes.iter_mut()),
+        }
+    }
+    /// Get backward lanes left to right
+    pub fn _backward_ltr<'a>(
+        &'a self,
+        locale: &Locale,
+    ) -> Box<dyn Iterator<Item = &LaneBuilder> + 'a> {
+        match locale.driving_side {
+            DrivingSide::Left => Box::new(self.backward_lanes.iter().rev()),
+            DrivingSide::Right => Box::new(self.backward_lanes.iter()),
+        }
+    }
+    /// Get backward lanes left to right
+    pub fn backward_ltr_mut<'a>(
+        &'a mut self,
+        locale: &Locale,
+    ) -> Box<dyn Iterator<Item = &mut LaneBuilder> + 'a> {
+        match locale.driving_side {
+            DrivingSide::Left => Box::new(self.backward_lanes.iter_mut().rev()),
+            DrivingSide::Right => Box::new(self.backward_lanes.iter_mut()),
+        }
+    }
+}
+
 /// From an OpenStreetMap way's tags,
 /// determine the lanes along the road from left to right.
 /// Warnings are produced for situations that maybe result in accurate lanes.
 pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -> LanesResult {
     let mut warnings = RoadWarnings::default();
 
-    let highway = unsupported(tags, locale, &mut warnings)?;
+    unsupported(tags, locale, &mut warnings)?;
+
+    let mut road: RoadBuilder = RoadBuilder::from(tags, locale)?;
 
     // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
-    if let Some(spec) = non_motorized(tags, locale, highway)? {
+    if let Some(spec) = non_motorized(tags, locale, &road)? {
         return Ok(spec);
     }
 
-    let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
+    bus(tags, locale, &mut road, &mut warnings)?;
 
-    let (mut forward_side, mut backward_side) = initial_forward_backward(tags, locale, oneway);
+    bicycle(tags, locale, &mut road, &mut warnings)?;
 
-    bus(
-        tags,
-        locale,
-        oneway,
-        &mut forward_side,
-        &mut backward_side,
-        &mut warnings,
-    )?;
+    parking(tags, locale, &mut road)?;
 
-    bicycle(
-        tags,
-        locale,
-        oneway,
-        &mut forward_side,
-        &mut backward_side,
-        &mut warnings,
-    )?;
-
-    parking(tags, locale, oneway, &mut forward_side, &mut backward_side)?;
-
-    foot_and_shoulder(
-        tags,
-        locale,
-        oneway,
-        &mut forward_side,
-        &mut backward_side,
-        &mut warnings,
-    )?;
+    foot_and_shoulder(tags, locale, &mut road, &mut warnings)?;
 
     // Temporary intermediate conversion
     let (forward_side, backward_side) = (
-        forward_side
+        road.forward_lanes
             .into_iter()
             .map(|lane| lane.build())
             .collect::<Vec<_>>(),
-        backward_side
+        road.backward_lanes
             .into_iter()
             .map(|lane| lane.build())
             .collect::<Vec<_>>(),
@@ -232,61 +426,6 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
     }
 
     Ok(lanes)
-}
-
-fn initial_forward_backward(
-    tags: &Tags,
-    locale: &Locale,
-    oneway: Oneway,
-) -> (Vec<LaneBuilder>, Vec<LaneBuilder>) {
-    let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
-
-    let designated = if tags.is("access", "no")
-        && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
-        || tags
-            .get("motor_vehicle:conditional")
-            .map(|x| x.starts_with("no"))
-            .unwrap_or(false)
-            && tags.is("bus", "yes")
-    // Example: 3rd Ave in downtown Seattle
-    {
-        LaneDesignated::Bus
-    } else {
-        LaneDesignated::Motor
-    };
-
-    // These are ordered from the road center, going outwards. Most of the members of fwd_side will
-    // have Direction::Forward, but there can be exceptions with two-way cycletracks.
-    let mut fwd_side: Vec<LaneBuilder> = iter::repeat_with(|| LaneBuilder {
-        r#type: Infer::Default(LaneType::Travel),
-        direction: Infer::Default(LaneDirection::Forward),
-        designated: Infer::Default(designated),
-        ..Default::default()
-    })
-    .take(num_driving_fwd)
-    .collect();
-    let back_side: Vec<LaneBuilder> = iter::repeat_with(|| LaneBuilder {
-        r#type: Infer::Default(LaneType::Travel),
-        direction: Infer::Default(LaneDirection::Backward),
-        designated: Infer::Default(designated),
-        ..Default::default()
-    })
-    .take(num_driving_back)
-    .collect();
-    // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
-    if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
-        fwd_side.insert(
-            0,
-            LaneBuilder {
-                r#type: Infer::Default(LaneType::Travel),
-                direction: Infer::Default(LaneDirection::Both),
-                designated: Infer::Default(designated),
-                ..Default::default()
-            },
-        );
-    }
-
-    (fwd_side, back_side)
 }
 
 fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (usize, usize) {
@@ -367,17 +506,7 @@ pub fn unsupported(
     tags: &Tags,
     _locale: &Locale,
     warnings: &mut RoadWarnings,
-) -> Result<Highway, RoadError> {
-    let highway = Highway::from_tags(tags);
-    let highway = match highway {
-        Err(None) => return Err(RoadMsg::unsupported_str("way is not highway").into()),
-        Err(Some(s)) => return Err(RoadMsg::unsupported_tag(HIGHWAY, &s).into()),
-        Ok(highway) => match highway {
-            highway if highway.is_supported() => highway,
-            highway => return Err(RoadMsg::unimplemented_tag(HIGHWAY, &highway.to_string()).into()),
-        },
-    };
-
+) -> Result<(), RoadError> {
     // https://wiki.openstreetmap.org/wiki/Key:access#Transport_mode_restrictions
     const ACCESS_KEYS: [&str; 43] = [
         "access",
@@ -440,5 +569,5 @@ pub fn unsupported(
         return Err(RoadMsg::unimplemented_tag("oneway", "reversible").into());
     }
 
-    Ok(highway)
+    Ok(())
 }

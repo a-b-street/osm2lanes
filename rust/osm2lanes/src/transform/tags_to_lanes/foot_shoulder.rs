@@ -22,9 +22,7 @@ impl LaneBuilder {
 pub(super) fn foot_and_shoulder(
     tags: &Tags,
     locale: &Locale,
-    oneway: Oneway,
-    forward_side: &mut Vec<LaneBuilder>,
-    backward_side: &mut Vec<LaneBuilder>,
+    road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
 ) -> ModeResult {
     // https://wiki.openstreetmap.org/wiki/Key:sidewalk
@@ -124,41 +122,63 @@ pub(super) fn foot_and_shoulder(
         Some(s) => return Err(RoadMsg::unsupported_tag(SHOULDER, s).into()),
     };
 
-    let add = |(sidewalk, shoulder): (Sidewalk, Shoulder),
-               side: &mut Vec<LaneBuilder>,
-               forward: bool|
-     -> ModeResult {
-        match (sidewalk, shoulder) {
-            (Sidewalk::No | Sidewalk::None, Shoulder::None) => {
-                // We assume a shoulder if there is no bike lane.
-                // This assumes bicycle lanes are just glorified shoulders...
-                let has_bicycle_lane = side.last().map_or(false, |lane| lane.is_bicycle());
-
-                if !has_bicycle_lane && (forward || !bool::from(oneway)) {
-                    side.push(LaneBuilder::shoulder(locale))
-                }
-            }
-            (Sidewalk::No | Sidewalk::None, Shoulder::No) => {}
-            (Sidewalk::Yes, Shoulder::No | Shoulder::None) => side.push(LaneBuilder::foot(locale)),
-            (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => {
-                side.push(LaneBuilder::shoulder(locale))
-            }
-            (Sidewalk::Yes, Shoulder::Yes) => {
-                return Err(RoadMsg::Unsupported {
-                    description: Some("shoulder and sidewalk on same side".to_owned()),
-                    tags: Some(tags.subset(&[SIDEWALK, SHOULDER])),
-                }
-                .into());
-            }
-            (Sidewalk::Separate, _) => {
-                return Err(RoadMsg::unsupported_tag(SIDEWALK, "separate").into())
+    impl RoadBuilder {
+        fn lane_outside(&self, forward: bool) -> Option<&LaneBuilder> {
+            if forward {
+                self.forward_lanes.back()
+            } else {
+                self.backward_lanes.back()
             }
         }
-        Ok(())
-    };
+        fn push_outside(&mut self, lane: LaneBuilder, forward: bool) {
+            if forward {
+                self.push_forward_outside(lane)
+            } else {
+                self.push_backward_outside(lane)
+            }
+        }
+        fn add_sidewalk_shoulder(
+            &mut self,
+            (sidewalk, shoulder): (Sidewalk, Shoulder),
+            forward: bool,
+            tags: &Tags,
+            locale: &Locale,
+        ) -> Result<(), RoadError> {
+            match (sidewalk, shoulder) {
+                (Sidewalk::No | Sidewalk::None, Shoulder::None) => {
+                    // We assume a shoulder if there is no bike lane.
+                    // This assumes bicycle lanes are just glorified shoulders...
+                    let has_bicycle_lane = self
+                        .lane_outside(forward)
+                        .map_or(false, |lane| lane.is_bicycle());
+                    if !has_bicycle_lane && (forward || !bool::from(self.oneway)) {
+                        self.push_outside(LaneBuilder::shoulder(locale), forward)
+                    }
+                }
+                (Sidewalk::No | Sidewalk::None, Shoulder::No) => {}
+                (Sidewalk::Yes, Shoulder::No | Shoulder::None) => {
+                    self.push_outside(LaneBuilder::foot(locale), forward)
+                }
+                (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => {
+                    self.push_outside(LaneBuilder::shoulder(locale), forward)
+                }
+                (Sidewalk::Yes, Shoulder::Yes) => {
+                    return Err(RoadMsg::Unsupported {
+                        description: Some("shoulder and sidewalk on same side".to_owned()),
+                        tags: Some(tags.subset(&[SIDEWALK, SHOULDER])),
+                    }
+                    .into());
+                }
+                (Sidewalk::Separate, _) => {
+                    return Err(RoadMsg::unsupported_tag(SIDEWALK, "separate").into())
+                }
+            }
+            Ok(())
+        }
+    }
 
-    add((sidewalk.0, shoulder.0), forward_side, true)?;
-    add((sidewalk.1, shoulder.1), backward_side, false)?;
+    road.add_sidewalk_shoulder((sidewalk.0, shoulder.0), true, tags, locale)?;
+    road.add_sidewalk_shoulder((sidewalk.1, shoulder.1), false, tags, locale)?;
 
     Ok(())
 }

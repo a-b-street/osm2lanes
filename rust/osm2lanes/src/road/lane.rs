@@ -24,8 +24,6 @@ pub enum Lane {
     Shoulder { width: Option<Metre> },
     #[serde(rename = "separator")]
     Separator { markings: Markings },
-    // #[serde(rename = "construction")]
-    // Construction,
 }
 
 impl Lane {
