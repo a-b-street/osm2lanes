@@ -201,7 +201,7 @@ impl Highway {
         )
     }
 
-    /// Is Highway Type
+    /// The type of the highway, independent from its lifecycle
     pub fn r#type(&self) -> HighwayType {
         self.highway
     }
