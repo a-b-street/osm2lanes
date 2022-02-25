@@ -18,9 +18,7 @@ impl LaneBuilder {
 pub(super) fn bus(
     tags: &Tags,
     locale: &Locale,
-    oneway: Oneway,
-    forward_side: &mut [LaneBuilder],
-    backward_side: &mut [LaneBuilder],
+    road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
 ) -> ModeResult {
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
@@ -37,13 +35,9 @@ pub(super) fn bus(
             .is_some(),
     ) {
         (false, false, false) => {}
-        (true, _, false) => busway(tags, locale, oneway, forward_side, backward_side, warnings)?,
-        (false, true, false) => {
-            lanes_bus(tags, locale, oneway, forward_side, backward_side, warnings)?
-        }
-        (false, false, true) => {
-            bus_lanes(tags, locale, oneway, forward_side, backward_side, warnings)?
-        }
+        (true, _, false) => busway(tags, locale, road, warnings)?,
+        (false, true, false) => lanes_bus(tags, locale, road, warnings)?,
+        (false, false, true) => bus_lanes(tags, locale, road, warnings)?,
         _ => {
             return Err(RoadMsg::Unsupported {
                 description: Some("more than one bus lanes scheme used".to_owned()),
@@ -59,37 +53,30 @@ pub(super) fn bus(
 fn busway(
     tags: &Tags,
     locale: &Locale,
-    _oneway: Oneway,
-    forward_side: &mut [LaneBuilder],
-    backward_side: &mut [LaneBuilder],
+    road: &mut RoadBuilder,
     _warnings: &mut RoadWarnings,
 ) -> Result<(), RoadError> {
     const BUSWAY: TagKey = TagKey::from("busway");
     if tags.is(BUSWAY, "lane") {
-        forward_side
-            .last_mut()
+        road.forward_outside_mut()
             .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
             .set_bus(locale)?;
         if !tags.is("oneway", "yes") && !tags.is("oneway:bus", "yes") {
-            backward_side
-                .last_mut()
+            road.backward_outside_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
                 .set_bus(locale)?;
         }
     }
     if tags.is(BUSWAY, "opposite_lane") {
-        backward_side
-            .last_mut()
+        road.backward_outside_mut()
             .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
             .set_bus(locale)?;
     }
     if tags.is(BUSWAY + "both", "lane") {
-        forward_side
-            .last_mut()
+        road.forward_outside_mut()
             .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
             .set_bus(locale)?;
-        backward_side
-            .last_mut()
+        road.backward_outside_mut()
             .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
             .set_bus(locale)?;
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
@@ -97,8 +84,7 @@ fn busway(
         }
     }
     if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
-        forward_side
-            .last_mut()
+        road.forward_outside_mut()
             .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
             .set_bus(locale)?;
     }
@@ -109,8 +95,7 @@ fn busway(
     }
     if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            forward_side
-                .first_mut()
+            road.forward_inside_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
                 .set_bus(locale)?;
         } else {
@@ -125,8 +110,8 @@ fn busway(
     ) {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             // TODO: does it make sense to have a backward lane on the forward_side????
-            let lane = forward_side
-                .first_mut()
+            let lane = road
+                .forward_inside_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?;
             lane.set_bus(locale)?;
             lane.direction = Infer::Direct(LaneDirection::Backward);
@@ -148,9 +133,7 @@ fn busway(
 fn lanes_bus(
     tags: &Tags,
     _locale: &Locale,
-    _oneway: Oneway,
-    _forward_side: &mut [LaneBuilder],
-    _backward_side: &mut [LaneBuilder],
+    _road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
 ) -> ModeResult {
     warnings.push(RoadMsg::Unimplemented {
@@ -199,9 +182,7 @@ fn split_access(lanes: &str) -> Result<Vec<Access>, String> {
 fn bus_lanes(
     tags: &Tags,
     locale: &Locale,
-    _oneway: Oneway,
-    forward_lanes: &mut [LaneBuilder],
-    backward_lanes: &mut [LaneBuilder],
+    road: &mut RoadBuilder,
     _warnings: &mut RoadWarnings,
 ) -> ModeResult {
     match (
@@ -225,7 +206,7 @@ fn bus_lanes(
                     tags: Some(tags.subset(&["bus:lanes", "psv:lanes"])),
                 })
             })?;
-            if access.len() != forward_lanes.len() + backward_lanes.len() {
+            if access.len() != road.len() {
                 return Err(RoadMsg::Unsupported {
                     description: Some("lane count mismatch".to_owned()),
                     tags: Some(tags.subset(&[
@@ -238,18 +219,7 @@ fn bus_lanes(
                 }
                 .into());
             }
-            // TODO: maybe have a `RoadBuilder` with `forward`, `backward`, and `lanes`?
-            let lanes = match locale.driving_side {
-                DrivingSide::Left => forward_lanes
-                    .iter_mut()
-                    .rev()
-                    .chain(backward_lanes.iter_mut()),
-                DrivingSide::Right => backward_lanes
-                    .iter_mut()
-                    .rev()
-                    .chain(forward_lanes.iter_mut()),
-            };
-            for (lane, access) in lanes.zip(access.iter()) {
+            for (lane, access) in road.lanes_ltr_mut(locale).zip(access.iter()) {
                 match access {
                     Access::None => {}
                     Access::No => {}
@@ -268,7 +238,7 @@ fn bus_lanes(
                         tags: Some(tags.subset(&["bus:lanes:backward", "psv:lanes:backward"])),
                     })
                 })?;
-                for (lane, access) in forward_lanes.iter_mut().zip(forward_access.iter()) {
+                for (lane, access) in road.forward_ltr_mut(locale).zip(forward_access.iter()) {
                     match access {
                         Access::None => {}
                         Access::No => {}
@@ -284,7 +254,7 @@ fn bus_lanes(
                         tags: Some(tags.subset(&["bus:lanes:backward", "psv:lanes:backward"])),
                     })
                 })?;
-                for (lane, access) in backward_lanes.iter_mut().zip(backward_access.iter()) {
+                for (lane, access) in road.backward_ltr_mut(locale).zip(backward_access.iter()) {
                     match access {
                         Access::None => {}
                         Access::No => {}

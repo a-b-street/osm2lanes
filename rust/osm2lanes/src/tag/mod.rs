@@ -7,7 +7,7 @@ mod key;
 pub use key::TagKey;
 
 mod osm;
-pub use osm::{Highway, HIGHWAY};
+pub use osm::{Highway, Lifecycle, HIGHWAY};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DuplicateKeyError(String);

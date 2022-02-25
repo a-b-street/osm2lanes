@@ -1,11 +1,13 @@
 use crate::tag::{TagKey, Tags};
 
 pub const HIGHWAY: TagKey = TagKey::from("highway");
+pub const CONSTRUCTION: TagKey = TagKey::from("construction");
+pub const PROPOSED: TagKey = TagKey::from("proposed");
 
-pub enum Highway {
+#[derive(Clone, Copy)]
+pub enum HighwayType {
     Classified(HighwayImportance),
     Link(HighwayImportance),
-    Lifecycle(Lifecycle),
     NonTravel(NonTravel),
     // Roads
     Residential,
@@ -27,7 +29,7 @@ pub enum Highway {
     Steps,
 }
 
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialEq, PartialOrd, Clone, Copy)]
 pub enum HighwayImportance {
     Motorway,
     Trunk,
@@ -48,20 +50,7 @@ impl std::fmt::Display for HighwayImportance {
     }
 }
 
-pub enum Lifecycle {
-    Construction,
-    Proposed,
-}
-
-impl std::fmt::Display for Lifecycle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Construction => write!(f, "construction"),
-            Self::Proposed => write!(f, "proposed"),
-        }
-    }
-}
-
+#[derive(Clone, Copy)]
 pub enum NonTravel {
     Escape,
     Raceway,
@@ -76,7 +65,7 @@ impl std::fmt::Display for NonTravel {
     }
 }
 
-impl std::str::FromStr for Highway {
+impl std::str::FromStr for HighwayType {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -91,8 +80,6 @@ impl std::str::FromStr for Highway {
             "primary_link" => Self::Link(HighwayImportance::Primary),
             "secondary_link" => Self::Link(HighwayImportance::Secondary),
             "tertiary_link" => Self::Link(HighwayImportance::Tertiary),
-            "construction" => Self::Lifecycle(Lifecycle::Construction),
-            "proposed" => Self::Lifecycle(Lifecycle::Proposed),
             "raceway" => Self::NonTravel(NonTravel::Raceway),
             "escape" => Self::NonTravel(NonTravel::Escape),
             "bridleway" => Self::Bridleway,
@@ -114,12 +101,11 @@ impl std::str::FromStr for Highway {
     }
 }
 
-impl std::fmt::Display for Highway {
+impl std::fmt::Display for HighwayType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Classified(importance) => write!(f, "{}", importance),
             Self::Link(importance) => write!(f, "{}_link", importance),
-            Self::Lifecycle(v) => write!(f, "{}", v),
             Self::NonTravel(v) => write!(f, "{}", v),
             Self::Bridleway => write!(f, "bridleway"),
             Self::BusGuideway => write!(f, "bus_guideway"),
@@ -139,15 +125,85 @@ impl std::fmt::Display for Highway {
     }
 }
 
+pub enum Lifecycle {
+    Active,
+    Construction,
+    Proposed,
+}
+
+pub struct Highway {
+    highway: HighwayType,
+    lifecycle: Lifecycle,
+}
+
+impl std::fmt::Display for Highway {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.highway)
+    }
+}
+
 impl Highway {
     /// Get Highway From Tags
     ///
     /// If highway missing return None
     /// If highway unknown return the unknown value
     pub fn from_tags(tags: &Tags) -> Result<Self, Option<String>> {
-        tags.get(HIGHWAY)
-            .ok_or(None)
-            .and_then(|s| s.parse().map_err(Some))
+        tags.get(HIGHWAY).ok_or(None).and_then(|s| match s {
+            "construction" => {
+                let highway = tags
+                    .get(CONSTRUCTION)
+                    .map_or(Ok(HighwayType::UnknownRoad), |h| h.parse())
+                    .map_err(Some)?;
+                Ok(Self {
+                    highway,
+                    lifecycle: Lifecycle::Construction,
+                })
+            }
+            "proposed" => {
+                let highway = tags
+                    .get(PROPOSED)
+                    .map_or(Ok(HighwayType::UnknownRoad), |h| h.parse())
+                    .map_err(Some)?;
+                Ok(Self {
+                    highway,
+                    lifecycle: Lifecycle::Proposed,
+                })
+            }
+            s => {
+                let highway = s.parse().map_err(Some)?;
+                Ok(Self {
+                    highway,
+                    lifecycle: Lifecycle::Active,
+                })
+            }
+        })
+    }
+
+    /// Is Highway Construction
+    pub fn is_construction(&self) -> bool {
+        matches!(
+            self,
+            Highway {
+                lifecycle: Lifecycle::Construction,
+                ..
+            }
+        )
+    }
+
+    /// Is Highway Proposed
+    pub fn is_proposed(&self) -> bool {
+        matches!(
+            self,
+            Highway {
+                lifecycle: Lifecycle::Proposed,
+                ..
+            }
+        )
+    }
+
+    /// Is Highway Type
+    pub fn r#type(&self) -> HighwayType {
+        self.highway
     }
 
     /// Is Highway Supported
@@ -159,12 +215,15 @@ impl Highway {
     pub const fn is_supported_road(&self) -> bool {
         matches!(
             self,
-            Highway::Classified(_)
-                | Highway::Link(_)
-                | Highway::Residential
-                | Highway::Service
-                | Highway::Unclassified
-                | Highway::UnknownRoad
+            Highway {
+                highway: HighwayType::Classified(_)
+                    | HighwayType::Link(_)
+                    | HighwayType::Residential
+                    | HighwayType::Service
+                    | HighwayType::Unclassified
+                    | HighwayType::UnknownRoad,
+                lifecycle: Lifecycle::Active,
+            }
         )
     }
 
@@ -172,12 +231,15 @@ impl Highway {
     pub const fn is_supported_non_motorized(&self) -> bool {
         matches!(
             self,
-            Self::Cycleway
-                | Self::Footway
-                | Self::Path
-                | Self::Pedestrian
-                | Self::Steps
-                | Self::Track
+            Highway {
+                highway: HighwayType::Cycleway
+                    | HighwayType::Footway
+                    | HighwayType::Path
+                    | HighwayType::Pedestrian
+                    | HighwayType::Steps
+                    | HighwayType::Track,
+                lifecycle: Lifecycle::Active,
+            }
         )
     }
 }
