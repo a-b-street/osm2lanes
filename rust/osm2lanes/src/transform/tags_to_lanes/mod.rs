@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::iter;
 
-use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle};
+use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle, Road};
 use crate::tag::{Highway, TagKey, Tags};
 use crate::{DrivingSide, Locale, Metre};
 
@@ -379,7 +379,11 @@ impl RoadBuilder {
 /// From an OpenStreetMap way's tags,
 /// determine the lanes along the road from left to right.
 /// Warnings are produced for situations that maybe result in accurate lanes.
-pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -> LanesResult {
+pub fn tags_to_lanes(
+    tags: &Tags,
+    locale: &Locale,
+    config: &TagsToLanesConfig,
+) -> Result<RoadFromTags, RoadError> {
     let mut warnings = RoadWarnings::default();
 
     unsupported(tags, locale, &mut warnings)?;
@@ -413,19 +417,25 @@ pub fn tags_to_lanes(tags: &Tags, locale: &Locale, config: &TagsToLanesConfig) -
 
     let lanes = assemble_ltr(forward_side, backward_side, locale.driving_side)?;
 
-    let lanes = Lanes { lanes, warnings };
-
     let lanes = if config.include_separators {
         insert_separators(lanes)?
     } else {
         lanes
     };
 
-    if config.error_on_warnings && !lanes.warnings.is_empty() {
-        return Err(lanes.warnings.into());
+    let road_from_tags = RoadFromTags {
+        road: Road {
+            lanes,
+            highway: road.highway,
+        },
+        warnings,
+    };
+
+    if config.error_on_warnings && !road_from_tags.warnings.is_empty() {
+        return Err(road_from_tags.warnings.into());
     }
 
-    Ok(lanes)
+    Ok(road_from_tags)
 }
 
 fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (usize, usize) {

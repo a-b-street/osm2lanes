@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::road::Lane;
+use crate::road::Road;
 use crate::tag::{DuplicateKeyError, TagKey, Tags};
 
 /// Tranformation Logic Issue
@@ -202,7 +202,7 @@ impl From<RoadWarnings> for RoadError {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Lanes {
-    pub lanes: Vec<Lane>,
+pub struct RoadFromTags {
+    pub road: Road,
     pub warnings: RoadWarnings,
 }

@@ -12,7 +12,7 @@ use osm2lanes::locale::{Country, DrivingSide, Locale};
 use osm2lanes::overpass::get_way;
 use osm2lanes::road::{Lane, LanePrintable, Road};
 use osm2lanes::tag::Tags;
-use osm2lanes::transform::{Lanes, RoadError};
+use osm2lanes::transform::{RoadError, RoadFromTags};
 use osm2lanes::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
 
 // Use `wee_alloc` as the global allocator.
@@ -303,14 +303,18 @@ impl App {
         log::trace!("Locale: {:?}", locale);
         let calculate = match Tags::from_str(value) {
             Ok(tags) => match tags_to_lanes(&tags, locale, &TagsToLanesConfig::default()) {
-                Ok(lanes) => {
-                    match lanes_to_tags(&lanes.lanes, locale, &LanesToTagsConfig::default()) {
-                        Ok(tags) => Ok((lanes, tags)),
+                Ok(road_from_tags) => {
+                    match lanes_to_tags(
+                        &road_from_tags.road.lanes,
+                        locale,
+                        &LanesToTagsConfig::default(),
+                    ) {
+                        Ok(tags) => Ok((road_from_tags, tags)),
                         Err(e) => {
                             if let RoadError::Warnings(warnings) = &e {
-                                Err(Ok((lanes, format!("{}\n{}", e, warnings))))
+                                Err(Ok((road_from_tags, format!("{}\n{}", e, warnings))))
                             } else {
-                                Err(Ok((lanes, e.to_string())))
+                                Err(Ok((road_from_tags, e.to_string())))
                             }
                         }
                     }
@@ -321,8 +325,8 @@ impl App {
         };
         log::trace!("Update: {:?}", calculate);
         match calculate {
-            Ok((Lanes { lanes, warnings }, norm_tags)) => {
-                self.state.road = Some(Road { lanes });
+            Ok((RoadFromTags { road, warnings }, norm_tags)) => {
+                self.state.road = Some(road);
                 self.state.normalized_tags = Some(norm_tags.to_string());
                 if warnings.is_empty() {
                     self.state.message = None;
@@ -330,8 +334,8 @@ impl App {
                     self.state.message = Some(warnings.to_string());
                 }
             }
-            Err(Ok((Lanes { lanes, warnings }, norm_err))) => {
-                self.state.road = Some(Road { lanes });
+            Err(Ok((RoadFromTags { road, warnings }, norm_err))) => {
+                self.state.road = Some(road);
                 self.state.normalized_tags = None;
                 if warnings.is_empty() {
                     self.state.message = Some(format!("Lanes to Tags Error: {}", norm_err));

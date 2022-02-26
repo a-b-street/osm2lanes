@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::tag::Highway;
 use crate::{Locale, Metre};
 
 mod lane;
@@ -11,6 +12,7 @@ pub use marking::{Marking, MarkingColor, MarkingStyle, Markings};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Road {
     pub lanes: Vec<Lane>,
+    pub highway: Highway,
 }
 
 impl Road {

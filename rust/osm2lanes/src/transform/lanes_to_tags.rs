@@ -229,7 +229,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
                 ..TagsToLanesConfig::default()
             },
         )?;
-        if lanes != rountrip.lanes {
+        if lanes != rountrip.road.lanes {
             return Err(RoadError::RoundTrip);
         }
     }

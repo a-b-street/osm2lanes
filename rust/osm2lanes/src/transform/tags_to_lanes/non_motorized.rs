@@ -21,7 +21,7 @@ pub(super) fn non_motorized(
     tags: &Tags,
     locale: &Locale,
     road: &RoadBuilder,
-) -> Result<Option<Lanes>, RoadError> {
+) -> Result<Option<RoadFromTags>, RoadError> {
     if road.highway.is_supported_non_motorized() {
         log::trace!("non-motorized");
     } else {
@@ -30,8 +30,11 @@ pub(super) fn non_motorized(
     }
     // Easy special cases first.
     if tags.is(HIGHWAY, "steps") {
-        return Ok(Some(Lanes {
-            lanes: vec![Lane::foot(locale)],
+        return Ok(Some(RoadFromTags {
+            road: Road {
+                lanes: vec![Lane::foot(locale)],
+                highway: road.highway.clone(),
+            },
             warnings: RoadWarnings::new(vec![RoadMsg::Other {
                 description: "highway is steps, but lane is only a sidewalk".to_owned(),
                 tags: tags.subset(&[HIGHWAY]),
@@ -48,8 +51,11 @@ pub(super) fn non_motorized(
     if tags.is("bicycle", "no")
         || (tags.is(HIGHWAY, "footway") && !tags.is_any("bicycle", &["designated", "yes"]))
     {
-        return Ok(Some(Lanes {
-            lanes: vec![Lane::foot(locale)],
+        return Ok(Some(RoadFromTags {
+            road: Road {
+                lanes: vec![Lane::foot(locale)],
+                highway: road.highway.clone(),
+            },
             warnings: RoadWarnings::default(),
         }));
     }
@@ -68,8 +74,11 @@ pub(super) fn non_motorized(
             backward_side.push(Lane::shoulder(locale));
         }
     }
-    Ok(Some(Lanes {
-        lanes: assemble_ltr(forward_side, backward_side, locale.driving_side)?,
+    Ok(Some(RoadFromTags {
+        road: Road {
+            lanes: assemble_ltr(forward_side, backward_side, locale.driving_side)?,
+            highway: road.highway.clone(),
+        },
         warnings: RoadWarnings::default(),
     }))
 }
