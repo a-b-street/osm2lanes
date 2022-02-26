@@ -2,8 +2,7 @@ use super::*;
 use crate::road::Markings;
 
 #[allow(clippy::needless_collect)]
-pub fn insert_separators(lanes: Lanes) -> LanesResult {
-    let Lanes { lanes, warnings } = lanes;
+pub fn insert_separators(lanes: Vec<Lane>) -> Result<Vec<Lane>, RoadError> {
     let left_edge = lane_to_edge_separator(lanes.first().unwrap());
     let right_edge = lane_to_edge_separator(lanes.first().unwrap());
     let separators: Vec<Option<Lane>> = lanes
@@ -20,7 +19,7 @@ pub fn insert_separators(lanes: Lanes) -> LanesResult {
         .flat_map(|(a, b)| [a, b])
         .flatten()
         .collect();
-    Ok(Lanes { lanes, warnings })
+    Ok(lanes)
 }
 
 /// Given a pair of lanes

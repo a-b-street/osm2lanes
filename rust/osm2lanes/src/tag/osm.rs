@@ -1,10 +1,12 @@
+use serde::{Deserialize, Serialize};
+
 use crate::tag::{TagKey, Tags};
 
 pub const HIGHWAY: TagKey = TagKey::from("highway");
 pub const CONSTRUCTION: TagKey = TagKey::from("construction");
 pub const PROPOSED: TagKey = TagKey::from("proposed");
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum HighwayType {
     Classified(HighwayImportance),
     Link(HighwayImportance),
@@ -29,7 +31,7 @@ pub enum HighwayType {
     Steps,
 }
 
-#[derive(PartialEq, PartialOrd, Clone, Copy)]
+#[derive(PartialEq, PartialOrd, Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum HighwayImportance {
     Motorway,
     Trunk,
@@ -50,7 +52,7 @@ impl std::fmt::Display for HighwayImportance {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum NonTravel {
     Escape,
     Raceway,
@@ -125,12 +127,14 @@ impl std::fmt::Display for HighwayType {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Lifecycle {
     Active,
     Construction,
     Proposed,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Highway {
     highway: HighwayType,
     lifecycle: Lifecycle,

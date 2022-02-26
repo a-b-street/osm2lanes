@@ -3,7 +3,7 @@ use crate::tag::{TagKey, Tags, HIGHWAY};
 use crate::{DrivingSide, Locale};
 
 mod error;
-pub use error::{Lanes, RoadError, RoadMsg, RoadWarnings};
+pub use error::{RoadError, RoadFromTags, RoadMsg, RoadWarnings};
 
 mod tags_to_lanes;
 pub use tags_to_lanes::{tags_to_lanes, TagsToLanesConfig};
@@ -16,7 +16,6 @@ const SIDEWALK: TagKey = TagKey::from("sidewalk");
 const SHOULDER: TagKey = TagKey::from("shoulder");
 
 pub type ModeResult = Result<(), RoadError>;
-pub type LanesResult = Result<Lanes, RoadError>;
 pub type TagsResult = Result<Tags, RoadError>;
 
 #[derive(Clone, Debug, PartialEq)]

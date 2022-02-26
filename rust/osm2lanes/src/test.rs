@@ -6,9 +6,9 @@ mod tests {
     use serde::Deserialize;
 
     use crate::road::{Lane, LanePrintable, Marking, Road};
-    use crate::tag::Tags;
+    use crate::tag::{Highway, Tags};
     use crate::transform::{
-        lanes_to_tags, tags_to_lanes, Lanes, LanesToTagsConfig, RoadError, TagsToLanesConfig,
+        lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadError, RoadFromTags, TagsToLanesConfig,
     };
     use crate::{DrivingSide, Locale};
 
@@ -31,10 +31,11 @@ mod tests {
         driving_side: DrivingSide,
         comment: Option<String>,
         description: Option<String>,
-        // Data
+        /// Data
         tags: Tags,
+        // TODO: add nesting or rename to lanes
         output: Vec<Lane>,
-        // Skipping
+        /// Configure Rust Testing
         rust: Option<RustTesting>,
     }
 
@@ -192,6 +193,7 @@ mod tests {
                     .filter(|lane| self.is_lane_enabled(lane))
                     .cloned()
                     .collect(),
+                highway: Highway::from_tags(&self.tags).unwrap(),
             }
         }
 
@@ -206,14 +208,17 @@ mod tests {
         }
     }
 
-    impl Lanes {
-        fn into_road(self, test: &TestCase) -> Road {
+    impl RoadFromTags {
+        /// Return a Road based upon a RoadFromTags with irrelevant parts filtered out.
+        fn into_filtered_road(self, test: &TestCase) -> Road {
             Road {
                 lanes: self
+                    .road
                     .lanes
                     .into_iter()
                     .filter(|lane| test.is_lane_enabled(lane))
                     .collect(),
+                highway: self.road.highway,
             }
         }
     }
@@ -297,7 +302,7 @@ mod tests {
         assert!(
             tests.iter().all(|test| {
                 let locale = Locale::builder().driving_side(test.driving_side).build();
-                let lanes = tags_to_lanes(
+                let road_from_tags = tags_to_lanes(
                     &test.tags,
                     &locale,
                     &TagsToLanesConfig {
@@ -306,9 +311,9 @@ mod tests {
                     },
                 );
                 let expected_road = test.expected_road();
-                match lanes {
-                    Ok(lanes) => {
-                        let actual_road = lanes.into_road(test);
+                match road_from_tags {
+                    Ok(road_from_tags) => {
+                        let actual_road = road_from_tags.into_filtered_road(test);
                         if actual_road.approx_eq(&expected_road) {
                             true
                         } else {
@@ -375,7 +380,7 @@ mod tests {
                     },
                 )
                 .unwrap();
-                let output_road = output_lanes.into_road(test);
+                let output_road = output_lanes.into_filtered_road(test);
                 if input_road.approx_eq(&output_road) {
                     true
                 } else {
