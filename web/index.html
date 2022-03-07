@@ -12,6 +12,7 @@
       rel="stylesheet"
     />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.7.0/mapbox-gl.js"></script>
+    <script src="https://unpkg.com/osmtogeojson@3.0.0-beta.4/osmtogeojson.js"></script>
     <style>
       body {
         margin: 0;
@@ -74,19 +75,22 @@
 	      way
 	      (around:${maxDistMeters},${lngLat.lat},${lngLat.lng})
 	      ["highway"];
-	      out tags;`;
+	      out tags geom;`;
         const url = `https://overpass-api.de/api/interpreter?data=${query}`;
         document.getElementById("input").innerText = `fetching ${url}`;
         fetch(url)
           .then((response) => response.json())
           .then((json) => {
-            for (const result of json.elements) {
-              document.getElementById("input").innerText =
-                JSON.stringify(result);
-              // Only use the first
-              break;
-            }
+            gotRoads(osmtogeojson(json));
           });
+      }
+
+      function gotRoads(geojson) {
+        document.getElementById("input").innerHTML = JSON.stringify(
+          geojson,
+          null,
+          2
+        );
       }
 
       map.on("click", (e) => {
