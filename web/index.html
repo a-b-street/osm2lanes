@@ -69,6 +69,25 @@
         })
       );
 
+      map.on("load", function () {
+        map.addSource("road", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [],
+          },
+        });
+        map.addLayer({
+          id: "road",
+          type: "line",
+          source: "road",
+          paint: {
+            "line-color": "red",
+            "line-width": 10,
+          },
+        });
+      });
+
       function queryOverpass(lngLat) {
         const maxDistMeters = 10;
         const query = `[out:json];
@@ -91,6 +110,9 @@
           null,
           2
         );
+
+        // Add the first feature to the map
+        map.getSource("road").setData(geojson["features"][0]);
       }
 
       map.on("click", (e) => {
