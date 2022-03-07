@@ -5,6 +5,7 @@ use crate::tag::{TagKey, Tags};
 pub const HIGHWAY: TagKey = TagKey::from("highway");
 pub const CONSTRUCTION: TagKey = TagKey::from("construction");
 pub const PROPOSED: TagKey = TagKey::from("proposed");
+pub const LIFECYCLE: [TagKey; 3] = [HIGHWAY, CONSTRUCTION, PROPOSED];
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum HighwayType {
@@ -226,7 +227,7 @@ impl Highway {
                     | HighwayType::Service
                     | HighwayType::Unclassified
                     | HighwayType::UnknownRoad,
-                lifecycle: Lifecycle::Active,
+                lifecycle: Lifecycle::Active | Lifecycle::Construction,
             }
         )
     }
