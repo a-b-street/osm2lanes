@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::iter;
 
 use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle, Road};
-use crate::tag::{Highway, TagKey, Tags};
+use crate::tag::{Highway, TagKey, Tags, LIFECYCLE};
 use crate::{DrivingSide, Locale, Metre};
 
 mod bicycle;
@@ -221,8 +221,12 @@ impl RoadBuilder {
             Err(Some(s)) => return Err(RoadMsg::unsupported_tag(HIGHWAY, &s).into()),
             Ok(highway) => match highway {
                 highway if highway.is_supported() => highway,
-                highway => {
-                    return Err(RoadMsg::unimplemented_tag(HIGHWAY, &highway.to_string()).into())
+                _ => {
+                    return Err(RoadMsg::Unimplemented {
+                        description: None,
+                        tags: Some(tags.subset(&LIFECYCLE)),
+                    }
+                    .into());
                 }
             },
         };

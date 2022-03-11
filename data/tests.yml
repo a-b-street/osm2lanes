@@ -800,8 +800,25 @@
 ### Combination
 # TODO
 
-### Other
-# TODO
+### Lifecycle
+
+## Construction
+- description: sidewalk=no
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: 'construction'
+    construction: 'road'
+    lanes: '1'
+    oneway: 'yes'
+    shoulder: 'no'
+    sidewalk: 'no'
+  driving_side: left
+  # TODO: nest this so we can check highway type
+  output:
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
 
 ### To Sort
 # The following still need to be categorized
