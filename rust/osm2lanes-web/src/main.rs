@@ -291,7 +291,9 @@ impl Component for App {
     }
 
     fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
-        self.draw_canvas()
+        if let Err(e) = self.draw_canvas() {
+            self.state.message = Some(format!("Error: {}", e));
+        }
     }
 }
 
@@ -370,7 +372,7 @@ impl App {
             }}</span></div>
         }
     }
-    fn draw_canvas(&self) {
+    fn draw_canvas(&self) -> Result<(), RenderError> {
         if let Some(road) = &self.state.road {
             let window = window().unwrap();
             let canvas = window
@@ -400,9 +402,9 @@ impl App {
                 (canvas_width, canvas_height),
                 road,
                 &self.state.locale,
-            )
-            .unwrap();
+            )?;
         }
+        Ok(())
     }
 }
 
