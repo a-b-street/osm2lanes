@@ -102,6 +102,21 @@ pub fn lanes<R: RenderContext>(
                 rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
                 left_edge += width;
             }
+            Lane::Parking {
+                designated, width, ..
+            } => {
+                let width = width.unwrap_or_else(|| locale.travel_width(designated));
+                let x = scale.scale(left_edge + (0.5 * width));
+                let font_size = 24.0;
+                let layout = rc
+                    .text()
+                    .new_text_layout(lane.as_utf8().to_string())
+                    .font(FontFamily::SYSTEM_UI, font_size)
+                    .default_attribute(TextAttribute::TextColor(Color::WHITE))
+                    .build()?;
+                rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
+                left_edge += width;
+            }
             Lane::Shoulder { width } => {
                 let width = width.unwrap_or(default_lane_width);
                 let x = scale.scale(left_edge + (0.5 * width));
@@ -150,7 +165,6 @@ pub fn lanes<R: RenderContext>(
                     left_edge += width;
                 }
             }
-            _ => return Err(RenderError::UnknownLane),
         }
     }
 
