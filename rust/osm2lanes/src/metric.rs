@@ -24,7 +24,6 @@ impl std::ops::AddAssign for Metre {
     }
 }
 impl std::ops::Mul<Metre> for f64 {
-    // The division of rational numbers is a closed operation.
     type Output = Metre;
     fn mul(self, other: Metre) -> Self::Output {
         Metre::new(self * other.val())
