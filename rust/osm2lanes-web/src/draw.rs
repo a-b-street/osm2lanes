@@ -60,6 +60,7 @@ pub fn lanes<R: RenderContext>(
                 direction,
                 designated,
                 width,
+                ..
             } => {
                 let width = width.unwrap_or_else(|| locale.travel_width(designated));
                 let x = scale.scale(left_edge + (0.5 * width));

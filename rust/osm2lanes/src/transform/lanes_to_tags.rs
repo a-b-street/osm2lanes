@@ -1,7 +1,7 @@
 use super::*;
 use crate::road::{Lane, LaneDesignated, LaneDirection};
 use crate::tag::{DuplicateKeyError, Tags, TagsWrite};
-use crate::Locale;
+use crate::{Locale, Speed};
 
 impl std::convert::From<DuplicateKeyError> for RoadError {
     fn from(e: DuplicateKeyError) -> Self {
@@ -217,6 +217,25 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
         tags.checked_insert("lanes:both_ways", "1")?;
         // TODO: add LHT support
         tags.checked_insert("turn:lanes:both_ways", "left")?;
+    }
+
+    let max_speeds: Vec<Speed> = lanes
+        .iter()
+        .filter_map(|lane| match lane {
+            Lane::Travel { max_speed, .. } => *max_speed,
+            _ => None,
+        })
+        .collect();
+    if let Some(max_speed) = max_speeds.first() {
+        if max_speeds.windows(2).all(|w| w[0] == w[1]) {
+            tags.checked_insert("maxspeed", max_speed.to_string())?;
+        } else {
+            return Err(RoadMsg::Unimplemented {
+                description: Some("different max speeds per lane".to_owned()),
+                tags: None,
+            }
+            .into());
+        }
     }
 
     // Check roundtrip!

@@ -74,6 +74,7 @@ impl Lane {
             direction: Some(LaneDirection::Forward),
             designated,
             width: Some(locale.travel_width(&designated)),
+            max_speed: None,
         }
     }
     fn backward(designated: LaneDesignated, locale: &Locale) -> Self {
@@ -81,6 +82,7 @@ impl Lane {
             direction: Some(LaneDirection::Backward),
             designated,
             width: Some(locale.travel_width(&designated)),
+            max_speed: None,
         }
     }
     fn is_motor(&self) -> bool {

@@ -13,6 +13,7 @@ impl Lane {
             direction: None,
             designated,
             width: Some(locale.travel_width(&designated)),
+            max_speed: None,
         }
     }
 }

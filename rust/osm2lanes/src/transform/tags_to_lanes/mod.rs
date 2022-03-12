@@ -3,7 +3,7 @@ use std::iter;
 
 use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle, Road};
 use crate::tag::{Highway, TagKey, Tags, LIFECYCLE};
-use crate::{DrivingSide, Locale, Metre};
+use crate::{DrivingSide, Locale, Metre, Speed};
 
 mod bicycle;
 use bicycle::bicycle;
@@ -86,6 +86,12 @@ impl<T> Infer<T> {
             Self::Direct(v) => Some(v),
         }
     }
+    fn direct(some: Option<T>) -> Self {
+        match some {
+            None => Self::None,
+            Some(v) => Self::Direct(v),
+        }
+    }
 }
 
 impl<T> Default for Infer<T> {
@@ -130,6 +136,7 @@ struct LaneBuilder {
     direction: Infer<LaneDirection>,
     designated: Infer<LaneDesignated>,
     width: Width,
+    max_speed: Infer<Speed>,
 }
 
 impl LaneBuilder {
@@ -148,6 +155,7 @@ impl LaneBuilder {
                 direction: self.direction.some(),
                 designated: self.designated.some().unwrap(),
                 width,
+                max_speed: self.max_speed.some(),
             },
             Some(LaneType::Parking) => Lane::Parking {
                 direction: self.direction.some().unwrap(),
@@ -168,7 +176,11 @@ struct RoadBuilder {
 }
 
 impl RoadBuilder {
-    pub fn from(tags: &Tags, locale: &Locale) -> Result<Self, RoadError> {
+    pub fn from(
+        tags: &Tags,
+        locale: &Locale,
+        warnings: &mut RoadWarnings,
+    ) -> Result<Self, RoadError> {
         let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
 
         let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
@@ -187,12 +199,25 @@ impl RoadBuilder {
             LaneDesignated::Motor
         };
 
+        const MAXSPEED: TagKey = TagKey::from("maxspeed");
+        let max_speed = match tags.get(MAXSPEED).map(|s| s.parse::<Speed>()).transpose() {
+            Ok(max_speed) => max_speed,
+            Err(_e) => {
+                warnings.push(RoadMsg::Unsupported {
+                    description: None,
+                    tags: Some(tags.subset(&[MAXSPEED])),
+                });
+                None
+            }
+        };
+
         // These are ordered from the road center, going outwards. Most of the members of fwd_side will
         // have Direction::Forward, but there can be exceptions with two-way cycletracks.
         let mut forward_lanes: VecDeque<_> = iter::repeat_with(|| LaneBuilder {
             r#type: Infer::Default(LaneType::Travel),
             direction: Infer::Default(LaneDirection::Forward),
             designated: Infer::Default(designated),
+            max_speed: Infer::direct(max_speed),
             ..Default::default()
         })
         .take(num_driving_fwd)
@@ -201,6 +226,7 @@ impl RoadBuilder {
             r#type: Infer::Default(LaneType::Travel),
             direction: Infer::Default(LaneDirection::Backward),
             designated: Infer::Default(designated),
+            max_speed: Infer::direct(max_speed),
             ..Default::default()
         })
         .take(num_driving_back)
@@ -392,7 +418,7 @@ pub fn tags_to_lanes(
 
     unsupported(tags, locale, &mut warnings)?;
 
-    let mut road: RoadBuilder = RoadBuilder::from(tags, locale)?;
+    let mut road: RoadBuilder = RoadBuilder::from(tags, locale, &mut warnings)?;
 
     // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
     if let Some(spec) = non_motorized(tags, locale, &road)? {

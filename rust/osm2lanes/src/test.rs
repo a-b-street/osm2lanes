@@ -3,6 +3,7 @@ mod tests {
     use std::fs::File;
     use std::io::BufReader;
 
+    use assert_json_diff::assert_json_eq;
     use serde::Deserialize;
 
     use crate::road::{Lane, LanePrintable, Marking, Road};
@@ -65,11 +66,13 @@ mod tests {
                         designated: left_designated,
                         direction: left_direction,
                         width: left_width,
+                        max_speed: None,
                     },
                     Lane::Travel {
                         designated: right_designated,
                         direction: right_direction,
                         width: right_width,
+                        max_speed: None,
                     },
                 ) => {
                     left_designated == right_designated
@@ -224,7 +227,11 @@ mod tests {
     }
 
     fn stringify_lane_types(road: &Road) -> String {
-        let simple = road.lanes.iter().map(|l| l.as_ascii()).collect();
+        let simple = road
+            .lanes
+            .iter()
+            .map(|l| format!("{:<2}", l.as_ascii()))
+            .collect();
         if road.has_separators() {
             let separators = road
                 .lanes
@@ -255,16 +262,18 @@ mod tests {
             .lanes
             .iter()
             .map(|lane| {
-                // TODO: direction on lane parking
-                if let Lane::Travel {
-                    direction: Some(direction),
-                    ..
-                } = lane
-                {
-                    direction.as_utf8()
-                } else {
-                    ' '
-                }
+                format!("{}", {
+                    // TODO: direction on lane parking
+                    if let Lane::Travel {
+                        direction: Some(direction),
+                        ..
+                    } = lane
+                    {
+                        direction.as_utf8()
+                    } else {
+                        ' '
+                    }
+                })
             })
             .collect();
         if road.has_separators() {
@@ -324,6 +333,7 @@ mod tests {
                             println!("Expected:");
                             println!("    {}", stringify_lane_types(&expected_road));
                             println!("    {}", stringify_directions(&expected_road));
+                            assert_json_eq!(actual_road, expected_road);
                             println!();
                             false
                         }
@@ -395,6 +405,7 @@ mod tests {
                     println!("Got:");
                     println!("    {}", stringify_lane_types(&output_road));
                     println!("    {}", stringify_directions(&output_road));
+                    assert_json_eq!(input_road, output_road);
                     println!();
                     false
                 }

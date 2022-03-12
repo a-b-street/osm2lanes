@@ -785,15 +785,27 @@
   - type: travel
     direction: backward
     designated: bus
+    max_speed:
+      unit: mph
+      value: 25
   - type: travel
     direction: backward
     designated: motor_vehicle
+    max_speed:
+      unit: mph
+      value: 25
   - type: travel
     direction: forward
     designated: motor_vehicle
+    max_speed:
+      unit: mph
+      value: 25
   - type: travel
     direction: forward
     designated: bus
+    max_speed:
+      unit: mph
+      value: 25
   - type: travel
     designated: foot
 
