@@ -38,6 +38,14 @@ impl std::iter::Sum for Metre {
     }
 }
 
+/// Vehicle Speed, used for speed limits and similar.
+// TODO: This part of the API may need to be revisited entirely
+// It is unclear whether a speed unit is needed per lane,
+// or if it could be provided for the entire road.
+// Data consumers may also want the km/h value
+// regardless of the unit used in the highway's locale,
+// in order to do distance over time calculations.
+// The serialization of this is clunky and leaves a lot to be desired.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Speed {
     Kph(f64),
