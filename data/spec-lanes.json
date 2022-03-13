@@ -129,9 +129,6 @@
                                     "description": "A fill. Often found in box functions."
                                 },
                                 {
-                                    "const": "solid_fill"
-                                },
-                                {
                                     "const": "no_fill"
                                 }
                             ]

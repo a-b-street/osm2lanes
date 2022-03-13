@@ -14,7 +14,7 @@ mod tests {
     use crate::{DrivingSide, Locale};
 
     #[derive(Deserialize)]
-    #[serde(untagged)]
+    #[serde(untagged, deny_unknown_fields)]
     enum RustTesting {
         Enabled(bool),
         WithOptions {
@@ -29,9 +29,14 @@ mod tests {
         /// The OSM way unique identifier
         way_id: Option<i64>,
         link: Option<String>,
-        driving_side: DrivingSide,
         comment: Option<String>,
         description: Option<String>,
+
+        // Config and Locale
+        driving_side: DrivingSide,
+        #[serde(rename = "ISO 3166-2")]
+        iso_3166_2: Option<String>,
+
         /// Data
         tags: Tags,
         // TODO: add nesting or rename to lanes
@@ -140,21 +145,23 @@ mod tests {
     impl TestCase {
         fn print(&self) {
             if let Some(description) = self.description.as_ref() {
-                println!(
-                    "Description: {} ({})",
-                    description,
-                    self.driving_side.as_tla()
-                );
+                println!("Description: {}", description);
             }
             if self.way_id.is_some() {
                 println!(
-                    "For input (example from https://www.openstreetmap.org/way/{}) with {}:",
+                    "For input (example from https://www.openstreetmap.org/way/{}):",
                     self.way_id.unwrap(),
-                    self.driving_side.as_tla(),
                 );
             } else if self.link.is_some() {
                 println!("For input (example from {}):", self.link.as_ref().unwrap());
             }
+            println!(
+                "    Driving({}) - Separators({}/{}) - Warnings({})",
+                self.driving_side.as_tla(),
+                self.include_separators(),
+                self.expected_has_separators(),
+                !self.ignore_warnings(),
+            );
             if let Some(comment) = self.comment.as_ref() {
                 println!("        Comment: {}", comment);
             }
@@ -168,17 +175,19 @@ mod tests {
             }
         }
 
+        /// Test specifies to include separators
+        fn include_separators(&self) -> bool {
+            match self.rust {
+                None => true,
+                Some(RustTesting::Enabled(b)) => b,
+                Some(RustTesting::WithOptions { separator, .. }) => separator.unwrap_or(true),
+            }
+        }
+
         fn is_lane_enabled(&self, lane: &Lane) -> bool {
             match lane {
                 Lane::Separator { .. } => {
-                    let separator_testing = match self.rust {
-                        None => true,
-                        Some(RustTesting::Enabled(b)) => b,
-                        Some(RustTesting::WithOptions { separator, .. }) => {
-                            separator.unwrap_or(true)
-                        }
-                    };
-                    separator_testing && self.expected_has_separators()
+                    self.include_separators() && self.expected_has_separators()
                 }
                 _ => true,
             }
@@ -262,7 +271,7 @@ mod tests {
             .lanes
             .iter()
             .map(|lane| {
-                format!("{}", {
+                format!("{:^2}", {
                     // TODO: direction on lane parking
                     if let Lane::Travel {
                         direction: Some(direction),
@@ -285,7 +294,7 @@ mod tests {
                         Some(
                             markings
                                 .iter()
-                                .map(|m| m.style.as_utf8())
+                                .map(|m| format!("{:^1}", m.style.as_utf8()))
                                 .collect::<String>(),
                         )
                     } else {
@@ -310,12 +319,17 @@ mod tests {
 
         assert!(
             tests.iter().all(|test| {
-                let locale = Locale::builder().driving_side(test.driving_side).build();
+                let locale = Locale::builder()
+                    .driving_side(test.driving_side)
+                    .iso_3166_option(&test.iso_3166_2)
+                    .build();
                 let road_from_tags = tags_to_lanes(
                     &test.tags,
                     &locale,
                     &TagsToLanesConfig {
                         error_on_warnings: !test.ignore_warnings(),
+                        include_separators: test.include_separators()
+                            && test.expected_has_separators(),
                         ..TagsToLanesConfig::default()
                     },
                 );
@@ -333,7 +347,13 @@ mod tests {
                             println!("Expected:");
                             println!("    {}", stringify_lane_types(&expected_road));
                             println!("    {}", stringify_directions(&expected_road));
-                            assert_json_eq!(actual_road, expected_road);
+                            if stringify_lane_types(&actual_road)
+                                == stringify_lane_types(&expected_road)
+                                || stringify_directions(&actual_road)
+                                    == stringify_directions(&expected_road)
+                            {
+                                assert_json_eq!(actual_road, expected_road);
+                            }
                             println!();
                             false
                         }
@@ -371,7 +391,10 @@ mod tests {
 
         assert!(
             tests.iter().all(|test| {
-                let locale = Locale::builder().driving_side(test.driving_side).build();
+                let locale = Locale::builder()
+                    .driving_side(test.driving_side)
+                    .iso_3166_option(&test.iso_3166_2)
+                    .build();
                 let input_road = test.expected_road();
                 let tags = lanes_to_tags(
                     &test.output,
@@ -386,6 +409,8 @@ mod tests {
                     &locale,
                     &TagsToLanesConfig {
                         error_on_warnings: false,
+                        include_separators: test.include_separators()
+                            && test.expected_has_separators(),
                         ..TagsToLanesConfig::default()
                     },
                 )
@@ -405,7 +430,11 @@ mod tests {
                     println!("Got:");
                     println!("    {}", stringify_lane_types(&output_road));
                     println!("    {}", stringify_directions(&output_road));
-                    assert_json_eq!(input_road, output_road);
+                    if stringify_lane_types(&input_road) == stringify_lane_types(&output_road)
+                        || stringify_directions(&input_road) == stringify_directions(&output_road)
+                    {
+                        assert_json_eq!(input_road, output_road);
+                    }
                     println!();
                     false
                 }

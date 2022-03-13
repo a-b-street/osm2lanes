@@ -113,6 +113,8 @@ pub enum MarkingColor {
     Yellow,
     #[serde(rename = "red")]
     Red,
+    #[serde(rename = "green")]
+    Green,
 }
 
 impl LanePrintable for MarkingColor {
@@ -121,6 +123,7 @@ impl LanePrintable for MarkingColor {
             Self::White => 'w',
             Self::Yellow => 'y',
             Self::Red => 'r',
+            Self::Green => 'g',
         }
     }
     fn as_utf8(&self) -> char {

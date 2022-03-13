@@ -11,9 +11,6 @@ pub struct Locale {
     pub country: Option<Country>,
     /// The driving side
     pub driving_side: DrivingSide,
-    /// When sidewalks are not explicitly tagged on a way,
-    /// sidewalks may be inferred
-    pub infer_sidewalks: bool,
 }
 
 impl Locale {
@@ -33,11 +30,10 @@ impl Locale {
 #[derive(Default)]
 pub struct Config {
     way_id: Option<u64>,
-    _iso_3166_1_alpha_2: Option<String>,
-    _iso_3166_1_alpha_3: Option<String>,
-    _iso_3166_2: Option<String>,
+    iso_3166_1_alpha_2: Option<String>,
+    iso_3166_1_alpha_3: Option<String>,
+    iso_3166_2_subdivision: Option<String>,
     driving_side: Option<DrivingSide>,
-    infer_sidewalks: Option<bool>,
 }
 
 impl Config {
@@ -50,8 +46,26 @@ impl Config {
         todo!();
     }
 
-    pub fn iso_3166(self, _code: &str) -> Self {
-        todo!();
+    /// Assign ISO-3166
+    ///
+    /// Accepts any of ISO-3166-1 alpha-2,  ISO-3166-1 alpha-3, or ISO-3166-2 codes
+    pub fn iso_3166(mut self, code: &str) -> Self {
+        if code.len() == 2 {
+            self.iso_3166_1_alpha_2 = Some(code.to_owned());
+        } else if code.len() == 3 {
+            self.iso_3166_1_alpha_3 = Some(code.to_owned());
+        } else if let Some((alpha_2, subdivision)) = code.split_once('-') {
+            self.iso_3166_1_alpha_2 = Some(alpha_2.to_owned());
+            self.iso_3166_2_subdivision = Some(subdivision.to_owned());
+        }
+        self
+    }
+
+    pub fn iso_3166_option(mut self, code: &std::option::Option<std::string::String>) -> Self {
+        if let Some(code) = code {
+            self = self.iso_3166(code)
+        }
+        self
     }
 
     pub fn driving_side(mut self, side: DrivingSide) -> Self {
@@ -59,17 +73,21 @@ impl Config {
         self
     }
 
-    pub fn infer_sidewalks(mut self, infer: bool) -> Self {
-        self.infer_sidewalks = Some(infer);
-        self
-    }
-
     pub fn build(&self) -> Locale {
         // TODO, more business logic
+        let country = match (
+            &self.iso_3166_1_alpha_2,
+            &self.iso_3166_1_alpha_3,
+            &self.iso_3166_2_subdivision,
+        ) {
+            (None, None, _) => None,
+            (Some(c), None, _) => Country::from_alpha2(&c).ok(),
+            (None, Some(c), _) => Country::from_alpha3(&c).ok(),
+            (Some(_), Some(_), _) => unimplemented!(),
+        };
         Locale {
-            country: None,
+            country,
             driving_side: self.driving_side.unwrap_or(DrivingSide::Right),
-            infer_sidewalks: self.infer_sidewalks.unwrap_or(true), // TODO?
         }
     }
 }
@@ -89,5 +107,22 @@ impl DrivingSide {
             Self::Right => Self::Left,
             Self::Left => Self::Right,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use celes::Country;
+
+    use crate::{DrivingSide, Locale};
+
+    #[test]
+    fn test_locale() {
+        let locale = Locale::builder()
+            .driving_side(DrivingSide::Right)
+            .iso_3166("DE-NW")
+            .build();
+        assert_eq!(locale.driving_side, DrivingSide::Right);
+        assert_eq!(locale.country.unwrap(), Country::germany());
     }
 }

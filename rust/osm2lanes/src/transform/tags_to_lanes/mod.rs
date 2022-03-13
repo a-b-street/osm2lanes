@@ -448,7 +448,7 @@ pub fn tags_to_lanes(
     let lanes = assemble_ltr(forward_side, backward_side, locale.driving_side)?;
 
     let lanes = if config.include_separators {
-        insert_separators(lanes)?
+        insert_separators(lanes, tags, locale, &mut warnings)?
     } else {
         lanes
     };

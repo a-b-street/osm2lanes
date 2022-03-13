@@ -55,6 +55,8 @@
 - description: "Great Northern Highway, a 2 lane rural road."
   way_id: 62176050
   image: "https://upload.wikimedia.org/wikipedia/commons/4/44/Onderweg_-_Fitzroy_Crossing_-_Purnululu_%288991950691%29.jpg"
+  rust:
+    ignore_warnings: true
   skip_kotlin: true
   tags:
     highway: trunk
@@ -111,6 +113,50 @@
   - type: travel
     direction: forward
     designated: motor_vehicle
+  - type: separator
+    markings:
+    - style: solid_line
+      color: white
+  - type: shoulder
+
+## Netherlands
+
+# https://nl.wikipedia.org/wiki/Autoweg
+# https://www.rovz.nl/sites/zl-rovz/files/rovz_infra_ehkfoldeng.pdf
+
+- description: "Dutch Autoweg 100km/h"
+  way_id: 6537276
+  mapillary: "https://www.mapillary.com/app/?pKey=475844673620459"
+  skip_kotlin: true
+  skip_python: true
+  tags:
+    highway: 'trunk'
+    maxspeed: '100'
+    motorroad: 'yes'
+  driving_side: right
+  ISO 3166-2: NL-FR
+  output:
+  - type: shoulder
+  - type: separator
+    markings:
+    - style: solid_line
+      color: white
+  - type: travel
+    direction: backward
+    designated: motor_vehicle
+    max_speed: 100
+  - type: separator
+    markings:
+    - style: broken_line
+      color: white
+    - style: solid_line
+      color: green
+    - style: broken_line
+      color: white
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+    max_speed: 100
   - type: separator
     markings:
     - style: solid_line
