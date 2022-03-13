@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::Markings;
-use crate::{Locale, Metre};
+use crate::{Locale, Metre, Speed};
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -13,6 +13,7 @@ pub enum Lane {
         direction: Option<LaneDirection>,
         designated: LaneDesignated,
         width: Option<Metre>,
+        max_speed: Option<Speed>,
     },
     #[serde(rename = "parking")]
     Parking {

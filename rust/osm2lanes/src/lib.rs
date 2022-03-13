@@ -4,8 +4,8 @@
 //! WARNING: The output specification and all of this code is just being prototyped. Don't depend
 //! on anything yet.
 
-mod metre;
-pub use metre::Metre;
+mod metric;
+pub use metric::{Metre, Speed};
 
 pub mod road;
 
