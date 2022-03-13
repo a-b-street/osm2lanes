@@ -14,6 +14,15 @@ See [discussion](https://github.com/a-b-street/abstreet/discussions/789) for fur
 - `python`—[Python 3.9 implementation](#python).
 - `rust`—[Rust implementation](#rust).
 
+## Contributing
+
+[See the contribution guide.](./CONTRIBUTING.md)
+
+## Using This Library
+
+Bindings to other languages like JVM, C, or Node.js will be worked on.
+Let us know what you need by [raising an issue](https://github.com/a-b-street/osm2lanes/issues/new).
+
 ## Lane Definition
 
 It is important to determine a strict definition for a lane.
@@ -34,11 +43,7 @@ the most permissive line arrangement will be assumed (e.g. a single dashed line)
 we use a fail-deadly approach to emphasize that
 osm2lanes should not be used in road safety applications.
 
-For all examples:
-
-- we omit access, this mimics the access tags for a lane in OSM.
-- we omit widths, for simplicity. osm2lanes will first try to determine widths from OSM tags, but it can fallback to making assumptions itself.
-- we omit turn markings (for now, TODO)
+For all examples we omit details for simplicity, such as widths, turn markings, access, etc.
 
 ### Example 1
 
@@ -148,70 +153,7 @@ TODO:
 - More bus and taxi lane examples
 - Trunk/Motorway/Highway
 
-## Kotlin
-
-### Run with Gradle
-
-```shell
-cd kotlin
-gradle run --args "${INPUT_FILE} ${OUTPUT_FILE}"
-```
-
-### Install and test
-
-Create JAR file with `gradle jar` and test with `gradle test`.
-
-### Run with Java
-
-```shell
-java -jar kotlin/build/libs/osm2lanes.jar ${INPUT_FILE} ${OUTPUT_FILE}
-```
-
-## Python
-
-### Install and test
-
-```shell
-cd python
-pip install .
-cd ..
-pytest
-```
-
-### Run
-
-```shell
-osm2lanes ${INPUT_FILE} ${OUTPUT_FILE}
-```
-
-## Rust
-
-### Install and test
-
-After [installing rust](https://www.rust-lang.org/tools/install), run:
-
-```shell
-cd rust/osm2lanes
-cargo test
-```
-
-Before sending a PR, please run `cargo +nightly fmt` to format the code. Note that while the crate targets the current stable Rust, the project requires the nightly toolchain for formatting. You can install it by doing `rustup toolchain install nightly` -- this won't change the default toolchain from stable.
-
-### Run
-
-```shell
-cargo run -- ${INPUT_FILE} ${OUTPUT_FILE}
-```
-
 ## Web demo
 
 The web demo at https://a-b-street.github.io/osm2lanes provides an easy way to test OSM tags and see the generated results.
 
-### Dev
-
-- The web demo is updated with every push on `main`, [see Workflow](./.github/workflows/web.yml)
-- The html website is part of the rest implementation at [`/rust/osm2lanes-web` ](./rust/osm2lanes-web)
-
-## Contributing
-
-[See the contribution guidelines.](./CONTRIBUTING.md)
