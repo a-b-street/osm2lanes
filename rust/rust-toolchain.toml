@@ -1,4 +1,5 @@
 [toolchain]
-channel = "nightly-2022-02-03"
+# https://rust-lang.github.io/rustup-components-history/
+channel = "nightly-2022-02-23"
 targets = ["wasm32-unknown-unknown", "x86_64-unknown-linux-gnu"]
 profile = "default"
