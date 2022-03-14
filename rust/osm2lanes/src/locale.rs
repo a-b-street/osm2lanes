@@ -57,6 +57,8 @@ impl Config {
         } else if let Some((alpha_2, subdivision)) = code.split_once('-') {
             self.iso_3166_1_alpha_2 = Some(alpha_2.to_owned());
             self.iso_3166_2_subdivision = Some(subdivision.to_owned());
+        } else {
+            todo!();
         }
         self
     }
