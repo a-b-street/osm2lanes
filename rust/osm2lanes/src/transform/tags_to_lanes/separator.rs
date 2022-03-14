@@ -1,13 +1,22 @@
+use celes::Country;
+
 use super::*;
 use crate::road::Markings;
 
 #[allow(clippy::needless_collect)]
-pub fn insert_separators(lanes: Vec<Lane>) -> Result<Vec<Lane>, RoadError> {
+pub fn insert_separators(
+    lanes: Vec<Lane>,
+    tags: &Tags,
+    locale: &Locale,
+    warnings: &mut RoadWarnings,
+) -> Result<Vec<Lane>, RoadError> {
     let left_edge = lane_to_edge_separator(lanes.first().unwrap());
     let right_edge = lane_to_edge_separator(lanes.first().unwrap());
     let separators: Vec<Option<Lane>> = lanes
         .windows(2)
-        .map(|window| lanes_to_separator(window.try_into().unwrap(), &lanes))
+        .map(|window| {
+            lanes_to_separator(window.try_into().unwrap(), &lanes, tags, locale, warnings)
+        })
         .collect();
     // I promise this is good code, but it might need a little explanation.
     // If there are n lanes, there will be 1 + (n-1) + 1 separators.
@@ -24,7 +33,13 @@ pub fn insert_separators(lanes: Vec<Lane>) -> Result<Vec<Lane>, RoadError> {
 
 /// Given a pair of lanes
 /// what should the separator between them be
-fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
+fn lanes_to_separator(
+    lanes: &[Lane; 2],
+    road: &[Lane],
+    tags: &Tags,
+    locale: &Locale,
+    warnings: &mut RoadWarnings,
+) -> Option<Lane> {
     match lanes {
         [Lane::Travel {
             designated: LaneDesignated::Foot,
@@ -87,60 +102,107 @@ fn lanes_to_separator(lanes: &[Lane; 2], road: &[Lane]) -> Option<Lane> {
         }, right @ Lane::Travel {
             designated: LaneDesignated::Motor,
             ..
-        }] => {
-            match road
-                .iter()
-                .filter(|lane| lane.is_motor() || lane.is_bus())
-                .count()
-            {
-                2 => Some(Lane::Separator {
+        }] => motor_lanes_to_separator(road, left, right, tags, locale, warnings),
+        // TODO: error return
+        [left, right] => {
+            warnings.push(RoadMsg::Unimplemented {
+                description: Some(format!("lane separators for {:?} and {:?}", left, right)),
+                tags: None,
+            });
+            Some(Lane::Separator {
+                markings: Markings::new(vec![Marking {
+                    style: MarkingStyle::BrokenLine,
+                    color: Some(MarkingColor::Red),
+                    width: Some(Marking::DEFAULT_WIDTH),
+                }]),
+            })
+        }
+    }
+}
+
+fn motor_lanes_to_separator(
+    road: &[Lane],
+    left: &Lane,
+    right: &Lane,
+    tags: &Tags,
+    locale: &Locale,
+    warnings: &mut RoadWarnings,
+) -> Option<Lane> {
+    if tags.is("motorroad", "yes") {
+        if let Some(c) = &locale.country {
+            if c == &Country::the_netherlands() {
+                return Some(Lane::Separator {
+                    markings: Markings::new(vec![
+                        Marking {
+                            style: MarkingStyle::BrokenLine,
+                            color: Some(MarkingColor::White),
+                            width: Some(Marking::DEFAULT_WIDTH),
+                        },
+                        Marking {
+                            style: MarkingStyle::SolidLine,
+                            color: Some(MarkingColor::Green),
+                            width: Some(2.0 * Marking::DEFAULT_SPACE),
+                        },
+                        Marking {
+                            style: MarkingStyle::BrokenLine,
+                            color: Some(MarkingColor::White),
+                            width: Some(Marking::DEFAULT_WIDTH),
+                        },
+                    ]),
+                });
+            }
+        }
+    }
+    warnings.push(RoadMsg::Unimplemented {
+        description: Some(format!(
+            "lane separators for {:?} and {:?}, using default",
+            left, right
+        )),
+        tags: None,
+    });
+    match road
+        .iter()
+        .filter(|lane| lane.is_motor() || lane.is_bus())
+        .count()
+    {
+        2 => Some(Lane::Separator {
+            markings: Markings::new(vec![Marking {
+                style: MarkingStyle::DottedLine,
+                color: Some(MarkingColor::White),
+                width: Some(Marking::DEFAULT_WIDTH),
+            }]),
+        }),
+        _ => {
+            if left.direction() == right.direction() {
+                Some(Lane::Separator {
                     markings: Markings::new(vec![Marking {
                         style: MarkingStyle::DottedLine,
                         color: Some(MarkingColor::White),
                         width: Some(Marking::DEFAULT_WIDTH),
                     }]),
-                }),
-                _ => {
-                    if left.direction() == right.direction() {
-                        Some(Lane::Separator {
-                            markings: Markings::new(vec![Marking {
-                                style: MarkingStyle::DottedLine,
-                                color: Some(MarkingColor::White),
-                                width: Some(Marking::DEFAULT_WIDTH),
-                            }]),
-                        })
-                    } else {
-                        Some(Lane::Separator {
-                            markings: Markings::new(vec![
-                                Marking {
-                                    style: MarkingStyle::SolidLine,
-                                    color: Some(MarkingColor::White),
-                                    width: Some(Marking::DEFAULT_WIDTH),
-                                },
-                                Marking {
-                                    style: MarkingStyle::NoFill,
-                                    color: None,
-                                    width: Some(Marking::DEFAULT_SPACE),
-                                },
-                                Marking {
-                                    style: MarkingStyle::SolidLine,
-                                    color: Some(MarkingColor::White),
-                                    width: Some(Marking::DEFAULT_WIDTH),
-                                },
-                            ]),
-                        })
-                    }
-                }
+                })
+            } else {
+                Some(Lane::Separator {
+                    markings: Markings::new(vec![
+                        Marking {
+                            style: MarkingStyle::SolidLine,
+                            color: Some(MarkingColor::White),
+                            width: Some(Marking::DEFAULT_WIDTH),
+                        },
+                        Marking {
+                            style: MarkingStyle::NoFill,
+                            color: None,
+                            width: Some(Marking::DEFAULT_SPACE),
+                        },
+                        Marking {
+                            style: MarkingStyle::SolidLine,
+                            color: Some(MarkingColor::White),
+                            width: Some(Marking::DEFAULT_WIDTH),
+                        },
+                    ]),
+                })
             }
         }
-        // TODO: error return
-        _ => Some(Lane::Separator {
-            markings: Markings::new(vec![Marking {
-                style: MarkingStyle::BrokenLine,
-                color: Some(MarkingColor::Red),
-                width: Some(Marking::DEFAULT_WIDTH),
-            }]),
-        }),
     }
 }
 

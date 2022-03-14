@@ -1,3 +1,5 @@
+use celes::Country;
+
 use super::*;
 use crate::road::{Lane, LaneDesignated, LaneDirection};
 use crate::tag::{DuplicateKeyError, Tags, TagsWrite};
@@ -219,23 +221,35 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
         tags.checked_insert("turn:lanes:both_ways", "left")?;
     }
 
-    let max_speeds: Vec<Speed> = lanes
-        .iter()
-        .filter_map(|lane| match lane {
-            Lane::Travel { max_speed, .. } => *max_speed,
-            _ => None,
-        })
-        .collect();
-    if let Some(max_speed) = max_speeds.first() {
-        if max_speeds.windows(2).all(|w| w[0] == w[1]) {
-            tags.checked_insert("maxspeed", max_speed.to_string())?;
-        } else {
-            return Err(RoadMsg::Unimplemented {
-                description: Some("different max speeds per lane".to_owned()),
-                tags: None,
+    let max_speed = {
+        let max_speeds: Vec<Speed> = lanes
+            .iter()
+            .filter_map(|lane| match lane {
+                Lane::Travel { max_speed, .. } => *max_speed,
+                _ => None,
+            })
+            .collect();
+        if let Some(max_speed) = max_speeds.first() {
+            // Check if all are the same
+            // See benches/benchmark_all_same.rs
+            if max_speeds.windows(2).all(|w| w[0] == w[1]) {
+                tags.checked_insert("maxspeed", max_speed.to_string())?;
+                Some(*max_speed)
+            } else {
+                return Err(RoadMsg::Unimplemented {
+                    description: Some("different max speeds per lane".to_owned()),
+                    tags: None,
+                }
+                .into());
             }
-            .into());
+        } else {
+            None
         }
+    };
+
+    // Locale Specific Stuff
+    if max_speed == Some(Speed::Kph(100.0)) && locale.country == Some(Country::the_netherlands()) {
+        tags.checked_insert("motorroad", "yes")?;
     }
 
     // Check roundtrip!

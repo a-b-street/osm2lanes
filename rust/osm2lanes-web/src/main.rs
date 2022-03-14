@@ -166,6 +166,15 @@ impl Component for App {
 
         let way_id_onclick = ctx.link().callback(|_| Msg::WayFetch);
 
+        let countries = {
+            let mut countries: Vec<&str> = Country::get_countries()
+                .iter()
+                .map(|country| country.alpha2)
+                .collect();
+            countries.sort_unstable();
+            countries
+        };
+
         html! {
             <div>
                 <h1>{"osm2lanes"}</h1>
@@ -191,13 +200,13 @@ impl Component for App {
                     <hr/>
                     <select onchange={country_onchange}>
                     {
-                        for Country::get_countries().iter().map(|country| html!{
+                        for countries.into_iter().map(|country| html!{
                             <option
-                                value={country.alpha2}
+                                value={country}
                                 checked={
-                                    self.state.locale.country.map_or(false, |c| c == country)
+                                    self.state.locale.country.map_or(false, |c| c.alpha2 == country)
                                 }>
-                                {country.alpha2}
+                                {country}
                             </option>
                         })
                     }

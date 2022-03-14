@@ -11,6 +11,7 @@ fn color_into(c: MarkingColor) -> Color {
         MarkingColor::White => Color::WHITE,
         MarkingColor::Yellow => Color::YELLOW,
         MarkingColor::Red => Color::RED,
+        MarkingColor::Green => Color::GREEN,
     }
 }
 
@@ -157,9 +158,18 @@ pub fn lanes<R: RenderContext>(
                             MarkingStyle::DottedLine => {
                                 StrokeStyle::new().dash_pattern(&[50.0, 100.0])
                             }
+                            MarkingStyle::DashedLine => {
+                                StrokeStyle::new().dash_pattern(&[100.0, 100.0])
+                            }
+                            MarkingStyle::BrokenLine => {
+                                StrokeStyle::new().dash_pattern(&[100.0, 50.0])
+                            }
                             MarkingStyle::KerbUp | MarkingStyle::KerbDown => StrokeStyle::new(),
-                            // Remains for debugging
-                            _ => StrokeStyle::new().dash_pattern(&[20.0, 80.0]),
+                            // Remains for debugging, SOS
+                            _ => StrokeStyle::new().dash_pattern(&[
+                                10.0, 10.0, 10.0, 10.0, 10.0, 50.0, 30.0, 30.0, 30.0, 30.0, 30.0,
+                                50.0,
+                            ]),
                             // _ => return Err(RenderError::UnknownSeparator),
                         },
                     );
