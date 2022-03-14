@@ -21,8 +21,8 @@ where
     v.len() == 1
 }
 
-fn bench_fibs(c: &mut Criterion) {
-    let mut group = c.benchmark_group("Fibonacci");
+fn bench_all_same(c: &mut Criterion) {
+    let mut group = c.benchmark_group("all_same");
     let small_vec = vec![20; 5];
     group.bench_with_input(
         BenchmarkId::new("all_same_vec", "small_vec"),
@@ -48,5 +48,5 @@ fn bench_fibs(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_fibs);
+criterion_group!(benches, bench_all_same);
 criterion_main!(benches);
