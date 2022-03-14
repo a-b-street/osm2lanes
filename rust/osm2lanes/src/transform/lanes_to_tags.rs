@@ -230,6 +230,8 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
             })
             .collect();
         if let Some(max_speed) = max_speeds.first() {
+            // Check if all are the same
+            // See benches/benchmark_all_same.rs
             if max_speeds.windows(2).all(|w| w[0] == w[1]) {
                 tags.checked_insert("maxspeed", max_speed.to_string())?;
                 Some(*max_speed)

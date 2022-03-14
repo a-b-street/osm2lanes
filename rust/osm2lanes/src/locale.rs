@@ -61,7 +61,7 @@ impl Config {
         self
     }
 
-    pub fn iso_3166_option(mut self, code: &std::option::Option<std::string::String>) -> Self {
+    pub fn iso_3166_option(mut self, code: &Option<String>) -> Self {
         if let Some(code) = code {
             self = self.iso_3166(code)
         }
