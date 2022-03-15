@@ -16,6 +16,12 @@ pub struct LanesToTagsConfig {
     pub check_roundtrip: bool,
 }
 
+impl LanesToTagsConfig {
+    pub fn new(check_roundtrip: bool) -> Self {
+        LanesToTagsConfig { check_roundtrip }
+    }
+}
+
 impl Default for LanesToTagsConfig {
     fn default() -> Self {
         Self {
