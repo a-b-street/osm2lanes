@@ -12,7 +12,7 @@ use osm2lanes::locale::{Country, DrivingSide, Locale};
 use osm2lanes::overpass::get_way;
 use osm2lanes::road::{Lane, LanePrintable, Road};
 use osm2lanes::tag::Tags;
-use osm2lanes::transform::{RoadError, RoadFromTags};
+use osm2lanes::transform::RoadFromTags;
 use osm2lanes::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
 
 // Use `wee_alloc` as the global allocator.
@@ -338,55 +338,44 @@ impl App {
         let locale = &self.state.locale;
         log::trace!("Update Tags: {}", value);
         log::trace!("Locale: {:?}", locale);
-        let calculate = match Tags::from_str(value) {
+        match Tags::from_str(value) {
             Ok(tags) => match tags_to_lanes(&tags, locale, &TagsToLanesConfig::default()) {
-                Ok(road_from_tags) => {
-                    match lanes_to_tags(
-                        &road_from_tags.road.lanes,
-                        locale,
-                        &LanesToTagsConfig::default(),
-                    ) {
-                        Ok(tags) => Ok((road_from_tags, tags)),
-                        Err(e) => {
-                            if let RoadError::Warnings(warnings) = &e {
-                                Err(Ok((road_from_tags, format!("{}\n{}", e, warnings))))
+                Ok(RoadFromTags { road, warnings }) => {
+                    match lanes_to_tags(&road.lanes, locale, &LanesToTagsConfig::new(false)) {
+                        Ok(tags) => {
+                            self.state.road = Some(road);
+                            self.state.normalized_tags = Some(tags.to_string());
+                            if warnings.is_empty() {
+                                self.state.message = None;
                             } else {
-                                Err(Ok((road_from_tags, e.to_string())))
+                                self.state.message = Some(warnings.to_string());
+                            }
+                        }
+                        Err(error) => {
+                            self.state.road = Some(road);
+                            self.state.normalized_tags = None;
+                            if warnings.is_empty() {
+                                self.state.message =
+                                    Some(format!("Lanes to Tags Error: {}", error));
+                            } else {
+                                self.state.message =
+                                    Some(format!("{}\nLanes to Tags Error: {}", warnings, error));
                             }
                         }
                     }
                 }
-                Err(e) => Err(Err(e.to_string())),
+                Err(road_error) => {
+                    self.state.road = None;
+                    self.state.normalized_tags = None;
+                    self.state.message = Some(format!("Conversion Error: {}", road_error));
+                }
             },
-            Err(_) => Err(Err("parsing tags failed".to_owned())),
-        };
-        log::trace!("Update: {:?}", calculate);
-        match calculate {
-            Ok((RoadFromTags { road, warnings }, norm_tags)) => {
-                self.state.road = Some(road);
-                self.state.normalized_tags = Some(norm_tags.to_string());
-                if warnings.is_empty() {
-                    self.state.message = None;
-                } else {
-                    self.state.message = Some(warnings.to_string());
-                }
-            }
-            Err(Ok((RoadFromTags { road, warnings }, norm_err))) => {
-                self.state.road = Some(road);
-                self.state.normalized_tags = None;
-                if warnings.is_empty() {
-                    self.state.message = Some(format!("Lanes to Tags Error: {}", norm_err));
-                } else {
-                    self.state.message =
-                        Some(format!("{}\nLanes to Tags Error: {}", warnings, norm_err));
-                }
-            }
-            Err(Err(lanes_err)) => {
+            Err(tags_error) => {
                 self.state.road = None;
                 self.state.normalized_tags = None;
-                self.state.message = Some(format!("Conversion Error: {}", lanes_err));
+                self.state.message = Some(format!("Conversion Error: {}", tags_error));
             }
-        }
+        };
     }
 
     fn view_lane_type(&self, lane: &Lane) -> Html {
