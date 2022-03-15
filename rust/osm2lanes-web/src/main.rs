@@ -64,6 +64,7 @@ pub struct State {
 #[derive(Debug)]
 pub enum Msg {
     TagsSet(String),
+    TagsLocaleSet((Tags, Locale)),
     ToggleDrivingSide,
     CountrySet(Result<Country, &'static str>),
     WayFetch,
@@ -99,8 +100,14 @@ impl Component for App {
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> ShouldRender {
         log::trace!("Message: {:?}", msg);
         match msg {
-            Msg::TagsSet(value) => {
-                self.state.edit_tags = value;
+            Msg::TagsSet(tags) => {
+                self.state.edit_tags = tags;
+                self.update_tags();
+                true
+            }
+            Msg::TagsLocaleSet((tags, locale)) => {
+                self.state.edit_tags = tags.to_string();
+                self.state.locale = locale;
                 self.update_tags();
                 true
             }
@@ -130,7 +137,7 @@ impl Component for App {
                     Ok(way_id) => {
                         ctx.link().send_future(async move {
                             match get_way(way_id).await {
-                                Ok(tags) => Msg::TagsSet(tags.to_string()),
+                                Ok((tags, locale)) => Msg::TagsLocaleSet((tags, locale)),
                                 Err(e) => Msg::Error(e.to_string()),
                             }
                         });
@@ -167,11 +174,21 @@ impl Component for App {
         let way_id_onclick = ctx.link().callback(|_| Msg::WayFetch);
 
         let countries = {
-            let mut countries: Vec<&str> = Country::get_countries()
-                .iter()
-                .map(|country| country.alpha2)
+            let mut countries: Vec<(&str, bool)> = Country::get_countries()
+                .into_iter()
+                .map(|country| {
+                    (
+                        country.alpha2,
+                        self.state
+                            .locale
+                            .country
+                            .as_ref()
+                            .map_or(false, |locale| locale == &country),
+                    )
+                })
                 .collect();
-            countries.sort_unstable();
+            countries.sort_unstable_by_key(|c| c.0);
+            log::trace!("countries {:?}", countries);
             countries
         };
 
@@ -198,19 +215,28 @@ impl Component for App {
                         {"RHT ↓↑"}
                     </p>
                     <hr/>
-                    <select onchange={country_onchange}>
+                    <select onchange={country_onchange} class={
+                        if self.state.locale.iso_3166_2_subdivision.is_some() {"suffixed"} else {""}
+                    }>
                     {
-                        for countries.into_iter().map(|country| html!{
-                            <option
-                                value={country}
-                                checked={
-                                    self.state.locale.country.map_or(false, |c| c.alpha2 == country)
-                                }>
+                        for countries.into_iter().map(|(country, selected)| html!{
+                            <option value={country} selected={selected}>
                                 {country}
                             </option>
                         })
                     }
                     </select>
+                    {
+                        if let Some(code) = &self.state.locale.iso_3166_2_subdivision {
+                            html!{
+                                <p class="row-item prefixed">
+                                    {"-"}{code}
+                                </p>
+                            }
+                        } else {
+                            html!{}
+                        }
+                    }
                     <hr/>
                     <label class="row-item" for="way">{"OSM Way ID"}</label>
                     <input class="row-item" type="text" id="way" name="way" size="12" ref={self.state.way_ref.clone()}/>

@@ -321,7 +321,7 @@ mod tests {
             tests.iter().all(|test| {
                 let locale = Locale::builder()
                     .driving_side(test.driving_side)
-                    .iso_3166_option(&test.iso_3166_2)
+                    .iso_3166_option(test.iso_3166_2.as_deref())
                     .build();
                 let road_from_tags = tags_to_lanes(
                     &test.tags,
@@ -393,7 +393,7 @@ mod tests {
             tests.iter().all(|test| {
                 let locale = Locale::builder()
                     .driving_side(test.driving_side)
-                    .iso_3166_option(&test.iso_3166_2)
+                    .iso_3166_option(test.iso_3166_2.as_deref())
                     .build();
                 let input_road = test.expected_road();
                 let tags = lanes_to_tags(

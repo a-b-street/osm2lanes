@@ -9,6 +9,7 @@ use crate::Metre;
 pub struct Locale {
     /// The ISO 3166 Country
     pub country: Option<Country>,
+    pub iso_3166_2_subdivision: Option<String>,
     /// The driving side
     pub driving_side: DrivingSide,
 }
@@ -63,7 +64,7 @@ impl Config {
         self
     }
 
-    pub fn iso_3166_option(mut self, code: &Option<String>) -> Self {
+    pub fn iso_3166_option(mut self, code: Option<&str>) -> Self {
         if let Some(code) = code {
             self = self.iso_3166(code)
         }
@@ -89,6 +90,7 @@ impl Config {
         };
         Locale {
             country,
+            iso_3166_2_subdivision: self.iso_3166_2_subdivision.clone(),
             driving_side: self.driving_side.unwrap_or(DrivingSide::Right),
         }
     }
@@ -108,6 +110,17 @@ impl DrivingSide {
         match self {
             Self::Right => Self::Left,
             Self::Left => Self::Right,
+        }
+    }
+}
+
+impl std::str::FromStr for DrivingSide {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "right" => Ok(Self::Right),
+            "left" => Ok(Self::Left),
+            _ => Err(s.to_owned()),
         }
     }
 }

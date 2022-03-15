@@ -45,9 +45,9 @@ async fn main() {
     let args = Cli::parse();
     match &args.command {
         Command::Way { id } => {
-            let tags = block_on(get_way(*id)).unwrap();
+            let (tags, locale) = block_on(get_way(*id)).unwrap();
             log::info!("{:#?}", tags);
-            let locale = Locale::builder().build();
+            log::info!("{:#?}", locale);
             let lanes = tags_to_lanes(&tags, &locale, &TagsToLanesConfig::default());
             println!("{}", serde_json::to_string_pretty(&lanes).unwrap());
         }
