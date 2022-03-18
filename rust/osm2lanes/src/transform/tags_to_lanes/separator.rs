@@ -3,48 +3,17 @@ use celes::Country;
 use super::*;
 use crate::road::Markings;
 
-#[allow(clippy::needless_collect)]
-pub fn insert_separators(
-    lanes: Vec<Lane>,
-    tags: &Tags,
-    locale: &Locale,
-    warnings: &mut RoadWarnings,
-) -> Result<Vec<Lane>, RoadError> {
-    let left_edge = lane_to_edge_separator(lanes.first().unwrap());
-    let right_edge = lane_to_edge_separator(lanes.first().unwrap());
-    let separators: Vec<Option<Lane>> = lanes
-        .windows(2)
-        .map(|window| {
-            lanes_to_separator(window.try_into().unwrap(), &lanes, tags, locale, warnings)
-        })
-        .collect();
-    // I promise this is good code, but it might need a little explanation.
-    // If there are n lanes, there will be 1 + (n-1) + 1 separators.
-    // We interleave (zip(n+1)+flat_map) the separators with the lanes, and flatten to remove the Nones.
-    let lanes: Vec<Lane> = iter::once(left_edge)
-        .chain(separators.into_iter())
-        .chain(iter::once(right_edge))
-        .zip(lanes.into_iter().map(Some).chain(iter::once(None)))
-        .flat_map(|(a, b)| [a, b])
-        .flatten()
-        .collect();
-    Ok(lanes)
-}
-
 /// Given a pair of lanes
 /// what should the separator between them be
-fn lanes_to_separator(
-    lanes: &[Lane; 2],
-    road: &[Lane],
+pub(super) fn lanes_to_separator(
+    lanes: &[LaneBuilder; 2],
+    road: &RoadBuilder,
     tags: &Tags,
     locale: &Locale,
     warnings: &mut RoadWarnings,
 ) -> Option<Lane> {
     match lanes {
-        [Lane::Travel {
-            designated: LaneDesignated::Foot,
-            ..
-        }, _] => Some(Lane::Separator {
+        [left, right] => Some(Lane::Separator {
             markings: Markings::new(vec![Marking {
                 style: MarkingStyle::KerbDown,
                 color: None,
@@ -208,6 +177,6 @@ fn motor_lanes_to_separator(
 
 /// Given a lane on the edge of a way
 /// what should the separator be
-fn lane_to_edge_separator(_lane: &Lane) -> Option<Lane> {
+pub(super) fn lane_to_edge_separator(_lane: &LaneBuilder) -> Option<Lane> {
     None
 }

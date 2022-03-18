@@ -11,8 +11,8 @@ impl Markings {
         Self(markings)
     }
 
-    /// Reverses the order of markings and inverts them in place.
-    pub fn reverse(&mut self) {
+    /// Flip left and right, reverses the order of markings and inverts them in place.
+    pub fn flip(&mut self) {
         self.0.reverse();
         for marking in self.0.iter_mut() {
             marking.invert();

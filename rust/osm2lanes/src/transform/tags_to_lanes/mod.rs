@@ -18,7 +18,7 @@ mod parking;
 use parking::parking;
 
 mod separator;
-use separator::insert_separators;
+use separator::{lane_to_edge_separator, lanes_to_separator};
 
 mod non_motorized;
 use non_motorized::non_motorized;
@@ -277,15 +277,15 @@ impl RoadBuilder {
         self.backward_lanes.len()
     }
     /// Get inner-most forward lane
-    pub fn _forward_inside(&self) -> Option<&LaneBuilder> {
+    pub fn forward_inside(&self) -> Option<&LaneBuilder> {
         self.forward_lanes.front()
     }
     /// Get outer-most forward lane
-    pub fn _forward_outside(&self) -> Option<&LaneBuilder> {
+    pub fn forward_outside(&self) -> Option<&LaneBuilder> {
         self.forward_lanes.back()
     }
     /// Get inner-most backward lane
-    pub fn _backward_inside(&self) -> Option<&LaneBuilder> {
+    pub fn backward_inside(&self) -> Option<&LaneBuilder> {
         self.backward_lanes.front()
     }
     /// Get outer-most backward lane
@@ -325,10 +325,7 @@ impl RoadBuilder {
         self.backward_lanes.push_back(lane);
     }
     /// Get lanes left to right
-    pub fn _lanes_ltr<'a>(
-        &'a self,
-        locale: &Locale,
-    ) -> Box<dyn Iterator<Item = &LaneBuilder> + 'a> {
+    pub fn lanes_ltr<'a>(&'a self, locale: &Locale) -> Box<dyn Iterator<Item = &LaneBuilder> + 'a> {
         match locale.driving_side {
             DrivingSide::Left => Box::new(
                 self.forward_lanes
@@ -404,6 +401,110 @@ impl RoadBuilder {
             DrivingSide::Right => Box::new(self.backward_lanes.iter_mut()),
         }
     }
+
+    /// Consume Road Builder to return Lanes left to right
+    pub fn into_ltr(
+        self,
+        tags: &Tags,
+        locale: &Locale,
+        include_separators: bool,
+        warnings: &mut RoadWarnings,
+    ) -> Result<(Vec<Lane>, Highway, Oneway), RoadError> {
+        let lanes_iter = match locale.driving_side {
+            DrivingSide::Left => self
+                .forward_lanes
+                .into_iter()
+                .rev()
+                .chain(self.backward_lanes.into_iter()),
+
+            DrivingSide::Right => self
+                .backward_lanes
+                .into_iter()
+                .rev()
+                .chain(self.forward_lanes.into_iter()),
+        };
+        let lanes: Vec<Lane> = if include_separators {
+            let forward_edge = lane_to_edge_separator(self.forward_outside().unwrap());
+            let backward_edge = lane_to_edge_separator(self.backward_outside().unwrap());
+            let middle_separator = lanes_to_separator(
+                &[
+                    *self.forward_inside().unwrap(),
+                    *self.backward_inside().unwrap(),
+                ],
+                &self,
+                tags,
+                locale,
+                warnings,
+            );
+            self.forward_lanes.make_contiguous();
+
+            let forward_separators: Vec<Option<Lane>> = self
+                .forward_lanes
+                .as_slices()
+                .0
+                .windows(2)
+                .map(|window| {
+                    lanes_to_separator(window.try_into().unwrap(), &self, tags, locale, warnings)
+                })
+                .collect();
+            self.backward_lanes.make_contiguous();
+            let backward_separators: Vec<Option<Lane>> = self
+                .backward_lanes
+                .as_slices()
+                .0
+                .windows(2)
+                .map(|window| {
+                    lanes_to_separator(window.try_into().unwrap(), &self, tags, locale, warnings)
+                })
+                .collect();
+            let forward_lanes_with_separators: Vec<Option<Lane>> = self
+                .forward_lanes
+                .into_iter()
+                .map(|l| l.build())
+                .map(Some)
+                .zip(
+                    forward_separators
+                        .into_iter()
+                        .chain(iter::once(forward_edge)),
+                )
+                .flat_map(|(a, b)| [a, b])
+                .collect();
+            let backward_lanes_with_separators: Vec<Option<Lane>> = self
+                .backward_lanes
+                .into_iter()
+                .map(|l| l.build())
+                .map(Some)
+                .zip(
+                    backward_separators
+                        .into_iter()
+                        .chain(iter::once(backward_edge)),
+                )
+                .flat_map(|(a, b)| [a, b])
+                .collect();
+            // I promise this is good code, but it might need a little explanation.
+            // If there are n lanes, there will be 1 + (n-1) + 1 separators.
+            // We interleave (zip(n+1)+flat_map) the separators with the lanes, and flatten to remove the Nones.
+            match locale.driving_side {
+                DrivingSide::Left => forward_lanes_with_separators
+                    .into_iter()
+                    .rev()
+                    .chain(iter::once(middle_separator))
+                    .chain(backward_lanes_with_separators)
+                    .flatten()
+                    .collect(),
+                DrivingSide::Right => backward_lanes_with_separators
+                    .into_iter()
+                    .rev()
+                    .chain(iter::once(middle_separator))
+                    .chain(forward_lanes_with_separators)
+                    .flatten()
+                    .collect(),
+            }
+        } else {
+            lanes_iter.map(|lane| lane.build()).collect::<Vec<_>>()
+        };
+        Ok((lanes, self.highway, self.oneway))
+    }
 }
 
 /// From an OpenStreetMap way's tags,
@@ -433,31 +534,11 @@ pub fn tags_to_lanes(
 
     foot_and_shoulder(tags, locale, &mut road, &mut warnings)?;
 
-    // Temporary intermediate conversion
-    let (forward_side, backward_side) = (
-        road.forward_lanes
-            .into_iter()
-            .map(|lane| lane.build())
-            .collect::<Vec<_>>(),
-        road.backward_lanes
-            .into_iter()
-            .map(|lane| lane.build())
-            .collect::<Vec<_>>(),
-    );
-
-    let lanes = assemble_ltr(forward_side, backward_side, locale.driving_side)?;
-
-    let lanes = if config.include_separators {
-        insert_separators(lanes, tags, locale, &mut warnings)?
-    } else {
-        lanes
-    };
+    let (lanes, highway, _oneway) =
+        road.into_ltr(tags, locale, config.include_separators, &mut warnings)?;
 
     let road_from_tags = RoadFromTags {
-        road: Road {
-            lanes,
-            highway: road.highway,
-        },
+        road: Road { lanes, highway },
         warnings,
     };
 
