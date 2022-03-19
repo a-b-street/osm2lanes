@@ -1,8 +1,17 @@
+use std::collections::HashMap;
+
 pub use celes::Country;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 
-use crate::road::LaneDesignated;
+use crate::road::{LaneDesignated, MarkingColor};
 use crate::Metre;
+
+#[derive(Serialize, Deserialize, Debug)]
+struct CenterLineStyle(HashMap<String, MarkingColor>);
+const CENTER_LINE_YML: &str = include_str!("country_metadata/center_line_style.yml");
+static CENTER_LINE_DATA: Lazy<CenterLineStyle> =
+    Lazy::new(|| serde_yaml::from_str(CENTER_LINE_YML).unwrap());
 
 /// Context about the place where an OSM way exists.
 #[derive(Debug, Serialize, Deserialize)]
@@ -23,6 +32,13 @@ impl Locale {
             LaneDesignated::Motor | LaneDesignated::Bus => Metre::new(3.5),
             LaneDesignated::Foot => Metre::new(2.5),
             LaneDesignated::Bicycle => Metre::new(2.0),
+        }
+    }
+    pub fn lane_separator_color(&self) -> Option<MarkingColor> {
+        if let Some(country) = &self.country {
+            CENTER_LINE_DATA.0.get(country.alpha2).copied()
+        } else {
+            None
         }
     }
 }
