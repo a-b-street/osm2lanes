@@ -2,6 +2,7 @@ use serde::Serialize;
 
 use crate::road::Road;
 use crate::tag::{DuplicateKeyError, TagKey, Tags};
+use crate::transform::tags_to_lanes::LaneBuilder;
 
 /// Tranformation Logic Issue
 ///
@@ -12,7 +13,7 @@ use crate::tag::{DuplicateKeyError, TagKey, Tags};
 /// let _ = RoadMsg::unsupported_str("foo=bar because x and y");
 /// ```
 ///
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub enum RoadMsg {
     /// Deprecated OSM tags, with suggested alternative
     Deprecated {
@@ -33,6 +34,16 @@ pub enum RoadMsg {
     Ambiguous {
         description: Option<String>,
         tags: Option<Tags>,
+    },
+    /// Locale not used
+    SeparatorLocaleUnused {
+        inside: LaneBuilder,
+        outside: LaneBuilder,
+    },
+    /// Locale not used
+    SeparatorUnknown {
+        inside: LaneBuilder,
+        outside: LaneBuilder,
     },
     /// Other issue
     Other {
@@ -113,6 +124,16 @@ impl std::fmt::Display for RoadMsg {
                         write!(f, "{}: {}, {}", prefix, description, tags)
                     }
                 }
+            }
+            Self::SeparatorLocaleUnused { inside, outside } => {
+                write!(
+                    f,
+                    "default separator may not match locale for {:?} to {:?}",
+                    inside, outside
+                )
+            }
+            Self::SeparatorUnknown { inside, outside } => {
+                write!(f, "unknown separator for {:?} to {:?}", inside, outside)
             }
             Self::Other { description, .. } => write!(f, "{}", description),
             Self::TagsDuplicateKey(e) => e.fmt(f),

@@ -67,7 +67,7 @@ impl std::convert::From<Oneway> for bool {
 
 // TODO: implement try when this is closed: https://github.com/rust-lang/rust/issues/84277
 /// A value with various levels of inference
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Infer<T> {
     None,
     Default(T),
@@ -117,22 +117,25 @@ impl std::convert::From<LaneBuilderError> for RoadError {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 enum LaneType {
     Travel,
     Parking,
     Shoulder,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default, Debug)]
 struct Width {
     min: Infer<Metre>,
     target: Infer<Metre>,
     max: Infer<Metre>,
 }
 
-#[derive(Default)]
-struct LaneBuilder {
+#[derive(Clone, Default, Debug)]
+pub struct LaneBuilder {
     r#type: Infer<LaneType>,
+    // TODO: is it better to have this be the direction relative to the way, or to the side.
+    // i.e. should a lane on the backward side be typically of the forward or backward direction
     direction: Infer<LaneDirection>,
     designated: Infer<LaneDesignated>,
     width: Width,
@@ -403,50 +406,40 @@ impl RoadBuilder {
     }
 
     /// Consume Road Builder to return Lanes left to right
+    #[allow(clippy::needless_collect)]
     pub fn into_ltr(
-        self,
+        mut self,
         tags: &Tags,
         locale: &Locale,
         include_separators: bool,
         warnings: &mut RoadWarnings,
     ) -> Result<(Vec<Lane>, Highway, Oneway), RoadError> {
-        let lanes_iter = match locale.driving_side {
-            DrivingSide::Left => self
-                .forward_lanes
-                .into_iter()
-                .rev()
-                .chain(self.backward_lanes.into_iter()),
-
-            DrivingSide::Right => self
-                .backward_lanes
-                .into_iter()
-                .rev()
-                .chain(self.forward_lanes.into_iter()),
-        };
         let lanes: Vec<Lane> = if include_separators {
             let forward_edge = lane_to_edge_separator(self.forward_outside().unwrap());
             let backward_edge = lane_to_edge_separator(self.backward_outside().unwrap());
             let middle_separator = lanes_to_separator(
-                &[
-                    *self.forward_inside().unwrap(),
-                    *self.backward_inside().unwrap(),
+                [
+                    self.forward_inside().unwrap(),
+                    self.backward_inside().unwrap(),
                 ],
                 &self,
                 tags,
                 locale,
                 warnings,
             );
-            self.forward_lanes.make_contiguous();
 
+            self.forward_lanes.make_contiguous();
             let forward_separators: Vec<Option<Lane>> = self
                 .forward_lanes
                 .as_slices()
                 .0
                 .windows(2)
                 .map(|window| {
-                    lanes_to_separator(window.try_into().unwrap(), &self, tags, locale, warnings)
+                    let lanes: &[LaneBuilder; 2] = window.try_into().unwrap();
+                    lanes_to_separator([&lanes[0], &lanes[1]], &self, tags, locale, warnings)
                 })
                 .collect();
+
             self.backward_lanes.make_contiguous();
             let backward_separators: Vec<Option<Lane>> = self
                 .backward_lanes
@@ -454,9 +447,11 @@ impl RoadBuilder {
                 .0
                 .windows(2)
                 .map(|window| {
-                    lanes_to_separator(window.try_into().unwrap(), &self, tags, locale, warnings)
+                    let lanes: &[LaneBuilder; 2] = window.try_into().unwrap();
+                    lanes_to_separator([&lanes[0], &lanes[1]], &self, tags, locale, warnings)
                 })
                 .collect();
+
             let forward_lanes_with_separators: Vec<Option<Lane>> = self
                 .forward_lanes
                 .into_iter()
@@ -481,9 +476,7 @@ impl RoadBuilder {
                 )
                 .flat_map(|(a, b)| [a, b])
                 .collect();
-            // I promise this is good code, but it might need a little explanation.
-            // If there are n lanes, there will be 1 + (n-1) + 1 separators.
-            // We interleave (zip(n+1)+flat_map) the separators with the lanes, and flatten to remove the Nones.
+
             match locale.driving_side {
                 DrivingSide::Left => forward_lanes_with_separators
                     .into_iter()
@@ -501,7 +494,22 @@ impl RoadBuilder {
                     .collect(),
             }
         } else {
-            lanes_iter.map(|lane| lane.build()).collect::<Vec<_>>()
+            match locale.driving_side {
+                DrivingSide::Left => self
+                    .forward_lanes
+                    .into_iter()
+                    .rev()
+                    .chain(self.backward_lanes.into_iter())
+                    .map(|l| l.build())
+                    .collect(),
+                DrivingSide::Right => self
+                    .backward_lanes
+                    .into_iter()
+                    .rev()
+                    .chain(self.forward_lanes.into_iter())
+                    .map(|l| l.build())
+                    .collect(),
+            }
         };
         Ok((lanes, self.highway, self.oneway))
     }
