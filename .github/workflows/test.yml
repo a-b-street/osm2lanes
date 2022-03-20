@@ -65,6 +65,11 @@ jobs:
     - name: "Test Rust"
       run: |
         sh .githooks/test_rust
+    - uses: boa-dev/criterion-compare-action@v3.2
+      with:
+        cwd: "rust"
+        benchName: "benchmark_tests"
+        branchName: ${{ github.base_ref }}
   
   rust-stable:
     runs-on: ubuntu-latest
