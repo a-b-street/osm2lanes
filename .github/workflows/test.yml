@@ -65,7 +65,7 @@ jobs:
     - name: "Test Rust"
       run: |
         sh .githooks/test_rust
-    - uses: boa-dev/criterion-compare-action@v3.2
+    - uses: boa-dev/criterion-compare-action@v3.2.0
       with:
         cwd: "rust"
         benchName: "benchmark_tests"
