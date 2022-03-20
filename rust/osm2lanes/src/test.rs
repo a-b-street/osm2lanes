@@ -1,49 +1,124 @@
+use std::fs::File;
+use std::io::BufReader;
+
+use serde::Deserialize;
+
+use crate::road::Lane;
+use crate::tag::Tags;
+use crate::DrivingSide;
+
+#[derive(Deserialize)]
+#[serde(untagged, deny_unknown_fields)]
+pub enum RustTesting {
+    Enabled(bool),
+    WithOptions {
+        separator: Option<bool>,
+        ignore_warnings: Option<bool>,
+    },
+}
+
+#[derive(Deserialize)]
+pub struct TestCase {
+    // Metadata
+    /// The OSM way unique identifier
+    pub way_id: Option<i64>,
+    pub link: Option<String>,
+    pub comment: Option<String>,
+    pub description: Option<String>,
+
+    // Config and Locale
+    pub driving_side: DrivingSide,
+    #[serde(rename = "ISO 3166-2")]
+    pub iso_3166_2: Option<String>,
+
+    /// Data
+    pub tags: Tags,
+    // TODO: add nesting or rename to lanes
+    pub output: Vec<Lane>,
+    /// Configure Rust Testing
+    pub rust: Option<RustTesting>,
+}
+
+impl TestCase {
+    fn test_enabled(&self) -> bool {
+        match self.rust {
+            None => true,
+            Some(RustTesting::Enabled(b)) => b,
+            Some(RustTesting::WithOptions { .. }) => true,
+        }
+    }
+    /// Test case may pass with warnings
+    pub fn test_ignore_warnings(&self) -> bool {
+        match self.rust {
+            None => false,
+            Some(RustTesting::Enabled(_)) => false,
+            Some(RustTesting::WithOptions {
+                ignore_warnings, ..
+            }) => ignore_warnings.unwrap_or(false),
+        }
+    }
+    /// Test case expects matching separators
+    pub fn test_include_separators(&self) -> bool {
+        match self.rust {
+            None => true,
+            Some(RustTesting::Enabled(b)) => b,
+            Some(RustTesting::WithOptions { separator, .. }) => separator.unwrap_or(true),
+        }
+    }
+    /// Expected lanes include separator
+    pub fn expected_has_separators(&self) -> bool {
+        self.output.iter().any(|lane| lane.is_separator())
+    }
+}
+
+impl std::fmt::Display for TestCase {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let way_id = self.way_id.map(|id| id.to_string());
+        let names: [Option<&str>; 3] = [
+            way_id.as_deref(),
+            self.link.as_deref(),
+            self.description.as_deref(),
+        ];
+        if names.iter().all(|n| n.is_none()) {
+            panic!("invalid test case");
+        }
+        write!(
+            f,
+            "{}",
+            names
+                .into_iter()
+                .flatten()
+                .collect::<Vec<_>>()
+                .as_slice()
+                .join(" ")
+        )
+    }
+}
+
+/// Get Test Cases from tests.yml
+pub fn get_tests() -> Vec<TestCase> {
+    let tests: Vec<TestCase> =
+        serde_yaml::from_reader(BufReader::new(File::open("../../data/tests.yml").unwrap()))
+            .expect("invalid json");
+    let tests: Vec<TestCase> = tests
+        .into_iter()
+        .filter(|test| test.test_enabled())
+        .collect();
+    tests
+}
+
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
-    use std::io::BufReader;
 
     use assert_json_diff::assert_json_eq;
-    use serde::Deserialize;
 
+    use super::*;
     use crate::road::{Lane, LanePrintable, Marking, Road};
-    use crate::tag::{Highway, Tags};
+    use crate::tag::Highway;
     use crate::transform::{
         lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadError, RoadFromTags, TagsToLanesConfig,
     };
     use crate::{DrivingSide, Locale};
-
-    #[derive(Deserialize)]
-    #[serde(untagged, deny_unknown_fields)]
-    enum RustTesting {
-        Enabled(bool),
-        WithOptions {
-            separator: Option<bool>,
-            ignore_warnings: Option<bool>,
-        },
-    }
-
-    #[derive(Deserialize)]
-    struct TestCase {
-        // Metadata
-        /// The OSM way unique identifier
-        way_id: Option<i64>,
-        link: Option<String>,
-        comment: Option<String>,
-        description: Option<String>,
-
-        // Config and Locale
-        driving_side: DrivingSide,
-        #[serde(rename = "ISO 3166-2")]
-        iso_3166_2: Option<String>,
-
-        /// Data
-        tags: Tags,
-        // TODO: add nesting or rename to lanes
-        output: Vec<Lane>,
-        /// Configure Rust Testing
-        rust: Option<RustTesting>,
-    }
 
     impl Road {
         /// Eq where None is treaty as always equal
@@ -158,43 +233,22 @@ mod tests {
             println!(
                 "    Driving({}) - Separators({}/{}) - Warnings({})",
                 self.driving_side.as_tla(),
-                self.include_separators(),
+                self.test_include_separators(),
                 self.expected_has_separators(),
-                !self.ignore_warnings(),
+                !self.test_ignore_warnings(),
             );
             if let Some(comment) = self.comment.as_ref() {
                 println!("        Comment: {}", comment);
             }
         }
 
-        fn is_enabled(&self) -> bool {
-            match self.rust {
-                None => true,
-                Some(RustTesting::Enabled(b)) => b,
-                Some(RustTesting::WithOptions { .. }) => true,
-            }
-        }
-
-        /// Test specifies to include separators
-        fn include_separators(&self) -> bool {
-            match self.rust {
-                None => true,
-                Some(RustTesting::Enabled(b)) => b,
-                Some(RustTesting::WithOptions { separator, .. }) => separator.unwrap_or(true),
-            }
-        }
-
         fn is_lane_enabled(&self, lane: &Lane) -> bool {
             match lane {
                 Lane::Separator { .. } => {
-                    self.include_separators() && self.expected_has_separators()
+                    self.test_include_separators() && self.expected_has_separators()
                 }
                 _ => true,
             }
-        }
-
-        fn expected_has_separators(&self) -> bool {
-            self.output.iter().any(|lane| lane.is_separator())
         }
 
         fn expected_road(&self) -> Road {
@@ -206,16 +260,6 @@ mod tests {
                     .cloned()
                     .collect(),
                 highway: Highway::from_tags(&self.tags).unwrap(),
-            }
-        }
-
-        fn ignore_warnings(&self) -> bool {
-            match self.rust {
-                None => false,
-                Some(RustTesting::Enabled(_)) => false,
-                Some(RustTesting::WithOptions {
-                    ignore_warnings, ..
-                }) => ignore_warnings.unwrap_or(false),
             }
         }
     }
@@ -312,10 +356,7 @@ mod tests {
 
     #[test]
     fn test_from_data() {
-        let tests: Vec<TestCase> =
-            serde_yaml::from_reader(BufReader::new(File::open("../../data/tests.yml").unwrap()))
-                .expect("invalid json");
-        let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is_enabled()).collect();
+        let tests = get_tests();
 
         assert!(
             tests.iter().all(|test| {
@@ -327,8 +368,8 @@ mod tests {
                     &test.tags,
                     &locale,
                     &TagsToLanesConfig {
-                        error_on_warnings: !test.ignore_warnings(),
-                        include_separators: test.include_separators()
+                        error_on_warnings: !test.test_ignore_warnings(),
+                        include_separators: test.test_include_separators()
                             && test.expected_has_separators(),
                         ..TagsToLanesConfig::default()
                     },
@@ -384,10 +425,7 @@ mod tests {
 
     #[test]
     fn test_roundtrip() {
-        let tests: Vec<TestCase> =
-            serde_yaml::from_reader(BufReader::new(File::open("../../data/tests.yml").unwrap()))
-                .unwrap();
-        let tests: Vec<TestCase> = tests.into_iter().filter(|test| test.is_enabled()).collect();
+        let tests = get_tests();
 
         assert!(
             tests.iter().all(|test| {
@@ -409,7 +447,7 @@ mod tests {
                     &locale,
                     &TagsToLanesConfig {
                         error_on_warnings: false,
-                        include_separators: test.include_separators()
+                        include_separators: test.test_include_separators()
                             && test.expected_has_separators(),
                         ..TagsToLanesConfig::default()
                     },

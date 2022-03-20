@@ -861,7 +861,7 @@
 ### Lifecycle
 
 ## Construction
-- description: sidewalk=no
+- description: construction
   skip_python: true
   skip_kotlin: true
   tags:
@@ -883,7 +883,7 @@
 
 - way_id: 8591383
   mapillary: https://www.mapillary.com/app/?pKey=3963080753774579
-  description: a bidirectional cycleway
+  description: a bidirectional cycleway, oneway:bicycle
   # TODO: cycleway tagged as track, but appears to be a lane
   tags:
     highway: tertiary
@@ -909,7 +909,7 @@
 # A slight variation of the above, using cycleway:left:oneway:no, which should be equivalent
 - way_id: 8591383
   mapillary: https://www.mapillary.com/app/?pKey=3963080753774579
-  description: a bidirectional cycleway
+  description: a bidirectional cycleway, cycleway:left
   tags:
     highway: tertiary
     lanes: '1'
@@ -1100,7 +1100,8 @@
     designated: foot
 
 # I didn't look for a real example of this
-- tags:
+- description: '5 lanes'
+  tags:
     highway: 'road'
     lanes: '5'
     sidewalk: 'no'
