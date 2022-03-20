@@ -134,8 +134,7 @@ struct Width {
 #[derive(Clone, Default, Debug)]
 pub struct LaneBuilder {
     r#type: Infer<LaneType>,
-    // TODO: is it better to have this be the direction relative to the way, or to the side.
-    // i.e. should a lane on the backward side be typically of the forward or backward direction
+    // note: direction is always relative to the way
     direction: Infer<LaneDirection>,
     designated: Infer<LaneDesignated>,
     width: Width,
