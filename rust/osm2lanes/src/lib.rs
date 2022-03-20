@@ -20,5 +20,5 @@ pub mod overpass;
 pub mod transform;
 pub use transform::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
 
-#[cfg(feature = "overpass")]
+#[cfg(feature = "tests")]
 pub mod test;
