@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: "Checkout"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: "Setup Python 3.9"
       uses: actions/setup-python@v2
       with:
@@ -23,14 +23,14 @@ jobs:
         python -m pip install --requirement requirements.txt
     - name: "Test Schema"
       run: sh .githooks/test_schema
-    - name: "Test Python"
+    - name: "Test"
       run: sh .githooks/test_python
 
   kotlin:
     runs-on: ubuntu-latest
     steps:
     - name: "Checkout"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: "Setup Kotlin"
       uses: fwilhe2/setup-kotlin@main
     - name: "Setup Ktlint"
@@ -48,7 +48,7 @@ jobs:
         python -m pip install --requirement requirements.txt
         sh .githooks/test_schema
     # END
-    - name: "Test Kotlin"
+    - name: "Test"
       run: sh .githooks/test_kotlin
 
   # Moved away from actions-rs because of
@@ -57,20 +57,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: "Checkout"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: "Cache"
       uses: Swatinem/rust-cache@v1
       with:
         working-directory: rust
-    - name: "Test Rust"
+    - name: "Test"
       run: |
         sh .githooks/test_rust
+    - name: "Checkout Target"
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.base_ref }}
+        clean: false
+    - name: "Checkout Ref"
+      uses: actions/checkout@v3
+      with:
+        clean: false
+    # TODO: enable once the benchmark in main
+    # - name: "Benchmark"
+    #   uses: boa-dev/criterion-compare-action@v3.2.0
+    #   with:
+    #     cwd: "rust"
+    #     benchName: "benchmark_tests"
+    #     branchName: ${{ github.base_ref }}
+    #     token: ${{ secrets.GITHUB_TOKEN }}
   
   rust-stable:
     runs-on: ubuntu-latest
     steps:
     - name: "Checkout"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: "Rustup"
       run: |
         cd ./rust/
@@ -80,7 +97,7 @@ jobs:
       uses: Swatinem/rust-cache@v1
       with:
         working-directory: rust
-    - name: "Test Rust"
+    - name: "Test"
       run: |
         cd ./rust/
         rustup show

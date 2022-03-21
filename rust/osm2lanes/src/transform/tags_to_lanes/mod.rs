@@ -31,6 +31,15 @@ pub struct TagsToLanesConfig {
     pub include_separators: bool,
 }
 
+impl TagsToLanesConfig {
+    pub fn new(error_on_warnings: bool, include_separators: bool) -> Self {
+        Self {
+            error_on_warnings,
+            include_separators,
+        }
+    }
+}
+
 impl Default for TagsToLanesConfig {
     fn default() -> Self {
         Self {

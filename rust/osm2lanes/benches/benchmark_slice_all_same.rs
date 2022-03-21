@@ -22,7 +22,7 @@ where
 }
 
 fn bench_all_same(c: &mut Criterion) {
-    let mut group = c.benchmark_group("all_same");
+    let mut group = c.benchmark_group("slice_all_same");
     let small_vec = vec![20; 5];
     group.bench_with_input(
         BenchmarkId::new("all_same_vec", "small_vec"),
