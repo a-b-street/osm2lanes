@@ -79,7 +79,9 @@ jobs:
       with:
         cwd: "rust"
         benchName: "benchmark_tests"
-        branchName: ${{ github.base_ref }}
+        # TODO
+        # branchName: ${{ github.base_ref }}
+        branchName: "HEAD"
         token: ${{ secrets.GITHUB_TOKEN }}
   
   rust-stable:
