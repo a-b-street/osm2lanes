@@ -79,8 +79,7 @@ jobs:
       with:
         cwd: "rust"
         benchName: "benchmark_tests"
-        # TODO
-        # branchName: ${{ github.base_ref }}
+        features: "tests"
         branchName: "HEAD"
         token: ${{ secrets.GITHUB_TOKEN }}
   
