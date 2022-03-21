@@ -54,6 +54,8 @@ jobs:
   # Moved away from actions-rs because of
   # https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186
   rust:
+    permissions:
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
     - name: "Checkout"
