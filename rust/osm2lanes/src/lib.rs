@@ -22,3 +22,8 @@ pub use transform::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanes
 
 #[cfg(feature = "tests")]
 pub mod test;
+
+#[cfg(target_arch = "wasm32")]
+mod wasm;
+#[cfg(target_arch = "wasm32")]
+pub use wasm::*;
