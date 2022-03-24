@@ -38,3 +38,4 @@ harness = false
 [[bench]]
 name = "benchmark_tests"
 harness = false
+required-features = ["tests"] 
