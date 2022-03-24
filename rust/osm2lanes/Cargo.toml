@@ -20,6 +20,7 @@ overpass = ["reqwest", "reqwest/blocking", "reqwest/json"]
 tests = []
 
 [dev-dependencies]
+osm2lanes = { path = ".", features = ["tests"] }
 assert-json-diff = "2.0"
 criterion = { version = "0.3", features = ["html_reports"] }
 serde_json = "1"
@@ -34,4 +35,4 @@ harness = false
 [[bench]]
 name = "benchmark_tests"
 harness = false
-required-features = ["tests"] 
+required-features = ["tests"]

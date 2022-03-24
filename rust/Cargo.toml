@@ -1,5 +1,6 @@
 [workspace]
 members = ["osm2lanes", "osm2lanes-web", "osm2lanes-bin", "osm2lanes-npm"]
+resolver = "2"
 
 [profile.release]
 # less code to include into binary
