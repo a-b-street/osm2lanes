@@ -48,11 +48,7 @@
     <textarea id="input" rows="10" cols="80" disabled>Input</textarea>
     <textarea id="output" rows="10" cols="80" disabled>Output</textarea>
 
-    <script type="module">
-      import init, { js_tags_to_lanes } from "./pkg/osm2lanes.js";
-
-      await init();
-
+    <script>
       mapboxgl.accessToken =
         "pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw";
       const map = new mapboxgl.Map({
@@ -117,17 +113,6 @@
 
         // Add the first feature to the map
         map.getSource("road").setData(geojson["features"][0]);
-
-        const input = {
-          key_values: geojson["features"][0]["properties"],
-          drive_on_right: true,
-        };
-        let lanes = js_tags_to_lanes(input);
-        document.getElementById("output").innerText = JSON.stringify(
-          lanes,
-          null,
-          2
-        );
       }
 
       map.on("click", (e) => {
