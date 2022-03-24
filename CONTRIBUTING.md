@@ -71,3 +71,16 @@ trunk serve
 - The web demo is updated with every push on `main`, [see Workflow](./.github/workflows/web.yml)
 - The html website is part of the rest implementation at [`/rust/osm2lanes-web` ](./rust/osm2lanes-web)
 
+### JS bindings
+
+You can call the Rust library in JavaScript through WASM bindings.
+
+```shell
+cd rust/osm2lanes-npm
+wasm-pack build --dev --target web
+cd ../../web
+ln -s ../rust/osm2lanes-npm/pkg/ .
+./serve_locally.py
+```
+
+Then open the link in your web browser and click a road.
