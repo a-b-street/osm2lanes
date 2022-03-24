@@ -64,6 +64,8 @@ jobs:
       uses: Swatinem/rust-cache@v1
       with:
         working-directory: rust
+    - name: "Install trunk"
+      uses: jetli/trunk-action@v0.1.0
     - name: "Test"
       run: |
         sh .githooks/test_rust

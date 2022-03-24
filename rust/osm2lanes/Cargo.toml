@@ -8,28 +8,25 @@ authors = [
 ]
 license = "Apache 2.0"
 
-[lib]
-crate-type = ["cdylib", "lib"]
-bench = false
-
 [dependencies]
 celes = "2.1"
-console_error_panic_hook = { version = "0.1.7", optional = true }
 log = "0.4"
 reqwest = { version = "0.11", optional = true, features = ["blocking", "json"] }
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.8"
-wasm-bindgen = { version = "0.2.79", optional = true, features = ["serde-serialize"] }
 
 [features]
 overpass = ["reqwest", "reqwest/blocking", "reqwest/json"]
 tests = []
-wasm = ["console_error_panic_hook", "wasm-bindgen"]
 
 [dev-dependencies]
+osm2lanes = { path = ".", features = ["tests"] }
 assert-json-diff = "2.0"
 criterion = { version = "0.3", features = ["html_reports"] }
 serde_json = "1"
+
+[lib]
+bench = false
 
 [[bench]]
 name = "benchmark_slice_all_same"
@@ -38,4 +35,4 @@ harness = false
 [[bench]]
 name = "benchmark_tests"
 harness = false
-required-features = ["tests"] 
+required-features = ["tests"]

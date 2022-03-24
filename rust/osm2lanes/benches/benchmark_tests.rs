@@ -6,7 +6,7 @@ use osm2lanes::{tags_to_lanes, Locale, TagsToLanesConfig};
 
 pub fn benchmark_tests(c: &mut Criterion) {
     let tests = get_tests();
-    let mut group = c.benchmark_group("benchmark_tests");
+    let mut group = c.benchmark_group("tests");
     for test in tests.iter() {
         let locale = Locale::builder()
             .driving_side(test.driving_side)
