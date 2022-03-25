@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 use std::iter;
 
+use log::warn;
+
 use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle, Road};
 use crate::tag::{Highway, TagKey, Tags, LIFECYCLE};
 use crate::{DrivingSide, Locale, Metre, Speed};
@@ -582,9 +584,21 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (us
         .and_then(|num| num.parse::<usize>().ok());
 
     if oneway.into() {
+        // TODO support oneway=-1
+        if tagged_backward.is_some() {
+            warn!("lanes:backwards tag on a oneway road")
+        }
+        if tagged_both_ways.is_some() {
+            warn!("lanes:both_ways tag on a oneway road")
+        }
         match (tagged_lanes, tagged_forward) {
             (Some(l), None) => (l, 0),
-            (Some(_), Some(f)) => (f, 0),
+            (Some(l), Some(f)) => {
+                if l != f {
+                    warn!("lanes tag does not agree with lanes:forward on oneway road")
+                }
+                (f, 0)
+            }
             // Without the "lanes" tag, assume lanes:bus adds onto the assumed single lane
             (None, _) => (
                 tagged_forward.unwrap_or(1) + tagged_bus_lanes.unwrap_or(0),
@@ -593,12 +607,23 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (us
         }
     } else {
         match (tagged_lanes, tagged_forward, tagged_backward) {
-            (_, Some(f), Some(b)) => (f, b),
+            (_, Some(f), Some(b)) => {
+                if tagged_lanes.is_some_and(|&l| l != f + b + num_both_ways) {
+                    warn!("lanes tag does not agree with lanes:forward, lanes:backward and lanes:both_ways");
+                }
+                (f, b)
+            }
             (Some(l), Some(f), None) => (f, l - f - num_both_ways),
             (Some(l), None, Some(b)) => (l - b - num_both_ways, b),
-            (Some(1), None, None) => (1, 1), // assume they meant lanes=2, I guess
+            (Some(1), None, None) => {
+                warn!("lanes=1 on a two way road");
+                (1, 1) // assume they meant lanes=2, I guess
+            }
             (Some(l), None, None) => {
                 // Try to divide the lanes equally.
+                if (l - num_both_ways) % 2 != 0 {
+                    warn!("lanes - lanes:both_ways cannot be evenly distributed");
+                }
                 let half = (l - num_both_ways + 1) / 2; // usize division rounded up.
                 (half, l - num_both_ways - half)
             }
