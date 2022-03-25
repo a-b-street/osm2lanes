@@ -1125,12 +1125,37 @@
     designated: motor_vehicle
   - type: shoulder
 
+- description: assume lanes:forward to be lanes - lanes:backward
+  tags:
+    highway: secondary
+    lanes: 4
+    lanes:backward: 1
+    sidewalk: no
+  driving_side: right
+  output:
+  - type: shoulder
+  - type: travel
+    direction: backward
+    designated: motor_vehicle
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: travel
+    direction: forward
+    designated: motor_vehicle
+  - type: shoulder
+
 - way_id: 335668924
+  description: looks like a 1 lane wide alley with no markings
   tags:
     highway: 'road'
     lanes: '1'
     sidewalk: 'no'
   driving_side: right
+  # I don't think this expected output is correct... -- BudgieInWA
   output:
   - type: shoulder
   - type: travel
