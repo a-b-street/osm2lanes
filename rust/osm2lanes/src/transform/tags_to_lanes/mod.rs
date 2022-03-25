@@ -566,58 +566,52 @@ pub fn tags_to_lanes(
 }
 
 fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (usize, usize) {
-    let both_ways = if let Some(n) = tags
-        .get("lanes:both_ways")
-        .and_then(|num| num.parse::<usize>().ok())
-    {
-        n
-    } else {
-        0
-    };
-    let num_driving_fwd = if let Some(n) = tags
+    let tagged_lanes = tags.get("lanes").and_then(|num| num.parse::<usize>().ok());
+    let tagged_forward = tags
         .get("lanes:forward")
-        .and_then(|num| num.parse::<usize>().ok())
-    {
-        n
-    } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
-        let half = if oneway.into() {
-            n
-        } else {
-            // usize division rounded up
-            (n + 1) / 2
-        };
-        half - both_ways
-    } else if tags.is("lanes:bus", "2") {
-        2
-    } else {
-        1
-    };
-    let num_driving_back = if let Some(n) = tags
+        .and_then(|num| num.parse::<usize>().ok());
+    let tagged_backward = tags
         .get("lanes:backward")
-        .and_then(|num| num.parse::<usize>().ok())
-    {
-        n
-    } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
-        let base = n - num_driving_fwd;
-        let half = if oneway.into() {
-            base
-        } else {
-            // lanes=1 but not oneway... what is this supposed to mean?
-            base.max(1)
-        };
-        half - both_ways
-    } else if tags.is("lanes:bus", "2") {
-        if oneway.into() {
-            1
-        } else {
-            2
+        .and_then(|num| num.parse::<usize>().ok());
+    let tagged_both_ways = tags
+        .get("lanes:both_ways")
+        .and_then(|num| num.parse::<usize>().ok());
+    let num_both_ways = tagged_both_ways.unwrap_or(0);
+    let tagged_bus_lanes = tags
+        .get("lanes:bus")
+        .and_then(|num| num.parse::<usize>().ok());
+
+    if oneway.into() {
+        match (tagged_lanes, tagged_forward) {
+            (Some(l), None) => (l, 0),
+            (Some(_), Some(f)) => (f, 0),
+            // Without the "lanes" tag, assume lanes:bus adds onto the assumed single lane
+            (None, _) => (
+                tagged_forward.unwrap_or(1) + tagged_bus_lanes.unwrap_or(0),
+                0,
+            ),
         }
-    } else if oneway.into() {
-        0
     } else {
-        1
-    };
-    (num_driving_fwd, num_driving_back)
+        match (tagged_lanes, tagged_forward, tagged_backward) {
+            (_, Some(f), Some(b)) => (f, b),
+            (Some(l), Some(f), None) => (f, l - f - num_both_ways),
+            (Some(l), None, Some(b)) => (l - b - num_both_ways, b),
+            (Some(1), None, None) => (1, 1), // assume they meant lanes=2, I guess
+            (Some(l), None, None) => {
+                // Try to divide the lanes equally.
+                let half = (l - num_both_ways + 1) / 2; // usize division rounded up.
+                (half, l - num_both_ways - half)
+            }
+            (None, _, _) => {
+                // Tagging only lanes:forward or lanes:backward is silly, but lets use them.
+                let f = tagged_forward.unwrap_or(1);
+                let b = tagged_backward.unwrap_or(1);
+                // Without the "lanes" tag, assume lanes:bus adds onto the assumed single lane
+                let bus = tagged_bus_lanes.unwrap_or(0);
+                (f + (bus + 1) / 2, b + bus / 2)
+            }
+        }
+    }
 }
 
 fn assemble_ltr(
