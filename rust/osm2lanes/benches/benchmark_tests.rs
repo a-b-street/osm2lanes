@@ -12,7 +12,7 @@ pub fn benchmark_tests(c: &mut Criterion) {
             .iso_3166_option(test.iso_3166_2.as_deref())
             .build();
         let config = TagsToLanesConfig::new(
-            !test.test_ignore_warnings(),
+            !test.test_has_warnings(),
             test.test_include_separators() && test.expected_has_separators(),
         );
         group.measurement_time(std::time::Duration::from_millis(1000));

@@ -2,7 +2,7 @@ pub use celes::Country;
 use serde::{Deserialize, Serialize};
 
 use crate::metric::Metre;
-use crate::road::Designated;
+use crate::road::{Color, Designated};
 
 /// Context about the place where an OSM way exists.
 #[derive(Debug, Serialize, Deserialize)]
@@ -27,6 +27,24 @@ impl Locale {
             Designated::Motor | Designated::Bus => Metre::new(3.5),
             Designated::Foot => Metre::new(2.5),
             Designated::Bicycle => Metre::new(2.0),
+        }
+    }
+
+    /// Road paint colour separating opposite directions of motor traffic
+    /// default is white
+    #[must_use]
+    pub fn separator_motor_color(&self) -> Color {
+        match self
+            .country
+            .as_ref()
+            .map(|c| c.alpha3)
+            .and_then(locale_codes::country::lookup)
+            .and_then(|c| c.region_code)
+            .and_then(locale_codes::region::lookup)
+            .map(|region| region.name.as_str())
+        {
+            Some("Americas") => Color::Yellow,
+            Some(_) | None => Color::White,
         }
     }
 }

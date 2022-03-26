@@ -13,7 +13,7 @@ pub enum RustTesting {
     Enabled(bool),
     WithOptions {
         separator: Option<bool>,
-        ignore_warnings: Option<bool>,
+        expect_warnings: Option<bool>,
     },
 }
 
@@ -47,14 +47,14 @@ impl TestCase {
             Some(RustTesting::WithOptions { .. }) => true,
         }
     }
-    /// Test case may pass with warnings
-    pub fn test_ignore_warnings(&self) -> bool {
+    /// Test case must have warnings
+    pub fn test_has_warnings(&self) -> bool {
         match self.rust {
             None => false,
             Some(RustTesting::Enabled(_)) => false,
             Some(RustTesting::WithOptions {
-                ignore_warnings, ..
-            }) => ignore_warnings.unwrap_or(false),
+                expect_warnings, ..
+            }) => expect_warnings.unwrap_or(false),
         }
     }
     /// Test case expects matching separators
@@ -237,7 +237,7 @@ mod tests {
                 self.driving_side.as_tla(),
                 self.test_include_separators(),
                 self.expected_has_separators(),
-                !self.test_ignore_warnings(),
+                !self.test_has_warnings(),
             );
             if let Some(comment) = self.comment.as_ref() {
                 println!("        Comment: {}", comment);
@@ -370,7 +370,7 @@ mod tests {
                     &test.tags,
                     &locale,
                     &TagsToLanesConfig {
-                        error_on_warnings: !test.test_ignore_warnings(),
+                        error_on_warnings: !test.test_has_warnings(),
                         include_separators: test.test_include_separators()
                             && test.expected_has_separators(),
                         ..TagsToLanesConfig::default()
@@ -379,26 +379,33 @@ mod tests {
                 let expected_road = test.expected_road();
                 match road_from_tags {
                     Ok(road_from_tags) => {
-                        let actual_road = road_from_tags.into_filtered_road(test);
-                        if actual_road.approx_eq(&expected_road) {
-                            true
-                        } else {
+                        if test.test_has_warnings() && road_from_tags.warnings.is_empty() {
                             test.print();
-                            println!("Got:");
-                            println!("    {}", stringify_lane_types(&actual_road));
-                            println!("    {}", stringify_directions(&actual_road));
-                            println!("Expected:");
-                            println!("    {}", stringify_lane_types(&expected_road));
-                            println!("    {}", stringify_directions(&expected_road));
-                            if stringify_lane_types(&actual_road)
-                                == stringify_lane_types(&expected_road)
-                                || stringify_directions(&actual_road)
-                                    == stringify_directions(&expected_road)
-                            {
-                                assert_json_eq!(actual_road, expected_road);
-                            }
+                            println!("Expected warnings. Try removing `ignore_warnings`.");
                             println!();
                             false
+                        } else {
+                            let actual_road = road_from_tags.into_filtered_road(test);
+                            if actual_road.approx_eq(&expected_road) {
+                                true
+                            } else {
+                                test.print();
+                                println!("Got:");
+                                println!("    {}", stringify_lane_types(&actual_road));
+                                println!("    {}", stringify_directions(&actual_road));
+                                println!("Expected:");
+                                println!("    {}", stringify_lane_types(&expected_road));
+                                println!("    {}", stringify_directions(&expected_road));
+                                if stringify_lane_types(&actual_road)
+                                    == stringify_lane_types(&expected_road)
+                                    || stringify_directions(&actual_road)
+                                        == stringify_directions(&expected_road)
+                                {
+                                    assert_json_eq!(actual_road, expected_road);
+                                }
+                                println!();
+                                false
+                            }
                         }
                     }
                     Err(RoadError::Warnings(warnings)) => {
