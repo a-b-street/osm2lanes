@@ -608,8 +608,10 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (us
     } else {
         match (tagged_lanes, tagged_forward, tagged_backward) {
             (_, Some(f), Some(b)) => {
-                if tagged_lanes.is_some_and(|&l| l != f + b + num_both_ways) {
-                    warn!("lanes tag does not agree with lanes:forward, lanes:backward and lanes:both_ways");
+                if let Some(num_lanes) = tagged_lanes {
+                    if num_lanes != f + b + num_both_ways {
+                        warn!("lanes tag does not agree with lanes:forward, lanes:backward and lanes:both_ways");
+                    }
                 }
                 (f, b)
             }
