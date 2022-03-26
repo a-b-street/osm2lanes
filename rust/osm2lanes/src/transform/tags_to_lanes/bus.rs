@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    Designated, Direction, Infer, LaneBuilder, LaneBuilderError, Locale, ModeResult, RoadBuilder,
+    RoadError, RoadMsg, RoadWarnings, TagKey, Tags,
+};
 
 const LANES: TagKey = TagKey::from("lanes");
 
@@ -9,12 +12,14 @@ impl RoadError {
 }
 
 impl LaneBuilder {
+    #[allow(clippy::unnecessary_wraps)]
     fn set_bus(&mut self, _locale: &Locale) -> Result<(), LaneBuilderError> {
-        self.designated = Infer::Direct(LaneDesignated::Bus);
+        self.designated = Infer::Direct(Designated::Bus);
         Ok(())
     }
 }
 
+#[allow(clippy::unnecessary_wraps)]
 pub(super) fn bus(
     tags: &Tags,
     locale: &Locale,
@@ -114,7 +119,7 @@ fn busway(
                 .forward_inside_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?;
             lane.set_bus(locale)?;
-            lane.direction = Infer::Direct(LaneDirection::Backward);
+            lane.direction = Infer::Direct(Direction::Backward);
         } else {
             return Err(RoadMsg::Ambiguous {
                 description: None,
@@ -130,6 +135,7 @@ fn busway(
     Ok(())
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn lanes_bus(
     tags: &Tags,
     _locale: &Locale,
@@ -176,7 +182,7 @@ impl std::str::FromStr for Access {
 }
 
 fn split_access(lanes: &str) -> Result<Vec<Access>, String> {
-    lanes.split('|').map(|s| s.parse()).collect()
+    lanes.split('|').map(str::parse).collect()
 }
 
 fn bus_lanes(
@@ -220,11 +226,8 @@ fn bus_lanes(
                 .into());
             }
             for (lane, access) in road.lanes_ltr_mut(locale).zip(access.iter()) {
-                match access {
-                    Access::None => {}
-                    Access::No => {}
-                    Access::Yes => {}
-                    Access::Designated => lane.set_bus(locale)?,
+                if let Access::Designated = access {
+                    lane.set_bus(locale)?;
                 }
             }
         }
@@ -239,11 +242,8 @@ fn bus_lanes(
                     })
                 })?;
                 for (lane, access) in road.forward_ltr_mut(locale).zip(forward_access.iter()) {
-                    match access {
-                        Access::None => {}
-                        Access::No => {}
-                        Access::Yes => {}
-                        Access::Designated => lane.set_bus(locale)?,
+                    if let Access::Designated = access {
+                        lane.set_bus(locale)?;
                     }
                 }
             }
@@ -255,11 +255,8 @@ fn bus_lanes(
                     })
                 })?;
                 for (lane, access) in road.backward_ltr_mut(locale).zip(backward_access.iter()) {
-                    match access {
-                        Access::None => {}
-                        Access::No => {}
-                        Access::Yes => {}
-                        Access::Designated => lane.set_bus(locale)?,
+                    if let Access::Designated = access {
+                        lane.set_bus(locale)?;
                     }
                 }
             }

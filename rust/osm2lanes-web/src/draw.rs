@@ -1,17 +1,21 @@
-use osm2lanes::road::{Lane, LaneDirection, LanePrintable, MarkingColor, MarkingStyle, Road};
-use osm2lanes::{Locale, Metre};
+use osm2lanes::locale::Locale;
+use osm2lanes::metric::Metre;
+use osm2lanes::road::{Color as MarkingColor, Direction, Lane, Printable, Road, Style};
 use piet::kurbo::{Line, Point, Rect};
-use piet::{Color, FontFamily, RenderContext, StrokeStyle, Text, TextAttribute, TextLayoutBuilder};
+use piet::{
+    Color as PietColor, FontFamily, RenderContext, StrokeStyle, Text, TextAttribute,
+    TextLayoutBuilder,
+};
 
 use super::RenderError;
 
 // TODO: newtype + From?
-fn color_into(c: MarkingColor) -> Color {
+fn color_into(c: MarkingColor) -> PietColor {
     match c {
-        MarkingColor::White => Color::WHITE,
-        MarkingColor::Yellow => Color::YELLOW,
-        MarkingColor::Red => Color::RED,
-        MarkingColor::Green => Color::GREEN,
+        MarkingColor::White => PietColor::WHITE,
+        MarkingColor::Yellow => PietColor::YELLOW,
+        MarkingColor::Red => PietColor::RED,
+        MarkingColor::Green => PietColor::GREEN,
     }
 }
 
@@ -41,7 +45,7 @@ pub fn lanes<R: RenderContext>(
     );
 
     // Background
-    rc.clear(None, Color::OLIVE);
+    rc.clear(None, PietColor::OLIVE);
 
     rc.fill(
         Rect::new(
@@ -50,7 +54,7 @@ pub fn lanes<R: RenderContext>(
             scale.scale(grassy_verge + asphalt_buffer + road.width(locale) + asphalt_buffer),
             canvas_height,
         ),
-        &Color::BLACK,
+        &PietColor::BLACK,
     );
 
     let mut left_edge = grassy_verge + asphalt_buffer;
@@ -91,7 +95,7 @@ pub fn lanes<R: RenderContext>(
                             scale.scale(left_edge + width),
                             canvas_height,
                         ),
-                        &Color::GRAY,
+                        &PietColor::GRAY,
                     );
                 }
                 let font_size = 24.0;
@@ -99,7 +103,7 @@ pub fn lanes<R: RenderContext>(
                     .text()
                     .new_text_layout(lane.as_utf8().to_string())
                     .font(FontFamily::SYSTEM_UI, font_size)
-                    .default_attribute(TextAttribute::TextColor(Color::WHITE))
+                    .default_attribute(TextAttribute::TextColor(PietColor::WHITE))
                     .build()?;
                 rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
                 left_edge += width;
@@ -114,7 +118,7 @@ pub fn lanes<R: RenderContext>(
                     .text()
                     .new_text_layout(lane.as_utf8().to_string())
                     .font(FontFamily::SYSTEM_UI, font_size)
-                    .default_attribute(TextAttribute::TextColor(Color::WHITE))
+                    .default_attribute(TextAttribute::TextColor(PietColor::WHITE))
                     .build()?;
                 rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
                 left_edge += width;
@@ -127,7 +131,7 @@ pub fn lanes<R: RenderContext>(
                     .text()
                     .new_text_layout(lane.as_utf8().to_string())
                     .font(FontFamily::SYSTEM_UI, font_size)
-                    .default_attribute(TextAttribute::TextColor(Color::WHITE))
+                    .default_attribute(TextAttribute::TextColor(PietColor::WHITE))
                     .build()?;
                 rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
                 left_edge += width;
@@ -138,9 +142,9 @@ pub fn lanes<R: RenderContext>(
                     let x = scale.scale(left_edge + 0.5 * width);
                     let color = match (marking.style, marking.color) {
                         (_, Some(c)) => color_into(c),
-                        (MarkingStyle::KerbUp | MarkingStyle::KerbDown, None) => Color::GRAY,
+                        (Style::KerbUp | Style::KerbDown, None) => PietColor::GRAY,
                         // Remains for debugging
-                        _ => Color::BLUE,
+                        _ => PietColor::BLUE,
                         // _ => return Err(RenderError::UnknownSeparator),
                     };
                     rc.stroke_styled(
@@ -154,17 +158,11 @@ pub fn lanes<R: RenderContext>(
                         &color,
                         scale.scale(width),
                         &match marking.style {
-                            MarkingStyle::SolidLine => StrokeStyle::new(),
-                            MarkingStyle::DottedLine => {
-                                StrokeStyle::new().dash_pattern(&[50.0, 100.0])
-                            }
-                            MarkingStyle::DashedLine => {
-                                StrokeStyle::new().dash_pattern(&[100.0, 100.0])
-                            }
-                            MarkingStyle::BrokenLine => {
-                                StrokeStyle::new().dash_pattern(&[100.0, 50.0])
-                            }
-                            MarkingStyle::KerbUp | MarkingStyle::KerbDown => StrokeStyle::new(),
+                            Style::SolidLine => StrokeStyle::new(),
+                            Style::DottedLine => StrokeStyle::new().dash_pattern(&[50.0, 100.0]),
+                            Style::DashedLine => StrokeStyle::new().dash_pattern(&[100.0, 100.0]),
+                            Style::BrokenLine => StrokeStyle::new().dash_pattern(&[100.0, 50.0]),
+                            Style::KerbUp | Style::KerbDown => StrokeStyle::new(),
                             // Remains for debugging, SOS
                             _ => StrokeStyle::new().dash_pattern(&[
                                 10.0, 10.0, 10.0, 10.0, 10.0, 50.0, 30.0, 30.0, 30.0, 30.0, 30.0,
@@ -186,16 +184,16 @@ pub fn lanes<R: RenderContext>(
 pub fn draw_arrow<R: RenderContext>(
     rc: &mut R,
     mid: Point,
-    direction: LaneDirection,
+    direction: Direction,
 ) -> Result<(), RenderError> {
     fn draw_point<R: RenderContext>(
         rc: &mut R,
         mid: Point,
-        direction: LaneDirection,
+        direction: Direction,
     ) -> Result<(), RenderError> {
         let dir_sign = match direction {
-            LaneDirection::Forward => -1.0,
-            LaneDirection::Backward => 1.0,
+            Direction::Forward => -1.0,
+            Direction::Backward => 1.0,
             _ => unreachable!(),
         };
         for x in [-10.0, 10.0] {
@@ -210,7 +208,7 @@ pub fn draw_arrow<R: RenderContext>(
                         y: mid.y + dir_sign * 10.0,
                     },
                 ),
-                &Color::WHITE,
+                &PietColor::WHITE,
                 1.0,
             );
         }
@@ -228,14 +226,14 @@ pub fn draw_arrow<R: RenderContext>(
                 y: mid.y + 20.0,
             },
         ),
-        &Color::WHITE,
+        &PietColor::WHITE,
         1.0,
     );
     match direction {
-        LaneDirection::Forward | LaneDirection::Backward => draw_point(rc, mid, direction)?,
-        LaneDirection::Both => {
-            draw_point(rc, mid, LaneDirection::Forward)?;
-            draw_point(rc, mid, LaneDirection::Backward)?;
+        Direction::Forward | Direction::Backward => draw_point(rc, mid, direction)?,
+        Direction::Both => {
+            draw_point(rc, mid, Direction::Forward)?;
+            draw_point(rc, mid, Direction::Backward)?;
         }
     }
     Ok(())

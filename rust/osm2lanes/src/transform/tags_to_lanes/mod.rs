@@ -1,9 +1,10 @@
 use std::collections::VecDeque;
 use std::iter;
 
-use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle, Road};
+use crate::locale::{DrivingSide, Locale};
+use crate::metric::{Metre, Speed};
+use crate::road::{Color, Designated, Direction, Lane, Marking, Road, Style};
 use crate::tag::{Highway, TagKey, Tags, LIFECYCLE};
-use crate::{DrivingSide, Locale, Metre, Speed};
 
 mod bicycle;
 use bicycle::bicycle;
@@ -23,15 +24,19 @@ use separator::{lane_to_edge_separator, lanes_to_separator};
 mod non_motorized;
 use non_motorized::non_motorized;
 
-use super::*;
+use super::{
+    ModeResult, RoadError, RoadFromTags, RoadMsg, RoadWarnings, WaySide, CYCLEWAY, HIGHWAY,
+    SHOULDER, SIDEWALK,
+};
 
 #[non_exhaustive]
-pub struct TagsToLanesConfig {
+pub struct Config {
     pub error_on_warnings: bool,
     pub include_separators: bool,
 }
 
-impl TagsToLanesConfig {
+impl Config {
+    #[must_use]
     pub fn new(error_on_warnings: bool, include_separators: bool) -> Self {
         Self {
             error_on_warnings,
@@ -40,7 +45,7 @@ impl TagsToLanesConfig {
     }
 }
 
-impl Default for TagsToLanesConfig {
+impl Default for Config {
     fn default() -> Self {
         Self {
             error_on_warnings: false,
@@ -89,10 +94,7 @@ impl<T> Infer<T> {
     pub fn some(self) -> Option<T> {
         match self {
             Self::None => None,
-            Self::Default(v) => Some(v),
-            // Self::Locale(v) => Some(v),
-            // Self::Calculated(v) => Some(v),
-            Self::Direct(v) => Some(v),
+            Self::Default(v) | Self::Direct(v) => Some(v),
         }
     }
     fn direct(some: Option<T>) -> Self {
@@ -144,8 +146,8 @@ struct Width {
 pub struct LaneBuilder {
     r#type: Infer<LaneType>,
     // note: direction is always relative to the way
-    direction: Infer<LaneDirection>,
-    designated: Infer<LaneDesignated>,
+    direction: Infer<Direction>,
+    designated: Infer<Designated>,
     width: Width,
     max_speed: Infer<Speed>,
 }
@@ -187,6 +189,7 @@ struct RoadBuilder {
 }
 
 impl RoadBuilder {
+    #[allow(clippy::items_after_statements)]
     pub fn from(
         tags: &Tags,
         locale: &Locale,
@@ -200,18 +203,17 @@ impl RoadBuilder {
             && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
             || tags
                 .get("motor_vehicle:conditional")
-                .map(|x| x.starts_with("no"))
-                .unwrap_or(false)
+                .map_or(false, |x| x.starts_with("no"))
                 && tags.is("bus", "yes")
         // Example: 3rd Ave in downtown Seattle
         {
-            LaneDesignated::Bus
+            Designated::Bus
         } else {
-            LaneDesignated::Motor
+            Designated::Motor
         };
 
         const MAXSPEED: TagKey = TagKey::from("maxspeed");
-        let max_speed = match tags.get(MAXSPEED).map(|s| s.parse::<Speed>()).transpose() {
+        let max_speed = match tags.get(MAXSPEED).map(str::parse::<Speed>).transpose() {
             Ok(max_speed) => max_speed,
             Err(_e) => {
                 warnings.push(RoadMsg::Unsupported {
@@ -226,7 +228,7 @@ impl RoadBuilder {
         // have Direction::Forward, but there can be exceptions with two-way cycletracks.
         let mut forward_lanes: VecDeque<_> = iter::repeat_with(|| LaneBuilder {
             r#type: Infer::Default(LaneType::Travel),
-            direction: Infer::Default(LaneDirection::Forward),
+            direction: Infer::Default(Direction::Forward),
             designated: Infer::Default(designated),
             max_speed: Infer::direct(max_speed),
             ..Default::default()
@@ -235,7 +237,7 @@ impl RoadBuilder {
         .collect();
         let backward_lanes = iter::repeat_with(|| LaneBuilder {
             r#type: Infer::Default(LaneType::Travel),
-            direction: Infer::Default(LaneDirection::Backward),
+            direction: Infer::Default(Direction::Backward),
             designated: Infer::Default(designated),
             max_speed: Infer::direct(max_speed),
             ..Default::default()
@@ -246,7 +248,7 @@ impl RoadBuilder {
         if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
             forward_lanes.push_front(LaneBuilder {
                 r#type: Infer::Default(LaneType::Travel),
-                direction: Infer::Default(LaneDirection::Both),
+                direction: Infer::Default(Direction::Both),
                 designated: Infer::Default(designated),
                 ..Default::default()
             });
@@ -414,7 +416,7 @@ impl RoadBuilder {
     }
 
     /// Consume Road Builder to return Lanes left to right
-    #[allow(clippy::needless_collect)]
+    #[allow(clippy::needless_collect, clippy::unnecessary_wraps)]
     pub fn into_ltr(
         mut self,
         tags: &Tags,
@@ -463,7 +465,7 @@ impl RoadBuilder {
             let forward_lanes_with_separators: Vec<Option<Lane>> = self
                 .forward_lanes
                 .into_iter()
-                .map(|l| l.build())
+                .map(LaneBuilder::build)
                 .map(Some)
                 .zip(
                     forward_separators
@@ -475,7 +477,7 @@ impl RoadBuilder {
             let backward_lanes_with_separators: Vec<Option<Lane>> = self
                 .backward_lanes
                 .into_iter()
-                .map(|l| l.build())
+                .map(LaneBuilder::build)
                 .map(Some)
                 .zip(
                     backward_separators
@@ -508,14 +510,14 @@ impl RoadBuilder {
                     .into_iter()
                     .rev()
                     .chain(self.backward_lanes.into_iter())
-                    .map(|l| l.build())
+                    .map(LaneBuilder::build)
                     .collect(),
                 DrivingSide::Right => self
                     .backward_lanes
                     .into_iter()
                     .rev()
                     .chain(self.forward_lanes.into_iter())
-                    .map(|l| l.build())
+                    .map(LaneBuilder::build)
                     .collect(),
             }
         };
@@ -525,11 +527,22 @@ impl RoadBuilder {
 
 /// From an OpenStreetMap way's tags,
 /// determine the lanes along the road from left to right.
-/// Warnings are produced for situations that maybe result in accurate lanes.
+///
+/// # Errors
+///
+/// Warnings or errors are produced for situations that may make the lanes inaccurate, such as:
+///
+/// - Unimplemented or sunuspported tags
+/// - Ambiguous tags
+/// - Unknown internal errors
+///
+/// If the issue may be recoverable, a warning is preferred.
+/// A config option allows all warnings to be treated as errors.
+///
 pub fn tags_to_lanes(
     tags: &Tags,
     locale: &Locale,
-    config: &TagsToLanesConfig,
+    config: &Config,
 ) -> Result<RoadFromTags, RoadError> {
     let mut warnings = RoadWarnings::default();
 
@@ -618,25 +631,6 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (us
         1
     };
     (num_driving_fwd, num_driving_back)
-}
-
-fn assemble_ltr(
-    mut fwd_side: Vec<Lane>,
-    mut back_side: Vec<Lane>,
-    driving_side: DrivingSide,
-) -> Result<Vec<Lane>, RoadError> {
-    Ok(match driving_side {
-        DrivingSide::Right => {
-            back_side.reverse();
-            back_side.extend(fwd_side);
-            back_side
-        }
-        DrivingSide::Left => {
-            fwd_side.reverse();
-            fwd_side.extend(back_side);
-            fwd_side
-        }
-    })
 }
 
 pub fn unsupported(

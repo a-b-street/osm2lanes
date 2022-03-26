@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    Designated, Direction, Infer, LaneBuilder, LaneType, Locale, ModeResult, RoadBuilder, RoadMsg,
+    RoadWarnings, Tags, WaySide, CYCLEWAY,
+};
 
 impl Tags {
     fn is_cycleway(&self, side: Option<WaySide>) -> bool {
@@ -14,24 +17,24 @@ impl LaneBuilder {
     fn cycle_forward(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
-            direction: Infer::Direct(LaneDirection::Forward),
-            designated: Infer::Direct(LaneDesignated::Bicycle),
+            direction: Infer::Direct(Direction::Forward),
+            designated: Infer::Direct(Designated::Bicycle),
             ..Default::default()
         }
     }
     fn cycle_backward(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
-            direction: Infer::Direct(LaneDirection::Backward),
-            designated: Infer::Direct(LaneDesignated::Bicycle),
+            direction: Infer::Direct(Direction::Backward),
+            designated: Infer::Direct(Designated::Bicycle),
             ..Default::default()
         }
     }
     fn cycle_both(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
-            direction: Infer::Direct(LaneDirection::Both),
-            designated: Infer::Direct(LaneDesignated::Bicycle),
+            direction: Infer::Direct(Direction::Both),
+            designated: Infer::Direct(Designated::Bicycle),
             ..Default::default()
         }
     }
@@ -59,7 +62,7 @@ pub(super) fn bicycle(
                         "oneway has backwards lanes when adding cycleways".to_owned(),
                     ),
                     tags: Some(tags.subset(&["oneway", "cycleway"])),
-                })
+                });
             }
         } else {
             road.push_backward_outside(LaneBuilder::cycle_backward(locale));

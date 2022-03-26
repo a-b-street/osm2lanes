@@ -56,36 +56,47 @@ pub enum RoadMsg {
 }
 
 impl RoadMsg {
+    #[must_use]
     pub fn deprecated_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
         Self::Unsupported {
             description: None,
-            tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
+            tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
         }
     }
+
+    #[must_use]
     pub fn unsupported_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
         Self::Unsupported {
             description: None,
-            tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
+            tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
         }
     }
+
+    #[must_use]
     pub fn unimplemented_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
         Self::Unimplemented {
             description: None,
-            tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
+            tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
         }
     }
+
+    #[must_use]
     pub fn ambiguous_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
         Self::Ambiguous {
             description: None,
-            tags: Some(Tags::from_str_pairs(&[[key.into().as_str(), val]]).unwrap()),
+            tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
         }
     }
+
+    #[must_use]
     pub fn unsupported_str(description: &str) -> Self {
         Self::Unsupported {
             description: Some(description.to_owned()),
             tags: None,
         }
     }
+
+    #[must_use]
     pub fn ambiguous_str(description: &str) -> Self {
         Self::Ambiguous {
             description: Some(description.to_owned()),
@@ -155,14 +166,18 @@ impl Serialize for RoadMsg {
 pub struct RoadWarnings(Vec<RoadMsg>);
 
 impl RoadWarnings {
+    #[must_use]
     pub fn new(msgs: Vec<RoadMsg>) -> Self {
         Self(msgs)
     }
+
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
+
     pub fn push(&mut self, msg: RoadMsg) {
-        self.0.push(msg)
+        self.0.push(msg);
     }
 }
 
@@ -180,7 +195,6 @@ impl std::fmt::Display for RoadWarnings {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
 /// Error for transformation
 /// ```
 /// use osm2lanes::transform::{RoadMsg, RoadError};
@@ -189,6 +203,8 @@ impl std::fmt::Display for RoadWarnings {
 /// let err: RoadError = msg.into();
 /// assert_eq!("{\"error\":\"unsupported: foo=bar\"}", serde_json::to_string(&err).unwrap());
 /// ```
+#[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, Serialize)]
 pub enum RoadError {
     #[serde(rename = "error")]
     Msg(RoadMsg),

@@ -3,9 +3,9 @@ use std::io::BufReader;
 
 use serde::Deserialize;
 
+use crate::locale::DrivingSide;
 use crate::road::Lane;
 use crate::tag::Tags;
-use crate::DrivingSide;
 
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
@@ -113,12 +113,12 @@ mod tests {
     use assert_json_diff::assert_json_eq;
 
     use super::*;
-    use crate::road::{Lane, LanePrintable, Marking, Road};
+    use crate::locale::{DrivingSide, Locale};
+    use crate::road::{Lane, Marking, Printable, Road};
     use crate::tag::Highway;
     use crate::transform::{
         lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadError, RoadFromTags, TagsToLanesConfig,
     };
-    use crate::{DrivingSide, Locale};
 
     impl Road {
         /// Eq where None is treaty as always equal
@@ -136,6 +136,7 @@ mod tests {
     impl Lane {
         /// Eq where None is treaty as always equal
         fn approx_eq(&self, other: &Self) -> bool {
+            #[allow(clippy::unnested_or_patterns)]
             match (self, other) {
                 (Lane::Separator { markings: left }, Lane::Separator { markings: right }) => left
                     .iter()
@@ -194,6 +195,7 @@ mod tests {
 
     impl Marking {
         /// Eq where None is treaty as always equal
+        #[allow(clippy::unnested_or_patterns)]
         fn approx_eq(&self, other: &Self) -> bool {
             self.style == other.style
                 && match (self.color, other.color) {
@@ -209,7 +211,7 @@ mod tests {
 
     impl DrivingSide {
         /// Three-letter abbreviation
-        const fn as_tla(&self) -> &'static str {
+        const fn as_tla(self) -> &'static str {
             match self {
                 Self::Right => "RHT",
                 Self::Left => "LHT",
@@ -265,7 +267,7 @@ mod tests {
     }
 
     impl RoadFromTags {
-        /// Return a Road based upon a RoadFromTags with irrelevant parts filtered out.
+        /// Return a Road based upon a `RoadFromTags` with irrelevant parts filtered out.
         fn into_filtered_road(self, test: &TestCase) -> Road {
             Road {
                 lanes: self

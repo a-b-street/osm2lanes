@@ -1,8 +1,17 @@
 [package]
 name = "osm2lanes-bin"
 version = "0.1.0"
+description = "CLI tool for osm2lanes"
+readme = true
+repository = "https://github.com/a-b-street/osm2lanes"
+license = "Apache 2.0"
+keywords = ["osm", "lanes", "cli"]
+categories = []
+authors = [
+    "Dustin Carlino <dabreegster@gmail.com>",
+    "Michael Droogleever Fortuyn <droogmic@gmail.com>",
+]
 edition = "2021"
-default-run = "osm2lanes-bin"
 
 [dependencies]
 clap = { version = "3.1", features = ["derive"] }

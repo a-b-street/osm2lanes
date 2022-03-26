@@ -1,12 +1,17 @@
 [package]
 name = "osm2lanes-npm"
 version = "0.1.0"
-edition = "2021"
+description = "NPM package for osm2lanes"
+readme = true
+repository = "https://github.com/a-b-street/osm2lanes"
+license = "Apache 2.0"
+keywords = ["osm", "lanes", "npm"]
+categories = []
 authors = [
     "Dustin Carlino <dabreegster@gmail.com>",
     "Michael Droogleever Fortuyn <droogmic@gmail.com>",
 ]
-license = "Apache 2.0"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

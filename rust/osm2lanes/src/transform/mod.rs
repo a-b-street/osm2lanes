@@ -1,15 +1,15 @@
-use crate::road::{Lane, LaneDesignated, LaneDirection};
+use crate::locale::{DrivingSide, Locale};
+use crate::road::{Designated, Direction, Lane};
 use crate::tag::{TagKey, Tags, HIGHWAY};
-use crate::{DrivingSide, Locale};
 
 mod error;
 pub use error::{RoadError, RoadFromTags, RoadMsg, RoadWarnings};
 
 mod tags_to_lanes;
-pub use tags_to_lanes::{tags_to_lanes, TagsToLanesConfig};
+pub use tags_to_lanes::{tags_to_lanes, Config as TagsToLanesConfig};
 
 mod lanes_to_tags;
-pub use lanes_to_tags::{lanes_to_tags, LanesToTagsConfig};
+pub use lanes_to_tags::{lanes_to_tags, Config as LanesToTagsConfig};
 
 const CYCLEWAY: TagKey = TagKey::from("cycleway");
 const SIDEWALK: TagKey = TagKey::from("sidewalk");
@@ -60,68 +60,81 @@ impl std::convert::From<DrivingSide> for TagKey {
 }
 
 impl DrivingSide {
-    fn tag(&self) -> TagKey {
-        (*self).into()
+    fn tag(self) -> TagKey {
+        self.into()
     }
 }
 
 impl Lane {
+    #[must_use]
     pub fn is_separator(&self) -> bool {
         matches!(self, Lane::Separator { .. })
     }
-    fn forward(designated: LaneDesignated, locale: &Locale) -> Self {
+
+    fn forward(designated: Designated, locale: &Locale) -> Self {
         Self::Travel {
-            direction: Some(LaneDirection::Forward),
+            direction: Some(Direction::Forward),
             designated,
             width: Some(locale.travel_width(&designated)),
             max_speed: None,
         }
     }
-    fn backward(designated: LaneDesignated, locale: &Locale) -> Self {
+
+    fn backward(designated: Designated, locale: &Locale) -> Self {
         Self::Travel {
-            direction: Some(LaneDirection::Backward),
+            direction: Some(Direction::Backward),
             designated,
             width: Some(locale.travel_width(&designated)),
             max_speed: None,
         }
     }
+
+    #[must_use]
     fn is_motor(&self) -> bool {
         matches!(
             self,
             Lane::Travel {
-                designated: LaneDesignated::Motor,
+                designated: Designated::Motor,
                 ..
             }
         )
     }
+
+    #[must_use]
     pub fn is_foot(&self) -> bool {
         matches!(
             self,
             Lane::Travel {
-                designated: LaneDesignated::Foot,
+                designated: Designated::Foot,
                 ..
             }
         )
     }
+
+    #[must_use]
     fn is_bicycle(&self) -> bool {
         matches!(
             self,
             Lane::Travel {
-                designated: LaneDesignated::Bicycle,
+                designated: Designated::Bicycle,
                 ..
             }
         )
     }
+
+    #[must_use]
     fn is_bus(&self) -> bool {
         matches!(
             self,
             Lane::Travel {
-                designated: LaneDesignated::Bus,
+                designated: Designated::Bus,
                 ..
             }
         )
     }
-    fn direction(&self) -> Option<LaneDirection> {
+
+    #[must_use]
+    fn direction(&self) -> Option<Direction> {
         match self {
             Self::Travel { direction, .. } => *direction,
             _ => None,

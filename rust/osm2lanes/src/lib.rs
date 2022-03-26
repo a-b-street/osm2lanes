@@ -4,21 +4,18 @@
 //! WARNING: The output specification and all of this code is just being prototyped. Don't depend
 //! on anything yet.
 
-mod metric;
-pub use metric::{Metre, Speed};
-
-pub mod road;
-
-pub mod tag;
+#![warn(clippy::pedantic, clippy::cargo)]
+#![allow(clippy::cargo_common_metadata)]
 
 pub mod locale;
-pub use locale::{DrivingSide, Locale};
+pub mod metric;
+pub mod road;
+pub mod tag;
 
 #[cfg(feature = "overpass")]
 pub mod overpass;
 
 pub mod transform;
-pub use transform::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
 
 #[cfg(feature = "tests")]
 pub mod test;

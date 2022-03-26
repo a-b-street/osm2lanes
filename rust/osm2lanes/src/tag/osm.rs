@@ -150,6 +150,8 @@ impl std::fmt::Display for Highway {
 impl Highway {
     /// Get Highway From Tags
     ///
+    /// # Errors
+    ///
     /// If highway missing return None
     /// If highway unknown return the unknown value
     pub fn from_tags(tags: &Tags) -> Result<Self, Option<String>> {
@@ -157,7 +159,7 @@ impl Highway {
             "construction" => {
                 let highway = tags
                     .get(CONSTRUCTION)
-                    .map_or(Ok(HighwayType::UnknownRoad), |h| h.parse())
+                    .map_or(Ok(HighwayType::UnknownRoad), str::parse)
                     .map_err(Some)?;
                 Ok(Self {
                     highway,
@@ -167,7 +169,7 @@ impl Highway {
             "proposed" => {
                 let highway = tags
                     .get(PROPOSED)
-                    .map_or(Ok(HighwayType::UnknownRoad), |h| h.parse())
+                    .map_or(Ok(HighwayType::UnknownRoad), str::parse)
                     .map_err(Some)?;
                 Ok(Self {
                     highway,
@@ -185,6 +187,7 @@ impl Highway {
     }
 
     /// Is Highway Construction
+    #[must_use]
     pub fn is_construction(&self) -> bool {
         matches!(
             self,
@@ -196,6 +199,7 @@ impl Highway {
     }
 
     /// Is Highway Proposed
+    #[must_use]
     pub fn is_proposed(&self) -> bool {
         matches!(
             self,
@@ -207,16 +211,19 @@ impl Highway {
     }
 
     /// The type of the highway, independent from its lifecycle
+    #[must_use]
     pub fn r#type(&self) -> HighwayType {
         self.highway
     }
 
     /// Is Highway Supported
+    #[must_use]
     pub const fn is_supported(&self) -> bool {
         self.is_supported_road() || self.is_supported_non_motorized()
     }
 
     /// Is Highway Supported and Predominantly Motorized
+    #[must_use]
     pub const fn is_supported_road(&self) -> bool {
         matches!(
             self,
@@ -233,6 +240,7 @@ impl Highway {
     }
 
     /// Is Highway Supported and Predominantly Non-Motorized
+    #[must_use]
     pub const fn is_supported_non_motorized(&self) -> bool {
         matches!(
             self,
