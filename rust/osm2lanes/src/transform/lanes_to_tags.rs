@@ -40,21 +40,21 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
     let mut tags = Tags::default();
     let mut oneway = false;
     tags.checked_insert("highway", "road")?; // TODO, add `highway` to `Lanes`
-    {
-        let lane_count = lanes
-            .iter()
-            .filter(|lane| {
-                matches!(
+
+    // Lane Count
+    let lane_count = lanes
+        .iter()
+        .filter(|lane| {
+            matches!(
                     lane,
                     Lane::Travel {
                         designated: LaneDesignated::Motor | LaneDesignated::Bus,
                         ..
                     }
                 )
-            })
-            .count();
-        tags.checked_insert("lanes", lane_count.to_string())?;
-    }
+        })
+        .count();
+    tags.checked_insert("lanes", lane_count.to_string())?;
     // Oneway
     if lanes.iter().filter(|lane| lane.is_motor()).all(|lane| {
         matches!(
@@ -67,6 +67,54 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
     }) {
         tags.checked_insert("oneway", "yes")?;
         oneway = true;
+    } else {
+        // Forward
+        let forward_lanes = lanes
+            .iter()
+            .filter(|lane| {
+                matches!(
+                    lane,
+                    Lane::Travel {
+                        designated: LaneDesignated::Motor | LaneDesignated::Bus,
+                        direction: Some(LaneDirection::Forward),
+                        ..
+                    }
+                )
+            })
+            .count();
+        tags.checked_insert("lanes:forward", forward_lanes.to_string())?;
+        // Backward
+        let backward_lanes = lanes
+            .iter()
+            .filter(|lane| {
+                matches!(
+                    lane,
+                    Lane::Travel {
+                        designated: LaneDesignated::Motor | LaneDesignated::Bus,
+                        direction: Some(LaneDirection::Backward),
+                        ..
+                    }
+                )
+            })
+            .count();
+        tags.checked_insert("lanes:backward", backward_lanes.to_string())?;
+        // Both ways
+        if lanes.iter().any(|lane| {
+            matches!(
+            lane,
+            Lane::Travel {
+                designated: LaneDesignated::Motor,
+                direction: Some(LaneDirection::Both),
+                ..
+            }
+        )
+        }) {
+            tags.checked_insert("lanes:both_ways", "1")?;
+            // TODO: add LHT support
+            if lane_count >= 3 {
+                tags.checked_insert("turn:lanes:both_ways", "left")?;
+            }
+        }
     }
     // Shoulder
     match (
@@ -210,21 +258,6 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
                 (Some(_left), Some(_right)) => tags.checked_insert("busway:both", "lane")?,
             }
         }
-    }
-
-    if lanes.iter().any(|lane| {
-        matches!(
-            lane,
-            Lane::Travel {
-                designated: LaneDesignated::Motor,
-                direction: Some(LaneDirection::Both),
-                ..
-            }
-        )
-    }) {
-        tags.checked_insert("lanes:both_ways", "1")?;
-        // TODO: add LHT support
-        tags.checked_insert("turn:lanes:both_ways", "left")?;
     }
 
     let max_speed = {
