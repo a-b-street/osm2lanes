@@ -105,10 +105,10 @@ jobs:
       uses: Swatinem/rust-cache@v1
       with:
         working-directory: rust
-    # - name: "Benchmark"
-    #   uses: droogmic/criterion-compare-action@testing # TODO: switch to upstream when merged
-    #   with:
-    #     cwd: "rust"
-    #     benchName: "benchmark_tests_sample"
-    #     branchName: ${{ github.base_ref }}
-    #     token: ${{ secrets.GITHUB_TOKEN }}
+    - name: "Benchmark"
+      uses: droogmic/criterion-compare-action@testing # TODO: switch to upstream when merged
+      with:
+        cwd: "rust"
+        benchName: "benchmark_tests_sample"
+        branchName: ${{ github.base_ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
