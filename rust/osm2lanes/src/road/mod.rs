@@ -13,6 +13,7 @@ pub use marking::{Color, Marking, Markings, Style};
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Road {
     pub lanes: Vec<Lane>,
+    #[serde(flatten)]
     pub highway: Highway,
 }
 

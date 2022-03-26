@@ -4,7 +4,7 @@ use std::io::BufReader;
 use serde::Deserialize;
 
 use crate::locale::DrivingSide;
-use crate::road::Lane;
+use crate::road::{Lane, Road};
 use crate::tag::Tags;
 
 #[derive(Deserialize)]
@@ -15,6 +15,14 @@ pub enum RustTesting {
         separator: Option<bool>,
         ignore_warnings: Option<bool>,
     },
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Expected {
+    Road(Road),
+    // TODO: deprecated
+    Output(Vec<Lane>),
 }
 
 #[derive(Deserialize)]
@@ -33,13 +41,21 @@ pub struct TestCase {
 
     /// Data
     pub tags: Tags,
-    // TODO: add nesting or rename to lanes
-    pub output: Vec<Lane>,
-    /// Configure Rust Testing
+    #[serde(flatten)]
+    pub expected: Expected,
+
     pub rust: Option<RustTesting>,
 }
 
 impl TestCase {
+    /// Lanes of expected output
+    fn lanes(&self) -> &Vec<Lane> {
+        match &self.expected {
+            Expected::Road(road) => &road.lanes,
+            Expected::Output(lanes) => lanes,
+        }
+    }
+    /// Test case is enabled, true by default
     fn test_enabled(&self) -> bool {
         match self.rust {
             None => true,
@@ -67,7 +83,7 @@ impl TestCase {
     }
     /// Expected lanes include separator
     pub fn expected_has_separators(&self) -> bool {
-        self.output.iter().any(|lane| lane.is_separator())
+        self.lanes().iter().any(|lane| lane.is_separator())
     }
 }
 
@@ -256,7 +272,7 @@ mod tests {
         fn expected_road(&self) -> Road {
             Road {
                 lanes: self
-                    .output
+                    .lanes()
                     .iter()
                     .filter(|lane| self.is_lane_enabled(lane))
                     .cloned()
@@ -437,7 +453,7 @@ mod tests {
                     .build();
                 let input_road = test.expected_road();
                 let tags = lanes_to_tags(
-                    &test.output,
+                    &test.lanes(),
                     &locale,
                     &LanesToTagsConfig {
                         check_roundtrip: false,
