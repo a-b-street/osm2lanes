@@ -1,10 +1,15 @@
+mod utils;
+
 use std::collections::HashMap;
 
+use osm2lanes::tag::{Tags, TagsWrite};
+use osm2lanes::{tags_to_lanes, DrivingSide, Locale, TagsToLanesConfig};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use crate::tag::{Tags, TagsWrite};
-use crate::{tags_to_lanes, DrivingSide, Locale, TagsToLanesConfig};
+#[cfg(feature = "wee_alloc")]
+#[global_allocator]
+static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[derive(Serialize, Deserialize)]
 pub struct Input {
@@ -14,7 +19,7 @@ pub struct Input {
 
 #[wasm_bindgen]
 pub fn js_tags_to_lanes(val: &JsValue) -> JsValue {
-    console_error_panic_hook::set_once();
+    utils::set_panic_hook();
 
     let input: Input = val.into_serde().unwrap();
 

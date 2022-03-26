@@ -76,10 +76,10 @@ trunk serve
 You can call the Rust library in JavaScript through WASM bindings.
 
 ```shell
-cd rust/osm2lanes
-wasm-pack build --dev --target web -- --features wasm
+cd rust/osm2lanes-npm
+wasm-pack build --dev --target web
 cd ../../web
-ln -s ../rust/osm2lanes/pkg/ .
+ln -s ../rust/osm2lanes-npm/pkg/ .
 ./serve_locally.py
 ```
 
