@@ -4,8 +4,6 @@
 //! WARNING: The output specification and all of this code is just being prototyped. Don't depend
 //! on anything yet.
 
-#![feature(is_some_with)]
-
 mod metric;
 pub use metric::{Metre, Speed};
 
