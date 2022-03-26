@@ -36,3 +36,8 @@ harness = false
 name = "benchmark_tests"
 harness = false
 required-features = ["tests"]
+
+[[bench]]
+name = "benchmark_tests_sample"
+harness = false
+required-features = ["tests"]

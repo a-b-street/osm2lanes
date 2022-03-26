@@ -54,8 +54,6 @@ jobs:
   # Moved away from actions-rs because of
   # https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186
   rust:
-    permissions:
-      pull-requests: write
     runs-on: ubuntu-latest
     steps:
     - name: "Checkout"
@@ -105,3 +103,26 @@ jobs:
         cd ./rust/
         rustup show
         cargo test
+
+  rust-benchmark:
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+    - name: "Checkout"
+      uses: actions/checkout@v3
+    - name: "Checkout Ref"
+      uses: actions/checkout@v3
+      with:
+        clean: false
+    - name: "Cache"
+      uses: Swatinem/rust-cache@v1
+      with:
+        working-directory: rust
+    - name: "Benchmark"
+      uses: droogmic/criterion-compare-action@testing # TODO: switch to upstream when merged
+      with:
+        cwd: "rust"
+        benchName: "benchmark_tests_sample"
+        branchName: ${{ github.base_ref }}
+        token: ${{ secrets.GITHUB_TOKEN }}
