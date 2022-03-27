@@ -1,7 +1,6 @@
 use std::collections::VecDeque;
 use std::iter;
-
-use log::warn;
+use std::str::FromStr;
 
 use crate::road::{Lane, LaneDesignated, LaneDirection, Marking, MarkingColor, MarkingStyle, Road};
 use crate::tag::{Highway, TagKey, Tags, LIFECYCLE};
@@ -198,7 +197,7 @@ impl RoadBuilder {
         let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
 
         let (num_driving_fwd, num_driving_both, num_driving_back) =
-            driving_lane_directions(tags, locale, oneway);
+            driving_lane_directions(tags, locale, oneway, warnings);
 
         let designated = if tags.is("access", "no")
             && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
@@ -569,17 +568,41 @@ pub fn tags_to_lanes(
     Ok(road_from_tags)
 }
 
-fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (usize, usize, usize) {
-    let tagged_lanes = tags.get("lanes").and_then(|num| num.parse::<usize>().ok());
-    let tagged_forward = tags
-        .get("lanes:forward")
-        .and_then(|num| num.parse::<usize>().ok());
-    let tagged_backward = tags
-        .get("lanes:backward")
-        .and_then(|num| num.parse::<usize>().ok());
-    let tagged_both_ways = tags
-        .get("lanes:both_ways")
-        .and_then(|num| num.parse::<usize>().ok());
+impl Tags {
+    /// Gets the value for the given key and parses it into T. A RoadMsg::Unsupported is added if
+    /// parsing fails.
+    fn get_parsed<T: FromStr>(&self, key: &str, warnings: &mut RoadWarnings) -> Option<T> {
+        self.get(key).and_then(|val| match val.parse::<T>() {
+            Ok(n) => Some(n),
+            Err(_) => {
+                warnings.push(RoadMsg::unsupported_tag(key.to_owned(), val));
+                None
+            }
+        })
+    }
+}
+
+/// Calculates the number of vehicle travel lanes in each direction (forward, both ways, backward)
+/// according to the `lanes` schema (which excludes parking lanes, bike lanes, etc.).
+/// See https://wiki.openstreetmap.org/wiki/Key:lanes.
+///
+/// Validates tags `lanes=*` and `lanes:{forward,both_ways,backward}=*`.
+/// Uses tags `centre_turn_lane=yes` and `lanes:bus=*` to guess when the main tags are missing.
+fn driving_lane_directions(
+    tags: &Tags,
+    _locale: &Locale,
+    oneway: Oneway,
+    warnings: &mut RoadWarnings,
+) -> (usize, usize, usize) {
+    // The tags for this schema (which we will validate).
+    let tagged_lanes = tags.get_parsed::<usize>("lanes", warnings);
+    let tagged_forward = tags.get_parsed::<usize>("lanes:forward", warnings);
+    let tagged_backward = tags.get_parsed::<usize>("lanes:backward", warnings);
+    let tagged_both_ways = tags.get_parsed::<usize>("lanes:both_ways", warnings);
+
+    // TODO if any lanes:*= tags are present, warn about missing lanes=* tag.
+
+    // Tags used for guessing.
     let tagged_center_turn_lanes = if tags.is("centre_turn_lane", "yes") {
         Some(1)
     } else {
@@ -593,36 +616,52 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (us
     let num_both_ways = tagged_both_ways.unwrap_or(tagged_center_turn_lanes.unwrap_or(0));
 
     if oneway.into() {
-        if tagged_backward.is_some() {
-            warn!("lanes:backwards tag on a oneway road")
+        // Ignore lanes:{forward,both_ways,backward}=* and centre_turn_lanes=*
+        if tagged_both_ways.is_some()
+            || tagged_backward.is_some()
+            || tagged_center_turn_lanes.is_some()
+        {
+            warnings.push(RoadMsg::Ambiguous {
+                description: None,
+                tags: Some(tags.subset(&[
+                    "oneway",
+                    "lanes:both_ways",
+                    "lanes:backward",
+                    "centre_turn_lanes",
+                ])),
+            });
         }
-        if tagged_both_ways.is_some() {
-            warn!("lanes:both_ways tag on a oneway road")
-        }
-        if tagged_center_turn_lanes.is_some() {
-            warn!("center_turn_lanes tag on oneway road")
-        }
-        match (tagged_lanes, tagged_forward) {
-            (Some(l), None) => (l, 0, 0),
-            (Some(l), Some(f)) => {
-                if l != f {
-                    warn!("lanes tag does not agree with lanes:forward on oneway road")
-                }
-                (f, 0, 0)
+        if let Some(l) = tagged_lanes {
+            if tagged_forward.map_or(false, |f| f != l) {
+                warnings.push(RoadMsg::Ambiguous {
+                    description: None,
+                    tags: Some(tags.subset(&[
+                        "oneway",
+                        "lanes",
+                        "lanes:forward",
+                    ])),
+                });
             }
-            // Without the "lanes" tag, assume lanes:bus adds onto the assumed single lane
-            (None, _) => (
-                tagged_forward.unwrap_or(1) + tagged_bus_lanes.unwrap_or(0),
-                0,
-                0,
-            ),
+            (l, 0, 0)
+        } else {
+            let assumed_forward = tagged_forward.unwrap_or(1);
+            let assumed_extra_bus = tagged_bus_lanes.unwrap_or(0);
+            (assumed_forward + assumed_extra_bus, 0, 0)
         }
     } else {
         match (tagged_lanes, tagged_forward, tagged_backward) {
             (_, Some(f), Some(b)) => {
                 if let Some(num_lanes) = tagged_lanes {
                     if num_lanes != f + b + num_both_ways {
-                        warn!("lanes tag does not agree with lanes:forward, lanes:backward and lanes:both_ways");
+                        warnings.push(RoadMsg::Ambiguous {
+                            description: None,
+                            tags: Some(tags.subset(&[
+                                "lanes",
+                                "lanes:forward",
+                                "lanes:both_ways",
+                                "lanes:backward",
+                            ])),
+                        });
                     }
                 }
                 (f, num_both_ways, b)
@@ -638,7 +677,13 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (us
                 } else {
                     // Try to divide the lanes equally.
                     if (l - num_both_ways) % 2 != 0 {
-                        warn!("lanes - lanes:both_ways cannot be evenly distributed");
+                        warnings.push(RoadMsg::Ambiguous {
+                            description: Some(String::from("Total lane count cannot be evenly divided between the forward and backward")),
+                            tags: Some(tags.subset(&[
+                                "lanes",
+                                "lanes:both_ways",
+                            ])),
+                        });
                     }
                     let half = (l - num_both_ways + 1) / 2; // usize division rounded up.
                     (half, num_both_ways, l - num_both_ways - half)
