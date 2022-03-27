@@ -1149,20 +1149,17 @@
   - type: shoulder
 
 - way_id: 335668924
-  description: looks like a 1 lane wide alley with no markings
+  description: a narrow alleyway tagged lanes=1
+  skip_python: true
+  skip_kotlin: true
   tags:
-    highway: 'road'
+    highway: 'service'
     lanes: '1'
-    sidewalk: 'no'
   driving_side: right
-  # I don't think this expected output is correct... -- BudgieInWA
   output:
   - type: shoulder
   - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
+    direction: both
     designated: motor_vehicle
   - type: shoulder
 

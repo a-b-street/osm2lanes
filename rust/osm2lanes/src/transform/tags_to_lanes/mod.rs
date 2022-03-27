@@ -194,9 +194,11 @@ impl RoadBuilder {
         locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
+        // TODO support oneway=-1
         let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
 
-        let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
+        let (num_driving_fwd, num_driving_both, num_driving_back) =
+            driving_lane_directions(tags, locale, oneway);
 
         let designated = if tags.is("access", "no")
             && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
@@ -245,7 +247,7 @@ impl RoadBuilder {
         .take(num_driving_back)
         .collect();
         // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
-        if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
+        for _ in 0..num_driving_both {
             forward_lanes.push_front(LaneBuilder {
                 r#type: Infer::Default(LaneType::Travel),
                 direction: Infer::Default(LaneDirection::Both),
@@ -567,7 +569,7 @@ pub fn tags_to_lanes(
     Ok(road_from_tags)
 }
 
-fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (usize, usize) {
+fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (usize, usize, usize) {
     let tagged_lanes = tags.get("lanes").and_then(|num| num.parse::<usize>().ok());
     let tagged_forward = tags
         .get("lanes:forward")
@@ -578,30 +580,40 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (us
     let tagged_both_ways = tags
         .get("lanes:both_ways")
         .and_then(|num| num.parse::<usize>().ok());
-    let num_both_ways = tagged_both_ways.unwrap_or(0);
+    let tagged_center_turn_lanes = if tags.is("centre_turn_lane", "yes") {
+        Some(1)
+    } else {
+        None
+    };
     let tagged_bus_lanes = tags
         .get("lanes:bus")
         .and_then(|num| num.parse::<usize>().ok());
 
+    // Always assume no center turn lane unless tagged, so we already know:
+    let num_both_ways = tagged_both_ways.unwrap_or(tagged_center_turn_lanes.unwrap_or(0));
+
     if oneway.into() {
-        // TODO support oneway=-1
         if tagged_backward.is_some() {
             warn!("lanes:backwards tag on a oneway road")
         }
         if tagged_both_ways.is_some() {
             warn!("lanes:both_ways tag on a oneway road")
         }
+        if tagged_center_turn_lanes.is_some() {
+            warn!("center_turn_lanes tag on oneway road")
+        }
         match (tagged_lanes, tagged_forward) {
-            (Some(l), None) => (l, 0),
+            (Some(l), None) => (l, 0, 0),
             (Some(l), Some(f)) => {
                 if l != f {
                     warn!("lanes tag does not agree with lanes:forward on oneway road")
                 }
-                (f, 0)
+                (f, 0, 0)
             }
             // Without the "lanes" tag, assume lanes:bus adds onto the assumed single lane
             (None, _) => (
                 tagged_forward.unwrap_or(1) + tagged_bus_lanes.unwrap_or(0),
+                0,
                 0,
             ),
         }
@@ -613,21 +625,24 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (us
                         warn!("lanes tag does not agree with lanes:forward, lanes:backward and lanes:both_ways");
                     }
                 }
-                (f, b)
+                (f, num_both_ways, b)
             }
-            (Some(l), Some(f), None) => (f, l - f - num_both_ways),
-            (Some(l), None, Some(b)) => (l - b - num_both_ways, b),
-            (Some(1), None, None) => {
-                warn!("lanes=1 on a two way road");
-                (1, 1) // assume they meant lanes=2, I guess
-            }
+            (Some(l), Some(f), None) => (f, num_both_ways, l - f - num_both_ways),
+            (Some(l), None, Some(b)) => (l - b - num_both_ways, num_both_ways, b),
+            (Some(1), None, None) => (0, 1, 0),
             (Some(l), None, None) => {
-                // Try to divide the lanes equally.
-                if (l - num_both_ways) % 2 != 0 {
-                    warn!("lanes - lanes:both_ways cannot be evenly distributed");
+                if l % 2 == 0 && tagged_center_turn_lanes.is_some() {
+                    // Only tagged with lanes and deprecated center_turn_lane tag.
+                    // Assume the center_turn_lane is in addition to evenly divided lanes
+                    (l / 2, tagged_center_turn_lanes.unwrap(), l / 2)
+                } else {
+                    // Try to divide the lanes equally.
+                    if (l - num_both_ways) % 2 != 0 {
+                        warn!("lanes - lanes:both_ways cannot be evenly distributed");
+                    }
+                    let half = (l - num_both_ways + 1) / 2; // usize division rounded up.
+                    (half, num_both_ways, l - num_both_ways - half)
                 }
-                let half = (l - num_both_ways + 1) / 2; // usize division rounded up.
-                (half, l - num_both_ways - half)
             }
             (None, _, _) => {
                 // Tagging only lanes:forward or lanes:backward is silly, but lets use them.
@@ -635,7 +650,7 @@ fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (us
                 let b = tagged_backward.unwrap_or(1);
                 // Without the "lanes" tag, assume lanes:bus adds onto the assumed single lane
                 let bus = tagged_bus_lanes.unwrap_or(0);
-                (f + (bus + 1) / 2, b + bus / 2)
+                (f + (bus + 1) / 2, num_both_ways, b + bus / 2)
             }
         }
     }
