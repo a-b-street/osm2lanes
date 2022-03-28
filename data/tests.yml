@@ -774,6 +774,7 @@
   tags:
     highway: 'road'
     lanes: '3'
+    lanes:forward: '2'
     sidewalk: 'no'
     shoulder: 'no'
     bus:lanes:forward: 'designated|'
@@ -819,6 +820,7 @@
     highway: primary
     busway: lane
     hgv: local
+    lanes: '4' # FIXME: lanes is not tagged but inferring the it is hard
     lanes:bus: '2'
     lit: 'yes'
     maxspeed: 25 mph
