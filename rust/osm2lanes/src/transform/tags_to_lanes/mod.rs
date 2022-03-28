@@ -747,8 +747,7 @@ fn driving_lane_directions(
                 let bus = tagged_bus_lanes.unwrap_or(0);
                 let bus_forward =
                     busway_forward_lanes + tagged_bus_forward.unwrap_or((bus + 1) / 2);
-                let bus_backward =
-                    busway_backward_lanes + tagged_bus_backward.unwrap_or((bus) / 2);
+                let bus_backward = busway_backward_lanes + tagged_bus_backward.unwrap_or((bus) / 2);
                 (f + bus_forward, num_both_ways, b + bus_backward)
             }
         }

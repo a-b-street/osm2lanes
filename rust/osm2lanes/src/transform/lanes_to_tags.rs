@@ -46,12 +46,12 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
         .iter()
         .filter(|lane| {
             matches!(
-                    lane,
-                    Lane::Travel {
-                        designated: LaneDesignated::Motor | LaneDesignated::Bus,
-                        ..
-                    }
-                )
+                lane,
+                Lane::Travel {
+                    designated: LaneDesignated::Motor | LaneDesignated::Bus,
+                    ..
+                }
+            )
         })
         .count();
     tags.checked_insert("lanes", lane_count.to_string())?;
@@ -101,13 +101,13 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &LanesToTagsConfig
         // Both ways
         if lanes.iter().any(|lane| {
             matches!(
-            lane,
-            Lane::Travel {
-                designated: LaneDesignated::Motor,
-                direction: Some(LaneDirection::Both),
-                ..
-            }
-        )
+                lane,
+                Lane::Travel {
+                    designated: LaneDesignated::Motor,
+                    direction: Some(LaneDirection::Both),
+                    ..
+                }
+            )
         }) {
             tags.checked_insert("lanes:both_ways", "1")?;
             // TODO: add LHT support
