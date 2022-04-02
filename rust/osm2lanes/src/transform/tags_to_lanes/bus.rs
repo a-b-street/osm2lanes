@@ -15,6 +15,12 @@ impl LaneBuilder {
     }
 }
 
+const BUSWAY: TagKey = TagKey::from("busway");
+pub struct Busway {
+    forward_direction: Infer<LaneDirection>,
+    backward_direction: Infer<LaneDirection>,
+}
+
 pub(super) fn bus(
     tags: &Tags,
     locale: &Locale,
@@ -35,7 +41,7 @@ pub(super) fn bus(
             .is_some(),
     ) {
         (false, false, false) => {}
-        (true, _, false) => busway(tags, locale, road, warnings)?,
+        (true, _, false) => {}
         (false, true, false) => lanes_bus(tags, locale, road, warnings)?,
         (false, false, true) => bus_lanes(tags, locale, road, warnings)?,
         _ => {
@@ -50,84 +56,101 @@ pub(super) fn bus(
     Ok(())
 }
 
-fn busway(
-    tags: &Tags,
-    locale: &Locale,
-    road: &mut RoadBuilder,
-    _warnings: &mut RoadWarnings,
-) -> Result<(), RoadError> {
-    const BUSWAY: TagKey = TagKey::from("busway");
-    if tags.is(BUSWAY, "lane") {
-        road.forward_outside_mut()
-            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus(locale)?;
-        if !tags.is("oneway", "yes") && !tags.is("oneway:bus", "yes") {
-            road.backward_outside_mut()
-                .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-                .set_bus(locale)?;
+impl Busway {
+    pub(super) fn from(
+        tags: &Tags,
+        locale: &Locale,
+        oneway: &Oneway,
+        warnings: &mut RoadWarnings,
+    ) -> Self {
+        let mut busway = Self {
+            forward_direction: Infer::Default(None),
+            backward_direction: Infer::Default(None),
+        };
+
+
+        // TODO oneway:bus=no on a oneway road (w/ busway=lane) implies 2 bus lanes.
+        // TODO I think this logic can be simplified using the match style.
+
+        if tags.is(BUSWAY, "lane") {
+            busway.forward_direction = Infer::Direct(Some(LaneDirection::Forward));
+            if *oneway == Oneway::No && !tags.is("oneway:bus", "yes") {
+                busway.backward_direction = Infer::Direct(Some(LaneDirection::Backward));
+            }
         }
-    }
-    if tags.is(BUSWAY, "opposite_lane") {
-        road.backward_outside_mut()
-            .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-            .set_bus(locale)?;
-    }
-    if tags.is(BUSWAY + "both", "lane") {
-        road.forward_outside_mut()
-            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus(locale)?;
-        road.backward_outside_mut()
-            .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-            .set_bus(locale)?;
-        if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            return Err(RoadMsg::ambiguous_str("busway:both=lane for oneway roads").into());
+        if tags.is(BUSWAY, "opposite_lane") {
+            busway.backward_direction = Infer::Direct(Some(LaneDirection::Backward));
         }
-    }
-    if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
-        road.forward_outside_mut()
-            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus(locale)?;
-    }
-    if tags.is(BUSWAY + locale.driving_side.tag(), "opposite_lane") {
-        return Err(
-            RoadMsg::ambiguous_tag(BUSWAY + locale.driving_side.tag(), "opposite_lane").into(),
-        );
-    }
-    if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
-        if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            road.forward_inside_mut()
-                .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-                .set_bus(locale)?;
-        } else {
-            return Err(
-                RoadMsg::ambiguous_str("busway:BACKWARD=lane for bidirectional roads").into(),
+        if tags.is(BUSWAY + "both", "lane") {
+            busway.forward_direction = Infer::Direct(Some(LaneDirection::Forward));
+            busway.backward_direction = Infer::Direct(Some(LaneDirection::Backward));
+            if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
+                warnings.push(RoadMsg::ambiguous_str("busway:both=lane for oneway roads").into());
+            }
+        }
+        if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
+            busway.forward_direction = Infer::Direct(Some(LaneDirection::Forward));
+        }
+        if tags.is(BUSWAY + locale.driving_side.tag(), "opposite_lane") {
+            warnings.push(
+                RoadMsg::ambiguous_tag(BUSWAY + locale.driving_side.tag(), "opposite_lane").into(),
             );
         }
+        if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
+            if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
+                busway.forward_direction = Infer::Direct(Some(LaneDirection::Forward));
+            } else {
+                warnings.push(
+                    RoadMsg::ambiguous_str("busway:BACKWARD=lane for bidirectional roads").into(),
+                );
+            }
+        }
+        if tags.is(
+            BUSWAY + locale.driving_side.opposite().tag(),
+            "opposite_lane",
+        ) {
+            if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
+                // TODO: does it make sense to have a backward lane on the forward_side????
+                busway.forward_direction = Infer::Direct(Some(LaneDirection::Backward));
+            } else {
+                warnings.push(RoadMsg::Ambiguous {
+                    description: None,
+                    tags: Some(tags.subset(&[
+                        BUSWAY + locale.driving_side.opposite().tag(),
+                        TagKey::from("oneway"),
+                        TagKey::from("oneway:bus"),
+                    ])),
+                });
+            }
+        }
+
+        busway
     }
-    if tags.is(
-        BUSWAY + locale.driving_side.opposite().tag(),
-        "opposite_lane",
-    ) {
-        if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            // TODO: does it make sense to have a backward lane on the forward_side????
-            let lane = road
-                .forward_inside_mut()
+}
+
+impl RoadBuilder {
+    pub fn set_busway_scheme(
+        self: &mut Self,
+        busway: &Busway,
+        locale: &Locale,
+        _warnings: &mut RoadWarnings,
+    ) -> ModeResult {
+        if let Some(Some(d)) = busway.forward_direction.some() {
+            let lane = self
+                .forward_outside_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?;
             lane.set_bus(locale)?;
-            lane.direction = Infer::Direct(LaneDirection::Backward);
-        } else {
-            return Err(RoadMsg::Ambiguous {
-                description: None,
-                tags: Some(tags.subset(&[
-                    BUSWAY + locale.driving_side.opposite().tag(),
-                    TagKey::from("oneway"),
-                    TagKey::from("oneway:bus"),
-                ])),
-            }
-            .into());
+            lane.direction = Infer::Direct(d);
         }
+        if let Some(Some(d)) = busway.backward_direction.some() {
+            let lane = self
+                .backward_outside_mut()
+                .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?;
+            lane.set_bus(locale)?;
+            lane.direction = Infer::Direct(d);
+        }
+        Ok(())
     }
-    Ok(())
 }
 
 fn lanes_bus(

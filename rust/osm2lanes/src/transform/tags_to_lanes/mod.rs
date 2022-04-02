@@ -22,9 +22,14 @@ mod separator;
 use separator::{lane_to_edge_separator, lanes_to_separator};
 
 mod non_motorized;
+
+mod road;
+// pub use road::Road;
+
 use non_motorized::non_motorized;
 
 use super::*;
+use crate::transform::tags_to_lanes::bus::{Busway};
 
 #[non_exhaustive]
 pub struct TagsToLanesConfig {
@@ -50,8 +55,9 @@ impl Default for TagsToLanesConfig {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum Oneway {
+    // TODO support oneway=-1
     Yes,
     No,
 }
@@ -190,12 +196,10 @@ struct RoadBuilder {
 impl RoadBuilder {
     pub fn from(
         tags: &Tags,
+        oneway: Oneway,
         locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
-        // TODO support oneway=-1
-        let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
-
         let (num_driving_fwd, num_driving_both, num_driving_back) =
             driving_lane_directions(tags, locale, oneway, warnings);
 
@@ -536,14 +540,29 @@ pub fn tags_to_lanes(
 ) -> Result<RoadFromTags, RoadError> {
     let mut warnings = RoadWarnings::default();
 
+    // Early return if we find unimplemented tags.
     unsupported(tags, locale, &mut warnings)?;
 
-    let mut road: RoadBuilder = RoadBuilder::from(tags, locale, &mut warnings)?;
+    // TODO: parse all schemas first, into enums
+    let oneway =
+        Oneway::from(tags.is_any("oneway", &["yes", "-1"]) || tags.is("junction", "roundabout"));
+    let busway = Busway::from(tags, locale, &oneway, &mut warnings);
+    // let bus_lanes = BusLanes::from(tags, locale, &oneway, &mut warnings);
+    // let lanes_designated = Designated::from(tags, locale, &oneway, &mut warnings);
+    //
+    // let lanes = Lanes(road, tags);
+
+    // TODO: then check for incompatabilities between schemas, and fill in assumptions/guesses
+    // TODO: then add them into the road builder.
+
+    let mut road: RoadBuilder = RoadBuilder::from(tags, oneway, locale, &mut warnings)?;
 
     // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
     if let Some(spec) = non_motorized(tags, locale, &road)? {
         return Ok(spec);
     }
+
+    road.set_busway_scheme(&busway, &locale, &mut warnings)?;
 
     bus(tags, locale, &mut road, &mut warnings)?;
 
