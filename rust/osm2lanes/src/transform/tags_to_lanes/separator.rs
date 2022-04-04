@@ -151,7 +151,7 @@ fn motor_lanes_to_separator(
         2 => Some(Lane::Separator {
             markings: Markings::new(vec![Marking {
                 style: Style::DottedLine,
-                color: Some(Color::White),
+                color: Some(locale.separator_motor_color()),
                 width: Some(Marking::DEFAULT_WIDTH),
             }]),
         }),
