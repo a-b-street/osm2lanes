@@ -1,13 +1,14 @@
 use serde::{Deserialize, Serialize};
 
+use crate::locale::Locale;
+use crate::metric::Metre;
 use crate::tag::Highway;
-use crate::{Locale, Metre};
 
 mod lane;
-pub use lane::{Lane, LaneDesignated, LaneDirection, LanePrintable};
+pub use lane::{Designated, Direction, Lane, Printable};
 
 mod marking;
-pub use marking::{Marking, MarkingColor, MarkingStyle, Markings};
+pub use marking::{Color, Marking, Markings, Style};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Road {
@@ -16,13 +17,15 @@ pub struct Road {
 }
 
 impl Road {
+    #[must_use]
     pub fn has_separators(&self) -> bool {
-        self.lanes.iter().any(|lane| lane.is_separator())
+        self.lanes.iter().any(Lane::is_separator)
     }
 }
 
 impl Road {
     /// Width in metres
+    #[must_use]
     pub fn width(&self, locale: &Locale) -> Metre {
         self.lanes
             .iter()

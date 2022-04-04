@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use super::Markings;
-use crate::{Locale, Metre, Speed};
+use crate::locale::Locale;
+use crate::metric::{Metre, Speed};
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -10,15 +11,15 @@ pub enum Lane {
     #[serde(rename = "travel")]
     Travel {
         // TODO, we could make this non-optional, but remove the field for designated=foot?
-        direction: Option<LaneDirection>,
-        designated: LaneDesignated,
+        direction: Option<Direction>,
+        designated: Designated,
         width: Option<Metre>,
         max_speed: Option<Speed>,
     },
     #[serde(rename = "parking")]
     Parking {
-        direction: LaneDirection,
-        designated: LaneDesignated,
+        direction: Direction,
+        designated: Designated,
         width: Option<Metre>,
     },
     #[serde(rename = "shoulder")]
@@ -31,6 +32,7 @@ impl Lane {
     pub const DEFAULT_WIDTH: Metre = Metre::new(3.5);
 
     /// Width in metres
+    #[must_use]
     pub fn width(&self, locale: &Locale) -> Metre {
         match self {
             Lane::Separator { markings } => markings.width(locale),
@@ -47,7 +49,7 @@ impl Lane {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum LaneDirection {
+pub enum Direction {
     #[serde(rename = "forward")]
     Forward,
     #[serde(rename = "backward")]
@@ -57,7 +59,7 @@ pub enum LaneDirection {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum LaneDesignated {
+pub enum Designated {
     // #[serde(rename = "any")]
     // Any,
     #[serde(rename = "foot")]
@@ -71,28 +73,28 @@ pub enum LaneDesignated {
 }
 
 /// Display lane detail as printable characters
-pub trait LanePrintable {
+pub trait Printable {
     fn as_ascii(&self) -> char;
     fn as_utf8(&self) -> char;
 }
 
-impl LanePrintable for Lane {
+impl Printable for Lane {
     fn as_ascii(&self) -> char {
         match self {
             Self::Travel {
-                designated: LaneDesignated::Foot,
+                designated: Designated::Foot,
                 ..
             } => 's',
             Self::Travel {
-                designated: LaneDesignated::Bicycle,
+                designated: Designated::Bicycle,
                 ..
             } => 'b',
             Self::Travel {
-                designated: LaneDesignated::Motor,
+                designated: Designated::Motor,
                 ..
             } => 'd',
             Self::Travel {
-                designated: LaneDesignated::Bus,
+                designated: Designated::Bus,
                 ..
             } => 'B',
             Self::Shoulder { .. } => 'S',
@@ -103,19 +105,19 @@ impl LanePrintable for Lane {
     fn as_utf8(&self) -> char {
         match self {
             Self::Travel {
-                designated: LaneDesignated::Foot,
+                designated: Designated::Foot,
                 ..
             } => '🚶',
             Self::Travel {
-                designated: LaneDesignated::Bicycle,
+                designated: Designated::Bicycle,
                 ..
             } => '🚲',
             Self::Travel {
-                designated: LaneDesignated::Motor,
+                designated: Designated::Motor,
                 ..
             } => '🚗',
             Self::Travel {
-                designated: LaneDesignated::Bus,
+                designated: Designated::Bus,
                 ..
             } => '🚌',
             Self::Shoulder { .. } => '🛆',
@@ -125,7 +127,7 @@ impl LanePrintable for Lane {
     }
 }
 
-impl LanePrintable for LaneDirection {
+impl Printable for Direction {
     fn as_ascii(&self) -> char {
         match self {
             Self::Forward => '^',

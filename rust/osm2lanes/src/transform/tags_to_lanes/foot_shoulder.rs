@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    Designated, Infer, LaneBuilder, LaneType, Locale, ModeResult, RoadBuilder, RoadError, RoadMsg,
+    RoadWarnings, Tags, SHOULDER, SIDEWALK,
+};
 
 impl LaneBuilder {
     fn shoulder(_locale: &Locale) -> Self {
@@ -10,15 +13,20 @@ impl LaneBuilder {
     fn foot(_locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
-            designated: Infer::Direct(LaneDesignated::Foot),
+            designated: Infer::Direct(Designated::Foot),
             ..Default::default()
         }
     }
     fn is_bicycle(&self) -> bool {
-        self.designated.some() == Some(LaneDesignated::Bicycle)
+        self.designated.some() == Some(Designated::Bicycle)
     }
 }
 
+#[allow(
+    clippy::items_after_statements,
+    clippy::too_many_lines,
+    clippy::unnested_or_patterns
+)]
 pub(super) fn foot_and_shoulder(
     tags: &Tags,
     locale: &Locale,
@@ -113,8 +121,7 @@ pub(super) fn foot_and_shoulder(
     let shoulder: (Shoulder, Shoulder) = match tags.get(SHOULDER) {
         None => (Shoulder::None, Shoulder::None),
         Some("no") => (Shoulder::No, Shoulder::No),
-        Some("yes") => (Shoulder::Yes, Shoulder::Yes),
-        Some("both") => (Shoulder::Yes, Shoulder::Yes),
+        Some("yes" | "both") => (Shoulder::Yes, Shoulder::Yes),
         Some(s) if s == locale.driving_side.tag().as_str() => (Shoulder::Yes, Shoulder::No),
         Some(s) if s == locale.driving_side.opposite().tag().as_str() => {
             (Shoulder::No, Shoulder::Yes)
@@ -132,9 +139,9 @@ pub(super) fn foot_and_shoulder(
         }
         fn push_outside(&mut self, lane: LaneBuilder, forward: bool) {
             if forward {
-                self.push_forward_outside(lane)
+                self.push_forward_outside(lane);
             } else {
-                self.push_backward_outside(lane)
+                self.push_backward_outside(lane);
             }
         }
         fn add_sidewalk_shoulder(
@@ -150,17 +157,17 @@ pub(super) fn foot_and_shoulder(
                     // This assumes bicycle lanes are just glorified shoulders...
                     let has_bicycle_lane = self
                         .lane_outside(forward)
-                        .map_or(false, |lane| lane.is_bicycle());
+                        .map_or(false, LaneBuilder::is_bicycle);
                     if !has_bicycle_lane && (forward || !bool::from(self.oneway)) {
-                        self.push_outside(LaneBuilder::shoulder(locale), forward)
+                        self.push_outside(LaneBuilder::shoulder(locale), forward);
                     }
                 }
                 (Sidewalk::No | Sidewalk::None, Shoulder::No) => {}
                 (Sidewalk::Yes, Shoulder::No | Shoulder::None) => {
-                    self.push_outside(LaneBuilder::foot(locale), forward)
+                    self.push_outside(LaneBuilder::foot(locale), forward);
                 }
                 (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => {
-                    self.push_outside(LaneBuilder::shoulder(locale), forward)
+                    self.push_outside(LaneBuilder::shoulder(locale), forward);
                 }
                 (Sidewalk::Yes, Shoulder::Yes) => {
                     return Err(RoadMsg::Unsupported {

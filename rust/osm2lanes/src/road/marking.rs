@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-use super::LanePrintable;
-use crate::{Locale, Metre};
+use super::Printable;
+use crate::locale::Locale;
+use crate::metric::Metre;
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Markings(Vec<Marking>);
 
 impl Markings {
+    #[must_use]
     pub fn new(markings: Vec<Marking>) -> Self {
         Self(markings)
     }
@@ -14,12 +16,13 @@ impl Markings {
     /// Flip left and right, reverses the order of markings and inverts them in place.
     pub fn flip(&mut self) {
         self.0.reverse();
-        for marking in self.0.iter_mut() {
+        for marking in &mut self.0 {
             marking.invert();
         }
     }
 
     /// Width in metres
+    #[must_use]
     pub fn width(&self, _locale: &Locale) -> Metre {
         self.0
             .iter()
@@ -37,9 +40,9 @@ impl std::ops::Deref for Markings {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Marking {
-    pub style: MarkingStyle,
+    pub style: Style,
     pub width: Option<Metre>,
-    pub color: Option<MarkingColor>,
+    pub color: Option<Color>,
 }
 
 impl Marking {
@@ -52,7 +55,7 @@ impl Marking {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum MarkingStyle {
+pub enum Style {
     #[serde(rename = "solid_line")]
     SolidLine,
     #[serde(rename = "broken_line")]
@@ -78,8 +81,9 @@ pub enum MarkingStyle {
     KerbDown,
 }
 
-impl MarkingStyle {
+impl Style {
     /// UTF8 representation of markings
+    #[must_use]
     pub const fn as_utf8(&self) -> char {
         match self {
             Self::SolidLine => '|',
@@ -92,6 +96,7 @@ impl MarkingStyle {
         }
     }
     /// Opposite marking style
+    #[must_use]
     pub const fn opposite(&self) -> Self {
         match self {
             Self::SolidLine => Self::SolidLine,
@@ -106,7 +111,7 @@ impl MarkingStyle {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum MarkingColor {
+pub enum Color {
     #[serde(rename = "white")]
     White,
     #[serde(rename = "yellow")]
@@ -117,7 +122,7 @@ pub enum MarkingColor {
     Green,
 }
 
-impl LanePrintable for MarkingColor {
+impl Printable for Color {
     fn as_ascii(&self) -> char {
         match self {
             Self::White => 'w',

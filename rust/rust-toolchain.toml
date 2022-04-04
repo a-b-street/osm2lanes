@@ -1,6 +1,5 @@
 [toolchain]
 # https://rust-lang.github.io/rustup-components-history/
-# No RLS, as it has been missing for a month now
-channel = "nightly-2022-03-19"
+channel = "nightly-2022-03-28"
 targets = ["wasm32-unknown-unknown", "x86_64-unknown-linux-gnu"]
 profile = "default"

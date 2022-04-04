@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
+use crate::locale::{DrivingSide, Locale};
 use crate::tag::Tags;
-use crate::{DrivingSide, Locale};
 
 #[derive(Debug, Clone, Deserialize)]
 struct OverpassResult {
@@ -29,6 +29,16 @@ enum ElementType {
 
 type ElementId = u64;
 
+/// Get Tags from Overpass
+///
+/// # Errors
+///
+/// May occur when processing a request.
+///
+/// # Panics
+///
+/// Unexpected data from overpass and/or openstreetmap.
+///
 pub async fn get_tags(id: ElementId) -> Result<Tags, reqwest::Error> {
     let mut resp = reqwest::Client::new()
         .get(format!(
@@ -47,22 +57,16 @@ pub async fn get_tags(id: ElementId) -> Result<Tags, reqwest::Error> {
     Ok(element.tags)
 }
 
-pub async fn get_iso3166_2(id: ElementId) -> Result<String, reqwest::Error> {
-    let mut resp = reqwest::Client::new()
-        .get(format!(
-            r#"https://overpass-api.de/api/interpreter?data=[out:json][timeout:2];way(id:{});>;is_in;area._["ISO3166-2"];out tags;"#,
-            id
-        ))
-        .send()
-        .await?
-        .json::<OverpassResult>()
-        .await?;
-    log::debug!("{:#?}", resp);
-    assert_eq!(resp.elements.len(), 1);
-    let element = resp.elements.pop().unwrap();
-    Ok(element.tags.get("ISO3166-2").unwrap().to_owned())
-}
-
+/// Get Way from Overpass
+///
+/// # Errors
+///
+/// May occur when processing a request.
+///
+/// # Panics
+///
+/// Unexpected data from overpass and/or openstreetmap.
+///
 pub async fn get_way(id: ElementId) -> Result<(Tags, Locale), reqwest::Error> {
     let resp = reqwest::Client::new()
         .get(format!(

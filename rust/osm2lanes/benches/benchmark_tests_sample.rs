@@ -1,6 +1,7 @@
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use osm2lanes::locale::Locale;
 use osm2lanes::test::get_tests;
-use osm2lanes::{tags_to_lanes, Locale, TagsToLanesConfig};
+use osm2lanes::transform::{tags_to_lanes, TagsToLanesConfig};
 
 const SAMPLE_RATE: u64 = 4;
 pub fn benchmark_tests(c: &mut Criterion) {
