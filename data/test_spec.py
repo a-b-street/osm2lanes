@@ -30,7 +30,10 @@ class TestSpec(unittest.TestCase):
                     if k in ("way_id", "link", "comment")
                 }
             ):
-                validate(instance=config["output"], schema=SCHEMA)
+                validate(
+                    instance=config.get("output") or config["road"]["lanes"],
+                    schema=SCHEMA,
+                )
 
 
 if __name__ == "__main__":

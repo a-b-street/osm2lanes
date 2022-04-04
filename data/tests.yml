@@ -59,31 +59,33 @@
     ignore_warnings: true
   skip_kotlin: true
   tags:
-    highway: trunk
-    surface: asphalt
+    highway: "trunk"
+    surface: "asphalt"
   driving_side: left
   ISO 3166-2: AU-WA
-  output:
-  - type: shoulder
-  - type: separator
-    markings:
-    - style: solid_line
-      color: white
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: separator
-    markings:
-    - style: dotted_line
-      color: white
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: separator
-    markings:
-    - style: solid_line
-      color: white
-  - type: shoulder
+  road:
+    highway: trunk
+    lanes:
+    - type: shoulder
+    - type: separator
+      markings:
+      - style: solid_line
+        color: white
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: separator
+      markings:
+      - style: dotted_line
+        color: white
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: separator
+      markings:
+      - style: solid_line
+        color: white
+    - type: shoulder
 
 - description: "Alaska Highway, a 2 lane rural road."
   way_id: 159276650

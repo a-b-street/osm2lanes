@@ -6,26 +6,31 @@ use crate::metric::{Metre, Speed};
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum Lane {
-    #[serde(rename = "travel")]
     Travel {
         // TODO, we could make this non-optional, but remove the field for designated=foot?
+        #[serde(skip_serializing_if = "Option::is_none")]
         direction: Option<Direction>,
         designated: Designated,
+        #[serde(skip_serializing_if = "Option::is_none")]
         width: Option<Metre>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         max_speed: Option<Speed>,
     },
-    #[serde(rename = "parking")]
     Parking {
         direction: Direction,
         designated: Designated,
+        #[serde(skip_serializing_if = "Option::is_none")]
         width: Option<Metre>,
     },
-    #[serde(rename = "shoulder")]
-    Shoulder { width: Option<Metre> },
-    #[serde(rename = "separator")]
-    Separator { markings: Markings },
+    Shoulder {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        width: Option<Metre>,
+    },
+    Separator {
+        markings: Markings,
+    },
 }
 
 impl Lane {
@@ -49,12 +54,10 @@ impl Lane {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Direction {
-    #[serde(rename = "forward")]
     Forward,
-    #[serde(rename = "backward")]
     Backward,
-    #[serde(rename = "both")]
     Both,
 }
 

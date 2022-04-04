@@ -31,7 +31,7 @@ class Case:
     way_id: Optional[int]
     tags: Tags
     driving_side: DrivingSide
-    output: list[Lane]
+    lanes: list[Lane]
 
     @classmethod
     def from_structure(cls, structure: dict[str, Any]) -> "Case":
@@ -42,9 +42,9 @@ class Case:
             description=structure.get("description"),
             tags=structure["tags"],
             driving_side=DrivingSide(structure["driving_side"]),
-            output=[
+            lanes=[
                 Lane.from_structure(l)
-                for l in structure["output"]
+                for l in structure.get("output") or structure["road"]["lanes"]
                 if l["type"] != "separator"
             ],
         )
@@ -60,5 +60,5 @@ def test_lanes(test_configuration: dict[str, Any]) -> None:
     tags = "\n    ".join(f"{k}={v}" for k, v in test.tags.items())
 
     assert (
-        output == test.output
-    ), f"{test.way_id}: {test.description}\nGot:      {output}\nExpected: {test.output}\nTags:\n    {tags}"
+        output == test.lanes
+    ), f"{test.way_id}: {test.description}\nGot:      {output}\nExpected: {test.lanes}\nTags:\n    {tags}"
