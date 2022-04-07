@@ -51,6 +51,18 @@ impl Lane {
             Lane::Shoulder { width, .. } => width.unwrap_or(Lane::DEFAULT_WIDTH),
         }
     }
+
+    /// Mirror the lane
+    #[must_use]
+    pub fn mirror(self) -> Self {
+        match self {
+            Self::Separator { mut markings } => {
+                markings.flip();
+                Self::Separator { markings }
+            }
+            _ => self,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]

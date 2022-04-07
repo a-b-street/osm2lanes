@@ -4,8 +4,8 @@
 ### - simple to complex
 ### - rural to urban
 ### - By infrastructure:
-###   - car-centric 
-###   - pedestrian 
+###   - car-centric
+###   - pedestrian
 ###   - cycleways
 ###   - busways
 ###   - heavy goods vehicles
@@ -66,26 +66,26 @@
   road:
     highway: trunk
     lanes:
-    - type: shoulder
-    - type: separator
-      markings:
-      - style: solid_line
-        color: white
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: separator
-      markings:
-      - style: dotted_line
-        color: white
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: separator
-      markings:
-      - style: solid_line
-        color: white
-    - type: shoulder
+      - type: shoulder
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: separator
+        markings:
+          - style: dotted_line
+            color: white
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+      - type: shoulder
 
 - description: "Alaska Highway, a 2 lane rural road."
   way_id: 159276650
@@ -94,32 +94,34 @@
     expect_warnings: true
   skip_kotlin: true
   tags:
-    highway: trunk
-    lanes: '2'
-    surface: paved
+    highway: "trunk"
+    lanes: "2"
+    surface: "paved"
   driving_side: right
   ISO 3166-2: CA-YT
-  output:
-  - type: shoulder
-  - type: separator
-    markings:
-    - style: solid_line
-      color: white
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: separator
-    markings:
-    - style: dotted_line
-      color: yellow
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: separator
-    markings:
-    - style: solid_line
-      color: white
-  - type: shoulder
+  road:
+    highway: trunk
+    lanes:
+      - type: shoulder
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: separator
+        markings:
+          - style: dotted_line
+            color: yellow
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+      - type: shoulder
 
 ## Netherlands
 
@@ -132,38 +134,40 @@
   skip_kotlin: true
   skip_python: true
   tags:
-    highway: 'trunk'
-    maxspeed: '100'
-    motorroad: 'yes'
+    highway: "trunk"
+    maxspeed: "100"
+    motorroad: "yes"
   driving_side: right
   ISO 3166-2: NL-FR
-  output:
-  - type: shoulder
-  - type: separator
-    markings:
-    - style: solid_line
-      color: white
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-    max_speed: 100
-  - type: separator
-    markings:
-    - style: broken_line
-      color: white
-    - style: solid_line
-      color: green
-    - style: broken_line
-      color: white
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-    max_speed: 100
-  - type: separator
-    markings:
-    - style: solid_line
-      color: white
-  - type: shoulder
+  road:
+    highway: trunk
+    lanes:
+      - type: shoulder
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+        max_speed: 100
+      - type: separator
+        markings:
+          - style: broken_line
+            color: white
+          - style: solid_line
+            color: green
+          - style: broken_line
+            color: white
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+        max_speed: 100
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+      - type: shoulder
 
 ### Multi-lane Trunk
 
@@ -172,35 +176,38 @@
   mapillary: https://www.mapillary.com/app/?pKey=2655760771400441
   skip_python: true
   skip_kotlin: true
-  rust: false
+  rust:
+    expect_warnings: true
   tags:
-    highway: motorway
-    lanes: '2'
-    oneway: 'yes'
-    maxspeed: '100'
-    ref: E1A
+    highway: "motorway"
+    lanes: "2"
+    oneway: "yes"
+    maxspeed: "100"
+    ref: "E1A"
   driving_side: left
   ISO 3166-2: JP-25
-  output:
-  - type: shoulder
-  - type: separator
-    markings:
-    - style: solid_line
-      color: white
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: separator
-    markings:
-    - style: dotted_line
-      color: white
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: separator
-    markings:
-    - style: solid_line
-      color: white
+  road:
+    highway: motorway
+    lanes:
+      - type: shoulder
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: separator
+        markings:
+          - style: dotted_line
+            color: white
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
 
 - way_id: 560651884
   description: Italian Autostrada, motorway in mountainous terrain with no shoulder
@@ -208,34 +215,36 @@
   rust: false
   tags:
     highway: motorway
-    lanes: '2'
-    oneway: 'yes'
+    lanes: "2"
+    oneway: "yes"
     surface: asphalt
-    toll: 'yes'
-    maxspeed: '110'
+    toll: "yes"
+    maxspeed: "110"
     nat_ref: A12
     int_ref: E 80
   driving_side: right
   ISO 3166-2: IT-42
-  output:
-  - type: separator
-    markings:
-    - style: solid_line
-      color: white
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: separator
-    markings:
-    - style: dotted_line
-      color: white
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: separator
-    markings:
-    - style: solid_line
-      color: white
+  road:
+    highway: motorway
+    lanes:
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: separator
+        markings:
+          - style: dotted_line
+            color: white
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
 
 ### Pedestrian
 
@@ -249,8 +258,8 @@
   driving_side: right
   ISO 3166-2: CH-VS
   output:
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
 
 ### Sidewalk
 
@@ -258,139 +267,139 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '1'
-    oneway: 'yes'
-    shoulder: 'no'
-    sidewalk: 'no'
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    shoulder: "no"
+    sidewalk: "no"
   driving_side: left
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 - description: sidewalk=both
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '1'
-    oneway: 'yes'
-    shoulder: 'no'
-    sidewalk: 'both'
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    shoulder: "no"
+    sidewalk: "both"
   driving_side: left
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 - description: sidewalk=left (forward)
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '1'
-    oneway: 'yes'
-    shoulder: 'no'
-    sidewalk: 'left'
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    shoulder: "no"
+    sidewalk: "left"
   driving_side: left
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 - description: sidewalk=right (forward)
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '1'
-    oneway: 'yes'
-    shoulder: 'no'
-    sidewalk: 'right'
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    shoulder: "no"
+    sidewalk: "right"
   driving_side: right
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 - description: sidewalk=right (backward)
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '1'
-    oneway: 'yes'
-    shoulder: 'no'
-    sidewalk: 'right'
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    shoulder: "no"
+    sidewalk: "right"
   driving_side: left
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 - description: sidewalk:both=yes
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '1'
-    oneway: 'yes'
-    shoulder: 'no'
-    sidewalk:both: 'yes'
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    shoulder: "no"
+    sidewalk:both: "yes"
   driving_side: left
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 - description: sidewalk:left=yes
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '1'
-    oneway: 'yes'
-    shoulder: 'no'
-    sidewalk:left: 'yes'
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    shoulder: "no"
+    sidewalk:left: "yes"
   driving_side: left
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 - description: sidewalk:right=yes
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '1'
-    oneway: 'yes'
-    shoulder: 'no'
-    sidewalk:right: 'yes'
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    shoulder: "no"
+    sidewalk:right: "yes"
   driving_side: left
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 ### Cycleways
 
@@ -398,113 +407,113 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '2'
+    highway: "road"
+    lanes: "2"
     cycleway: lane
-    sidewalk: 'no'
-    shoulder: 'no'
+    sidewalk: "no"
+    shoulder: "no"
   driving_side: left
   output:
-  - type: travel
-    direction: forward
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: bicycle
+    - type: travel
+      direction: forward
+      designated: bicycle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: bicycle
 
 - description: cycleway=lane oneway=yes
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '2'
-    oneway: 'yes'
+    highway: "road"
+    lanes: "2"
+    oneway: "yes"
     cycleway:left: lane
-    sidewalk: 'no'
-    shoulder: 'no'
+    sidewalk: "no"
+    shoulder: "no"
   driving_side: right
   output:
-  - type: travel
-    direction: forward
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bicycle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 - description: cycleway:FORWARD=lane
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '2'
+    highway: "road"
+    lanes: "2"
     cycleway:left: lane
-    sidewalk: 'no'
-    shoulder: 'no'
+    sidewalk: "no"
+    shoulder: "no"
   driving_side: left
   output:
-  - type: travel
-    direction: forward
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bicycle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
 
 - description: cycleway:FORWARD=lane oneway=yes
   way_id: 4188078
   mapillary: https://www.mapillary.com/app/?pKey=270752554744918
   tags:
-    highway: 'road'
-    lanes: '2'
+    highway: "road"
+    lanes: "2"
     cycleway:left: lane
-    oneway: 'yes'
+    oneway: "yes"
     sidewalk: left
   driving_side: left
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: bicycle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 - description: cycleway:BACKWARD=lane
   way_id: 49207928
   tags:
-    highway: 'road'
+    highway: "road"
     cycleway:right: lane
     sidewalk: both
   driving_side: left
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: bicycle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: bicycle
+    - type: travel
+      designated: foot
 
 - description: cycleway:BACKWARD=lane oneway=yes, cycleway is in the forward direction
   way_id: 428294122
@@ -514,96 +523,96 @@
   # https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
   # TODO: OSM tags do not accurately reflect parking situation
   tags:
-    highway: 'secondary'
-    bicycle: 'designated'
-    lanes: '2'
-    oneway: 'yes'
-    sidewalk: 'both'
-    cycleway:left: 'lane'
+    highway: "secondary"
+    bicycle: "designated"
+    lanes: "2"
+    oneway: "yes"
+    sidewalk: "both"
+    cycleway:left: "lane"
   driving_side: right
   ISO 3166-2: US-WA
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: bicycle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 - description: cycleway:FORWARD=lane cycleway:FORWARD:oneway=no
   way_id: 534549104
   mapillary: https://www.mapillary.com/app/?pKey=1848856645291310
   # TODO: find better example with same tags
   tags:
-    highway: 'road'
-    lanes: '2'
-    oneway: 'yes'
-    sidewalk: 'both'
-    cycleway:right: 'track'
-    cycleway:right:oneway: 'no'
-    oneway:bicycle: 'no'
+    highway: "road"
+    lanes: "2"
+    oneway: "yes"
+    sidewalk: "both"
+    cycleway:right: "track"
+    cycleway:right:oneway: "no"
+    oneway:bicycle: "no"
   driving_side: right
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: both
-    designated: bicycle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: both
+      designated: bicycle
+    - type: travel
+      designated: foot
 
 - description: cycleway=opposite_lane oneway=yes, deprecated
   skip_python: true
   skip_kotlin: true
   rust: false
   tags:
-    highway: 'road'
-    lanes: '1'
-    oneway: 'yes'
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
     cycleway: opposite_lane
-    sidewalk: 'no'
-    shoulder: 'no'
+    sidewalk: "no"
+    shoulder: "no"
   driving_side: right
   output:
-  - type: travel
-    direction: backward
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: bicycle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 - description: cycleway=opposite oneway=yes oneway:bicycle=no
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '1'
-    oneway: 'yes'
-    oneway:bicycle: 'no'
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    oneway:bicycle: "no"
     cycleway: opposite
-    sidewalk: 'no'
-    shoulder: 'no'
+    sidewalk: "no"
+    shoulder: "no"
   driving_side: right
   output:
-  - type: travel
-    direction: backward
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: bicycle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 ## TODO: shared cycle lanes
 
@@ -618,111 +627,111 @@
   skip_kotlin: true
   skip_python: true
   tags:
-    highway: 'road'
-    lanes: '4'
-    sidewalk: 'no'
-    shoulder: 'no'
+    highway: "road"
+    lanes: "4"
+    sidewalk: "no"
+    shoulder: "no"
     busway: lane
   driving_side: left
   output:
-  - type: travel
-    direction: forward
-    designated: bus
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: bus
+    - type: travel
+      direction: forward
+      designated: bus
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: bus
 
 - description: busway:both=lane
   skip_kotlin: true
   skip_python: true
   tags:
-    highway: 'road'
-    lanes: '4'
-    sidewalk: 'no'
-    shoulder: 'no'
+    highway: "road"
+    lanes: "4"
+    sidewalk: "no"
+    shoulder: "no"
     busway:both: lane
   driving_side: right
   output:
-  - type: travel
-    direction: backward
-    designated: bus
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: bus
+    - type: travel
+      direction: backward
+      designated: bus
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bus
 
 - description: busway:FORWARD=lane
   skip_kotlin: true
   skip_python: true
   tags:
-    highway: 'road'
-    lanes: '3'
-    sidewalk: 'no'
-    shoulder: 'no'
+    highway: "road"
+    lanes: "3"
+    sidewalk: "no"
+    shoulder: "no"
     busway:right: lane
   driving_side: right
   output:
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: bus
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bus
 
 - description: busway:BACKWARD=lane
   skip_kotlin: true
   skip_python: true
   rust: false
   tags:
-    highway: 'road'
-    lanes: '3'
-    sidewalk: 'no'
-    shoulder: 'no'
+    highway: "road"
+    lanes: "3"
+    sidewalk: "no"
+    shoulder: "no"
     busway:right: lane
   driving_side: left
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: bus
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: bus
 
 - description: busway=opposite_lane, deprecated
   skip_python: true
   skip_kotlin: true
   rust: false
   tags:
-    highway: 'road'
-    lanes: '2'
-    sidewalk: 'no'
-    shoulder: 'no'
+    highway: "road"
+    lanes: "2"
+    sidewalk: "no"
+    shoulder: "no"
     busway: opposite_lane
   driving_side: left
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: bus
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: bus
 
 ## `bus:lanes` Scheme
 ## https://wiki.openstreetmap.org/wiki/Bus_lanes#The_bus:lanes.3D.2A_scheme
@@ -731,83 +740,82 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '2'
-    sidewalk: 'no'
-    shoulder: 'no'
-    bus:lanes: 'designated|'
+    highway: "road"
+    lanes: "2"
+    sidewalk: "no"
+    shoulder: "no"
+    bus:lanes: "designated|"
   driving_side: left
   output:
-  - type: travel
-    direction: forward
-    designated: bus
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bus
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
 
 - description: psv:lanes=|yes|designated|no
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '4'
-    sidewalk: 'no'
-    shoulder: 'no'
-    psv:lanes: '|yes|designated|no'
+    highway: "road"
+    lanes: "4"
+    sidewalk: "no"
+    shoulder: "no"
+    psv:lanes: "|yes|designated|no"
   driving_side: right
   output:
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: bus
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bus
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 - description: bus:lanes:forward=designated|
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '3'
-    sidewalk: 'no'
-    shoulder: 'no'
-    bus:lanes:forward: 'designated|'
+    highway: "road"
+    lanes: "3"
+    sidewalk: "no"
+    shoulder: "no"
+    bus:lanes:forward: "designated|"
   driving_side: right
   output:
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: bus
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bus
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 - description: bus:lanes:backward=designated
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'road'
-    lanes: '2'
-    sidewalk: 'no'
-    shoulder: 'no'
-    bus:lanes:backward: 'designated'
+    highway: "road"
+    lanes: "2"
+    sidewalk: "no"
+    shoulder: "no"
+    bus:lanes:backward: "designated"
   driving_side: left
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: bus
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: bus
 
 ## Mixed Schemes
 
@@ -821,41 +829,41 @@
     highway: primary
     busway: lane
     hgv: local
-    lanes:bus: '2'
-    lit: 'yes'
+    lanes:bus: "2"
+    lit: "yes"
     maxspeed: 25 mph
     name: East 42nd Street
     sidewalk: both
     surface: asphalt
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: backward
-    designated: bus
-    max_speed:
-      unit: mph
-      value: 25
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-    max_speed:
-      unit: mph
-      value: 25
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-    max_speed:
-      unit: mph
-      value: 25
-  - type: travel
-    direction: forward
-    designated: bus
-    max_speed:
-      unit: mph
-      value: 25
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: backward
+      designated: bus
+      max_speed:
+        unit: mph
+        value: 25
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+      max_speed:
+        unit: mph
+        value: 25
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+      max_speed:
+        unit: mph
+        value: 25
+    - type: travel
+      direction: forward
+      designated: bus
+      max_speed:
+        unit: mph
+        value: 25
+    - type: travel
+      designated: foot
 
 ### Combination
 # TODO
@@ -867,18 +875,18 @@
   skip_python: true
   skip_kotlin: true
   tags:
-    highway: 'construction'
-    construction: 'road'
-    lanes: '1'
-    oneway: 'yes'
-    shoulder: 'no'
-    sidewalk: 'no'
+    highway: "construction"
+    construction: "road"
+    lanes: "1"
+    oneway: "yes"
+    shoulder: "no"
+    sidewalk: "no"
   driving_side: left
   # TODO: nest this so we can check highway type
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 ### To Sort
 # The following still need to be categorized
@@ -889,24 +897,24 @@
   # TODO: cycleway tagged as track, but appears to be a lane
   tags:
     highway: tertiary
-    lanes: '1'
-    oneway: 'yes'
+    lanes: "1"
+    oneway: "yes"
     sidewalk: both
     cycleway:left: track
-    oneway:bicycle: 'no'
+    oneway:bicycle: "no"
   driving_side: right
   ISO 3166-2: US-WA
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: both
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: both
+      designated: bicycle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 # A slight variation of the above, using cycleway:left:oneway:no, which should be equivalent
 - way_id: 8591383
@@ -914,25 +922,24 @@
   description: a bidirectional cycleway, cycleway:left
   tags:
     highway: tertiary
-    lanes: '1'
-    oneway: 'yes'
+    lanes: "1"
+    oneway: "yes"
     sidewalk: both
     cycleway:left: track
-    cycleway:left:oneway: 'no'
+    cycleway:left:oneway: "no"
   driving_side: right
   ISO 3166-2: US-WA
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: both
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
-
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: both
+      designated: bicycle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 - way_id: 353690151
   mapillary: https://www.mapillary.com/app/?pKey=814030435898295
@@ -940,39 +947,39 @@
   # TODO: tram line not supported
   tags:
     highway: secondary
-    lanes: '4'
+    lanes: "4"
     sidewalk: both
     parking:lane:both: parallel
     cycleway:right: track
-    cycleway:right:oneway: 'no'
+    cycleway:right:oneway: "no"
   driving_side: right
   ISO 3166-2: US-WA
   output:
-  - type: travel
-    designated: foot
-  - type: parking
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: both
-    designated: bicycle
-  - type: parking
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: parking
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: both
+      designated: bicycle
+    - type: parking
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 - way_id: 389654080
   mapillary: https://www.mapillary.com/app/?pKey=331760328316020
@@ -980,35 +987,35 @@
   # how should we know that given the tags or what should the tags be?
   tags:
     highway: secondary
-    lanes: '2'
+    lanes: "2"
     sidewalk: both
     parking:lane:left: parallel
     parking:lane:right: no_stopping
-    centre_turn_lane: 'yes'
+    centre_turn_lane: "yes"
     cycleway:right: track
-    cycleway:right:oneway: 'no'
+    cycleway:right:oneway: "no"
   driving_side: right
   ISO 3166-2: US-WA
   output:
-  - type: travel
-    designated: foot
-  - type: parking
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: both
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: both
-    designated: bicycle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: parking
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: both
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: both
+      designated: bicycle
+    - type: travel
+      designated: foot
 
 - way_id: 369623526
   # OSM Version #9
@@ -1018,204 +1025,204 @@
   # TODO: parking lane is not parallel
   tags:
     highway: residential
-    lanes: '1'
-    oneway: 'yes'
+    lanes: "1"
+    oneway: "yes"
     sidewalk: both
     parking:lane:right: diagonal
     cycleway:left: opposite_track
-    oneway:bicycle: 'no'
+    oneway:bicycle: "no"
   driving_side: right
   ISO 3166-2: US-WA
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: both
-    designated: bicycle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: parking
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: both
+      designated: bicycle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: parking
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 - way_id: 777565028
-  comment: 'TODO: image; TODO: example with oneway assumed to be no'
+  comment: "TODO: image; TODO: example with oneway assumed to be no"
   tags:
     highway: residential
-    oneway: 'no'
+    oneway: "no"
     sidewalk: both
   driving_side: left
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 - way_id: 224637155
   mapillary: https://www.mapillary.com/app/?pKey=3687326814728481
-  comment: 'TODO: missing cycleway:left and busway tags'
+  comment: "TODO: missing cycleway:left and busway tags"
   tags:
     highway: primary
-    lanes: '2'
-    oneway: 'yes'
+    lanes: "2"
+    oneway: "yes"
     sidewalk: left
   driving_side: left
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
 
 - way_id: 898731283
   comment: how should an odd number of lanes forward/backwards be split without any clues?
   tags:
-    highway: 'road'
-    lanes: '3'
-    sidewalk: 'both'
-  driving_side: 'left'
+    highway: "road"
+    lanes: "3"
+    sidewalk: "both"
+  driving_side: "left"
   output:
-  - type: travel
-    designated: foot
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 # I didn't look for a real example of this
-- description: '5 lanes'
+- description: "5 lanes"
   tags:
-    highway: 'road'
-    lanes: '5'
-    sidewalk: 'no'
+    highway: "road"
+    lanes: "5"
+    sidewalk: "no"
   driving_side: right
   output:
-  - type: shoulder
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: shoulder
+    - type: shoulder
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: shoulder
 
 - way_id: 335668924
   tags:
-    highway: 'road'
-    lanes: '1'
-    sidewalk: 'no'
+    highway: "road"
+    lanes: "1"
+    sidewalk: "no"
   driving_side: right
   output:
-  - type: shoulder
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: shoulder
+    - type: shoulder
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: shoulder
 
 - way_id: 13859146
-  rust: false  
+  rust: false
   tags:
-    highway: 'secondary'
-    busway:both: 'lane'
-    lanes: '4'
-    maxspeed: '50'
+    highway: "secondary"
+    busway:both: "lane"
+    lanes: "4"
+    maxspeed: "50"
     name: Rue Gabriel Péri
     ref: D 986
     surface: asphalt
   driving_side: right
   output:
-  - type: travel
-    direction: backward
-    designated: bus
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: bus
+    - type: travel
+      direction: backward
+      designated: bus
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bus
 
 - way_id: 84867915
   rust: false
   tags:
-    highway: 'secondary'
+    highway: "secondary"
     busway:right: lane
     cycleway:right: share_busway
-    lanes: '2'
-    maxspeed: '30'
+    lanes: "2"
+    maxspeed: "30"
     name: Boulevard Raspail
-    oneway: 'yes'
+    oneway: "yes"
     surface: asphalt
   driving_side: right
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: bus
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bus
 
 - way_id: 323605308
   rust: false
   tags:
-    highway: 'primary'
-    bus:lanes: 'yes|yes|designated'
-    busway:right: 'lane'
-    cycleway:right: 'share_busway'
-    lanes: '3'
-    lanes:psv: '1'
-    lit: 'yes'
-    maxspeed: '30'
-    name: 'Quai Aimé Césaire'
-    oneway: 'yes'
-    psv:lanes: 'yes|yes|designated'
-    surface: 'asphalt'
-    taxi:lanes: 'yes|yes|designated'
+    highway: "primary"
+    bus:lanes: "yes|yes|designated"
+    busway:right: "lane"
+    cycleway:right: "share_busway"
+    lanes: "3"
+    lanes:psv: "1"
+    lit: "yes"
+    maxspeed: "30"
+    name: "Quai Aimé Césaire"
+    oneway: "yes"
+    psv:lanes: "yes|yes|designated"
+    surface: "asphalt"
+    taxi:lanes: "yes|yes|designated"
   driving_side: right
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    # TODO: psv?
-    designated: bus
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      # TODO: psv?
+      designated: bus
 
 - skip_python: true
   skip_kotlin: true
@@ -1224,14 +1231,14 @@
   tags:
     cycleway:right: share_busway
     highway: secondary
-    lanes: '3'
-    lanes:psv: '1'
-    lit: 'yes'
-    maxspeed: '50'
+    lanes: "3"
+    lanes:psv: "1"
+    lit: "yes"
+    maxspeed: "50"
     name: Kurfürstendamm
     note: Ergänzungsstraße mit besonderer Bedeutung
-    oneway: 'yes'
-    postal_code: '10719'
+    oneway: "yes"
+    postal_code: "10719"
     psv:lanes: yes|designated|yes
     sidewalk: right
     surface: asphalt
@@ -1241,40 +1248,40 @@
     wikipedia: de:Kurfürstendamm
   driving_side: right
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: bus
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    designated: foot
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bus
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      designated: foot
 
 - skip_python: true
   skip_kotlin: true
   link: https://wiki.openstreetmap.org/wiki/Lanes
   rust: false
   tags:
-    lanes: '3'
-    oneway: 'yes'
+    lanes: "3"
+    oneway: "yes"
     maxspeed:lanes: 100|100|80
   driving_side: right
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-    max_speed: 100
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-    max_speed: 100
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-    max_speed: 80
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+      max_speed: 100
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+      max_speed: 100
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+      max_speed: 80
 
 - skip_python: true
   skip_kotlin: true
@@ -1282,18 +1289,18 @@
   rust: false
   tags:
     highway: secondary
-    oneway: 'yes'
-    lanes: '3'
+    oneway: "yes"
+    lanes: "3"
     busway:right: lane
     cycleway: share_busway
   driving_side: right
   output:
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: bus
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: bus

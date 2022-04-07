@@ -186,8 +186,24 @@ fn motor_lanes_to_separator(
     }
 }
 
-/// Given a lane on the edge of a way
-/// what should the separator be
-pub(super) fn lane_to_edge_separator(_lane: &LaneBuilder) -> Option<Lane> {
+/// Given a lane on the outer edge of a way
+/// what should the separator be.
+/// Lanes are defined inside to outside
+#[allow(clippy::unnecessary_wraps)]
+pub(super) fn lane_to_outer_edge_separator(_lane: &LaneBuilder) -> Option<Lane> {
     None
+}
+
+/// Given a lane on the inner edge of a way
+/// what should the separator be.
+/// Lanes are defined inside to outside
+#[allow(clippy::unnecessary_wraps)]
+pub(super) fn lane_to_inner_edge_separator(_lane: &LaneBuilder) -> Option<Lane> {
+    Some(Lane::Separator {
+        markings: Markings::new(vec![Marking {
+            style: Style::SolidLine,
+            color: Some(Color::White),
+            width: Some(Marking::DEFAULT_WIDTH),
+        }]),
+    })
 }

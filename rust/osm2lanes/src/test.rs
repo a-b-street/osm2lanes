@@ -136,6 +136,13 @@ mod tests {
         lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadError, RoadFromTags, TagsToLanesConfig,
     };
 
+    fn approx_eq<T: std::cmp::PartialEq>(left: &Option<T>, right: &Option<T>) -> bool {
+        match (left, right) {
+            (None, None) | (Some(_), None) | (None, Some(_)) => true,
+            (Some(left), Some(right)) => left == right,
+        }
+    }
+
     impl Road {
         /// Eq where None is treaty as always equal
         fn approx_eq(&self, other: &Self) -> bool {
@@ -163,21 +170,19 @@ mod tests {
                         designated: left_designated,
                         direction: left_direction,
                         width: left_width,
-                        max_speed: None,
+                        max_speed: left_max_speed,
                     },
                     Lane::Travel {
                         designated: right_designated,
                         direction: right_direction,
                         width: right_width,
-                        max_speed: None,
+                        max_speed: right_max_speed,
                     },
                 ) => {
                     left_designated == right_designated
                         && left_direction == right_direction
-                        && match (left_width, right_width) {
-                            (None, None) | (Some(_), None) | (None, Some(_)) => true,
-                            (Some(left), Some(right)) => left == right,
-                        }
+                        && approx_eq(left_width, right_width)
+                        && approx_eq(left_max_speed, right_max_speed)
                 }
                 (
                     Lane::Parking {
@@ -193,16 +198,10 @@ mod tests {
                 ) => {
                     left_designated == right_designated
                         && left_direction == right_direction
-                        && match (left_width, right_width) {
-                            (None, None) | (Some(_), None) | (None, Some(_)) => true,
-                            (Some(left), Some(right)) => left == right,
-                        }
+                        && approx_eq(left_width, right_width)
                 }
                 (Lane::Shoulder { width: left_width }, Lane::Shoulder { width: right_width }) => {
-                    match (left_width, right_width) {
-                        (None, None) | (Some(_), None) | (None, Some(_)) => true,
-                        (Some(left), Some(right)) => left == right,
-                    }
+                    approx_eq(left_width, right_width)
                 }
                 (left, right) => left == right,
             }
@@ -214,14 +213,8 @@ mod tests {
         #[allow(clippy::unnested_or_patterns)]
         fn approx_eq(&self, other: &Self) -> bool {
             self.style == other.style
-                && match (self.color, other.color) {
-                    (None, None) | (Some(_), None) | (None, Some(_)) => true,
-                    (Some(left), Some(right)) => left == right,
-                }
-                && match (self.width, other.width) {
-                    (None, None) | (Some(_), None) | (None, Some(_)) => true,
-                    (Some(left), Some(right)) => left == right,
-                }
+                && approx_eq(&self.color, &other.color)
+                && approx_eq(&self.width, &other.width)
         }
     }
 
