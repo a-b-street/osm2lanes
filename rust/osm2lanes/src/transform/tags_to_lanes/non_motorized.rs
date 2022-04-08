@@ -34,16 +34,20 @@ pub(super) fn non_motorized(
         return Ok(None);
     }
     // Easy special cases first.
-    if tags.is(HIGHWAY, "steps") {
+    if tags.is(HIGHWAY, "steps") || tags.is(HIGHWAY, "path") {
         return Ok(Some(RoadFromTags {
             road: Road {
                 lanes: vec![Lane::foot(locale)],
                 highway: road.highway.clone(),
             },
-            warnings: RoadWarnings::new(vec![RoadMsg::Other {
-                description: "highway is steps, but lane is only a sidewalk".to_owned(),
-                tags: tags.subset(&[HIGHWAY]),
-            }]),
+            warnings: RoadWarnings::new(if tags.is(HIGHWAY, "steps") {
+                vec![RoadMsg::Other {
+                    description: "highway is steps, but lane is only a sidewalk".to_owned(),
+                    tags: tags.subset(&[HIGHWAY]),
+                }]
+            } else {
+                Vec::new()
+            }),
         }));
     }
 

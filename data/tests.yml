@@ -252,14 +252,15 @@
   mapillary: https://www.mapillary.com/app/?pKey=619551292322212
   skip_python: true
   skip_kotlin: true
-  rust: false
   tags:
     highway: steps
   driving_side: right
   ISO 3166-2: CH-VS
-  output:
-    - type: travel
-      designated: foot
+  road:
+    highway: steps
+    lanes:
+      - type: travel
+        designated: foot
 
 ### Sidewalk
 
