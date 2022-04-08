@@ -19,7 +19,7 @@ mod parking;
 use parking::parking;
 
 mod separator;
-use separator::{lane_to_edge_separator, lanes_to_separator};
+use separator::{lane_to_inner_edge_separator, lane_to_outer_edge_separator, lanes_to_separator};
 
 mod non_motorized;
 use non_motorized::non_motorized;
@@ -153,6 +153,7 @@ pub struct LaneBuilder {
 }
 
 impl LaneBuilder {
+    #[must_use]
     fn build(self) -> Lane {
         let width = self.width.target.some();
         assert!(
@@ -178,6 +179,14 @@ impl LaneBuilder {
             Some(LaneType::Shoulder) => Lane::Shoulder { width },
             None => panic!(),
         }
+    }
+
+    /// Create a mirrored version of the lane
+    #[must_use]
+    fn mirror(&self) -> &Self {
+        // TODO: this doesn't need to do anything for now
+        // check back after v1.0.0 to see if this is still the case
+        self
     }
 }
 
@@ -425,18 +434,24 @@ impl RoadBuilder {
         warnings: &mut RoadWarnings,
     ) -> Result<(Vec<Lane>, Highway, Oneway), RoadError> {
         let lanes: Vec<Lane> = if include_separators {
-            let forward_edge = lane_to_edge_separator(self.forward_outside().unwrap());
-            let backward_edge = lane_to_edge_separator(self.backward_outside().unwrap());
-            let middle_separator = lanes_to_separator(
-                [
-                    self.forward_inside().unwrap(),
-                    self.backward_inside().unwrap(),
-                ],
-                &self,
-                tags,
-                locale,
-                warnings,
-            );
+            let forward_edge = self
+                .forward_outside()
+                .and_then(lane_to_outer_edge_separator);
+            let backward_edge = self
+                .backward_outside()
+                .and_then(lane_to_outer_edge_separator);
+            let middle_separator = match [self.forward_inside(), self.backward_inside()] {
+                [Some(forward), Some(backward)] => {
+                    lanes_to_separator([forward, backward], &self, tags, locale, warnings)
+                }
+                [Some(lane), None] | [None, Some(lane)] => {
+                    lane_to_inner_edge_separator(lane.mirror()).map(Lane::mirror)
+                }
+                _ => todo!(),
+            };
+            let forward_edge = dbg!(forward_edge);
+            let middle_separator = dbg!(middle_separator);
+            let backward_edge = dbg!(backward_edge);
 
             self.forward_lanes.make_contiguous();
             let forward_separators: Vec<Option<Lane>> = self
