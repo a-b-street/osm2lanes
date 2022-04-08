@@ -23,9 +23,6 @@ use separator::{lane_to_edge_separator, lanes_to_separator};
 
 mod non_motorized;
 
-mod road;
-// pub use road::Road;
-
 use non_motorized::non_motorized;
 
 use super::*;
