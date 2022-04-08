@@ -184,6 +184,8 @@ impl LaneBuilder {
     /// Create a mirrored version of the lane
     #[must_use]
     fn mirror(&self) -> &Self {
+        // TODO: this doesn't need to do anything for now
+        // check back after v1.0.0 to see if this is still the case
         self
     }
 }
