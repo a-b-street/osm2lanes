@@ -17,8 +17,8 @@ impl LaneBuilder {
 
 const BUSWAY: TagKey = TagKey::from("busway");
 pub struct Busway {
-    forward_direction: Infer<LaneDirection>,
-    backward_direction: Infer<LaneDirection>,
+    forward_direction: Infer<Option<LaneDirection>>,
+    backward_direction: Infer<Option<LaneDirection>>,
 }
 
 pub(super) fn bus(
