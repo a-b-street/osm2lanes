@@ -110,5 +110,5 @@ jobs:
       with:
         cwd: "rust"
         benchName: "benchmark_tests_sample"
-        branchName: ${{ github.base_ref || "HEAD~" }}
+        branchName: ${{ github.base_ref || 'HEAD~' }}
         token: ${{ secrets.GITHUB_TOKEN }}
