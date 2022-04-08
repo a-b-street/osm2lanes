@@ -1,15 +1,21 @@
 [package]
 name = "osm2lanes"
 version = "0.1.0"
-edition = "2021"
+description = "Transforms tags from an OpenStreetMap way into a specification of the lanes"
+readme = true
+repository = "https://github.com/a-b-street/osm2lanes"
+license = "Apache 2.0"
+keywords = ["osm", "lanes"]
+categories = []
 authors = [
     "Dustin Carlino <dabreegster@gmail.com>",
     "Michael Droogleever Fortuyn <droogmic@gmail.com>",
 ]
-license = "Apache 2.0"
+edition = "2021"
 
 [dependencies]
 celes = "2.1"
+locale-codes = "0.3"
 log = "0.4"
 reqwest = { version = "0.11", optional = true, features = ["blocking", "json"] }
 serde = { version = "1", features = ["derive"] }
@@ -34,5 +40,10 @@ harness = false
 
 [[bench]]
 name = "benchmark_tests"
+harness = false
+required-features = ["tests"]
+
+[[bench]]
+name = "benchmark_tests_sample"
 harness = false
 required-features = ["tests"]

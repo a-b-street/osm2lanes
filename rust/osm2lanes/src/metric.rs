@@ -4,9 +4,12 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub struct Metre(f64);
 
 impl Metre {
+    #[must_use]
     pub const fn new(val: f64) -> Self {
         Self(val)
     }
+
+    #[must_use]
     pub const fn val(&self) -> f64 {
         self.0
     }
@@ -124,12 +127,10 @@ mod speed {
     }
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    #[serde(rename_all = "snake_case")]
     enum SpeedUnit {
-        #[serde(rename = "kph")]
         Kph,
-        #[serde(rename = "mph")]
         Mph,
-        #[serde(rename = "knots")]
         Knots,
     }
 
@@ -198,9 +199,11 @@ mod speed {
         where
             E: serde::de::Error,
         {
+            let value = u32::try_from(value).unwrap();
+            let value = f64::from(value);
             Ok(SpeedStruct {
                 unit: SpeedUnit::Kph,
-                value: value as f64,
+                value,
             })
         }
 
@@ -219,9 +222,11 @@ mod speed {
         where
             E: serde::de::Error,
         {
+            let value = i32::try_from(value).unwrap();
+            let value = f64::from(value);
             Ok(SpeedStruct {
                 unit: SpeedUnit::Kph,
-                value: value as f64,
+                value,
             })
         }
 
@@ -280,9 +285,10 @@ mod speed {
     }
 }
 
+#[allow(clippy::similar_names)]
 #[cfg(test)]
 mod tests {
-    use crate::Speed;
+    use crate::metric::Speed;
 
     #[test]
     fn test_speed() {

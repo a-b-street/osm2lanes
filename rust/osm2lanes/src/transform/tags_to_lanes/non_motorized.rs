@@ -1,14 +1,17 @@
-use super::*;
+use super::{
+    Designated, DrivingSide, Lane, Locale, Road, RoadBuilder, RoadError, RoadFromTags, RoadMsg,
+    RoadWarnings, Tags, HIGHWAY,
+};
 
 impl Lane {
     fn shoulder(locale: &Locale) -> Self {
         Self::Shoulder {
             // TODO: width not just motor
-            width: Some(locale.travel_width(&LaneDesignated::Motor)),
+            width: Some(locale.travel_width(&Designated::Motor)),
         }
     }
     fn foot(locale: &Locale) -> Self {
-        let designated = LaneDesignated::Foot;
+        let designated = Designated::Foot;
         Self::Travel {
             direction: None,
             designated,
@@ -18,6 +21,7 @@ impl Lane {
     }
 }
 
+#[allow(clippy::unnecessary_wraps)]
 pub(super) fn non_motorized(
     tags: &Tags,
     locale: &Locale,
@@ -62,11 +66,11 @@ pub(super) fn non_motorized(
     }
     // Otherwise, there'll always be a bike lane.
 
-    let mut forward_side = vec![Lane::forward(LaneDesignated::Bicycle, locale)];
+    let mut forward_side = vec![Lane::forward(Designated::Bicycle, locale)];
     let mut backward_side = if tags.is("oneway", "yes") {
         vec![]
     } else {
-        vec![Lane::backward(LaneDesignated::Bicycle, locale)]
+        vec![Lane::backward(Designated::Bicycle, locale)]
     };
 
     if !tags.is("foot", "no") {
@@ -77,9 +81,28 @@ pub(super) fn non_motorized(
     }
     Ok(Some(RoadFromTags {
         road: Road {
-            lanes: assemble_ltr(forward_side, backward_side, locale.driving_side)?,
+            lanes: assemble_ltr(forward_side, backward_side, locale.driving_side),
             highway: road.highway.clone(),
         },
         warnings: RoadWarnings::default(),
     }))
+}
+
+fn assemble_ltr(
+    mut fwd_side: Vec<Lane>,
+    mut back_side: Vec<Lane>,
+    driving_side: DrivingSide,
+) -> Vec<Lane> {
+    match driving_side {
+        DrivingSide::Right => {
+            back_side.reverse();
+            back_side.extend(fwd_side);
+            back_side
+        }
+        DrivingSide::Left => {
+            fwd_side.reverse();
+            fwd_side.extend(back_side);
+            fwd_side
+        }
+    }
 }

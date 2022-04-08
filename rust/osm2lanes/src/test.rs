@@ -3,9 +3,9 @@ use std::io::BufReader;
 
 use serde::Deserialize;
 
-use crate::road::Lane;
+use crate::locale::DrivingSide;
+use crate::road::{Lane, Road};
 use crate::tag::Tags;
-use crate::DrivingSide;
 
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
@@ -13,8 +13,16 @@ pub enum RustTesting {
     Enabled(bool),
     WithOptions {
         separator: Option<bool>,
-        ignore_warnings: Option<bool>,
+        expect_warnings: Option<bool>,
     },
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Expected {
+    Road(Road),
+    // TODO: deprecated
+    Output(Vec<Lane>),
 }
 
 #[derive(Deserialize)]
@@ -33,13 +41,21 @@ pub struct TestCase {
 
     /// Data
     pub tags: Tags,
-    // TODO: add nesting or rename to lanes
-    pub output: Vec<Lane>,
-    /// Configure Rust Testing
+    #[serde(flatten)]
+    pub expected: Expected,
+
     pub rust: Option<RustTesting>,
 }
 
 impl TestCase {
+    /// Lanes of expected output
+    fn lanes(&self) -> &Vec<Lane> {
+        match &self.expected {
+            Expected::Road(road) => &road.lanes,
+            Expected::Output(lanes) => lanes,
+        }
+    }
+    /// Test case is enabled, true by default
     fn test_enabled(&self) -> bool {
         match self.rust {
             None => true,
@@ -47,14 +63,14 @@ impl TestCase {
             Some(RustTesting::WithOptions { .. }) => true,
         }
     }
-    /// Test case may pass with warnings
-    pub fn test_ignore_warnings(&self) -> bool {
+    /// Test case must have warnings
+    pub fn test_has_warnings(&self) -> bool {
         match self.rust {
             None => false,
             Some(RustTesting::Enabled(_)) => false,
             Some(RustTesting::WithOptions {
-                ignore_warnings, ..
-            }) => ignore_warnings.unwrap_or(false),
+                expect_warnings, ..
+            }) => expect_warnings.unwrap_or(false),
         }
     }
     /// Test case expects matching separators
@@ -67,7 +83,7 @@ impl TestCase {
     }
     /// Expected lanes include separator
     pub fn expected_has_separators(&self) -> bool {
-        self.output.iter().any(|lane| lane.is_separator())
+        self.lanes().iter().any(|lane| lane.is_separator())
     }
 }
 
@@ -113,12 +129,12 @@ mod tests {
     use assert_json_diff::assert_json_eq;
 
     use super::*;
-    use crate::road::{Lane, LanePrintable, Marking, Road};
+    use crate::locale::{DrivingSide, Locale};
+    use crate::road::{Lane, Marking, Printable, Road};
     use crate::tag::Highway;
     use crate::transform::{
         lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadError, RoadFromTags, TagsToLanesConfig,
     };
-    use crate::{DrivingSide, Locale};
 
     impl Road {
         /// Eq where None is treaty as always equal
@@ -136,6 +152,7 @@ mod tests {
     impl Lane {
         /// Eq where None is treaty as always equal
         fn approx_eq(&self, other: &Self) -> bool {
+            #[allow(clippy::unnested_or_patterns)]
             match (self, other) {
                 (Lane::Separator { markings: left }, Lane::Separator { markings: right }) => left
                     .iter()
@@ -194,6 +211,7 @@ mod tests {
 
     impl Marking {
         /// Eq where None is treaty as always equal
+        #[allow(clippy::unnested_or_patterns)]
         fn approx_eq(&self, other: &Self) -> bool {
             self.style == other.style
                 && match (self.color, other.color) {
@@ -209,7 +227,7 @@ mod tests {
 
     impl DrivingSide {
         /// Three-letter abbreviation
-        const fn as_tla(&self) -> &'static str {
+        const fn as_tla(self) -> &'static str {
             match self {
                 Self::Right => "RHT",
                 Self::Left => "LHT",
@@ -235,7 +253,7 @@ mod tests {
                 self.driving_side.as_tla(),
                 self.test_include_separators(),
                 self.expected_has_separators(),
-                !self.test_ignore_warnings(),
+                !self.test_has_warnings(),
             );
             if let Some(comment) = self.comment.as_ref() {
                 println!("        Comment: {}", comment);
@@ -254,7 +272,7 @@ mod tests {
         fn expected_road(&self) -> Road {
             Road {
                 lanes: self
-                    .output
+                    .lanes()
                     .iter()
                     .filter(|lane| self.is_lane_enabled(lane))
                     .cloned()
@@ -265,7 +283,7 @@ mod tests {
     }
 
     impl RoadFromTags {
-        /// Return a Road based upon a RoadFromTags with irrelevant parts filtered out.
+        /// Return a Road based upon a `RoadFromTags` with irrelevant parts filtered out.
         fn into_filtered_road(self, test: &TestCase) -> Road {
             Road {
                 lanes: self
@@ -368,7 +386,7 @@ mod tests {
                     &test.tags,
                     &locale,
                     &TagsToLanesConfig {
-                        error_on_warnings: !test.test_ignore_warnings(),
+                        error_on_warnings: !test.test_has_warnings(),
                         include_separators: test.test_include_separators()
                             && test.expected_has_separators(),
                         ..TagsToLanesConfig::default()
@@ -377,26 +395,33 @@ mod tests {
                 let expected_road = test.expected_road();
                 match road_from_tags {
                     Ok(road_from_tags) => {
-                        let actual_road = road_from_tags.into_filtered_road(test);
-                        if actual_road.approx_eq(&expected_road) {
-                            true
-                        } else {
+                        if test.test_has_warnings() && road_from_tags.warnings.is_empty() {
                             test.print();
-                            println!("Got:");
-                            println!("    {}", stringify_lane_types(&actual_road));
-                            println!("    {}", stringify_directions(&actual_road));
-                            println!("Expected:");
-                            println!("    {}", stringify_lane_types(&expected_road));
-                            println!("    {}", stringify_directions(&expected_road));
-                            if stringify_lane_types(&actual_road)
-                                == stringify_lane_types(&expected_road)
-                                || stringify_directions(&actual_road)
-                                    == stringify_directions(&expected_road)
-                            {
-                                assert_json_eq!(actual_road, expected_road);
-                            }
+                            println!("Expected warnings. Try removing `ignore_warnings`.");
                             println!();
                             false
+                        } else {
+                            let actual_road = road_from_tags.into_filtered_road(test);
+                            if actual_road.approx_eq(&expected_road) {
+                                true
+                            } else {
+                                test.print();
+                                println!("Got:");
+                                println!("    {}", stringify_lane_types(&actual_road));
+                                println!("    {}", stringify_directions(&actual_road));
+                                println!("Expected:");
+                                println!("    {}", stringify_lane_types(&expected_road));
+                                println!("    {}", stringify_directions(&expected_road));
+                                if stringify_lane_types(&actual_road)
+                                    == stringify_lane_types(&expected_road)
+                                    || stringify_directions(&actual_road)
+                                        == stringify_directions(&expected_road)
+                                {
+                                    assert_json_eq!(actual_road, expected_road);
+                                }
+                                println!();
+                                false
+                            }
                         }
                     }
                     Err(RoadError::Warnings(warnings)) => {
@@ -435,7 +460,7 @@ mod tests {
                     .build();
                 let input_road = test.expected_road();
                 let tags = lanes_to_tags(
-                    &test.output,
+                    &test.lanes(),
                     &locale,
                     &LanesToTagsConfig {
                         check_roundtrip: false,

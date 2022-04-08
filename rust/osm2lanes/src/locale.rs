@@ -1,8 +1,8 @@
 pub use celes::Country;
 use serde::{Deserialize, Serialize};
 
-use crate::road::LaneDesignated;
-use crate::Metre;
+use crate::metric::Metre;
+use crate::road::{Color, Designated};
 
 /// Context about the place where an OSM way exists.
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,14 +15,36 @@ pub struct Locale {
 }
 
 impl Locale {
+    #[must_use]
     pub fn builder() -> Config {
         Config::default()
     }
-    pub fn travel_width(&self, designated: &LaneDesignated) -> Metre {
+
+    #[must_use]
+    #[allow(clippy::unused_self)]
+    pub fn travel_width(&self, designated: &Designated) -> Metre {
         match designated {
-            LaneDesignated::Motor | LaneDesignated::Bus => Metre::new(3.5),
-            LaneDesignated::Foot => Metre::new(2.5),
-            LaneDesignated::Bicycle => Metre::new(2.0),
+            Designated::Motor | Designated::Bus => Metre::new(3.5),
+            Designated::Foot => Metre::new(2.5),
+            Designated::Bicycle => Metre::new(2.0),
+        }
+    }
+
+    /// Road paint colour separating opposite directions of motor traffic
+    /// default is white
+    #[must_use]
+    pub fn separator_motor_color(&self) -> Color {
+        match self
+            .country
+            .as_ref()
+            .map(|c| c.alpha3)
+            .and_then(locale_codes::country::lookup)
+            .and_then(|c| c.region_code)
+            .and_then(locale_codes::region::lookup)
+            .map(|region| region.name.as_str())
+        {
+            Some("Americas") => Color::Yellow,
+            Some(_) | None => Color::White,
         }
     }
 }
@@ -38,10 +60,13 @@ pub struct Config {
 }
 
 impl Config {
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
     pub fn way_id(mut self, id: u64) -> Self {
         self.way_id = Some(id);
         todo!();
@@ -50,6 +75,12 @@ impl Config {
     /// Assign ISO-3166
     ///
     /// Accepts any of ISO-3166-1 alpha-2,  ISO-3166-1 alpha-3, or ISO-3166-2 codes
+    ///
+    /// # Panics
+    ///
+    /// Cannot determine ISO3166 from code
+    /// TODO: this should probably not be a panic
+    #[must_use]
     pub fn iso_3166(mut self, code: &str) -> Self {
         if code.len() == 2 {
             self.iso_3166_1_alpha_2 = Some(code.to_owned());
@@ -59,23 +90,26 @@ impl Config {
             self.iso_3166_1_alpha_2 = Some(alpha_2.to_owned());
             self.iso_3166_2_subdivision = Some(subdivision.to_owned());
         } else {
-            todo!();
+            panic!("cannot determine ISO 3166 from {code}");
         }
         self
     }
 
+    #[must_use]
     pub fn iso_3166_option(mut self, code: Option<&str>) -> Self {
         if let Some(code) = code {
-            self = self.iso_3166(code)
+            self = self.iso_3166(code);
         }
         self
     }
 
+    #[must_use]
     pub fn driving_side(mut self, side: DrivingSide) -> Self {
         self.driving_side = Some(side);
         self
     }
 
+    #[must_use]
     pub fn build(&self) -> Locale {
         // TODO, more business logic
         let country = match (
@@ -106,6 +140,7 @@ pub enum DrivingSide {
 }
 
 impl DrivingSide {
+    #[must_use]
     pub fn opposite(&self) -> Self {
         match self {
             Self::Right => Self::Left,
@@ -129,7 +164,7 @@ impl std::str::FromStr for DrivingSide {
 mod tests {
     use celes::Country;
 
-    use crate::{DrivingSide, Locale};
+    use crate::locale::{DrivingSide, Locale};
 
     #[test]
     fn test_locale() {

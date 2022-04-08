@@ -1,36 +1,43 @@
 use serde::{Deserialize, Serialize};
 
 use super::Markings;
-use crate::{Locale, Metre, Speed};
+use crate::locale::Locale;
+use crate::metric::{Metre, Speed};
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum Lane {
-    #[serde(rename = "travel")]
     Travel {
         // TODO, we could make this non-optional, but remove the field for designated=foot?
-        direction: Option<LaneDirection>,
-        designated: LaneDesignated,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        direction: Option<Direction>,
+        designated: Designated,
+        #[serde(skip_serializing_if = "Option::is_none")]
         width: Option<Metre>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         max_speed: Option<Speed>,
     },
-    #[serde(rename = "parking")]
     Parking {
-        direction: LaneDirection,
-        designated: LaneDesignated,
+        direction: Direction,
+        designated: Designated,
+        #[serde(skip_serializing_if = "Option::is_none")]
         width: Option<Metre>,
     },
-    #[serde(rename = "shoulder")]
-    Shoulder { width: Option<Metre> },
-    #[serde(rename = "separator")]
-    Separator { markings: Markings },
+    Shoulder {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        width: Option<Metre>,
+    },
+    Separator {
+        markings: Markings,
+    },
 }
 
 impl Lane {
     pub const DEFAULT_WIDTH: Metre = Metre::new(3.5);
 
     /// Width in metres
+    #[must_use]
     pub fn width(&self, locale: &Locale) -> Metre {
         match self {
             Lane::Separator { markings } => markings.width(locale),
@@ -47,17 +54,15 @@ impl Lane {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum LaneDirection {
-    #[serde(rename = "forward")]
+#[serde(rename_all = "snake_case")]
+pub enum Direction {
     Forward,
-    #[serde(rename = "backward")]
     Backward,
-    #[serde(rename = "both")]
     Both,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum LaneDesignated {
+pub enum Designated {
     // #[serde(rename = "any")]
     // Any,
     #[serde(rename = "foot")]
@@ -71,28 +76,28 @@ pub enum LaneDesignated {
 }
 
 /// Display lane detail as printable characters
-pub trait LanePrintable {
+pub trait Printable {
     fn as_ascii(&self) -> char;
     fn as_utf8(&self) -> char;
 }
 
-impl LanePrintable for Lane {
+impl Printable for Lane {
     fn as_ascii(&self) -> char {
         match self {
             Self::Travel {
-                designated: LaneDesignated::Foot,
+                designated: Designated::Foot,
                 ..
             } => 's',
             Self::Travel {
-                designated: LaneDesignated::Bicycle,
+                designated: Designated::Bicycle,
                 ..
             } => 'b',
             Self::Travel {
-                designated: LaneDesignated::Motor,
+                designated: Designated::Motor,
                 ..
             } => 'd',
             Self::Travel {
-                designated: LaneDesignated::Bus,
+                designated: Designated::Bus,
                 ..
             } => 'B',
             Self::Shoulder { .. } => 'S',
@@ -103,19 +108,19 @@ impl LanePrintable for Lane {
     fn as_utf8(&self) -> char {
         match self {
             Self::Travel {
-                designated: LaneDesignated::Foot,
+                designated: Designated::Foot,
                 ..
             } => '🚶',
             Self::Travel {
-                designated: LaneDesignated::Bicycle,
+                designated: Designated::Bicycle,
                 ..
             } => '🚲',
             Self::Travel {
-                designated: LaneDesignated::Motor,
+                designated: Designated::Motor,
                 ..
             } => '🚗',
             Self::Travel {
-                designated: LaneDesignated::Bus,
+                designated: Designated::Bus,
                 ..
             } => '🚌',
             Self::Shoulder { .. } => '🛆',
@@ -125,7 +130,7 @@ impl LanePrintable for Lane {
     }
 }
 
-impl LanePrintable for LaneDirection {
+impl Printable for Direction {
     fn as_ascii(&self) -> char {
         match self {
             Self::Forward => '^',

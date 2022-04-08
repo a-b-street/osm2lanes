@@ -1,6 +1,9 @@
 use celes::Country;
 
-use super::*;
+use super::{
+    Color, Designated, Direction, Lane, LaneBuilder, LaneType, Locale, Marking, RoadBuilder,
+    RoadMsg, RoadWarnings, Style, Tags,
+};
 use crate::road::Markings;
 
 #[derive(Clone, Copy)]
@@ -12,6 +15,7 @@ enum DirectionChange {
 
 /// Given a pair of lanes, inside to outside
 /// what should the separator between them be
+#[allow(clippy::unnecessary_wraps)]
 pub(super) fn lanes_to_separator(
     lanes: [&LaneBuilder; 2],
     road: &RoadBuilder,
@@ -21,15 +25,13 @@ pub(super) fn lanes_to_separator(
 ) -> Option<Lane> {
     let [inside, outside] = lanes;
     let direction_change = match [inside.direction.some(), outside.direction.some()] {
-        [None | Some(LaneDirection::Both), _] | [_, None | Some(LaneDirection::Both)] => {
+        [None | Some(Direction::Both), _] | [_, None | Some(Direction::Both)] => {
             DirectionChange::None
         }
-        [Some(LaneDirection::Forward), Some(LaneDirection::Forward)]
-        | [Some(LaneDirection::Backward), Some(LaneDirection::Backward)] => DirectionChange::Same,
-        [Some(LaneDirection::Forward), Some(LaneDirection::Backward)]
-        | [Some(LaneDirection::Backward), Some(LaneDirection::Forward)] => {
-            DirectionChange::Opposite
-        }
+        [Some(Direction::Forward), Some(Direction::Forward)]
+        | [Some(Direction::Backward), Some(Direction::Backward)] => DirectionChange::Same,
+        [Some(Direction::Forward), Some(Direction::Backward)]
+        | [Some(Direction::Backward), Some(Direction::Forward)] => DirectionChange::Opposite,
     };
     match (
         [
@@ -39,9 +41,9 @@ pub(super) fn lanes_to_separator(
         direction_change,
     ) {
         // Foot
-        ([_, (_, Some(LaneDesignated::Foot))], _) => Some(Lane::Separator {
+        ([_, (_, Some(Designated::Foot))], _) => Some(Lane::Separator {
             markings: Markings::new(vec![Marking {
-                style: MarkingStyle::KerbUp,
+                style: Style::KerbUp,
                 color: None,
                 width: Some(Marking::DEFAULT_WIDTH),
             }]),
@@ -49,12 +51,12 @@ pub(super) fn lanes_to_separator(
         // Shoulder
         ([_, (Some(LaneType::Shoulder), _)], _) => Some(Lane::Separator {
             markings: Markings::new(vec![Marking {
-                style: MarkingStyle::SolidLine,
-                color: Some(MarkingColor::White),
+                style: Style::SolidLine,
+                color: Some(Color::White),
                 width: Some(Marking::DEFAULT_WIDTH),
             }]),
         }),
-        ([(_, Some(LaneDesignated::Motor)), (_, Some(LaneDesignated::Motor))], _) => {
+        ([(_, Some(Designated::Motor)), (_, Some(Designated::Motor))], _) => {
             motor_lanes_to_separator(
                 [inside, outside],
                 direction_change,
@@ -74,8 +76,8 @@ pub(super) fn lanes_to_separator(
             });
             Some(Lane::Separator {
                 markings: Markings::new(vec![Marking {
-                    style: MarkingStyle::SolidLine,
-                    color: Some(MarkingColor::White),
+                    style: Style::SolidLine,
+                    color: Some(Color::White),
                     width: Some(Marking::DEFAULT_WIDTH),
                 }]),
             })
@@ -88,8 +90,8 @@ pub(super) fn lanes_to_separator(
             });
             Some(Lane::Separator {
                 markings: Markings::new(vec![Marking {
-                    style: MarkingStyle::BrokenLine,
-                    color: Some(MarkingColor::Red),
+                    style: Style::BrokenLine,
+                    color: Some(Color::Red),
                     width: Some(Marking::DEFAULT_WIDTH),
                 }]),
             })
@@ -97,6 +99,7 @@ pub(super) fn lanes_to_separator(
     }
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn motor_lanes_to_separator(
     [inside, outside]: [&LaneBuilder; 2],
     direction_change: DirectionChange,
@@ -111,18 +114,18 @@ fn motor_lanes_to_separator(
                 return Some(Lane::Separator {
                     markings: Markings::new(vec![
                         Marking {
-                            style: MarkingStyle::BrokenLine,
-                            color: Some(MarkingColor::White),
+                            style: Style::BrokenLine,
+                            color: Some(Color::White),
                             width: Some(Marking::DEFAULT_WIDTH),
                         },
                         Marking {
-                            style: MarkingStyle::SolidLine,
-                            color: Some(MarkingColor::Green),
+                            style: Style::SolidLine,
+                            color: Some(Color::Green),
                             width: Some(2.0 * Marking::DEFAULT_SPACE),
                         },
                         Marking {
-                            style: MarkingStyle::BrokenLine,
-                            color: Some(MarkingColor::White),
+                            style: Style::BrokenLine,
+                            color: Some(Color::White),
                             width: Some(Marking::DEFAULT_WIDTH),
                         },
                     ]),
@@ -140,41 +143,41 @@ fn motor_lanes_to_separator(
             matches!(lane.r#type.some(), Some(LaneType::Travel))
                 && matches!(
                     lane.designated.some(),
-                    Some(LaneDesignated::Motor | LaneDesignated::Bus),
+                    Some(Designated::Motor | Designated::Bus),
                 )
         })
         .count()
     {
         2 => Some(Lane::Separator {
             markings: Markings::new(vec![Marking {
-                style: MarkingStyle::DottedLine,
-                color: Some(MarkingColor::White),
+                style: Style::DottedLine,
+                color: Some(locale.separator_motor_color()),
                 width: Some(Marking::DEFAULT_WIDTH),
             }]),
         }),
         _ => match direction_change {
             DirectionChange::Same => Some(Lane::Separator {
                 markings: Markings::new(vec![Marking {
-                    style: MarkingStyle::DottedLine,
-                    color: Some(MarkingColor::White),
+                    style: Style::DottedLine,
+                    color: Some(Color::White),
                     width: Some(Marking::DEFAULT_WIDTH),
                 }]),
             }),
             DirectionChange::None | DirectionChange::Opposite => Some(Lane::Separator {
                 markings: Markings::new(vec![
                     Marking {
-                        style: MarkingStyle::SolidLine,
-                        color: Some(MarkingColor::White),
+                        style: Style::SolidLine,
+                        color: Some(Color::White),
                         width: Some(Marking::DEFAULT_WIDTH),
                     },
                     Marking {
-                        style: MarkingStyle::NoFill,
+                        style: Style::NoFill,
                         color: None,
                         width: Some(Marking::DEFAULT_SPACE),
                     },
                     Marking {
-                        style: MarkingStyle::SolidLine,
-                        color: Some(MarkingColor::White),
+                        style: Style::SolidLine,
+                        color: Some(Color::White),
                         width: Some(Marking::DEFAULT_WIDTH),
                     },
                 ]),

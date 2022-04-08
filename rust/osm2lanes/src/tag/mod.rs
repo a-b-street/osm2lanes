@@ -1,3 +1,5 @@
+#![allow(clippy::module_name_repetitions)]
+
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
@@ -36,6 +38,11 @@ pub struct Tags {
 
 impl Tags {
     /// Construct from slice of pairs
+    ///
+    /// # Errors
+    ///
+    /// If a duplicate key is provided.
+    ///
     pub fn from_str_pairs(tags: &[[&str; 2]]) -> Result<Self, DuplicateKeyError> {
         let mut map = BTreeMap::new();
         for tag in tags {
@@ -43,13 +50,25 @@ impl Tags {
                 .map_or(Ok(()), |_| Err(DuplicateKeyError(tag[0].to_owned())))?;
         }
         let mut tree = TagTree::default();
-        for (k, v) in map.iter() {
-            tree.insert(k, v.to_owned())?;
+        for (k, v) in &map {
+            tree.insert(k, v.clone())?;
         }
         Ok(Self { map, tree })
     }
 
+    /// Construct from pair
+    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub(crate) fn from_str_pair(tag: [&str; 2]) -> Self {
+        let mut map = BTreeMap::new();
+        map.insert(tag[0].to_owned(), tag[1].to_owned());
+        let mut tree = TagTree::default();
+        tree.insert(tag[0], tag[1].to_owned()).unwrap();
+        Self { map, tree }
+    }
+
     /// Expose data as vector of pairs
+    #[must_use]
     pub fn to_str_pairs(&self) -> Vec<[&str; 2]> {
         self.map
             .iter()
@@ -58,6 +77,7 @@ impl Tags {
     }
 
     /// Vector of `=` separated strings
+    #[must_use]
     pub fn to_vec(&self) -> Vec<String> {
         self.map
             .iter()
@@ -67,17 +87,19 @@ impl Tags {
 
     /// Get value from tags given a key
     pub fn get<T: AsRef<str>>(&self, k: T) -> Option<&str> {
-        self.map.get(k.as_ref()).map(|v| v.as_str())
+        self.map.get(k.as_ref()).map(String::as_str)
     }
 
     /// Return if tags key has value,
     /// return false if key does not exist.
+    #[must_use]
     pub fn is<T: AsRef<str>>(&self, k: T, v: &str) -> bool {
         self.get(k) == Some(v)
     }
 
     /// Return if tags key has any of the values,
     /// return false if the key does not exist.
+    #[must_use]
     pub fn is_any<T: AsRef<str>>(&self, k: T, values: &[&str]) -> bool {
         if let Some(v) = self.get(k) {
             values.contains(&v)
@@ -86,24 +108,25 @@ impl Tags {
         }
     }
 
+    /// Get a subset of the tags
     // TODO, find a way to do this without so many clones
+    #[must_use]
     pub fn subset<T>(&self, keys: &[T]) -> Self
     where
-        T: Clone,
-        T: AsRef<str>,
+        T: Clone + AsRef<str>,
     {
         let mut map = Self::default();
         for key in keys {
             if let Some(val) = self.get(key) {
-                assert!(map
-                    .map
-                    .insert(key.as_ref().to_owned(), val.to_owned())
-                    .is_none());
+                debug_assert!(map
+                    .checked_insert(key.as_ref().to_owned(), val.to_owned())
+                    .is_ok());
             }
         }
         map
     }
 
+    #[must_use]
     pub fn tree(&self) -> &TagTree {
         &self.tree
     }
@@ -196,6 +219,7 @@ impl<'de> Deserialize<'de> for Tags {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Default, Debug)]
 pub struct TagTree(BTreeMap<String, TagTreeVal>);
 
@@ -228,6 +252,7 @@ impl TagTree {
     }
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Default, Debug)]
 pub struct TagTreeVal {
     tree: Option<TagTree>,
@@ -244,28 +269,40 @@ impl TagTreeVal {
             None => self.set(val),
         }
     }
+
     fn set(&mut self, input: String) -> Result<(), DuplicateKeyError> {
         if let Some(val) = &self.val {
-            return Err(DuplicateKeyError(val.to_owned()));
+            return Err(DuplicateKeyError(val.clone()));
         }
         self.val = Some(input);
         Ok(())
     }
+
     /// Get nested value from tree given key
+    #[must_use]
     pub fn get<K: Into<TagKey>>(&self, key: K) -> Option<&TagTreeVal> {
         self.tree.as_ref()?.get(key)
     }
+
     /// Get value of root
+    #[must_use]
     pub fn val(&self) -> Option<&str> {
         Some(self.val.as_ref()?.as_str())
     }
+
     /// Get tree
+    #[must_use]
     pub fn tree(&self) -> Option<&TagTree> {
         self.tree.as_ref()
     }
 }
 
 pub trait TagsWrite {
+    ///
+    /// # Errors
+    ///
+    /// If duplicate key is inserted.
+    ///
     fn checked_insert<K: Into<TagKey>, V: Into<String>>(
         &mut self,
         k: K,
@@ -274,6 +311,11 @@ pub trait TagsWrite {
 }
 
 impl TagsWrite for Tags {
+    ///
+    /// # Errors
+    ///
+    /// If duplicate key is inserted.   
+    ///
     fn checked_insert<K: Into<TagKey>, V: Into<String>>(
         &mut self,
         k: K,
@@ -291,6 +333,7 @@ impl TagsWrite for Tags {
 }
 
 #[cfg(test)]
+#[allow(clippy::items_after_statements)]
 mod tests {
     use crate::tag::{TagKey, Tags};
 

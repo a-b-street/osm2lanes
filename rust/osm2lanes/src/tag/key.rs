@@ -6,6 +6,7 @@
 /// assert_eq!(example_key.as_str(), "example");
 /// assert_eq!((example_key + "foo").as_str(), "example:foo");
 /// ```
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone)]
 pub struct TagKey(TagKeyEnum);
 
@@ -16,9 +17,12 @@ enum TagKeyEnum {
 }
 
 impl TagKey {
+    #[must_use]
     pub const fn from(string: &'static str) -> Self {
         TagKey(TagKeyEnum::Static(string))
     }
+
+    #[must_use]
     pub fn as_str(&self) -> &str {
         match &self.0 {
             TagKeyEnum::Static(v) => v,

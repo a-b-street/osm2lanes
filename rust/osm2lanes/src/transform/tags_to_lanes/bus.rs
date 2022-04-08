@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    Designated, Direction, Infer, LaneBuilder, LaneBuilderError, Locale, ModeResult, Oneway,
+    RoadBuilder, RoadError, RoadMsg, RoadWarnings, TagKey, Tags,
+};
 
 const LANES: TagKey = TagKey::from("lanes");
 
@@ -9,18 +12,20 @@ impl RoadError {
 }
 
 impl LaneBuilder {
+    #[allow(clippy::unnecessary_wraps)]
     fn set_bus(&mut self, _locale: &Locale) -> Result<(), LaneBuilderError> {
-        self.designated = Infer::Direct(LaneDesignated::Bus);
+        self.designated = Infer::Direct(Designated::Bus);
         Ok(())
     }
 }
 
 const BUSWAY: TagKey = TagKey::from("busway");
 pub struct Busway {
-    forward_direction: Infer<Option<LaneDirection>>,
-    backward_direction: Infer<Option<LaneDirection>>,
+    forward_direction: Infer<Option<Direction>>,
+    backward_direction: Infer<Option<Direction>>,
 }
 
+#[allow(clippy::unnecessary_wraps)]
 pub(super) fn bus(
     tags: &Tags,
     locale: &Locale,
@@ -73,23 +78,23 @@ impl Busway {
         // TODO I think this logic can be simplified using the match style.
 
         if tags.is(BUSWAY, "lane") {
-            busway.forward_direction = Infer::Direct(Some(LaneDirection::Forward));
+            busway.forward_direction = Infer::Direct(Some(Direction::Forward));
             if *oneway == Oneway::No && !tags.is("oneway:bus", "yes") {
-                busway.backward_direction = Infer::Direct(Some(LaneDirection::Backward));
+                busway.backward_direction = Infer::Direct(Some(Direction::Backward));
             }
         }
         if tags.is(BUSWAY, "opposite_lane") {
-            busway.backward_direction = Infer::Direct(Some(LaneDirection::Backward));
+            busway.backward_direction = Infer::Direct(Some(Direction::Backward));
         }
         if tags.is(BUSWAY + "both", "lane") {
-            busway.forward_direction = Infer::Direct(Some(LaneDirection::Forward));
-            busway.backward_direction = Infer::Direct(Some(LaneDirection::Backward));
+            busway.forward_direction = Infer::Direct(Some(Direction::Forward));
+            busway.backward_direction = Infer::Direct(Some(Direction::Backward));
             if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
                 warnings.push(RoadMsg::ambiguous_str("busway:both=lane for oneway roads").into());
             }
         }
         if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
-            busway.forward_direction = Infer::Direct(Some(LaneDirection::Forward));
+            busway.forward_direction = Infer::Direct(Some(Direction::Forward));
         }
         if tags.is(BUSWAY + locale.driving_side.tag(), "opposite_lane") {
             warnings.push(
@@ -98,7 +103,7 @@ impl Busway {
         }
         if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
             if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-                busway.forward_direction = Infer::Direct(Some(LaneDirection::Forward));
+                busway.forward_direction = Infer::Direct(Some(Direction::Forward));
             } else {
                 warnings.push(
                     RoadMsg::ambiguous_str("busway:BACKWARD=lane for bidirectional roads").into(),
@@ -111,7 +116,7 @@ impl Busway {
         ) {
             if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
                 // TODO: does it make sense to have a backward lane on the forward_side????
-                busway.forward_direction = Infer::Direct(Some(LaneDirection::Backward));
+                busway.forward_direction = Infer::Direct(Some(Direction::Backward));
             } else {
                 warnings.push(RoadMsg::Ambiguous {
                     description: None,
@@ -153,6 +158,7 @@ impl RoadBuilder {
     }
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn lanes_bus(
     tags: &Tags,
     _locale: &Locale,
@@ -199,7 +205,7 @@ impl std::str::FromStr for Access {
 }
 
 fn split_access(lanes: &str) -> Result<Vec<Access>, String> {
-    lanes.split('|').map(|s| s.parse()).collect()
+    lanes.split('|').map(str::parse).collect()
 }
 
 fn bus_lanes(
@@ -243,11 +249,8 @@ fn bus_lanes(
                 .into());
             }
             for (lane, access) in road.lanes_ltr_mut(locale).zip(access.iter()) {
-                match access {
-                    Access::None => {}
-                    Access::No => {}
-                    Access::Yes => {}
-                    Access::Designated => lane.set_bus(locale)?,
+                if let Access::Designated = access {
+                    lane.set_bus(locale)?;
                 }
             }
         }
@@ -262,11 +265,8 @@ fn bus_lanes(
                     })
                 })?;
                 for (lane, access) in road.forward_ltr_mut(locale).zip(forward_access.iter()) {
-                    match access {
-                        Access::None => {}
-                        Access::No => {}
-                        Access::Yes => {}
-                        Access::Designated => lane.set_bus(locale)?,
+                    if let Access::Designated = access {
+                        lane.set_bus(locale)?;
                     }
                 }
             }
@@ -278,11 +278,8 @@ fn bus_lanes(
                     })
                 })?;
                 for (lane, access) in road.backward_ltr_mut(locale).zip(backward_access.iter()) {
-                    match access {
-                        Access::None => {}
-                        Access::No => {}
-                        Access::Yes => {}
-                        Access::Designated => lane.set_bus(locale)?,
+                    if let Access::Designated = access {
+                        lane.set_bus(locale)?;
                     }
                 }
             }
