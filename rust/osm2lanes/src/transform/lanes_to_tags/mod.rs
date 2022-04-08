@@ -1,6 +1,6 @@
 use celes::Country;
 
-use super::{tags_to_lanes, RoadError, RoadMsg, TagsResult, TagsToLanesConfig};
+use super::{tags_to_lanes, RoadError, RoadMsg, TagsToLanesConfig};
 use crate::locale::Locale;
 use crate::metric::Speed;
 use crate::road::{Designated, Direction, Lane};
@@ -52,7 +52,7 @@ impl Lane {
 /// # Panics
 ///
 /// Lanes slice is empty
-pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsResult {
+pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> Result<Tags, RoadError> {
     let mut tags = Tags::default();
 
     if !lanes.iter().any(|lane| lane.is_motor() || lane.is_bus()) {
