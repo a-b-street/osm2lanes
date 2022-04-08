@@ -43,6 +43,8 @@ impl LanesScheme {
         let forward_bus_lanes = lanes_bus.forward.some().unwrap_or(0);
         let backward_bus_lanes = lanes_bus.backward.some().unwrap_or(0);
 
+        // TODO: after calculating the lanes scheme here (sometimes using bus lanes to guess),
+        // check that bus lanes don't conflict (if we didn't guess).
 
         if oneway.into() {
             // Ignore lanes:{forward,both_ways,backward}=* and centre_turn_lanes=*
