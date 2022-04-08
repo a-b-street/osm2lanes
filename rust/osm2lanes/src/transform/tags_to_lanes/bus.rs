@@ -20,9 +20,18 @@ impl LaneBuilder {
 }
 
 const BUSWAY: TagKey = TagKey::from("busway");
-pub struct Busway {
-    forward_direction: Infer<Option<Direction>>,
-    backward_direction: Infer<Option<Direction>>,
+
+#[derive(Debug)]
+pub struct BuswayScheme {
+    pub forward_direction: Infer<Option<Direction>>,
+    pub backward_direction: Infer<Option<Direction>>,
+}
+
+#[derive(Debug)]
+pub struct LanesBusScheme {
+    pub forward: Infer<usize>,
+    pub backward: Infer<usize>,
+    pub bothways: Infer<usize>,
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -61,8 +70,8 @@ pub(super) fn bus(
     Ok(())
 }
 
-impl Busway {
-    pub(super) fn from(
+impl BuswayScheme {
+    pub(super) fn new(
         tags: &Tags,
         locale: &Locale,
         oneway: &Oneway,
@@ -136,7 +145,7 @@ impl Busway {
 impl RoadBuilder {
     pub fn set_busway_scheme(
         self: &mut Self,
-        busway: &Busway,
+        busway: &BuswayScheme,
         locale: &Locale,
         _warnings: &mut RoadWarnings,
     ) -> ModeResult {
