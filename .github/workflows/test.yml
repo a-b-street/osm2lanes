@@ -106,9 +106,9 @@ jobs:
       with:
         working-directory: rust
     - name: "Benchmark"
-      uses: droogmic/criterion-compare-action@testing # TODO: switch to upstream when merged
+      uses: boa-dev/criterion-compare-action@main
       with:
         cwd: "rust"
         benchName: "benchmark_tests_sample"
-        branchName: ${{ github.base_ref }}
+        branchName: ${{ github.base_ref || "HEAD~" }}
         token: ${{ secrets.GITHUB_TOKEN }}
