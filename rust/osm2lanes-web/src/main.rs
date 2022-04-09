@@ -105,27 +105,27 @@ impl Component for App {
                 self.state.edit_tags = tags;
                 self.update_tags();
                 true
-            }
+            },
             Msg::TagsLocaleSet((tags, locale)) => {
                 self.state.edit_tags = tags.to_string();
                 self.state.locale = locale;
                 self.update_tags();
                 true
-            }
+            },
             Msg::ToggleDrivingSide => {
                 self.state.locale.driving_side = self.state.locale.driving_side.opposite();
                 self.update_tags();
                 true
-            }
+            },
             Msg::CountrySet(Ok(country)) => {
                 self.state.locale.country = Some(country);
                 self.update_tags();
                 true
-            }
+            },
             Msg::CountrySet(Err(country_err)) => {
                 self.state.message = Some(country_err.to_owned());
                 true
-            }
+            },
             Msg::WayFetch => {
                 let way_id = self
                     .state
@@ -142,15 +142,15 @@ impl Component for App {
                                 Err(e) => Msg::Error(e.to_string()),
                             }
                         });
-                    }
+                    },
                     Err(e) => self.state.message = Some(format!("Invalid way id: {}", e)),
                 }
                 true
-            }
+            },
             Msg::Error(e) => {
                 self.state.message = Some(format!("Error: {}", e));
                 true
-            }
+            },
         }
     }
 
@@ -351,7 +351,7 @@ impl App {
                             } else {
                                 self.state.message = Some(warnings.to_string());
                             }
-                        }
+                        },
                         Err(error) => {
                             self.state.road = Some(road);
                             self.state.normalized_tags = None;
@@ -362,20 +362,20 @@ impl App {
                                 self.state.message =
                                     Some(format!("{}\nLanes to Tags Error: {}", warnings, error));
                             }
-                        }
+                        },
                     }
-                }
+                },
                 Err(road_error) => {
                     self.state.road = None;
                     self.state.normalized_tags = None;
                     self.state.message = Some(format!("Conversion Error: {}", road_error));
-                }
+                },
             },
             Err(tags_error) => {
                 self.state.road = None;
                 self.state.normalized_tags = None;
                 self.state.message = Some(format!("Conversion Error: {}", tags_error));
-            }
+            },
         };
     }
 

@@ -63,9 +63,6 @@ pub(super) fn foot_and_shoulder(
             tags.get(SIDEWALK + locale.driving_side.opposite().tag()),
         ),
     ) {
-        // No scheme
-        (None, None, (None, None)) => (Sidewalk::None, Sidewalk::None),
-        // sidewalk=
         (Some(v), None, (None, None)) => match v {
             "none" => return Err(RoadMsg::deprecated_tag("sidewalk", "none").into()),
             "no" => (Sidewalk::No, Sidewalk::No),
@@ -75,12 +72,12 @@ pub(super) fn foot_and_shoulder(
                     tags: Some(tags.subset(&[SIDEWALK, SIDEWALK + "both"])),
                 });
                 (Sidewalk::Yes, Sidewalk::Yes)
-            }
+            },
             "both" => (Sidewalk::Yes, Sidewalk::Yes),
             s if s == locale.driving_side.tag().as_str() => (Sidewalk::Yes, Sidewalk::No),
             s if s == locale.driving_side.opposite().tag().as_str() => {
                 (Sidewalk::No, Sidewalk::Yes)
-            }
+            },
             "separate" => (Sidewalk::Separate, Sidewalk::Separate),
             _ => return err,
         },
@@ -93,7 +90,9 @@ pub(super) fn foot_and_shoulder(
         },
         // sidewalk:left= and/or sidewalk:right=
         (None, None, (forward, backward)) => match (forward, backward) {
-            (None, None) => unreachable!(),
+            // no scheme
+            (None, None) => (Sidewalk::None, Sidewalk::None),
+
             (Some("yes"), Some("yes")) => (Sidewalk::Yes, Sidewalk::Yes),
 
             (Some("yes"), None | Some("no")) => (Sidewalk::Yes, Sidewalk::No),
@@ -103,13 +102,13 @@ pub(super) fn foot_and_shoulder(
             (None, Some("separate")) => (Sidewalk::No, Sidewalk::Separate),
             (Some(_), None) | (None, Some(_)) | (Some(_), Some(_)) => {
                 return err;
-            }
+            },
         },
         (Some(_), Some(_), (_, _))
         | (Some(_), _, (_, Some(_)) | (Some(_), _))
         | (_, Some(_), (_, Some(_)) | (Some(_), _)) => {
             return err;
-        }
+        },
     };
 
     // https://wiki.openstreetmap.org/wiki/Key:shoulder
@@ -125,7 +124,7 @@ pub(super) fn foot_and_shoulder(
         Some(s) if s == locale.driving_side.tag().as_str() => (Shoulder::Yes, Shoulder::No),
         Some(s) if s == locale.driving_side.opposite().tag().as_str() => {
             (Shoulder::No, Shoulder::Yes)
-        }
+        },
         Some(s) => return Err(RoadMsg::unsupported_tag(SHOULDER, s).into()),
     };
 
@@ -161,24 +160,24 @@ pub(super) fn foot_and_shoulder(
                     if !has_bicycle_lane && (forward || !bool::from(self.oneway)) {
                         self.push_outside(LaneBuilder::shoulder(locale), forward);
                     }
-                }
-                (Sidewalk::No | Sidewalk::None, Shoulder::No) => {}
+                },
+                (Sidewalk::No | Sidewalk::None, Shoulder::No) => {},
                 (Sidewalk::Yes, Shoulder::No | Shoulder::None) => {
                     self.push_outside(LaneBuilder::foot(locale), forward);
-                }
+                },
                 (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => {
                     self.push_outside(LaneBuilder::shoulder(locale), forward);
-                }
+                },
                 (Sidewalk::Yes, Shoulder::Yes) => {
                     return Err(RoadMsg::Unsupported {
                         description: Some("shoulder and sidewalk on same side".to_owned()),
                         tags: Some(tags.subset(&[SIDEWALK, SHOULDER])),
                     }
                     .into());
-                }
+                },
                 (Sidewalk::Separate, _) => {
                     return Err(RoadMsg::unsupported_tag(SIDEWALK, "separate").into())
-                }
+                },
             }
             Ok(())
         }

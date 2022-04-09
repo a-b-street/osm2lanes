@@ -65,7 +65,7 @@ impl Config {
         Self::default()
     }
 
-    #[allow(clippy::missing_panics_doc)]
+    #[allow(clippy::missing_panics_doc, clippy::todo)]
     #[must_use]
     pub fn way_id(mut self, id: u64) -> Self {
         self.way_id = Some(id);
@@ -80,6 +80,7 @@ impl Config {
     ///
     /// Cannot determine ISO3166 from code
     /// TODO: this should probably not be a panic
+    #[allow(clippy::panic)]
     #[must_use]
     pub fn iso_3166(mut self, code: &str) -> Self {
         if code.len() == 2 {

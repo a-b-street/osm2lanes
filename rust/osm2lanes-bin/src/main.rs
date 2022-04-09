@@ -51,13 +51,13 @@ async fn main() {
             log::info!("{:#?}", locale);
             let lanes = tags_to_lanes(&tags, &locale, &TagsToLanesConfig::default());
             println!("{}", serde_json::to_string_pretty(&lanes).unwrap());
-        }
+        },
         Command::Convert { path } => {
             let tags: Tags =
                 serde_json::from_reader(BufReader::new(File::open(path).unwrap())).unwrap();
             let locale = Locale::builder().build();
             let lanes = tags_to_lanes(&tags, &locale, &TagsToLanesConfig::default());
             println!("{}", serde_json::to_string_pretty(&lanes).unwrap());
-        }
+        },
     }
 }

@@ -183,7 +183,7 @@ mod tests {
                         && left_direction == right_direction
                         && approx_eq(left_width, right_width)
                         && approx_eq(left_max_speed, right_max_speed)
-                }
+                },
                 (
                     Lane::Parking {
                         designated: left_designated,
@@ -199,10 +199,10 @@ mod tests {
                     left_designated == right_designated
                         && left_direction == right_direction
                         && approx_eq(left_width, right_width)
-                }
+                },
                 (Lane::Shoulder { width: left_width }, Lane::Shoulder { width: right_width }) => {
                     approx_eq(left_width, right_width)
-                }
+                },
                 (left, right) => left == right,
             }
         }
@@ -257,7 +257,7 @@ mod tests {
             match lane {
                 Lane::Separator { .. } => {
                     self.test_include_separators() && self.expected_has_separators()
-                }
+                },
                 _ => true,
             }
         }
@@ -416,7 +416,7 @@ mod tests {
                                 false
                             }
                         }
-                    }
+                    },
                     Err(RoadError::Warnings(warnings)) => {
                         test.print();
                         println!("Expected:");
@@ -425,7 +425,7 @@ mod tests {
                         println!("{}", warnings);
                         println!();
                         false
-                    }
+                    },
                     Err(e) => {
                         test.print();
                         println!("Expected:");
@@ -434,7 +434,7 @@ mod tests {
                         println!("{}", e);
                         println!();
                         false
-                    }
+                    },
                 }
             }),
             "test_from_data tags_to_lanes failed"
