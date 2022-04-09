@@ -96,22 +96,34 @@ pub enum Infer<T> {
     /// We can only guess what the value should be in this situation. Available tags don't
     /// suggest any good default.
     /// ```
+    /// use osm2lanes::transform::tags_to_lanes::Infer;
     /// let tagged_backrest = Some(false);
-    /// let has_backrest = match tagged_backrest { Some(v) => Direct(v), None => Guessed(true) };
+    /// let has_backrest = match tagged_backrest {
+    ///     None => Infer::Guessed(true),
+    ///     Some(v) => Infer::Direct(v),
+    /// };
+    /// ```
     Guessed(T),
 
     /// The value is an understood default for this situation. The absence of available tags implies
     /// the value.
     /// ```
+    /// use osm2lanes::transform::tags_to_lanes::Infer;
     /// let tagged_oneway = Some(true);
-    /// let is_oneway = match tagged_oneway { Some(v) => Direct(v), None => Default(false) };
+    /// let is_oneway = match tagged_oneway {
+    ///     Some(v) => Infer::Direct(v),
+    ///     None => Infer::Default(false),
+    /// };
+    /// ```
     Default(T),
 
     /// The value has been calculated from other tags.
     /// ```
+    /// use osm2lanes::transform::tags_to_lanes::Infer;
     /// let tagged_forward_lanes = 1;
     /// let tagged_backward_lanes = 1;
-    /// let total_lanes = Calculated(tagged_backward_lanes + tagged_backward_lanes);
+    /// let total_lanes = Infer::Calculated(tagged_backward_lanes + tagged_backward_lanes);
+    /// ```
     Calculated(T),
 
     /// The value is tagged as such.
