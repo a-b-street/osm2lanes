@@ -23,8 +23,8 @@ const BUSWAY: TagKey = TagKey::from("busway");
 
 #[derive(Debug)]
 pub struct BuswayScheme {
-    pub forward_direction: Infer<Option<Direction>>,
-    pub backward_direction: Infer<Option<Direction>>,
+    pub forward_side_direction: Infer<Option<Direction>>,
+    pub backward_side_direction: Infer<Option<Direction>>,
 }
 
 #[derive(Debug)]
@@ -78,31 +78,31 @@ impl BuswayScheme {
         warnings: &mut RoadWarnings,
     ) -> Self {
         let mut busway = Self {
-            forward_direction: Infer::Default(None),
-            backward_direction: Infer::Default(None),
+            forward_side_direction: Infer::Default(None),
+            backward_side_direction: Infer::Default(None),
         };
 
         // TODO oneway:bus=no on a oneway road (w/ busway=lane) implies 2 bus lanes.
         // TODO I think this logic can be simplified using the match style.
 
         if tags.is(BUSWAY, "lane") {
-            busway.forward_direction = Infer::Direct(Some(Direction::Forward));
+            busway.forward_side_direction = Infer::Direct(Some(Direction::Forward));
             if *oneway == Oneway::No && !tags.is("oneway:bus", "yes") {
-                busway.backward_direction = Infer::Direct(Some(Direction::Backward));
+                busway.backward_side_direction = Infer::Direct(Some(Direction::Backward));
             }
         }
         if tags.is(BUSWAY, "opposite_lane") {
-            busway.backward_direction = Infer::Direct(Some(Direction::Backward));
+            busway.backward_side_direction = Infer::Direct(Some(Direction::Backward));
         }
         if tags.is(BUSWAY + "both", "lane") {
-            busway.forward_direction = Infer::Direct(Some(Direction::Forward));
-            busway.backward_direction = Infer::Direct(Some(Direction::Backward));
+            busway.forward_side_direction = Infer::Direct(Some(Direction::Forward));
+            busway.backward_side_direction = Infer::Direct(Some(Direction::Backward));
             if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
                 warnings.push(RoadMsg::ambiguous_str("busway:both=lane for oneway roads").into());
             }
         }
         if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
-            busway.forward_direction = Infer::Direct(Some(Direction::Forward));
+            busway.forward_side_direction = Infer::Direct(Some(Direction::Forward));
         }
         if tags.is(BUSWAY + locale.driving_side.tag(), "opposite_lane") {
             warnings.push(
@@ -111,7 +111,7 @@ impl BuswayScheme {
         }
         if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
             if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-                busway.forward_direction = Infer::Direct(Some(Direction::Forward));
+                busway.forward_side_direction = Infer::Direct(Some(Direction::Forward));
             } else {
                 warnings.push(
                     RoadMsg::ambiguous_str("busway:BACKWARD=lane for bidirectional roads").into(),
@@ -124,7 +124,7 @@ impl BuswayScheme {
         ) {
             if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
                 // TODO: does it make sense to have a backward lane on the forward_side????
-                busway.forward_direction = Infer::Direct(Some(Direction::Backward));
+                busway.forward_side_direction = Infer::Direct(Some(Direction::Backward));
             } else {
                 warnings.push(RoadMsg::Ambiguous {
                     description: None,
@@ -148,14 +148,14 @@ impl RoadBuilder {
         locale: &Locale,
         _warnings: &mut RoadWarnings,
     ) -> ModeResult {
-        if let Some(Some(d)) = busway.forward_direction.some() {
+        if let Some(Some(d)) = busway.forward_side_direction.some() {
             let lane = self
                 .forward_outside_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?;
             lane.set_bus(locale)?;
             lane.direction = Infer::Direct(d);
         }
-        if let Some(Some(d)) = busway.backward_direction.some() {
+        if let Some(Some(d)) = busway.backward_side_direction.some() {
             let lane = self
                 .backward_outside_mut()
                 .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?;

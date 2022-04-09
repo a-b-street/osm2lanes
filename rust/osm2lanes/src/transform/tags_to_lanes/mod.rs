@@ -581,10 +581,10 @@ pub fn tags_to_lanes(
     // TEMP: lets use the lanes:bus schema to summarise bus lanes for the lanes scheme.
     let lanes_bus = LanesBusScheme {
         forward: busway
-            .forward_direction
+            .forward_side_direction
             .map_or(0, |o| if o.is_some() { 1 } else { 0 }),
         backward: busway
-            .backward_direction
+            .backward_side_direction
             .map_or(0, |o| if o.is_some() { 1 } else { 0 }),
         bothways: Infer::Default(0),
     };
