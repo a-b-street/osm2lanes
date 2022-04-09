@@ -90,10 +90,31 @@ impl std::convert::From<Oneway> for bool {
 /// A value with various levels of inference
 #[derive(Copy, Clone, Debug)]
 pub enum Infer<T> {
+    /// We don't know anything about the value.
     None,
+
+    /// We can only guess what the value should be in this situation. Available tags don't
+    /// suggest any good default.
+    /// ```
+    /// let tagged_backrest = Some(false);
+    /// let has_backrest = match tagged_backrest { Some(v) => Direct(v), None => Guessed(true) };
     Guessed(T),
+
+    /// The value is an understood default for this situation. The absence of available tags implies
+    /// the value.
+    /// ```
+    /// let tagged_oneway = Some(true);
+    /// let is_oneway = match tagged_oneway { Some(v) => Direct(v), None => Default(false) };
     Default(T),
+
+    /// The value has been calculated from other tags.
+    /// ```
+    /// let tagged_forward_lanes = 1;
+    /// let tagged_backward_lanes = 1;
+    /// let total_lanes = Calculated(tagged_backward_lanes + tagged_backward_lanes);
     Calculated(T),
+
+    /// The value is tagged as such.
     Direct(T),
 }
 
