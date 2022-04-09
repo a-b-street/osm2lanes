@@ -1,7 +1,8 @@
-use super::{
-    Designated, DrivingSide, Lane, Locale, Road, RoadBuilder, RoadError, RoadFromTags, RoadMsg,
-    RoadWarnings, Tags, HIGHWAY,
-};
+use crate::locale::{DrivingSide, Locale};
+use crate::road::{Designated, Lane, Road};
+use crate::tag::{Tags, HIGHWAY};
+use crate::transform::tags_to_lanes::RoadBuilder;
+use crate::transform::{RoadError, RoadFromTags, RoadMsg, RoadWarnings};
 
 impl Lane {
     fn shoulder(locale: &Locale) -> Self {
@@ -22,7 +23,7 @@ impl Lane {
 }
 
 #[allow(clippy::unnecessary_wraps)]
-pub(super) fn non_motorized(
+pub(in crate::transform::tags_to_lanes) fn non_motorized(
     tags: &Tags,
     locale: &Locale,
     road: &RoadBuilder,

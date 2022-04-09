@@ -4,30 +4,14 @@ use std::iter;
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::{Metre, Speed};
 use crate::road::{Color, Designated, Direction, Lane, Marking, Road, Style};
-use crate::tag::{Highway, TagKey, Tags, LIFECYCLE};
+use crate::tag::{Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
 
-mod bicycle;
-use bicycle::bicycle;
-
-mod bus;
-use bus::bus;
-
-mod foot_shoulder;
-use foot_shoulder::foot_and_shoulder;
-
-mod parking;
-use parking::parking;
+mod modes;
 
 mod separator;
 use separator::{lane_to_inner_edge_separator, lane_to_outer_edge_separator, lanes_to_separator};
 
-mod non_motorized;
-use non_motorized::non_motorized;
-
-use super::{
-    ModeResult, RoadError, RoadFromTags, RoadMsg, RoadWarnings, WaySide, CYCLEWAY, HIGHWAY,
-    SHOULDER, SIDEWALK,
-};
+use super::{RoadError, RoadFromTags, RoadMsg, RoadWarnings};
 
 #[non_exhaustive]
 pub struct Config {
@@ -572,17 +556,17 @@ pub fn tags_to_lanes(
     let mut road: RoadBuilder = RoadBuilder::from(tags, locale, &mut warnings)?;
 
     // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
-    if let Some(spec) = non_motorized(tags, locale, &road)? {
+    if let Some(spec) = modes::non_motorized(tags, locale, &road)? {
         return Ok(spec);
     }
 
-    bus(tags, locale, &mut road, &mut warnings)?;
+    modes::bus(tags, locale, &mut road, &mut warnings)?;
 
-    bicycle(tags, locale, &mut road, &mut warnings)?;
+    modes::bicycle(tags, locale, &mut road, &mut warnings)?;
 
-    parking(tags, locale, &mut road)?;
+    modes::parking(tags, locale, &mut road)?;
 
-    foot_and_shoulder(tags, locale, &mut road, &mut warnings)?;
+    modes::foot_and_shoulder(tags, locale, &mut road, &mut warnings)?;
 
     let (lanes, highway, _oneway) =
         road.into_ltr(tags, locale, config.include_separators, &mut warnings)?;

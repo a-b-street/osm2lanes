@@ -1,7 +1,8 @@
-use super::{
-    Designated, Direction, Infer, LaneBuilder, LaneBuilderError, Locale, ModeResult, RoadBuilder,
-    RoadError, RoadMsg, RoadWarnings, TagKey, Tags,
-};
+use crate::locale::Locale;
+use crate::road::{Designated, Direction};
+use crate::tag::{TagKey, Tags};
+use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneBuilderError, RoadBuilder};
+use crate::transform::{RoadError, RoadMsg, RoadWarnings};
 
 const LANES: TagKey = TagKey::from("lanes");
 
@@ -20,12 +21,12 @@ impl LaneBuilder {
 }
 
 #[allow(clippy::unnecessary_wraps)]
-pub(super) fn bus(
+pub(in crate::transform::tags_to_lanes) fn bus(
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
-) -> ModeResult {
+) -> Result<(), RoadError> {
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
     // 3 schemes, for simplicity we only allow one at a time
     match (
@@ -141,7 +142,7 @@ fn lanes_bus(
     _locale: &Locale,
     _road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
-) -> ModeResult {
+) -> Result<(), RoadError> {
     warnings.push(RoadMsg::Unimplemented {
         description: None,
         tags: Some(tags.subset(&[
@@ -190,7 +191,7 @@ fn bus_lanes(
     locale: &Locale,
     road: &mut RoadBuilder,
     _warnings: &mut RoadWarnings,
-) -> ModeResult {
+) -> Result<(), RoadError> {
     match (
         tags.get("bus:lanes"),
         (

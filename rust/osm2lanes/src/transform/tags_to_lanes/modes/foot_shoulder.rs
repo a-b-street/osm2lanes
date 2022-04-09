@@ -1,7 +1,9 @@
-use super::{
-    Designated, Infer, LaneBuilder, LaneType, Locale, ModeResult, RoadBuilder, RoadError, RoadMsg,
-    RoadWarnings, Tags, SHOULDER, SIDEWALK,
-};
+use crate::locale::Locale;
+use crate::road::Designated;
+use crate::tag::Tags;
+use crate::transform::tags::{SHOULDER, SIDEWALK};
+use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder};
+use crate::transform::{RoadError, RoadMsg, RoadWarnings};
 
 impl LaneBuilder {
     fn shoulder(_locale: &Locale) -> Self {
@@ -27,12 +29,12 @@ impl LaneBuilder {
     clippy::too_many_lines,
     clippy::unnested_or_patterns
 )]
-pub(super) fn foot_and_shoulder(
+pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
-) -> ModeResult {
+) -> Result<(), RoadError> {
     // https://wiki.openstreetmap.org/wiki/Key:sidewalk
     // This first step processes tags by the OSM spec.
     // No can be implied, e.g. we assume that sidewalk:left=yes implies sidewalk:right=no
