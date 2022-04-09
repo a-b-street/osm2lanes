@@ -449,9 +449,6 @@ impl RoadBuilder {
                 }
                 _ => todo!(),
             };
-            let forward_edge = dbg!(forward_edge);
-            let middle_separator = dbg!(middle_separator);
-            let backward_edge = dbg!(backward_edge);
 
             self.forward_lanes.make_contiguous();
             let forward_separators: Vec<Option<Lane>> = self

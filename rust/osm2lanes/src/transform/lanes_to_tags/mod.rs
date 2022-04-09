@@ -56,6 +56,12 @@ impl Lane {
 pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsResult {
     let mut tags = Tags::default();
     let mut oneway = false;
+
+    if !lanes.iter().any(|lane| lane.is_motor() || lane.is_bus()) {
+        tags.checked_insert("highway", "path")?;
+        return Ok(tags);
+    }
+
     tags.checked_insert("highway", "road")?; // TODO, add `highway` to `Lanes`
     {
         let lane_count = lanes
@@ -70,7 +76,9 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
                 )
             })
             .count();
-        tags.checked_insert("lanes", lane_count.to_string())?;
+        if lane_count >= 1 {
+            tags.checked_insert("lanes", lane_count.to_string())?;
+        }
     }
     // Oneway
     if lanes.iter().filter(|lane| lane.is_motor()).all(|lane| {

@@ -246,7 +246,7 @@ mod tests {
                 self.driving_side.as_tla(),
                 self.test_include_separators(),
                 self.expected_has_separators(),
-                !self.test_has_warnings(),
+                self.test_has_warnings(),
             );
             if let Some(comment) = self.comment.as_ref() {
                 println!("        Comment: {}", comment);
