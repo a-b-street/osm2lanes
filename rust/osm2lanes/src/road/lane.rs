@@ -59,7 +59,7 @@ impl Lane {
             Self::Separator { mut markings } => {
                 markings.flip();
                 Self::Separator { markings }
-            }
+            },
             _ => self,
         }
     }

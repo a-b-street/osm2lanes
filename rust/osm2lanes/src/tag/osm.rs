@@ -197,7 +197,7 @@ impl Highway {
                     highway,
                     lifecycle: Lifecycle::Construction,
                 })
-            }
+            },
             "proposed" => {
                 let highway = tags
                     .get(PROPOSED)
@@ -207,14 +207,14 @@ impl Highway {
                     highway,
                     lifecycle: Lifecycle::Proposed,
                 })
-            }
+            },
             s => {
                 let highway = s.parse().map_err(Some)?;
                 Ok(Self {
                     highway,
                     lifecycle: Lifecycle::Active,
                 })
-            }
+            },
         })
     }
 

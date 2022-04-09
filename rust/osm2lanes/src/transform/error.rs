@@ -106,6 +106,7 @@ impl RoadMsg {
 }
 
 impl std::fmt::Display for RoadMsg {
+    #[allow(clippy::panic_in_result_fn)]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::Deprecated {
@@ -129,23 +130,23 @@ impl std::fmt::Display for RoadMsg {
                     (None, None) => write!(f, "{}", prefix),
                     (Some(description), None) => {
                         write!(f, "{}: {}", prefix, description)
-                    }
+                    },
                     (None, Some(tags)) => write!(f, "{}: {}", prefix, tags),
                     (Some(description), Some(tags)) => {
                         write!(f, "{}: {}, {}", prefix, description, tags)
-                    }
+                    },
                 }
-            }
+            },
             Self::SeparatorLocaleUnused { inside, outside } => {
                 write!(
                     f,
                     "default separator may not match locale for {:?} to {:?}",
                     inside, outside
                 )
-            }
+            },
             Self::SeparatorUnknown { inside, outside } => {
                 write!(f, "unknown separator for {:?} to {:?}", inside, outside)
-            }
+            },
             Self::Other { description, .. } => write!(f, "{}", description),
             Self::TagsDuplicateKey(e) => e.fmt(f),
             Self::Internal(e) => e.fmt(f),

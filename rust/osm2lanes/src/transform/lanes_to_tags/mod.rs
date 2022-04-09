@@ -101,13 +101,13 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
         (false, false) => {
             // TODO do we want to always be explicit about this?
             tags.checked_insert("shoulder", "no")?;
-        }
+        },
         (true, false) => {
             tags.checked_insert("shoulder", "left")?;
-        }
+        },
         (false, true) => {
             tags.checked_insert("shoulder", "right")?;
-        }
+        },
         (true, true) => tags.checked_insert("shoulder", "both")?,
     }
     // Pedestrian
@@ -118,7 +118,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
         (false, false) => {
             // TODO do we want to always be explicit about this?
             tags.checked_insert("sidewalk", "no")?;
-        }
+        },
         (true, false) => tags.checked_insert("sidewalk", "left")?,
         (false, true) => tags.checked_insert("sidewalk", "right")?,
         (true, true) => tags.checked_insert("sidewalk", "both")?,
@@ -134,7 +134,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
             .skip_while(|lane| !lane.is_motor())
             .any(|lane| matches!(lane, Lane::Parking { .. })),
     ) {
-        (false, false) => {}
+        (false, false) => {},
         (true, false) => tags.checked_insert("parking:lane:left", "parallel")?,
         (false, true) => tags.checked_insert("parking:lane:right", "parallel")?,
         (true, true) => tags.checked_insert("parking:lane:both", "parallel")?,
@@ -153,7 +153,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
             .find(|lane| lane.is_bicycle())
             .and_then(Lane::direction);
         match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
-            (false, false) => {}
+            (false, false) => {},
             (true, false) => tags.checked_insert("cycleway:left", "lane")?,
             (false, true) => tags.checked_insert("cycleway:right", "lane")?,
             (true, true) => tags.checked_insert("cycleway:both", "lane")?,
@@ -176,22 +176,22 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
             match left_cycle_lane {
                 Some(Direction::Forward) => {
                     tags.checked_insert("cycleway:left:oneway", "yes")?;
-                }
+                },
                 Some(Direction::Backward) => {
                     tags.checked_insert("cycleway:left:oneway", "-1")?;
-                }
+                },
                 Some(Direction::Both) => tags.checked_insert("cycleway:left:oneway", "no")?,
-                None => {}
+                None => {},
             }
             match right_cycle_lane {
                 Some(Direction::Forward) => {
                     tags.checked_insert("cycleway:right:oneway", "yes")?;
-                }
+                },
                 Some(Direction::Backward) => {
                     tags.checked_insert("cycleway:right:oneway", "-1")?;
-                }
+                },
                 Some(Direction::Both) => tags.checked_insert("cycleway:right:oneway", "no")?,
-                None => {}
+                None => {},
             }
         }
     }
@@ -225,7 +225,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
                 }
             };
             match (left_bus_lane, right_bus_lane) {
-                (None, None) => {}
+                (None, None) => {},
                 (Some(left), None) => tags.checked_insert("busway:left", value(left))?,
                 (None, Some(right)) => tags.checked_insert("busway:right", value(right))?,
                 (Some(_left), Some(_right)) => tags.checked_insert("busway:both", "lane")?,
@@ -259,7 +259,10 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
         if let Some(max_speed) = max_speeds.first() {
             // Check if all are the same
             // See benches/benchmark_all_same.rs
-            if max_speeds.windows(2).all(|w| w[0] == w[1]) {
+            if max_speeds.windows(2).all(|w| {
+                let speeds: &[Speed; 2] = w.try_into().unwrap();
+                speeds[0] == speeds[1]
+            }) {
                 tags.checked_insert("maxspeed", max_speed.to_string())?;
                 Some(*max_speed)
             } else {

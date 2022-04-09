@@ -39,7 +39,7 @@ pub(super) fn bus(
             .or_else(|| tags.tree().get("psv:lanes"))
             .is_some(),
     ) {
-        (false, false, false) => {}
+        (false, false, false) => {},
         (true, _, false) => busway(tags, locale, road, warnings)?,
         (false, true, false) => lanes_bus(tags, locale, road, warnings)?,
         (false, false, true) => bus_lanes(tags, locale, road, warnings)?,
@@ -49,7 +49,7 @@ pub(super) fn bus(
                 tags: None,
             }
             .into())
-        }
+        },
     }
 
     Ok(())
@@ -230,7 +230,7 @@ fn bus_lanes(
                     lane.set_bus(locale)?;
                 }
             }
-        }
+        },
         // lanes:bus:forward and lanes:bus:backward, or lanes:psv:forward and lanes:psv:backward
         (None, (forward, backward), None, (None, None))
         | (None, (None, None), None, (forward, backward)) => {
@@ -260,7 +260,7 @@ fn bus_lanes(
                     }
                 }
             }
-        }
+        },
         // Don't try to understand this
         (Some(_), (Some(_), _) | (_, Some(_)), _, _)
         | (Some(_), _, Some(_), _)
@@ -280,7 +280,7 @@ fn bus_lanes(
                 ])),
             }
             .into())
-        }
+        },
     }
 
     Ok(())

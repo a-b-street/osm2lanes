@@ -102,11 +102,11 @@ fn assemble_ltr(
             back_side.reverse();
             back_side.extend(fwd_side);
             back_side
-        }
+        },
         DrivingSide::Left => {
             fwd_side.reverse();
             fwd_side.extend(back_side);
             fwd_side
-        }
+        },
     }
 }

@@ -143,6 +143,7 @@ impl FromStr for Tags {
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
     /// assert_eq!(tags.get("foo"), Some("bar"));
     /// ```
+    #[allow(clippy::map_err_ignore)]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tags = s
             .lines()

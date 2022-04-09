@@ -153,6 +153,7 @@ pub struct LaneBuilder {
 }
 
 impl LaneBuilder {
+    #[allow(clippy::panic)]
     #[must_use]
     fn build(self) -> Lane {
         let width = self.width.target.some();
@@ -230,7 +231,7 @@ impl RoadBuilder {
                     tags: Some(tags.subset(&[MAXSPEED])),
                 });
                 None
-            }
+            },
         };
 
         // These are ordered from the road center, going outwards. Most of the members of fwd_side will
@@ -275,7 +276,7 @@ impl RoadBuilder {
                         tags: Some(tags.subset(&LIFECYCLE)),
                     }
                     .into());
-                }
+                },
             },
         };
 
@@ -286,10 +287,18 @@ impl RoadBuilder {
             oneway,
         })
     }
+
     /// Number of lanes
+    ///
+    /// # Panics
+    ///
+    /// Too many lanes
     pub fn len(&self) -> usize {
-        self.forward_len() + self.backward_len()
+        self.forward_len()
+            .checked_add(self.backward_len())
+            .expect("too many lanes")
     }
+
     /// Number of forward lanes
     pub fn forward_len(&self) -> usize {
         self.forward_lanes.len()
@@ -443,11 +452,11 @@ impl RoadBuilder {
             let middle_separator = match [self.forward_inside(), self.backward_inside()] {
                 [Some(forward), Some(backward)] => {
                     lanes_to_separator([forward, backward], &self, tags, locale, warnings)
-                }
+                },
                 [Some(lane), None] | [None, Some(lane)] => {
                     lane_to_inner_edge_separator(lane.mirror()).map(Lane::mirror)
-                }
-                _ => todo!(),
+                },
+                [None, None] => return Err(RoadError::Msg(RoadMsg::Internal("no lanes"))),
             };
 
             self.forward_lanes.make_contiguous();
@@ -590,6 +599,7 @@ pub fn tags_to_lanes(
     Ok(road_from_tags)
 }
 
+#[allow(clippy::integer_arithmetic, clippy::integer_division)]
 fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (usize, usize) {
     let both_ways = if let Some(n) = tags
         .get("lanes:both_ways")
