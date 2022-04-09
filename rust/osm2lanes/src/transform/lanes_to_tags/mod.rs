@@ -52,10 +52,8 @@ impl Lane {
 /// # Panics
 ///
 /// Lanes slice is empty
-#[allow(clippy::too_many_lines)]
 pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsResult {
     let mut tags = Tags::default();
-    let mut oneway = false;
 
     if !lanes.iter().any(|lane| lane.is_motor() || lane.is_bus()) {
         tags.checked_insert("highway", "path")?;
@@ -63,24 +61,46 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
     }
 
     tags.checked_insert("highway", "road")?; // TODO, add `highway` to `Lanes`
-    {
-        let lane_count = lanes
-            .iter()
-            .filter(|lane| {
-                matches!(
-                    lane,
-                    Lane::Travel {
-                        designated: Designated::Motor | Designated::Bus,
-                        ..
-                    }
-                )
-            })
-            .count();
-        if lane_count >= 1 {
-            tags.checked_insert("lanes", lane_count.to_string())?;
-        }
-    }
-    // Oneway
+
+    set_lanes(lanes, &mut tags)?;
+    let oneway = set_oneway(lanes, &mut tags)?;
+
+    set_shoulder(lanes, &mut tags)?;
+    set_pedestrian(lanes, &mut tags)?;
+    set_parking(lanes, &mut tags)?;
+    set_cycleway(lanes, &mut tags, oneway)?;
+    set_busway(lanes, &mut tags, oneway)?;
+
+    lanes_both_ways(lanes, &mut tags)?;
+
+    let max_speed = get_max_speed(lanes, &mut tags)?;
+
+    locale_additions(max_speed, locale, &mut tags)?;
+
+    check_roundtrip(config, &tags, locale, lanes)?;
+
+    Ok(tags)
+}
+
+fn set_lanes(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
+    let lane_count = lanes
+        .iter()
+        .filter(|lane| {
+            matches!(
+                lane,
+                Lane::Travel {
+                    designated: Designated::Motor | Designated::Bus,
+                    ..
+                }
+            )
+        })
+        .count();
+    tags.checked_insert("lanes", lane_count.to_string())?;
+    Ok(())
+}
+
+/// Returns oneway
+fn set_oneway(lanes: &[Lane], tags: &mut Tags) -> Result<bool, RoadError> {
     if lanes.iter().filter(|lane| lane.is_motor()).all(|lane| {
         matches!(
             lane,
@@ -91,9 +111,13 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
         )
     }) {
         tags.checked_insert("oneway", "yes")?;
-        oneway = true;
+        Ok(true)
+    } else {
+        Ok(false)
     }
-    // Shoulder
+}
+
+fn set_shoulder(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
     match (
         lanes.first().unwrap().is_shoulder(),
         lanes.last().unwrap().is_shoulder(),
@@ -110,7 +134,10 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
         },
         (true, true) => tags.checked_insert("shoulder", "both")?,
     }
-    // Pedestrian
+    Ok(())
+}
+
+fn set_pedestrian(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
     match (
         lanes.first().unwrap().is_foot(),
         lanes.last().unwrap().is_foot(),
@@ -123,7 +150,10 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
         (false, true) => tags.checked_insert("sidewalk", "right")?,
         (true, true) => tags.checked_insert("sidewalk", "both")?,
     }
-    // Parking
+    Ok(())
+}
+
+fn set_parking(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
     match (
         lanes
             .iter()
@@ -139,100 +169,104 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
         (false, true) => tags.checked_insert("parking:lane:right", "parallel")?,
         (true, true) => tags.checked_insert("parking:lane:both", "parallel")?,
     }
-    // Cycleway
-    {
-        let left_cycle_lane: Option<Direction> = lanes
-            .iter()
-            .take_while(|lane| !lane.is_motor())
-            .find(|lane| lane.is_bicycle())
-            .and_then(Lane::direction);
-        let right_cycle_lane: Option<Direction> = lanes
-            .iter()
-            .rev()
-            .take_while(|lane| !lane.is_motor())
-            .find(|lane| lane.is_bicycle())
-            .and_then(Lane::direction);
-        match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
-            (false, false) => {},
-            (true, false) => tags.checked_insert("cycleway:left", "lane")?,
-            (false, true) => tags.checked_insert("cycleway:right", "lane")?,
-            (true, true) => tags.checked_insert("cycleway:both", "lane")?,
-        }
-        // https://wiki.openstreetmap.org/wiki/Key:cycleway:right:oneway
-        {
-            // if the way has oneway=yes and you are allowed to cycle against that oneway flow
-            // also add oneway:bicycle=no to make it easier
-            // for bicycle routers to see that the way can be used in two directions.
-            if oneway
-                && (left_cycle_lane.map_or(false, |direction| direction == Direction::Backward)
-                    || right_cycle_lane.map_or(false, |direction| direction == Direction::Backward))
-            {
-                tags.checked_insert("oneway:bicycle", "no")?;
-            }
-            // indicate cycling traffic direction relative to the direction the osm way is oriented
-            // yes: same direction
-            // -1: contraflow
-            // no: bidirectional
-            match left_cycle_lane {
-                Some(Direction::Forward) => {
-                    tags.checked_insert("cycleway:left:oneway", "yes")?;
-                },
-                Some(Direction::Backward) => {
-                    tags.checked_insert("cycleway:left:oneway", "-1")?;
-                },
-                Some(Direction::Both) => tags.checked_insert("cycleway:left:oneway", "no")?,
-                None => {},
-            }
-            match right_cycle_lane {
-                Some(Direction::Forward) => {
-                    tags.checked_insert("cycleway:right:oneway", "yes")?;
-                },
-                Some(Direction::Backward) => {
-                    tags.checked_insert("cycleway:right:oneway", "-1")?;
-                },
-                Some(Direction::Both) => tags.checked_insert("cycleway:right:oneway", "no")?,
-                None => {},
-            }
-        }
-    }
-    // Bus Lanes
-    {
-        let left_bus_lane = lanes
-            .iter()
-            .take_while(|lane| !lane.is_motor())
-            .find(|lane| lane.is_bus());
-        let right_bus_lane = lanes
-            .iter()
-            .rev()
-            .take_while(|lane| !lane.is_motor())
-            .find(|lane| lane.is_bus());
-        if left_bus_lane.is_none() && right_bus_lane.is_none() && lanes.iter().any(Lane::is_bus) {
-            tags.checked_insert(
-                "bus:lanes",
-                lanes
-                    .iter()
-                    .map(|lane| if lane.is_bus() { "designated" } else { "" })
-                    .collect::<Vec<_>>()
-                    .as_slice()
-                    .join("|"),
-            )?;
-        } else {
-            let value = |lane: &Lane| -> &'static str {
-                if oneway && lane.direction() == Some(Direction::Backward) {
-                    "opposite_lane"
-                } else {
-                    "lane"
-                }
-            };
-            match (left_bus_lane, right_bus_lane) {
-                (None, None) => {},
-                (Some(left), None) => tags.checked_insert("busway:left", value(left))?,
-                (None, Some(right)) => tags.checked_insert("busway:right", value(right))?,
-                (Some(_left), Some(_right)) => tags.checked_insert("busway:both", "lane")?,
-            }
-        }
+    Ok(())
+}
+
+fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), RoadError> {
+    let left_cycle_lane: Option<Direction> = lanes
+        .iter()
+        .take_while(|lane| !lane.is_motor())
+        .find(|lane| lane.is_bicycle())
+        .and_then(Lane::direction);
+    let right_cycle_lane: Option<Direction> = lanes
+        .iter()
+        .rev()
+        .take_while(|lane| !lane.is_motor())
+        .find(|lane| lane.is_bicycle())
+        .and_then(Lane::direction);
+    match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
+        (false, false) => {},
+        (true, false) => tags.checked_insert("cycleway:left", "lane")?,
+        (false, true) => tags.checked_insert("cycleway:right", "lane")?,
+        (true, true) => tags.checked_insert("cycleway:both", "lane")?,
     }
 
+    // if the way has oneway=yes and you are allowed to cycle against that oneway flow
+    // also add oneway:bicycle=no to make it easier
+    // for bicycle routers to see that the way can be used in two directions.
+    if oneway
+        && (left_cycle_lane.map_or(false, |direction| direction == Direction::Backward)
+            || right_cycle_lane.map_or(false, |direction| direction == Direction::Backward))
+    {
+        tags.checked_insert("oneway:bicycle", "no")?;
+    }
+    // indicate cycling traffic direction relative to the direction the osm way is oriented
+    // yes: same direction
+    // -1: contraflow
+    // no: bidirectional
+    match left_cycle_lane {
+        Some(Direction::Forward) => {
+            tags.checked_insert("cycleway:left:oneway", "yes")?;
+        },
+        Some(Direction::Backward) => {
+            tags.checked_insert("cycleway:left:oneway", "-1")?;
+        },
+        Some(Direction::Both) => tags.checked_insert("cycleway:left:oneway", "no")?,
+        None => {},
+    }
+    match right_cycle_lane {
+        Some(Direction::Forward) => {
+            tags.checked_insert("cycleway:right:oneway", "yes")?;
+        },
+        Some(Direction::Backward) => {
+            tags.checked_insert("cycleway:right:oneway", "-1")?;
+        },
+        Some(Direction::Both) => tags.checked_insert("cycleway:right:oneway", "no")?,
+        None => {},
+    }
+
+    Ok(())
+}
+
+fn set_busway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), RoadError> {
+    let left_bus_lane = lanes
+        .iter()
+        .take_while(|lane| !lane.is_motor())
+        .find(|lane| lane.is_bus());
+    let right_bus_lane = lanes
+        .iter()
+        .rev()
+        .take_while(|lane| !lane.is_motor())
+        .find(|lane| lane.is_bus());
+    if left_bus_lane.is_none() && right_bus_lane.is_none() && lanes.iter().any(Lane::is_bus) {
+        tags.checked_insert(
+            "bus:lanes",
+            lanes
+                .iter()
+                .map(|lane| if lane.is_bus() { "designated" } else { "" })
+                .collect::<Vec<_>>()
+                .as_slice()
+                .join("|"),
+        )?;
+    } else {
+        let value = |lane: &Lane| -> &'static str {
+            if oneway && lane.direction() == Some(Direction::Backward) {
+                "opposite_lane"
+            } else {
+                "lane"
+            }
+        };
+        match (left_bus_lane, right_bus_lane) {
+            (None, None) => {},
+            (Some(left), None) => tags.checked_insert("busway:left", value(left))?,
+            (None, Some(right)) => tags.checked_insert("busway:right", value(right))?,
+            (Some(_left), Some(_right)) => tags.checked_insert("busway:both", "lane")?,
+        }
+    }
+    Ok(())
+}
+
+fn lanes_both_ways(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
     if lanes.iter().any(|lane| {
         matches!(
             lane,
@@ -247,45 +281,58 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
         // TODO: add LHT support
         tags.checked_insert("turn:lanes:both_ways", "left")?;
     }
+    Ok(())
+}
 
-    let max_speed = {
-        let max_speeds: Vec<Speed> = lanes
-            .iter()
-            .filter_map(|lane| match lane {
-                Lane::Travel { max_speed, .. } => *max_speed,
-                _ => None,
-            })
-            .collect();
-        if let Some(max_speed) = max_speeds.first() {
-            // Check if all are the same
-            // See benches/benchmark_all_same.rs
-            if max_speeds.windows(2).all(|w| {
-                let speeds: &[Speed; 2] = w.try_into().unwrap();
-                speeds[0] == speeds[1]
-            }) {
-                tags.checked_insert("maxspeed", max_speed.to_string())?;
-                Some(*max_speed)
-            } else {
-                return Err(RoadMsg::Unimplemented {
-                    description: Some("different max speeds per lane".to_owned()),
-                    tags: None,
-                }
-                .into());
-            }
+fn get_max_speed(lanes: &[Lane], tags: &mut Tags) -> Result<Option<Speed>, RoadError> {
+    let max_speeds: Vec<Speed> = lanes
+        .iter()
+        .filter_map(|lane| match lane {
+            Lane::Travel { max_speed, .. } => *max_speed,
+            _ => None,
+        })
+        .collect();
+    if let Some(max_speed) = max_speeds.first() {
+        // Check if all are the same
+        // See benches/benchmark_all_same.rs
+        if max_speeds.windows(2).all(|w| {
+            let speeds: &[Speed; 2] = w.try_into().unwrap();
+            speeds[0] == speeds[1]
+        }) {
+            tags.checked_insert("maxspeed", max_speed.to_string())?;
+            Ok(Some(*max_speed))
         } else {
-            None
+            Err(RoadMsg::Unimplemented {
+                description: Some("different max speeds per lane".to_owned()),
+                tags: None,
+            }
+            .into())
         }
-    };
+    } else {
+        Ok(None)
+    }
+}
 
-    // Locale Specific Stuff
+fn locale_additions(
+    max_speed: Option<Speed>,
+    locale: &Locale,
+    tags: &mut Tags,
+) -> Result<(), RoadError> {
     if max_speed == Some(Speed::Kph(100.0)) && locale.country == Some(Country::the_netherlands()) {
         tags.checked_insert("motorroad", "yes")?;
     }
+    Ok(())
+}
 
-    // Check roundtrip!
+fn check_roundtrip(
+    config: &Config,
+    tags: &Tags,
+    locale: &Locale,
+    lanes: &[Lane],
+) -> Result<(), RoadError> {
     if config.check_roundtrip {
         let rountrip = tags_to_lanes(
-            &tags,
+            tags,
             locale,
             &TagsToLanesConfig {
                 error_on_warnings: true,
@@ -296,6 +343,5 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
             return Err(RoadError::RoundTrip);
         }
     }
-
-    Ok(tags)
+    Ok(())
 }
