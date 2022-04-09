@@ -33,12 +33,11 @@ impl LanesScheme {
 
         // Always assume no center turn lane unless tagged, so we already know:
         let bothway_lanes = tagged_bothways.unwrap_or(tagged_center_turn_lanes.unwrap_or(0));
-        let bothways =
-            if tagged_bothways.is_some() || tagged_center_turn_lanes.is_some() {
-                Infer::Direct(1)
-            } else {
-                Infer::Default(0)
-            };
+        let bothways = if tagged_bothways.is_some() || tagged_center_turn_lanes.is_some() {
+            Infer::Direct(1)
+        } else {
+            Infer::Default(0)
+        };
 
         let forward_bus_lanes = lanes_bus.forward.some().unwrap_or(0);
         let backward_bus_lanes = lanes_bus.backward.some().unwrap_or(0);

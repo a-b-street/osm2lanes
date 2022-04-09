@@ -63,12 +63,12 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
         .iter()
         .filter(|lane| {
             matches!(
-                    lane,
-                    Lane::Travel {
-                        designated: Designated::Motor | Designated::Bus,
-                        ..
-                    }
-                )
+                lane,
+                Lane::Travel {
+                    designated: Designated::Motor | Designated::Bus,
+                    ..
+                }
+            )
         })
         .count();
     tags.checked_insert("lanes", lane_count.to_string())?;

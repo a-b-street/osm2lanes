@@ -82,7 +82,6 @@ impl BuswayScheme {
             backward_direction: Infer::Default(None),
         };
 
-
         // TODO oneway:bus=no on a oneway road (w/ busway=lane) implies 2 bus lanes.
         // TODO I think this logic can be simplified using the match style.
 

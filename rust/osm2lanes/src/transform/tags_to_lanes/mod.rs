@@ -28,11 +28,11 @@ mod non_motorized;
 
 use non_motorized::non_motorized;
 
-use crate::transform::tags_to_lanes::bus::{BuswayScheme, LanesBusScheme};
 use super::{
     ModeResult, RoadError, RoadFromTags, RoadMsg, RoadWarnings, WaySide, CYCLEWAY, HIGHWAY,
     SHOULDER, SIDEWALK,
 };
+use crate::transform::tags_to_lanes::bus::{BuswayScheme, LanesBusScheme};
 
 #[non_exhaustive]
 pub struct Config {
@@ -255,8 +255,8 @@ impl RoadBuilder {
             max_speed: Infer::direct(max_speed),
             ..Default::default()
         })
-            .take(lanes.forward.some().unwrap_or(0))
-            .collect();
+        .take(lanes.forward.some().unwrap_or(0))
+        .collect();
         let backward_lanes = iter::repeat_with(|| LaneBuilder {
             r#type: Infer::Default(LaneType::Travel),
             direction: Infer::Default(Direction::Backward),
@@ -264,8 +264,8 @@ impl RoadBuilder {
             max_speed: Infer::direct(max_speed),
             ..Default::default()
         })
-            .take(lanes.backward.some().unwrap_or(0))
-            .collect();
+        .take(lanes.backward.some().unwrap_or(0))
+        .collect();
         // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
         for _ in 0..(lanes.bothways.some().unwrap_or(0)) {
             forward_lanes.push_front(LaneBuilder {
@@ -579,11 +579,21 @@ pub fn tags_to_lanes(
     // let bus_lanes = BusLanes::from(tags, locale, &oneway, &mut warnings);
     // TEMP: lets use the lanes:bus schema to summarise bus lanes for the lanes scheme.
     let lanes_bus = LanesBusScheme {
-        forward: busway.forward_direction.map_or(0, |o| if o.is_some() { 1 } else { 0 }),
-        backward: busway.backward_direction.map_or(0, |o| if o.is_some() { 1 } else { 0 }),
+        forward: busway
+            .forward_direction
+            .map_or(0, |o| if o.is_some() { 1 } else { 0 }),
+        backward: busway
+            .backward_direction
+            .map_or(0, |o| if o.is_some() { 1 } else { 0 }),
         bothways: Infer::Default(0),
     };
-    let lanes = LanesScheme::new(tags, /*highway,*/ oneway, &lanes_bus, locale, &mut warnings);
+    let lanes = LanesScheme::new(
+        tags,
+        /*highway,*/ oneway,
+        &lanes_bus,
+        locale,
+        &mut warnings,
+    );
 
     // Create the road builder and start giving it schemes.
     let mut road: RoadBuilder = RoadBuilder::from(tags, oneway, lanes, locale, &mut warnings)?;
@@ -618,8 +628,7 @@ pub fn tags_to_lanes(
     Ok(road_from_tags)
 }
 
-impl Tags {
-}
+impl Tags {}
 
 pub fn unsupported(
     tags: &Tags,
