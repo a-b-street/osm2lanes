@@ -122,15 +122,16 @@ impl BuswayScheme {
             BUSWAY + locale.driving_side.opposite().tag(),
             "opposite_lane",
         ) {
-            if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-                // TODO: does it make sense to have a backward lane on the forward_side????
-                busway.forward_side_direction = Infer::Direct(Some(Direction::Backward));
-            } else {
+            if tags.is("oneway", "yes") {
+                busway.backward_side_direction = Infer::Direct(Some(Direction::Backward));
+            }
+
+            if tags.is("oneway:bus", "yes") {
+                // TODO ignore the busway tag, or ignore oneway:bus=yes?
                 warnings.push(RoadMsg::Ambiguous {
                     description: None,
                     tags: Some(tags.subset(&[
                         BUSWAY + locale.driving_side.opposite().tag(),
-                        TagKey::from("oneway"),
                         TagKey::from("oneway:bus"),
                     ])),
                 });
