@@ -15,6 +15,8 @@ edition = "2021"
 
 [dependencies]
 console_log = { version = "0.2", optional = true, features = ["color"] }
+gloo-utils = "0.1"
+leaflet = "0.2"
 log = "0.4"
 osm2lanes = { path = "../osm2lanes", features = ["overpass"] }
 piet = { version = "0.5", features = ["samples"] }

@@ -146,3 +146,11 @@ p.prefixed {
 }
 
 /* End Select */
+
+/* Start Map */
+
+#map {
+  height: 1024px;
+}
+
+/* End Map */
