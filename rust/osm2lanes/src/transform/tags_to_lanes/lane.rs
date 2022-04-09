@@ -1,4 +1,5 @@
 use super::{Infer, Locale, Oneway, RoadMsg, RoadWarnings, TagKey, Tags};
+use crate::locale::DrivingSide;
 use crate::transform::tags_to_lanes::bus::LanesBusScheme;
 
 const LANES: TagKey = TagKey::from("lanes");
@@ -17,6 +18,7 @@ impl LanesScheme {
     pub(super) fn new(
         tags: &Tags,
         oneway: Oneway,
+        centre_turn_lane: &CentreTurnLaneScheme, // TODO prefer TurnLanesScheme
         lanes_bus: &LanesBusScheme,
         _locale: &Locale,
         warnings: &mut RoadWarnings,
@@ -26,18 +28,25 @@ impl LanesScheme {
         let tagged_forward: Option<usize> = tags.get_parsed(&(LANES + "forward"), warnings);
         let tagged_backward: Option<usize> = tags.get_parsed(&(LANES + "backward"), warnings);
         let tagged_bothways: Option<usize> = tags.get_parsed(&(LANES + "both_ways"), warnings);
-        let tagged_center_turn_lanes = match tags.is("centre_turn_lane", "yes") {
-            true => Some(1),
-            false => None,
-        };
 
-        // Always assume no center turn lane unless tagged, so we already know:
-        let bothway_lanes = tagged_bothways.unwrap_or(tagged_center_turn_lanes.unwrap_or(0));
-        let bothways = if tagged_bothways.is_some() || tagged_center_turn_lanes.is_some() {
-            Infer::Direct(1)
-        } else {
-            Infer::Default(0)
+        // Calculate the bothways lanes.
+        let bothways = match (tagged_bothways, centre_turn_lane.present.some()) {
+            (Some(bw), _) => Infer::Direct(bw),
+            (None, Some(true)) => Infer::Calculated(1),
+            (None, Some(false)) => Infer::Calculated(0),
+            (None, None) => Infer::Default(0),
         };
+        let bothway_lanes = bothways.some().unwrap_or(0);
+        // Check it against the centre turn lane tag.
+        if let (Infer::Direct(bw), Infer::Direct(t)) = (bothways, centre_turn_lane.present) {
+            // TODO what if the values conflict but are not Direct? Might not ever happen.
+            if (!t && bw > 0) || (t && bw == 0) {
+                warnings.push(RoadMsg::Ambiguous {
+                    description: None,
+                    tags: Some(tags.subset(&[LANES + "both_ways", CENTRE_TURN_LANE])),
+                });
+            }
+        }
 
         let forward_bus_lanes = lanes_bus.forward.some().unwrap_or(0);
         let backward_bus_lanes = lanes_bus.backward.some().unwrap_or(0);
@@ -46,19 +55,11 @@ impl LanesScheme {
         // check that bus lanes don't conflict (if we didn't guess).
 
         if oneway.into() {
-            // Ignore lanes:{forward,both_ways,backward}=* and centre_turn_lanes=*
-            if tagged_bothways.is_some()
-                || tagged_backward.is_some()
-                || tagged_center_turn_lanes.is_some()
-            {
+            // Ignore lanes:{both_ways,backward}=
+            if tagged_bothways.is_some() || tagged_backward.is_some() {
                 warnings.push(RoadMsg::Ambiguous {
                     description: None,
-                    tags: Some(tags.subset(&[
-                        "oneway",
-                        "lanes:both_ways",
-                        "lanes:backward",
-                        "centre_turn_lanes",
-                    ])),
+                    tags: Some(tags.subset(&["oneway", "lanes:both_ways", "lanes:backward"])),
                 });
             }
 
@@ -173,14 +174,14 @@ impl LanesScheme {
                     bothways: Infer::Guessed(1),
                 },
                 (Some(l), None, None) => {
-                    if l % 2 == 0 && tagged_center_turn_lanes.is_some() {
+                    if l % 2 == 0 && centre_turn_lane.present.some().unwrap_or(false) {
                         // Only tagged with lanes and deprecated center_turn_lane tag.
                         // Assume the center_turn_lane is in addition to evenly divided lanes.
                         Self {
                             lanes: Infer::Calculated(l + 1),
                             forward: Infer::Guessed(l / 2),
                             backward: Infer::Guessed(l / 2),
-                            bothways: Infer::Direct(tagged_center_turn_lanes.unwrap()),
+                            bothways: Infer::Calculated(1),
                         }
                     } else {
                         // Distribute normal lanes evenly.
@@ -208,5 +209,78 @@ impl LanesScheme {
                 }
             }
         }
+    }
+}
+
+// struct TurnLanesScheme {
+//     lanes: Vec<Option<TurnDirections>>,
+// }
+// struct TurnDirections {
+//     through: bool,
+//     left: bool,
+//     right: bool,
+//     slight_left: bool,
+//     slight_right: bool,
+//     merge_left: bool,
+//     merge_right: bool,
+// }
+
+const CENTRE_TURN_LANE: TagKey = TagKey::from("centre_turn_lane");
+pub struct CentreTurnLaneScheme {
+    pub present: Infer<bool>,
+}
+impl CentreTurnLaneScheme {
+    /// Parses and validates the `centre_turn_lane` tag and emits a deprecation warning.
+    /// See https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane.
+    pub(super) fn new(
+        tags: &Tags,
+        _oneway: Oneway,
+        locale: &Locale,
+        warnings: &mut RoadWarnings,
+    ) -> Self {
+        let present = match tags.get(CENTRE_TURN_LANE) {
+            None => Infer::Default(false),
+            Some("yes") => {
+                warnings.push(RoadMsg::Deprecated {
+                    deprecated_tags: tags.subset(&[CENTRE_TURN_LANE]),
+                    suggested_tags: Tags::from_str_pairs(&[
+                        ["lanes:both_ways", "1"],
+                        [
+                            "turn:lanes:both_ways",
+                            match locale.driving_side.opposite() {
+                                DrivingSide::Left => "left",
+                                DrivingSide::Right => "right",
+                            },
+                        ],
+                    ])
+                    .ok(),
+                });
+                Infer::Direct(true)
+            }
+            Some("no") => {
+                warnings.push(RoadMsg::Deprecated {
+                    deprecated_tags: tags.subset(&[CENTRE_TURN_LANE]),
+                    suggested_tags: Some(Tags::from_str_pair(["lanes:both_ways", "0"])),
+                });
+                Infer::Direct(false)
+            }
+            Some(_) => {
+                warnings.push(RoadMsg::Deprecated {
+                    deprecated_tags: tags.subset(&[CENTRE_TURN_LANE]),
+                    suggested_tags: Tags::from_str_pairs(&[
+                        ["lanes:both_ways", "*"],
+                        ["turn:lanes:both_ways", "*"],
+                    ])
+                    .ok(),
+                });
+                // TODO what's the right warning for bad tag values?
+                warnings.push(RoadMsg::Unsupported {
+                    description: None,
+                    tags: Some(tags.subset(&[CENTRE_TURN_LANE])),
+                });
+                Infer::Guessed(false)
+            }
+        };
+        Self { present }
     }
 }

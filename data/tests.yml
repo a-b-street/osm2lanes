@@ -978,6 +978,8 @@
 
 - way_id: 389654080
   mapillary: https://www.mapillary.com/app/?pKey=331760328316020
+  rust:
+    expect_warnings: true # deprecated centre_turn_lane
   # TODO: the cycleway is actually two marked lanes,
   # how should we know that given the tags or what should the tags be?
   tags:

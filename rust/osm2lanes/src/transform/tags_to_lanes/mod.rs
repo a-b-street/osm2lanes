@@ -33,6 +33,7 @@ use super::{
     SHOULDER, SIDEWALK,
 };
 use crate::transform::tags_to_lanes::bus::{BuswayScheme, LanesBusScheme};
+use crate::transform::tags_to_lanes::lane::CentreTurnLaneScheme;
 
 #[non_exhaustive]
 pub struct Config {
@@ -587,9 +588,11 @@ pub fn tags_to_lanes(
             .map_or(0, |o| if o.is_some() { 1 } else { 0 }),
         bothways: Infer::Default(0),
     };
+    let centre_turn_lanes = CentreTurnLaneScheme::new(tags, oneway, locale, &mut warnings);
     let lanes = LanesScheme::new(
         tags,
         /*highway,*/ oneway,
+        &centre_turn_lanes,
         &lanes_bus,
         locale,
         &mut warnings,
