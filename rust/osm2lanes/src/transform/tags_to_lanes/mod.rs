@@ -652,8 +652,6 @@ pub fn tags_to_lanes(
     Ok(road_from_tags)
 }
 
-impl Tags {}
-
 pub fn unsupported(
     tags: &Tags,
     _locale: &Locale,
