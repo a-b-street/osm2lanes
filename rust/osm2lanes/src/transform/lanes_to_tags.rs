@@ -127,9 +127,11 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> TagsRe
             )
         }) {
             tags.checked_insert("lanes:both_ways", "1")?;
-            // TODO: add LHT support
             if lane_count >= 3 {
-                tags.checked_insert("turn:lanes:both_ways", "left")?;
+                tags.checked_insert(
+                    "turn:lanes:both_ways",
+                    locale.driving_side.opposite().to_string(),
+                )?;
             }
         }
     }

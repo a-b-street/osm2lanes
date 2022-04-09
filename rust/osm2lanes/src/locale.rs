@@ -160,6 +160,15 @@ impl std::str::FromStr for DrivingSide {
     }
 }
 
+impl ToString for DrivingSide {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Right => String::from("right"),
+            Self::Left => String::from("left"),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use celes::Country;
