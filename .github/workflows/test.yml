@@ -93,14 +93,10 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-    - name: "Checkout Target"
+    - name: "Checkout"
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.base_ref || 'HEAD~' }}
-    - name: "Checkout Change"
-      uses: actions/checkout@v3
-      with:
-        clean: false
+        fetch-depth: 0
     - name: "Cache"
       uses: Swatinem/rust-cache@v1
       with:
