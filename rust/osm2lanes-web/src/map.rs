@@ -92,6 +92,7 @@ impl Component for MapComponent {
                 );
                 let path = Path::from(polyline);
                 path.addTo(&self.map);
+                // TODO: Add to upstream leaflet crate
                 // self.map.fitBounds(polyline.getBounds());
                 ctx.props().tags_locale.emit((tags, locale));
                 true
