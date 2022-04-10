@@ -68,7 +68,8 @@ impl Component for MapComponent {
 
     fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
         if first_render {
-            self.map.setView(&LatLng::new(self.point.0, self.point.1), 2.0);
+            self.map
+                .setView(&LatLng::new(self.point.0, self.point.1), 2.0);
             log::debug!("add tile layer");
             add_tile_layer(&self.map);
         }
