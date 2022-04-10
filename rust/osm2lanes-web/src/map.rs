@@ -19,7 +19,8 @@ pub enum Msg {
 pub struct MapComponent {
     container: HtmlElement,
     map: Map,
-    lat: Point,
+    point: Point,
+    path: Option<Path>,
     _map_click_closure: Closure<dyn Fn(MouseEvent)>,
 }
 
@@ -58,7 +59,8 @@ impl Component for MapComponent {
         Self {
             container,
             map,
-            lat: Point(40.0, 10.0),
+            point: Point(40.0, 10.0),
+            path: None,
             // to avoid dropping the closure and invalidating the callback
             _map_click_closure: map_click_closure,
         }
@@ -66,7 +68,7 @@ impl Component for MapComponent {
 
     fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
         if first_render {
-            self.map.setView(&LatLng::new(self.lat.0, self.lat.1), 2.0);
+            self.map.setView(&LatLng::new(self.point.0, self.point.1), 2.0);
             log::debug!("add tile layer");
             add_tile_layer(&self.map);
         }
@@ -84,6 +86,10 @@ impl Component for MapComponent {
                 true
             },
             Msg::MapUpdate(tags, locale, geometry) => {
+                if let Some(path) = self.path.take() {
+                    path.remove();
+                }
+
                 let polyline = Polyline::new(
                     geometry
                         .into_iter()
@@ -92,6 +98,7 @@ impl Component for MapComponent {
                 );
                 let path = Path::from(polyline);
                 path.addTo(&self.map);
+                self.path = Some(path);
                 // TODO: Add to upstream leaflet crate
                 // self.map.fitBounds(polyline.getBounds());
                 ctx.props().tags_locale.emit((tags, locale));
