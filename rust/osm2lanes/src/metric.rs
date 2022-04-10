@@ -56,6 +56,16 @@ pub enum Speed {
     Knots(f64),
 }
 
+impl Speed {
+    pub fn kph(&self) -> f64 {
+        match self {
+            Self::Kph(val) => *val,
+            Self::Mph(val) => 1.60934_f64 * val,
+            Self::Knots(val) => 1.852_f64 * val,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum SpeedError {
     Empty,

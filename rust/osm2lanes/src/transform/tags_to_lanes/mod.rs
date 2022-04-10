@@ -87,6 +87,16 @@ impl<T> Infer<T> {
             Some(v) => Self::Direct(v),
         }
     }
+    pub fn map<U, F>(self, f: F) -> Infer<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        match self {
+            Infer::None => Infer::None,
+            Infer::Default(x) => Infer::Default(f(x)),
+            Infer::Direct(x) => Infer::Direct(f(x)),
+        }
+    }
 }
 
 impl<T> Default for Infer<T> {
