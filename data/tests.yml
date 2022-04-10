@@ -1092,7 +1092,9 @@
     lanes: '3'
     sidewalk: 'both'
   driving_side: 'left'
-  output:
+  road:
+    highway: road
+    lanes:
     - type: travel
       designated: foot
     - type: travel
