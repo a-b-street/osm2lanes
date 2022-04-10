@@ -6,6 +6,8 @@ use super::{
 };
 use crate::road::Markings;
 
+mod semantic;
+
 #[derive(Clone, Copy)]
 enum DirectionChange {
     None,
