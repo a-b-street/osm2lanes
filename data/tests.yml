@@ -1119,7 +1119,9 @@
     lanes: '5'
     sidewalk: 'no'
   driving_side: right
-  output:
+  road:
+    highway: road
+    lanes:
     - type: shoulder
     - type: travel
       direction: backward
@@ -1145,21 +1147,23 @@
     lanes:backward: 1
     sidewalk: no
   driving_side: right
-  output:
-  - type: shoulder
-  - type: travel
-    direction: backward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: travel
-    direction: forward
-    designated: motor_vehicle
-  - type: shoulder
+  road:
+    highway: secondary
+    lanes:
+    - type: shoulder
+    - type: travel
+      direction: backward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: travel
+      direction: forward
+      designated: motor_vehicle
+    - type: shoulder
 
 - way_id: 335668924
   description: a narrow alleyway tagged lanes=1
@@ -1169,12 +1173,14 @@
     highway: 'service'
     lanes: '1'
   driving_side: right
-  output:
-  - type: shoulder
-  - type: travel
-    direction: both
-    designated: motor_vehicle
-  - type: shoulder
+  road:
+    highway: service
+    lanes:
+    - type: shoulder
+    - type: travel
+      direction: both
+      designated: motor_vehicle
+    - type: shoulder
 
 - way_id: 13859146
   rust: false  
