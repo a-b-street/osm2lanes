@@ -1,13 +1,5 @@
 use std::str::FromStr;
 
-use piet::Error as PietError;
-use piet_web::WebRenderContext;
-use wasm_bindgen::JsCast;
-use web_sys::{window, HtmlCanvasElement, HtmlInputElement, HtmlSelectElement};
-use yew::prelude::*;
-
-mod draw;
-
 use osm2lanes::locale::{Country, DrivingSide, Locale};
 use osm2lanes::overpass::get_way;
 use osm2lanes::road::{Lane, Printable, Road};
@@ -15,6 +7,15 @@ use osm2lanes::tag::Tags;
 use osm2lanes::transform::{
     lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadFromTags, TagsToLanesConfig,
 };
+use piet::Error as PietError;
+use piet_web::WebRenderContext;
+use wasm_bindgen::JsCast;
+use web_sys::{window, HtmlCanvasElement, HtmlInputElement, HtmlSelectElement};
+use yew::prelude::*;
+
+mod draw;
+mod map;
+use map::MapComponent;
 
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
@@ -82,7 +83,7 @@ impl Component for App {
     type Properties = ();
 
     fn create(_ctx: &Context<Self>) -> Self {
-        let locale = Locale::builder().build();
+        let locale = Locale::builder().iso_3166("FR").build();
         let focus_ref = NodeRef::default();
         let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nbusway=lane\nsidewalk=right".to_owned();
         let state = State {
@@ -137,7 +138,7 @@ impl Component for App {
                 match way_id.parse() {
                     Ok(way_id) => {
                         ctx.link().send_future(async move {
-                            match get_way(way_id).await {
+                            match get_way(&way_id).await {
                                 Ok((tags, locale)) => Msg::TagsLocaleSet((tags, locale)),
                                 Err(e) => Msg::Error(e.to_string()),
                             }
@@ -192,6 +193,8 @@ impl Component for App {
             log::trace!("countries {:?}", countries);
             countries
         };
+
+        let tags_locale_cb = ctx.link().callback(Msg::TagsLocaleSet);
 
         html! {
             <div>
@@ -322,6 +325,8 @@ impl Component for App {
                     }
                 }
                 <canvas id="canvas" width="960px" height="480px"></canvas>
+                <hr/>
+                <MapComponent tags_locale={tags_locale_cb}/>
             </div>
         }
     }
@@ -434,7 +439,7 @@ impl App {
 }
 
 fn main() {
-    console_log::init_with_level(log::Level::Trace).expect("logging failed");
+    console_log::init_with_level(log::Level::Debug).expect("logging failed");
     log::trace!("Initializing yew...");
     yew::start_app::<App>();
 }
