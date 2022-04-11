@@ -5,7 +5,7 @@ use crate::metric::Metre;
 use crate::road::{Color, Designated};
 
 /// Context about the place where an OSM way exists.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Locale {
     /// The ISO 3166 Country
     pub country: Option<Country>,

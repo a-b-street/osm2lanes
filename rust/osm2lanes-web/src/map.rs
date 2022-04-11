@@ -16,20 +16,20 @@ pub enum Msg {
     Error(String),
 }
 
-pub struct MapComponent {
-    container: HtmlElement,
-    map: Map,
-    point: Point,
-    path: Option<Path>,
-    _map_click_closure: Closure<dyn Fn(MouseEvent)>,
-}
-
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Point(pub f64, pub f64);
 
 #[derive(Properties, Clone, PartialEq)]
 pub struct Props {
     pub tags_locale: Callback<(Tags, Locale)>,
+}
+
+pub struct MapComponent {
+    container: HtmlElement,
+    map: Map,
+    point: Point,
+    path: Option<Path>,
+    _map_click_closure: Closure<dyn Fn(MouseEvent)>,
 }
 
 impl MapComponent {
