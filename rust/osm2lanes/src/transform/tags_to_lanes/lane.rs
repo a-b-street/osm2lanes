@@ -1,6 +1,8 @@
-use super::{Infer, Locale, Oneway, RoadMsg, RoadWarnings, TagKey, Tags};
-use crate::locale::DrivingSide;
+use super::{Infer, Oneway};
+use crate::locale::{DrivingSide, Locale};
+use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::modes::LanesBusScheme;
+use crate::transform::{RoadMsg, RoadWarnings};
 
 const LANES: TagKey = TagKey::from("lanes");
 pub struct LanesScheme {
@@ -12,9 +14,14 @@ pub struct LanesScheme {
 
 impl LanesScheme {
     /// Parses and validates the `lanes` scheme (which excludes parking lanes, bike lanes, etc.).
-    /// See https://wiki.openstreetmap.org/wiki/Key:lanes.
+    /// See <https://wiki.openstreetmap.org/wiki/Key:lanes>.
     ///
     /// Validates `lanes[:{forward,both_ways,backward}]=*` and `centre_turn_lane=yes`.
+    #[allow(
+        clippy::integer_arithmetic,
+        clippy::integer_division,
+        clippy::too_many_lines
+    )]
     pub(super) fn new(
         tags: &Tags,
         oneway: Oneway,
@@ -231,7 +238,7 @@ pub struct CentreTurnLaneScheme {
 }
 impl CentreTurnLaneScheme {
     /// Parses and validates the `centre_turn_lane` tag and emits a deprecation warning.
-    /// See https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane.
+    /// See <https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane>.
     pub(super) fn new(
         tags: &Tags,
         _oneway: Oneway,

@@ -245,7 +245,7 @@ impl RoadBuilder {
     pub fn from(
         tags: &Tags,
         oneway: Oneway,
-        lanes: LanesScheme,
+        lanes: &LanesScheme,
         _locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
@@ -612,7 +612,7 @@ pub fn tags_to_lanes(
     // Parse lane count schemas first.
     let oneway =
         Oneway::from(tags.is_any("oneway", &["yes", "-1"]) || tags.is("junction", "roundabout"));
-    let busway = BuswayScheme::new(tags, locale, &oneway, &mut warnings);
+    let busway = BuswayScheme::new(tags, locale, oneway, &mut warnings);
     // let bus_lanes = BusLanes::from(tags, locale, &oneway, &mut warnings);
     // TEMP: lets use the lanes:bus schema to summarise bus lanes for the lanes scheme.
     let lanes_bus = LanesBusScheme {
@@ -635,14 +635,14 @@ pub fn tags_to_lanes(
     );
 
     // Create the road builder and start giving it schemes.
-    let mut road: RoadBuilder = RoadBuilder::from(tags, oneway, lanes, locale, &mut warnings)?;
+    let mut road: RoadBuilder = RoadBuilder::from(tags, oneway, &lanes, locale, &mut warnings)?;
 
     // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
     if let Some(spec) = modes::non_motorized(tags, locale, &road)? {
         return Ok(spec);
     }
 
-    road.set_busway_scheme(&busway, &locale, &mut warnings)?;
+    road.set_busway_scheme(&busway, locale, &mut warnings)?;
 
     modes::bus(tags, locale, &mut road, &mut warnings)?;
 
@@ -667,6 +667,11 @@ pub fn tags_to_lanes(
     Ok(road_from_tags)
 }
 
+/// Unsupported
+///
+/// # Errors
+///
+/// Oneway reversible
 pub fn unsupported(
     tags: &Tags,
     _locale: &Locale,

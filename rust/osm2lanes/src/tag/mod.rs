@@ -92,16 +92,17 @@ impl Tags {
         self.map.get(k.as_ref()).map(String::as_str)
     }
 
-    /// Get the value for the given key and parse it into T. Add a RoadMsg::Unsupported if parsing
-    /// fails.
+    /// Get the value for the given key and parse it into T.
+    /// Add a `RoadMsg::Unsupported` if parsing fails.
     pub fn get_parsed<K: AsRef<str>, T: FromStr>(
         &self,
         key: &K,
         warnings: &mut RoadWarnings,
     ) -> Option<T> {
-        self.get(key).and_then(|val| match val.parse::<T>() {
-            Ok(n) => Some(n),
-            Err(_) => {
+        self.get(key).and_then(|val| {
+            if let Ok(n) = val.parse::<T>() {
+                Some(n)
+            } else {
                 warnings.push(RoadMsg::unsupported_tag(key.as_ref().to_owned(), val));
                 None
             }
