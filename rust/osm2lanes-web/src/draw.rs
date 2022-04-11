@@ -107,7 +107,7 @@ pub fn lanes<R: RenderContext>(
                     .build()?;
                 rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
                 left_edge += width;
-            }
+            },
             Lane::Parking {
                 designated, width, ..
             } => {
@@ -122,7 +122,7 @@ pub fn lanes<R: RenderContext>(
                     .build()?;
                 rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
                 left_edge += width;
-            }
+            },
             Lane::Shoulder { width } => {
                 let width = width.unwrap_or(default_lane_width);
                 let x = scale.scale(left_edge + (0.5 * width));
@@ -135,7 +135,7 @@ pub fn lanes<R: RenderContext>(
                     .build()?;
                 rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
                 left_edge += width;
-            }
+            },
             Lane::Separator { markings } => {
                 for marking in markings.iter() {
                     let width = marking.width.unwrap_or_else(|| Metre::new(0.2));
@@ -173,7 +173,7 @@ pub fn lanes<R: RenderContext>(
                     );
                     left_edge += width;
                 }
-            }
+            },
         }
     }
 
@@ -234,7 +234,7 @@ pub fn draw_arrow<R: RenderContext>(
         Direction::Both => {
             draw_point(rc, mid, Direction::Forward)?;
             draw_point(rc, mid, Direction::Backward)?;
-        }
+        },
     }
     Ok(())
 }

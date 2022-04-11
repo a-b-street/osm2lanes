@@ -1,7 +1,8 @@
-use super::{
-    Designated, Direction, Infer, LaneBuilder, LaneBuilderError, Locale, ModeResult, Oneway,
-    RoadBuilder, RoadError, RoadMsg, RoadWarnings, TagKey, Tags,
-};
+use crate::locale::Locale;
+use crate::road::{Designated, Direction};
+use crate::tag::{TagKey, Tags};
+use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneBuilderError, Oneway, RoadBuilder};
+use crate::transform::{RoadError, RoadMsg, RoadWarnings};
 
 const LANES: TagKey = TagKey::from("lanes");
 
@@ -35,12 +36,12 @@ pub struct LanesBusScheme {
 }
 
 #[allow(clippy::unnecessary_wraps)]
-pub(super) fn bus(
+pub(in crate::transform::tags_to_lanes) fn bus(
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
-) -> ModeResult {
+) -> Result<(), RoadError> {
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
     // 3 schemes, for simplicity we only allow one at a time
     match (
@@ -54,8 +55,8 @@ pub(super) fn bus(
             .or_else(|| tags.tree().get("psv:lanes"))
             .is_some(),
     ) {
-        (false, false, false) => {}
-        (true, _, false) => {}
+        (false, false, false) => {},
+        (true, _, false) => {},
         (false, true, false) => lanes_bus(tags, locale, road, warnings)?,
         (false, false, true) => bus_lanes(tags, locale, road, warnings)?,
         _ => {
@@ -64,14 +65,14 @@ pub(super) fn bus(
                 tags: None,
             }
             .into())
-        }
+        },
     }
 
     Ok(())
 }
 
 impl BuswayScheme {
-    pub(super) fn new(
+    pub(in crate::transform::tags_to_lanes) fn new(
         tags: &Tags,
         locale: &Locale,
         oneway: &Oneway,
@@ -148,7 +149,7 @@ impl RoadBuilder {
         busway: &BuswayScheme,
         locale: &Locale,
         _warnings: &mut RoadWarnings,
-    ) -> ModeResult {
+    ) -> Result<(), RoadError> {
         if let Some(Some(d)) = busway.forward_side_direction.some() {
             let lane = self
                 .forward_outside_mut()
@@ -173,7 +174,7 @@ fn lanes_bus(
     _locale: &Locale,
     _road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
-) -> ModeResult {
+) -> Result<(), RoadError> {
     warnings.push(RoadMsg::Unimplemented {
         description: None,
         tags: Some(tags.subset(&[
@@ -222,7 +223,7 @@ fn bus_lanes(
     locale: &Locale,
     road: &mut RoadBuilder,
     _warnings: &mut RoadWarnings,
-) -> ModeResult {
+) -> Result<(), RoadError> {
     match (
         tags.get("bus:lanes"),
         (
@@ -262,7 +263,7 @@ fn bus_lanes(
                     lane.set_bus(locale)?;
                 }
             }
-        }
+        },
         // lanes:bus:forward and lanes:bus:backward, or lanes:psv:forward and lanes:psv:backward
         (None, (forward, backward), None, (None, None))
         | (None, (None, None), None, (forward, backward)) => {
@@ -292,7 +293,7 @@ fn bus_lanes(
                     }
                 }
             }
-        }
+        },
         // Don't try to understand this
         (Some(_), (Some(_), _) | (_, Some(_)), _, _)
         | (Some(_), _, Some(_), _)
@@ -312,7 +313,7 @@ fn bus_lanes(
                 ])),
             }
             .into())
-        }
+        },
     }
 
     Ok(())

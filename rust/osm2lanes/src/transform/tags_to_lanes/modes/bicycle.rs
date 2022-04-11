@@ -1,7 +1,9 @@
-use super::{
-    Designated, Direction, Infer, LaneBuilder, LaneType, Locale, ModeResult, RoadBuilder, RoadMsg,
-    RoadWarnings, Tags, WaySide, CYCLEWAY,
-};
+use crate::locale::Locale;
+use crate::road::{Designated, Direction};
+use crate::tag::Tags;
+use crate::transform::tags::CYCLEWAY;
+use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder};
+use crate::transform::{RoadError, RoadMsg, RoadWarnings, WaySide};
 
 impl Tags {
     fn is_cycleway(&self, side: Option<WaySide>) -> bool {
@@ -40,12 +42,12 @@ impl LaneBuilder {
     }
 }
 
-pub(super) fn bicycle(
+pub(in crate::transform::tags_to_lanes) fn bicycle(
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
-) -> ModeResult {
+) -> Result<(), RoadError> {
     if tags.is_cycleway(None) {
         if tags.is_cycleway(Some(WaySide::Both))
             || tags.is_cycleway(Some(WaySide::Right))

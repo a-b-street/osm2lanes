@@ -1,6 +1,6 @@
 use super::{Infer, Locale, Oneway, RoadMsg, RoadWarnings, TagKey, Tags};
 use crate::locale::DrivingSide;
-use crate::transform::tags_to_lanes::bus::LanesBusScheme;
+use crate::transform::tags_to_lanes::modes::LanesBusScheme;
 
 const LANES: TagKey = TagKey::from("lanes");
 pub struct LanesScheme {
@@ -124,7 +124,7 @@ impl LanesScheme {
                         backward: Infer::Direct(b),
                         bothways,
                     }
-                }
+                },
                 (None, Some(f), Some(b)) => Self {
                     lanes: Infer::Calculated(f + b + bothway_lanes),
                     forward: Infer::Direct(f),
@@ -153,7 +153,7 @@ impl LanesScheme {
                         backward,
                         bothways,
                     }
-                }
+                },
                 (Some(l), Some(f), None) => Self {
                     lanes: Infer::Direct(l),
                     forward: Infer::Direct(f),
@@ -206,7 +206,7 @@ impl LanesScheme {
                             bothways,
                         }
                     }
-                }
+                },
             }
         }
     }
@@ -256,14 +256,14 @@ impl CentreTurnLaneScheme {
                     .ok(),
                 });
                 Infer::Direct(true)
-            }
+            },
             Some("no") => {
                 warnings.push(RoadMsg::Deprecated {
                     deprecated_tags: tags.subset(&[CENTRE_TURN_LANE]),
                     suggested_tags: Some(Tags::from_str_pair(["lanes:both_ways", "0"])),
                 });
                 Infer::Direct(false)
-            }
+            },
             Some(_) => {
                 warnings.push(RoadMsg::Deprecated {
                     deprecated_tags: tags.subset(&[CENTRE_TURN_LANE]),
@@ -279,7 +279,7 @@ impl CentreTurnLaneScheme {
                     tags: Some(tags.subset(&[CENTRE_TURN_LANE])),
                 });
                 Infer::Guessed(false)
-            }
+            },
         };
         Self { present }
     }
