@@ -57,6 +57,7 @@ pub enum Speed {
 }
 
 impl Speed {
+    #[must_use]
     pub fn kph(&self) -> f64 {
         match self {
             Self::Kph(val) => *val,

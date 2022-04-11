@@ -15,13 +15,14 @@ pub enum SpeedClass {
 }
 
 impl From<Speed> for SpeedClass {
+    #[allow(clippy::panic)]
     fn from(s: Speed) -> Self {
         match s.kph() {
-            s if s > 0.0_f64 && s <= 10.0_f64 => Self::Walking,
-            s if s > 10.0_f64 && s < 40.0_f64 => Self::Living,
-            s if s >= 40.0_f64 && s < 70.0_f64 => Self::Intra,
-            s if s >= 70.0_f64 && s < 100.0_f64 => Self::Inter,
-            s if s >= 100.0_f64 && s < 200.0_f64 => Self::Max,
+            s if (0.0_f64..15.0_f64).contains(&s) => Self::Walking,
+            s if (15.0_f64..40.0_f64).contains(&s) => Self::Living,
+            s if (40.0_f64..70.0_f64).contains(&s) => Self::Intra,
+            s if (70.0_f64..100.0_f64).contains(&s) => Self::Inter,
+            s if (100.0_f64..200.0_f64).contains(&s) => Self::Max,
             _ => panic!("unexpected speed {s}"),
         }
     }
@@ -33,7 +34,7 @@ impl From<Speed> for SpeedClass {
 /// e.g. for motorcycle filtering or overtaking tractors.
 pub enum Overtaking {
     Permitted,
-    Prohibited,
+    _Prohibited,
 }
 
 impl Default for Overtaking {
@@ -46,9 +47,9 @@ impl Default for Overtaking {
 /// Semantic lane separator
 pub enum Separator {
     /// Into grass or dirt
-    SoftEdge,
+    _SoftEdge,
     /// Into a building or other hard surface
-    HardEdge,
+    _HardEdge,
     /// Motorway (or other) shoulder
     Shoulder { speed: Infer<SpeedClass> },
     /// Road paint between same direction
@@ -60,6 +61,7 @@ pub enum Separator {
     Centre {
         speed: Infer<SpeedClass>,
         overtaking: Overtaking,
+        more_than_2_lanes: bool,
     },
     /// Road paint between different modes
     // TODO: solve directionality
@@ -68,10 +70,10 @@ pub enum Separator {
         outside: Designated,
     },
     /// Painted area
-    Buffer { width: Metre, style: Style },
+    _Buffer { width: Metre, style: Style },
     /// Kerb step
     // TODO: solve directionality
     Kerb,
     /// Grassy verge
-    Verge { width: Metre },
+    _Verge { width: Metre },
 }
