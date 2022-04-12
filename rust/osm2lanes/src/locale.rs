@@ -56,6 +56,7 @@ pub struct Config {
     iso_3166_1_alpha_2: Option<String>,
     iso_3166_1_alpha_3: Option<String>,
     iso_3166_2_subdivision: Option<String>,
+    country: Option<Country>,
     driving_side: Option<DrivingSide>,
 }
 
@@ -105,6 +106,12 @@ impl Config {
     }
 
     #[must_use]
+    pub fn country(mut self, country: Country) -> Self {
+        self.country = Some(country);
+        self
+    }
+
+    #[must_use]
     pub fn driving_side(mut self, side: DrivingSide) -> Self {
         self.driving_side = Some(side);
         self
@@ -117,11 +124,14 @@ impl Config {
             &self.iso_3166_1_alpha_2,
             &self.iso_3166_1_alpha_3,
             &self.iso_3166_2_subdivision,
+            &self.country,
         ) {
-            (None, None, _) => None,
-            (Some(c), None, _) => Country::from_alpha2(&c).ok(),
-            (None, Some(c), _) => Country::from_alpha3(&c).ok(),
-            (Some(_), Some(_), _) => unimplemented!(),
+            (None, None, _, None) => None,
+            (Some(c), None, _, None) => Country::from_alpha2(&c).ok(),
+            (None, Some(c), _, None) => Country::from_alpha3(&c).ok(),
+            (None, None, _, Some(c)) => Some(c.clone()),
+            (None | Some(_), None | Some(_), _, Some(_c)) => unimplemented!(),
+            (Some(_), Some(_), _, None) => unimplemented!(),
         };
         Locale {
             country,
