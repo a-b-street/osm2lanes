@@ -7,7 +7,7 @@ use piet::{
     TextLayoutBuilder,
 };
 
-use super::RenderError;
+use crate::canvas::RenderError;
 
 // TODO: newtype + From?
 fn color_into(c: MarkingColor) -> PietColor {
