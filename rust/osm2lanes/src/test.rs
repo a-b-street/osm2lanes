@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::locale::DrivingSide;
 use crate::road::{Lane, Road};
-use crate::tag::Tags;
+use crate::tag::{Highway, HighwayType, Tags};
 
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
@@ -53,6 +53,16 @@ impl TestCase {
         match &self.expected {
             Expected::Road(road) => &road.lanes,
             Expected::Output(lanes) => lanes,
+        }
+    }
+    /// Road of expected output
+    pub fn road(&self) -> Road {
+        match &self.expected {
+            Expected::Road(road) => road.clone(),
+            Expected::Output(lanes) => Road {
+                highway: Highway::active(HighwayType::UnknownRoad),
+                lanes: lanes.clone(),
+            },
         }
     }
     /// Test case is enabled, true by default
@@ -453,7 +463,7 @@ mod tests {
                     .build();
                 let input_road = test.expected_road();
                 let tags = lanes_to_tags(
-                    &test.lanes(),
+                    &test.road(),
                     &locale,
                     &LanesToTagsConfig {
                         check_roundtrip: false,
