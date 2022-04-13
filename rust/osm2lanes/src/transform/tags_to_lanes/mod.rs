@@ -3,15 +3,18 @@ use std::iter;
 
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::{Metre, Speed};
-use crate::road::{Color, Designated, Direction, Lane, Marking, Road, Style};
+use crate::road::{Designated, Direction, Lane, Road};
 use crate::tag::{Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
+use crate::transform::error::{RoadError, RoadMsg, RoadWarnings};
+use crate::transform::RoadFromTags;
 
 mod modes;
 
 mod separator;
-use separator::{lane_to_inner_edge_separator, lane_to_outer_edge_separator, lanes_to_separator};
-
-use super::{RoadError, RoadFromTags, RoadMsg, RoadWarnings};
+use separator::{
+    lane_pair_to_semantic_separator, lane_to_inner_edge_separator, lane_to_outer_edge_separator,
+    semantic_separator_to_lane,
+};
 
 #[non_exhaustive]
 pub struct Config {
@@ -85,6 +88,16 @@ impl<T> Infer<T> {
         match some {
             None => Self::None,
             Some(v) => Self::Direct(v),
+        }
+    }
+    pub fn map<U, F>(self, f: F) -> Infer<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        match self {
+            Infer::None => Infer::None,
+            Infer::Default(x) => Infer::Default(f(x)),
+            Infer::Direct(x) => Infer::Direct(f(x)),
         }
     }
 }
@@ -418,7 +431,12 @@ impl RoadBuilder {
     }
 
     /// Consume Road Builder to return Lanes left to right
-    #[allow(clippy::needless_collect, clippy::unnecessary_wraps)]
+    // TODO: a refactor...
+    #[allow(
+        clippy::needless_collect,
+        clippy::unnecessary_wraps,
+        clippy::too_many_lines
+    )]
     pub fn into_ltr(
         mut self,
         tags: &Tags,
@@ -434,9 +452,23 @@ impl RoadBuilder {
                 .backward_outside()
                 .and_then(lane_to_outer_edge_separator);
             let middle_separator = match [self.forward_inside(), self.backward_inside()] {
-                [Some(forward), Some(backward)] => {
-                    lanes_to_separator([forward, backward], &self, tags, locale, warnings)
-                },
+                [Some(forward), Some(backward)] => lane_pair_to_semantic_separator(
+                    [forward, backward],
+                    &self,
+                    tags,
+                    locale,
+                    warnings,
+                )
+                .and_then(|separator| {
+                    semantic_separator_to_lane(
+                        [forward, backward],
+                        &separator,
+                        &self,
+                        tags,
+                        locale,
+                        warnings,
+                    )
+                }),
                 [Some(lane), None] | [None, Some(lane)] => {
                     lane_to_inner_edge_separator(lane.mirror()).map(Lane::mirror)
                 },
@@ -451,7 +483,23 @@ impl RoadBuilder {
                 .windows(2)
                 .map(|window| {
                     let lanes: &[LaneBuilder; 2] = window.try_into().unwrap();
-                    lanes_to_separator([&lanes[0], &lanes[1]], &self, tags, locale, warnings)
+                    lane_pair_to_semantic_separator(
+                        [&lanes[0], &lanes[1]],
+                        &self,
+                        tags,
+                        locale,
+                        warnings,
+                    )
+                    .and_then(|separator| {
+                        semantic_separator_to_lane(
+                            [&lanes[0], &lanes[1]],
+                            &separator,
+                            &self,
+                            tags,
+                            locale,
+                            warnings,
+                        )
+                    })
                 })
                 .collect();
 
@@ -463,7 +511,23 @@ impl RoadBuilder {
                 .windows(2)
                 .map(|window| {
                     let lanes: &[LaneBuilder; 2] = window.try_into().unwrap();
-                    lanes_to_separator([&lanes[0], &lanes[1]], &self, tags, locale, warnings)
+                    lane_pair_to_semantic_separator(
+                        [&lanes[0], &lanes[1]],
+                        &self,
+                        tags,
+                        locale,
+                        warnings,
+                    )
+                    .and_then(|separator| {
+                        semantic_separator_to_lane(
+                            [&lanes[0], &lanes[1]],
+                            &separator,
+                            &self,
+                            tags,
+                            locale,
+                            warnings,
+                        )
+                    })
                 })
                 .collect();
 
