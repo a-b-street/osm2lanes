@@ -109,7 +109,10 @@ impl Component for App {
             Msg::CountrySet(Ok(country)) => {
                 {
                     let mut state = self.state.borrow_mut();
-                    state.locale.country = Some(country);
+                    state.locale = Locale::builder()
+                        .driving_side(state.locale.driving_side)
+                        .country(country)
+                        .build();
                 }
                 self.update_tags();
                 true
@@ -127,7 +130,7 @@ impl Component for App {
                     Ok(way_id) => {
                         ctx.link().send_future(async move {
                             match get_way(&way_id).await {
-                                Ok((tags, locale)) => Msg::TagsLocaleSet((tags, locale)),
+                                Ok((tags, _geom, locale)) => Msg::TagsLocaleSet((tags, locale)),
                                 Err(e) => Msg::Error(e.to_string()),
                             }
                         });

@@ -10,6 +10,33 @@ struct OverpassResult {
     elements: Vec<Element>,
 }
 
+impl OverpassResult {
+    fn iso3166_2(&self) -> Option<&str> {
+        self.elements
+            .iter()
+            .find_map(|element| element.tags.get("ISO3166-2"))
+    }
+    fn iso3166_1(&self) -> Option<&str> {
+        self.elements
+            .iter()
+            .find_map(|element| element.tags.get("ISO3166-1"))
+    }
+    fn driving_side(&self) -> Option<&str> {
+        self.elements
+            .iter()
+            .find_map(|element| element.tags.get("driving_side"))
+    }
+    fn locale(&self) -> Locale {
+        Locale::builder()
+            .driving_side(
+                self.driving_side()
+                    .map_or(DrivingSide::Right, |d| d.parse().unwrap()),
+            )
+            .iso_3166_option(self.iso3166_2().or_else(|| self.iso3166_1()))
+            .build()
+    }
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct LatLon {
     pub lat: f64,
@@ -74,19 +101,18 @@ pub async fn get_tags(id: ElementId) -> Result<Tags, reqwest::Error> {
 ///
 /// Unexpected data from overpass and/or openstreetmap.
 ///
-pub async fn get_way(id: &ElementId) -> Result<(Tags, Locale), reqwest::Error> {
+pub async fn get_way(id: &ElementId) -> Result<(Tags, Vec<LatLon>, Locale), reqwest::Error> {
     let resp = reqwest::Client::new()
         .get(format!(
             r#"https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];
             way(id:{id});
-            out tags;
-            way(id:{id});
+            out tags geom;
             >;
             is_in->.enclosing;
             (
-              area.enclosing["ISO3166-2"];
-              area.enclosing["ISO3166-1"];
-              area.enclosing["driving_side"];
+                area.enclosing["ISO3166-2"];
+                area.enclosing["ISO3166-1"];
+                area.enclosing["driving_side"];
             );
             out tags;"#
         ))
@@ -96,22 +122,7 @@ pub async fn get_way(id: &ElementId) -> Result<(Tags, Locale), reqwest::Error> {
         .await?;
     log::debug!("{:#?}", resp);
 
-    let iso3166_2 = resp
-        .elements
-        .iter()
-        .find_map(|element| element.tags.get("ISO3166-2"));
-    let iso3166_1 = resp
-        .elements
-        .iter()
-        .find_map(|element| element.tags.get("ISO3166-1"));
-    let driving_side = resp
-        .elements
-        .iter()
-        .find_map(|element| element.tags.get("driving_side"));
-    let locale = Locale::builder()
-        .driving_side(driving_side.map_or(DrivingSide::Right, |d| d.parse().unwrap()))
-        .iso_3166_option(iso3166_2.or(iso3166_1))
-        .build();
+    let locale = resp.locale();
 
     let way_element = {
         let mut elements = resp.elements;
@@ -121,7 +132,13 @@ pub async fn get_way(id: &ElementId) -> Result<(Tags, Locale), reqwest::Error> {
     assert_eq!(way_element.r#type, ElementType::Way);
     assert_eq!(&way_element.id, id);
 
-    Ok((way_element.tags, locale))
+    Ok((
+        way_element.tags,
+        way_element
+            .geometry
+            .expect("overpass response missing geometry"),
+        locale,
+    ))
 }
 
 /// Get Tags and Geometries from Overpass.
@@ -138,15 +155,23 @@ pub async fn get_way(id: &ElementId) -> Result<(Tags, Locale), reqwest::Error> {
 ///
 pub async fn get_nearby(
     lng_lat: (f64, f64),
-) -> Result<(Tags, Locale, Vec<LatLon>), reqwest::Error> {
+) -> Result<(ElementId, Tags, Vec<LatLon>, Locale), reqwest::Error> {
     const RADIUS: f64 = 10.0_f64;
     let mut resp = reqwest::Client::new()
         .get(format!(
             r#"https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];
             way
-            (around:{RADIUS},{},{})
-            ["highway"];
-            out tags geom;"#,
+                (around:{RADIUS},{},{})
+                ["highway"];
+            out tags geom;
+            >;
+            is_in->.enclosing;
+            (
+                area.enclosing["ISO3166-2"];
+                area.enclosing["ISO3166-1"];
+                area.enclosing["driving_side"];
+            );
+            out tags;"#,
             lng_lat.0, lng_lat.1
         ))
         .send()
@@ -154,19 +179,28 @@ pub async fn get_nearby(
         .json::<OverpassResult>()
         .await?;
     log::debug!("{:#?}", resp);
-    if resp.elements.len() > 1 {
+    if resp
+        .elements
+        .iter()
+        .filter(|e| e.geometry.is_some())
+        .count()
+        > 1
+    {
         log::warn!("more than one nearby way found, returning one at random");
     }
+
+    let locale = resp.locale();
+
     resp.elements.truncate(1);
     let element = resp.elements.pop().unwrap();
     assert_eq!(element.r#type, ElementType::Way);
-    // TODO: single overpass query
-    let (tags, locale) = get_way(&element.id).await?;
+
     Ok((
-        tags,
-        locale,
+        element.id,
+        element.tags,
         element
             .geometry
             .expect("overpass response missing geometry"),
+        locale,
     ))
 }

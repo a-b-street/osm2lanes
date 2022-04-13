@@ -69,7 +69,7 @@ impl Component for MapComponent {
     fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
         if first_render {
             self.map
-                .setView(&LatLng::new(self.point.0, self.point.1), 2.0);
+                .setView(&LatLng::new(self.point.0, self.point.1), 4.0);
             log::debug!("add tile layer");
             add_tile_layer(&self.map);
         }
@@ -80,7 +80,7 @@ impl Component for MapComponent {
             Msg::MapClick(lat_lng) => {
                 ctx.link().send_future(async move {
                     match get_nearby((lat_lng.lat(), lat_lng.lng())).await {
-                        Ok((tags, locale, geometry)) => Msg::MapUpdate(tags, locale, geometry),
+                        Ok((_id, tags, geometry, locale)) => Msg::MapUpdate(tags, locale, geometry),
                         Err(e) => Msg::Error(e.to_string()),
                     }
                 });
