@@ -7,8 +7,9 @@ use crate::transform::{RoadMsg, RoadWarnings};
 
 mod semantic;
 
-use semantic::{Overtaking, Separator, SpeedClass};
+use semantic::{Overtake, Separator, SpeedClass};
 
+use self::semantic::LaneChange;
 use super::{LaneBuilder, LaneType, RoadBuilder};
 
 #[derive(Clone, Copy)]
@@ -68,6 +69,8 @@ pub(in crate::transform::tags_to_lanes) fn lane_pair_to_semantic_separator(
             if inside_designated != outside_designated =>
         {
             Some(Separator::Modal {
+                speed: inside.max_speed.map(SpeedClass::from),
+                change: LaneChange::default(),
                 inside: inside_designated,
                 outside: outside_designated,
             })
@@ -105,17 +108,17 @@ fn motor_lane_pair_to_semantic_separator(
     {
         2 => Some(Separator::Centre {
             speed: inside.max_speed.map(SpeedClass::from),
-            overtaking: Overtaking::default(),
+            overtake: Overtake::default(),
             more_than_2_lanes: false,
         }),
         _ => match direction_change {
             DirectionChange::Same => Some(Separator::Lane {
                 speed: inside.max_speed.map(SpeedClass::from),
-                overtaking: Overtaking::default(),
+                change: LaneChange::default(),
             }),
             DirectionChange::None | DirectionChange::Opposite => Some(Separator::Centre {
                 speed: inside.max_speed.map(SpeedClass::from),
-                overtaking: Overtaking::default(),
+                overtake: Overtake::default(),
                 more_than_2_lanes: true,
             }),
         },

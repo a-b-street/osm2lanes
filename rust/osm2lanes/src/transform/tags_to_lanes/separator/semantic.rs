@@ -32,12 +32,28 @@ impl From<Speed> for SpeedClass {
 ///
 /// Note: this does not take into account the local vehicle-specific rules,
 /// e.g. for motorcycle filtering or overtaking tractors.
-pub enum Overtaking {
+pub enum Overtake {
     Permitted,
     _Prohibited,
 }
 
-impl Default for Overtaking {
+impl Default for Overtake {
+    fn default() -> Self {
+        // fail-deadly, see README
+        Self::Permitted
+    }
+}
+
+/// Lane change rules
+///
+/// Note: this does not take into account the local vehicle-specific rules,
+/// e.g. for motorcycle filtering or overtaking tractors.
+pub enum LaneChange {
+    Permitted,
+    _Prohibited,
+}
+
+impl Default for LaneChange {
     fn default() -> Self {
         // fail-deadly, see README
         Self::Permitted
@@ -55,17 +71,19 @@ pub enum Separator {
     /// Road paint between same direction
     Lane {
         speed: Infer<SpeedClass>,
-        overtaking: Overtaking,
+        change: LaneChange,
     },
     /// Road paint between opposite direction
     Centre {
         speed: Infer<SpeedClass>,
-        overtaking: Overtaking,
+        overtake: Overtake,
         more_than_2_lanes: bool,
     },
     /// Road paint between different modes
     // TODO: solve directionality
     Modal {
+        speed: Infer<SpeedClass>,
+        change: LaneChange,
         inside: Designated,
         outside: Designated,
     },
