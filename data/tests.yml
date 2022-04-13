@@ -274,10 +274,12 @@
     shoulder: "no"
     sidewalk: "no"
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: sidewalk=both
   skip_python: true
@@ -289,14 +291,16 @@
     shoulder: "no"
     sidewalk: "both"
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - description: sidewalk=left (forward)
   skip_python: true
@@ -308,12 +312,14 @@
     shoulder: "no"
     sidewalk: "left"
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: sidewalk=right (forward)
   skip_python: true
@@ -325,12 +331,14 @@
     shoulder: "no"
     sidewalk: "right"
   driving_side: right
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - description: sidewalk=right (backward)
   skip_python: true
@@ -342,12 +350,14 @@
     shoulder: "no"
     sidewalk: "right"
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - description: sidewalk:both=yes
   skip_python: true
@@ -359,14 +369,16 @@
     shoulder: "no"
     sidewalk:both: "yes"
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - description: sidewalk:left=yes
   skip_python: true
@@ -378,12 +390,14 @@
     shoulder: "no"
     sidewalk:left: "yes"
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: sidewalk:right=yes
   skip_python: true
@@ -395,12 +409,14 @@
     shoulder: "no"
     sidewalk:right: "yes"
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 ### Cycleways
 
