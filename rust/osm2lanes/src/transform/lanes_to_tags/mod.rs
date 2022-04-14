@@ -3,7 +3,7 @@ use celes::Country;
 use super::{tags_to_lanes, RoadError, RoadMsg, TagsToLanesConfig};
 use crate::locale::Locale;
 use crate::metric::Speed;
-use crate::road::{Designated, Direction, Lane};
+use crate::road::{Designated, Direction, Lane, Road};
 use crate::tag::{DuplicateKeyError, Tags, TagsWrite};
 
 impl std::convert::From<DuplicateKeyError> for RoadError {
@@ -40,27 +40,40 @@ impl Lane {
 
 /// Convert Lanes back to Tags
 ///
-/// TODO: Take a Road struct instead of a slice of lanes
-///
 /// # Errors
 ///
 /// Any of:
 /// - internal error
-/// - uninmplemented or unsupported functionality
+/// - unimplemented or unsupported functionality
 /// - the OSM tag spec cannot represent the lanes
 ///
 /// # Panics
 ///
 /// Lanes slice is empty
-pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> Result<Tags, RoadError> {
+pub fn lanes_to_tags(road: &Road, locale: &Locale, config: &Config) -> Result<Tags, RoadError> {
     let mut tags = Tags::default();
 
-    if !lanes.iter().any(|lane| lane.is_motor() || lane.is_bus()) {
+    if !road
+        .lanes
+        .iter()
+        .any(|lane| lane.is_motor() || lane.is_bus())
+    {
         tags.checked_insert("highway", "path")?;
         return Ok(tags);
     }
 
-    tags.checked_insert("highway", "road")?; // TODO, add `highway` to `Lanes`
+    tags.checked_insert("highway", road.highway.r#type().to_string())?;
+    if road.highway.is_construction() {
+        return Err(RoadError::Msg(RoadMsg::unimplemented_tag(
+            "construction",
+            "*",
+        )));
+    }
+    if road.highway.is_proposed() {
+        return Err(RoadError::Msg(RoadMsg::unimplemented_tag("proposed", "*")));
+    }
+
+    let lanes = &road.lanes;
 
     set_lanes(lanes, &mut tags)?;
     let oneway = set_oneway(lanes, &mut tags)?;

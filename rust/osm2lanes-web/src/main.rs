@@ -212,7 +212,7 @@ impl App {
         match Tags::from_str(value) {
             Ok(tags) => match tags_to_lanes(&tags, locale, &TagsToLanesConfig::default()) {
                 Ok(RoadFromTags { road, warnings }) => {
-                    match lanes_to_tags(&road.lanes, locale, &LanesToTagsConfig::new(false)) {
+                    match lanes_to_tags(&road, locale, &LanesToTagsConfig::new(false)) {
                         Ok(tags) => {
                             state.road = Some(road);
                             state.normalized_tags = Some(tags.to_string());
