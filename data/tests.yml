@@ -274,10 +274,12 @@
     shoulder: "no"
     sidewalk: "no"
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: sidewalk=both
   skip_python: true
@@ -289,14 +291,16 @@
     shoulder: "no"
     sidewalk: "both"
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - description: sidewalk=left (forward)
   skip_python: true
@@ -308,12 +312,14 @@
     shoulder: "no"
     sidewalk: "left"
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: sidewalk=right (forward)
   skip_python: true
@@ -325,12 +331,14 @@
     shoulder: "no"
     sidewalk: "right"
   driving_side: right
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - description: sidewalk=right (backward)
   skip_python: true
@@ -342,12 +350,14 @@
     shoulder: "no"
     sidewalk: "right"
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - description: sidewalk:both=yes
   skip_python: true
@@ -359,14 +369,16 @@
     shoulder: "no"
     sidewalk:both: "yes"
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - description: sidewalk:left=yes
   skip_python: true
@@ -378,12 +390,14 @@
     shoulder: "no"
     sidewalk:left: "yes"
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: sidewalk:right=yes
   skip_python: true
@@ -395,12 +409,14 @@
     shoulder: "no"
     sidewalk:right: "yes"
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 ### Cycleways
 
@@ -414,19 +430,21 @@
     sidewalk: "no"
     shoulder: "no"
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: bicycle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: bicycle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: bicycle
 
 - description: cycleway=lane oneway=yes
   skip_python: true
@@ -435,20 +453,22 @@
     highway: "road"
     lanes: "2"
     oneway: "yes"
-    cycleway:left: lane
+    cycleway:left: "lane"
     sidewalk: "no"
     shoulder: "no"
   driving_side: right
-  output:
-    - type: travel
-      direction: forward
-      designated: bicycle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: cycleway:FORWARD=lane
   skip_python: true
@@ -456,65 +476,71 @@
   tags:
     highway: "road"
     lanes: "2"
-    cycleway:left: lane
+    cycleway:left: "lane"
     sidewalk: "no"
     shoulder: "no"
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: bicycle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
 
 - description: cycleway:FORWARD=lane oneway=yes
   way_id: 4188078
   mapillary: https://www.mapillary.com/app/?pKey=270752554744918
   tags:
-    highway: "road"
+    highway: "primary"
     lanes: "2"
-    cycleway:left: lane
+    cycleway:left: "lane"
     oneway: "yes"
-    sidewalk: left
+    sidewalk: "left"
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: bicycle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: primary
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: cycleway:BACKWARD=lane
   way_id: 49207928
   tags:
-    highway: "road"
-    cycleway:right: lane
-    sidewalk: both
+    highway: "residential"
+    cycleway:right: "lane"
+    sidewalk: "both"
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: bicycle
-    - type: travel
-      designated: foot
+  road:
+    highway: residential
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: bicycle
+      - type: travel
+        designated: foot
 
 - description: cycleway:BACKWARD=lane oneway=yes, cycleway is in the forward direction
   way_id: 428294122
@@ -532,27 +558,29 @@
     cycleway:left: "lane"
   driving_side: right
   ISO 3166-2: US-WA
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: bicycle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: secondary
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - description: cycleway:FORWARD=lane cycleway:FORWARD:oneway=no
   way_id: 534549104
   mapillary: https://www.mapillary.com/app/?pKey=1848856645291310
   # TODO: find better example with same tags
   tags:
-    highway: "road"
+    highway: "tertiary"
     lanes: "2"
     oneway: "yes"
     sidewalk: "both"
@@ -560,20 +588,22 @@
     cycleway:right:oneway: "no"
     oneway:bicycle: "no"
   driving_side: right
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: both
-      designated: bicycle
-    - type: travel
-      designated: foot
+  road:
+    highway: tertiary
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: both
+        designated: bicycle
+      - type: travel
+        designated: foot
 
 - description: cycleway=opposite_lane oneway=yes, deprecated
   skip_python: true
@@ -587,13 +617,15 @@
     sidewalk: "no"
     shoulder: "no"
   driving_side: right
-  output:
-    - type: travel
-      direction: backward
-      designated: bicycle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: backward
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: cycleway=opposite oneway=yes oneway:bicycle=no
   skip_python: true
@@ -607,13 +639,15 @@
     sidewalk: "no"
     shoulder: "no"
   driving_side: right
-  output:
-    - type: travel
-      direction: backward
-      designated: bicycle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: backward
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 ## TODO: shared cycle lanes
 
@@ -634,19 +668,21 @@
     shoulder: "no"
     busway: lane
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: bus
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: bus
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: bus
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: bus
 
 - description: busway:both=lane
   skip_kotlin: true
@@ -658,19 +694,21 @@
     shoulder: "no"
     busway:both: lane
   driving_side: right
-  output:
-    - type: travel
-      direction: backward
-      designated: bus
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: bus
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: backward
+        designated: bus
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: bus
 
 - description: busway:FORWARD=lane
   skip_kotlin: true
@@ -682,16 +720,18 @@
     shoulder: "no"
     busway:right: lane
   driving_side: right
-  output:
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: bus
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: bus
 
 - description: busway:BACKWARD=lane
   skip_kotlin: true
@@ -704,16 +744,18 @@
     shoulder: "no"
     busway:right: lane
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: bus
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: bus
 
 - description: busway=opposite_lane, deprecated
   skip_python: true
@@ -726,13 +768,15 @@
     shoulder: "no"
     busway: opposite_lane
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: bus
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: bus
 
 ## `bus:lanes` Scheme
 ## https://wiki.openstreetmap.org/wiki/Bus_lanes#The_bus:lanes.3D.2A_scheme
@@ -747,13 +791,15 @@
     shoulder: "no"
     bus:lanes: "designated|"
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: bus
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: bus
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
 
 - description: psv:lanes=|yes|designated|no
   skip_python: true
@@ -765,19 +811,21 @@
     shoulder: "no"
     psv:lanes: "|yes|designated|no"
   driving_side: right
-  output:
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: bus
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: bus
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: bus:lanes:forward=designated|
   skip_python: true
@@ -789,16 +837,18 @@
     shoulder: "no"
     bus:lanes:forward: "designated|"
   driving_side: right
-  output:
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: bus
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: bus
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: bus:lanes:backward=designated
   skip_python: true
@@ -810,13 +860,15 @@
     shoulder: "no"
     bus:lanes:backward: "designated"
   driving_side: left
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: bus
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: bus
 
 ## Mixed Schemes
 
@@ -836,35 +888,37 @@
     name: East 42nd Street
     sidewalk: both
     surface: asphalt
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: backward
-      designated: bus
-      max_speed:
-        unit: mph
-        value: 25
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-      max_speed:
-        unit: mph
-        value: 25
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-      max_speed:
-        unit: mph
-        value: 25
-    - type: travel
-      direction: forward
-      designated: bus
-      max_speed:
-        unit: mph
-        value: 25
-    - type: travel
-      designated: foot
+  road:
+    highway: primary
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: backward
+        designated: bus
+        max_speed:
+          unit: mph
+          value: 25
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+        max_speed:
+          unit: mph
+          value: 25
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+        max_speed:
+          unit: mph
+          value: 25
+      - type: travel
+        direction: forward
+        designated: bus
+        max_speed:
+          unit: mph
+          value: 25
+      - type: travel
+        designated: foot
 
 ### Combination
 # TODO
@@ -884,10 +938,12 @@
     sidewalk: "no"
   driving_side: left
   # TODO: nest this so we can check highway type
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 ### To Sort
 # The following still need to be categorized
