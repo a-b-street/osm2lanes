@@ -1,8 +1,8 @@
 use crate::locale::{DrivingSide, Locale};
 use crate::road::{Designated, Lane, Road};
 use crate::tag::{Tags, HIGHWAY};
-use crate::transform::tags_to_lanes::RoadBuilder;
-use crate::transform::{RoadError, RoadFromTags, RoadMsg, RoadWarnings};
+use crate::transform::tags_to_lanes::{RoadBuilder, TagsToLanesMsg};
+use crate::transform::{RoadError, RoadFromTags, RoadWarnings};
 
 impl Lane {
     fn shoulder(locale: &Locale) -> Self {
@@ -42,10 +42,10 @@ pub(in crate::transform::tags_to_lanes) fn non_motorized(
                 highway: road.highway.clone(),
             },
             warnings: RoadWarnings::new(if tags.is(HIGHWAY, "steps") {
-                vec![RoadMsg::Other {
-                    description: "highway is steps, but lane is only a sidewalk".to_owned(),
-                    tags: tags.subset(&[HIGHWAY]),
-                }]
+                vec![TagsToLanesMsg::unimplemented(
+                    "steps becomes sidewalk",
+                    tags.subset(&[HIGHWAY]),
+                )]
             } else {
                 Vec::new()
             }),
