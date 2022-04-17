@@ -2,8 +2,8 @@ use crate::locale::Locale;
 use crate::road::{Designated, Direction};
 use crate::tag::Tags;
 use crate::transform::tags::CYCLEWAY;
-use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder};
-use crate::transform::{RoadError, RoadMsg, RoadWarnings, WaySide};
+use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder, TagsToLanesMsg};
+use crate::transform::{RoadError, RoadWarnings, WaySide};
 
 impl Tags {
     fn is_cycleway(&self, side: Option<WaySide>) -> bool {
@@ -53,18 +53,18 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
             || tags.is_cycleway(Some(WaySide::Right))
             || tags.is_cycleway(Some(WaySide::Left))
         {
-            return Err(RoadMsg::unsupported_str("cycleway=* with any cycleway:* values").into());
+            return Err(
+                TagsToLanesMsg::unsupported_str("cycleway=* with any cycleway:* values").into(),
+            );
         }
         road.push_forward_outside(LaneBuilder::cycle_forward(locale));
         if road.oneway.into() {
             if road.backward_outside().is_some() {
                 // TODO validity of this safety check
-                warnings.push(RoadMsg::Unimplemented {
-                    description: Some(
-                        "oneway has backwards lanes when adding cycleways".to_owned(),
-                    ),
-                    tags: Some(tags.subset(&["oneway", "cycleway"])),
-                });
+                warnings.push(TagsToLanesMsg::unimplemented(
+                    "oneway has backwards lanes when adding cycleways",
+                    tags.subset(&["oneway", "cycleway"]),
+                ));
             }
         } else {
             road.push_backward_outside(LaneBuilder::cycle_backward(locale));
@@ -75,16 +75,15 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
     } else {
         // cycleway=opposite_lane
         if tags.is(CYCLEWAY, "opposite_lane") {
-            warnings.push(RoadMsg::Deprecated {
-                deprecated_tags: tags.subset(&["cycleway", "oneway"]),
-                suggested_tags: None,
-            });
+            warnings.push(TagsToLanesMsg::deprecated_tags(
+                tags.subset(&["cycleway", "oneway"]),
+            ));
             road.push_backward_outside(LaneBuilder::cycle_backward(locale));
         }
         // cycleway=opposite oneway=yes oneway:bicycle=no
         if tags.is(CYCLEWAY, "opposite") {
             if !(road.oneway.into() && tags.is("oneway:bicycle", "no")) {
-                return Err(RoadMsg::unsupported_str(
+                return Err(TagsToLanesMsg::unsupported_str(
                     "cycleway=opposite without oneway=yes oneway:bicycle=no",
                 )
                 .into());
@@ -106,10 +105,9 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
             CYCLEWAY + locale.driving_side.tag(),
             &["opposite_lane", "opposite_track"],
         ) {
-            warnings.push(RoadMsg::Deprecated {
-                deprecated_tags: tags.subset(&[CYCLEWAY + locale.driving_side.tag()]),
-                suggested_tags: None,
-            });
+            warnings.push(TagsToLanesMsg::deprecated_tags(
+                tags.subset(&[CYCLEWAY + locale.driving_side.tag()]),
+            ));
             road.push_forward_outside(LaneBuilder::cycle_backward(locale));
         }
         // cycleway:BACKWARD=*
@@ -143,10 +141,9 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
             CYCLEWAY + locale.driving_side.opposite().tag(),
             &["opposite_lane", "opposite_track"],
         ) {
-            return Err(RoadMsg::Unsupported {
-                description: None,
-                tags: Some(tags.subset(&[CYCLEWAY + locale.driving_side.opposite().tag()])),
-            }
+            return Err(TagsToLanesMsg::unsupported_tags(
+                tags.subset(&[CYCLEWAY + locale.driving_side.opposite().tag()]),
+            )
             .into());
         }
     }

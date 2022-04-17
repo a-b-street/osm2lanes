@@ -3,7 +3,7 @@ use celes::Country;
 use crate::locale::Locale;
 use crate::road::{Color, Designated, Direction, Lane, Marking, Markings, Style};
 use crate::tag::Tags;
-use crate::transform::{RoadMsg, RoadWarnings};
+use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 mod semantic;
 
@@ -77,10 +77,10 @@ pub(in crate::transform::tags_to_lanes) fn lane_pair_to_semantic_separator(
         },
         // TODO: error return
         _ => {
-            warnings.push(RoadMsg::SeparatorUnknown {
-                inside: inside.clone(),
-                outside: outside.clone(),
-            });
+            warnings.push(TagsToLanesMsg::separator_unknown(
+                inside.clone(),
+                outside.clone(),
+            ));
             None
         },
     }
@@ -181,10 +181,10 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                     }
                 }
             }
-            warnings.push(RoadMsg::SeparatorLocaleUnused {
-                inside: inside.clone(),
-                outside: outside.clone(),
-            });
+            warnings.push(TagsToLanesMsg::separator_locale_unused(
+                inside.clone(),
+                outside.clone(),
+            ));
             Some(Lane::Separator {
                 markings: if *more_than_2_lanes {
                     Markings::new(vec![
@@ -222,10 +222,10 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
         }),
         // Modal separation
         Separator::Modal { .. } => {
-            warnings.push(RoadMsg::SeparatorLocaleUnused {
-                inside: inside.clone(),
-                outside: outside.clone(),
-            });
+            warnings.push(TagsToLanesMsg::separator_locale_unused(
+                inside.clone(),
+                outside.clone(),
+            ));
             Some(Lane::Separator {
                 markings: Markings::new(vec![Marking {
                     style: Style::SolidLine,
@@ -236,10 +236,10 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
         },
         // TODO: error return
         _ => {
-            warnings.push(RoadMsg::SeparatorUnknown {
-                inside: inside.clone(),
-                outside: outside.clone(),
-            });
+            warnings.push(TagsToLanesMsg::separator_unknown(
+                inside.clone(),
+                outside.clone(),
+            ));
             Some(Lane::Separator {
                 markings: Markings::new(vec![Marking {
                     style: Style::BrokenLine,

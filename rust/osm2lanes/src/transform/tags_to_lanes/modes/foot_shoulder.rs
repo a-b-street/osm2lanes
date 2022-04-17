@@ -2,8 +2,8 @@ use crate::locale::Locale;
 use crate::road::Designated;
 use crate::tag::Tags;
 use crate::transform::tags::{SHOULDER, SIDEWALK};
-use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder};
-use crate::transform::{RoadError, RoadMsg, RoadWarnings};
+use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder, TagsToLanesMsg};
+use crate::transform::{RoadError, RoadWarnings};
 
 impl LaneBuilder {
     fn shoulder(_locale: &Locale) -> Self {
@@ -48,14 +48,11 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
         Yes,
         Separate,
     }
-    let err = Err(RoadMsg::Unsupported {
-        description: None,
-        tags: Some(tags.subset(&[
-            SIDEWALK,
-            SIDEWALK + locale.driving_side.tag(),
-            SIDEWALK + locale.driving_side.opposite().tag(),
-        ])),
-    }
+    let err = Err(TagsToLanesMsg::unsupported_tags(tags.subset(&[
+        SIDEWALK,
+        SIDEWALK + locale.driving_side.tag(),
+        SIDEWALK + locale.driving_side.opposite().tag(),
+    ]))
     .into());
     let sidewalk: (Sidewalk, Sidewalk) = match (
         tags.get(SIDEWALK),
@@ -66,13 +63,12 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
         ),
     ) {
         (Some(v), None, (None, None)) => match v {
-            "none" => return Err(RoadMsg::deprecated_tag("sidewalk", "none").into()),
+            "none" => return Err(TagsToLanesMsg::deprecated_tag("sidewalk", "none").into()),
             "no" => (Sidewalk::No, Sidewalk::No),
             "yes" => {
-                warnings.push(RoadMsg::Ambiguous {
-                    description: None,
-                    tags: Some(tags.subset(&[SIDEWALK, SIDEWALK + "both"])),
-                });
+                warnings.push(TagsToLanesMsg::ambiguous_tags(
+                    tags.subset(&[SIDEWALK, SIDEWALK + "both"]),
+                ));
                 (Sidewalk::Yes, Sidewalk::Yes)
             },
             "both" => (Sidewalk::Yes, Sidewalk::Yes),
@@ -127,7 +123,7 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
         Some(s) if s == locale.driving_side.opposite().tag().as_str() => {
             (Shoulder::No, Shoulder::Yes)
         },
-        Some(s) => return Err(RoadMsg::unsupported_tag(SHOULDER, s).into()),
+        Some(s) => return Err(TagsToLanesMsg::unsupported_tag(SHOULDER, s).into()),
     };
 
     impl RoadBuilder {
@@ -171,14 +167,14 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
                     self.push_outside(LaneBuilder::shoulder(locale), forward);
                 },
                 (Sidewalk::Yes, Shoulder::Yes) => {
-                    return Err(RoadMsg::Unsupported {
-                        description: Some("shoulder and sidewalk on same side".to_owned()),
-                        tags: Some(tags.subset(&[SIDEWALK, SHOULDER])),
-                    }
+                    return Err(TagsToLanesMsg::unsupported(
+                        "shoulder and sidewalk on same side",
+                        tags.subset(&[SIDEWALK, SHOULDER]),
+                    )
                     .into());
                 },
                 (Sidewalk::Separate, _) => {
-                    return Err(RoadMsg::unsupported_tag(SIDEWALK, "separate").into())
+                    return Err(TagsToLanesMsg::unsupported_tag(SIDEWALK, "separate").into())
                 },
             }
             Ok(())
