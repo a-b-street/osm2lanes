@@ -4,13 +4,11 @@ use crate::road::{Designated, Direction};
 use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::access_by_lane::Access;
 use crate::transform::tags_to_lanes::{
-    Infer, LaneBuilder, LaneBuilderError, LaneType, RoadBuilder, Width,
+    Infer, LaneBuilder, LaneBuilderError, LaneType, RoadBuilder, TagsToLanesMsg, Width,
 };
-use crate::transform::{RoadError, RoadMsg, RoadWarnings};
+use crate::transform::{RoadError, RoadWarnings};
 
 const LANES: TagKey = TagKey::from("lanes");
-const ONEWAY: TagKey = TagKey::from("oneway");
-const ONEWAY_BUS: TagKey = TagKey::from("oneway:bus");
 
 impl LaneBuilder {
     #[allow(clippy::unnecessary_wraps)]
@@ -72,10 +70,10 @@ pub(in crate::transform::tags_to_lanes) fn check_bus(
         (false, false) => Ok(Scheme::None),
         (true, false) => Ok(Scheme::LanesBus),
         (false, true) => Ok(Scheme::BusLanes),
-        (true, true) => Err(RoadMsg::Unsupported {
-            description: Some("more than one bus lanes scheme used".to_owned()),
-            tags: None,
-        }
+        (true, true) => Err(TagsToLanesMsg::unsupported(
+            "more than one bus lanes scheme used",
+            tags.subset(&["busway", "lanes:bus", "lanes:psv", "bus:lanes", "psv:lanes"]),
+        )
         .into()),
     };
     log::trace!("bus_scheme={bus_scheme:?}");
@@ -102,28 +100,29 @@ fn busway(
         road.push_forward_outside(get_bus(locale, Direction::Forward)?);
         road.push_backward_outside(get_bus(locale, Direction::Backward)?);
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            warnings.push(RoadMsg::Ambiguous {
-                description: None,
-                tags: Some(tags.subset(&[BUSWAY + "both", ONEWAY, ONEWAY_BUS])),
-            });
+            warnings
+                .push(TagsToLanesMsg::ambiguous_str("busway:both=lane for oneway roads").into());
         }
     }
     if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
         road.push_forward_outside(get_bus(locale, Direction::Forward)?);
     }
     if tags.is(BUSWAY + locale.driving_side.tag(), "opposite_lane") {
-        return Err(
-            RoadMsg::ambiguous_tag(BUSWAY + locale.driving_side.tag(), "opposite_lane").into(),
-        );
+        return Err(TagsToLanesMsg::ambiguous_tag(
+            BUSWAY + locale.driving_side.tag(),
+            "opposite_lane",
+        )
+        .into());
     }
     if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             road.push_forward_inside(get_bus(locale, Direction::Forward)?);
         } else {
             // Need an example of this being tagged
-            return Err(
-                RoadMsg::ambiguous_str("busway:BACKWARD=lane for bidirectional roads").into(),
-            );
+            return Err(TagsToLanesMsg::ambiguous_str(
+                "busway:BACKWARD=lane for bidirectional roads",
+            )
+            .into());
         }
     }
     if tags.is(
@@ -134,14 +133,11 @@ fn busway(
             // TODO: does it make sense to have a backward lane on the forward_side????
             road.push_forward_inside(get_bus(locale, Direction::Backward)?);
         } else {
-            return Err(RoadMsg::Ambiguous {
-                description: None,
-                tags: Some(tags.subset(&[
-                    BUSWAY + locale.driving_side.opposite().tag(),
-                    TagKey::from("oneway"),
-                    TagKey::from("oneway:bus"),
-                ])),
-            }
+            return Err(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                BUSWAY + locale.driving_side.opposite().tag(),
+                TagKey::from("oneway"),
+                TagKey::from("oneway:bus"),
+            ]))
             .into());
         }
     }
@@ -155,21 +151,18 @@ pub(in crate::transform::tags_to_lanes) fn lanes_bus(
     _road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
 ) -> Result<(), RoadError> {
-    warnings.push(RoadMsg::Unimplemented {
-        description: None,
-        tags: Some(tags.subset(&[
-            LANES + "psv",
-            LANES + "psv" + "forward",
-            LANES + "psv" + "backward",
-            LANES + "psv" + "left",
-            LANES + "psv" + "right",
-            LANES + "bus",
-            LANES + "bus" + "forward",
-            LANES + "bus" + "backward",
-            LANES + "bus" + "left",
-            LANES + "bus" + "right",
-        ])),
-    });
+    warnings.push(TagsToLanesMsg::unimplemented_tags(tags.subset(&[
+        LANES + "psv",
+        LANES + "psv" + "forward",
+        LANES + "psv" + "backward",
+        LANES + "psv" + "left",
+        LANES + "psv" + "right",
+        LANES + "bus",
+        LANES + "bus" + "forward",
+        LANES + "bus" + "backward",
+        LANES + "bus" + "left",
+        LANES + "bus" + "right",
+    ])));
     Ok(())
 }
 
@@ -195,23 +188,23 @@ pub(in crate::transform::tags_to_lanes) fn bus_lanes(
         (Some(lanes), (None, None), None, (None, None))
         | (None, (None, None), Some(lanes), (None, None)) => {
             let access = Access::split(lanes).map_err(|a| {
-                RoadError::from(RoadMsg::Unsupported {
-                    description: Some(format!("lanes access '{}'", a)),
-                    tags: Some(tags.subset(&["bus:lanes", "psv:lanes"])),
-                })
+                RoadError::from(TagsToLanesMsg::unsupported(
+                    &format!("lanes access {}", a),
+                    tags.subset(&["bus:lanes", "psv:lanes"]),
+                ))
             })?;
             log::trace!("bus:lanes={:?}", access);
             if access.len() != road.len() {
-                return Err(RoadMsg::Unsupported {
-                    description: Some("lane count mismatch".to_owned()),
-                    tags: Some(tags.subset(&[
+                return Err(TagsToLanesMsg::unsupported(
+                    "lane count mismatch",
+                    tags.subset(&[
                         "bus:lanes",
                         "psv:lanes",
                         "lanes",
                         "lanes:forward",
                         "lanes:backward",
-                    ])),
-                }
+                    ]),
+                )
                 .into());
             }
             for (lane, access) in road.lanes_ltr_mut(locale).zip(access.iter()) {
@@ -225,10 +218,10 @@ pub(in crate::transform::tags_to_lanes) fn bus_lanes(
         | (None, (None, None), None, (forward, backward)) => {
             if let Some(forward) = forward {
                 let forward_access = Access::split(forward).map_err(|a| {
-                    RoadError::from(RoadMsg::Unsupported {
-                        description: Some(format!("lanes access '{}'", a)),
-                        tags: Some(tags.subset(&["bus:lanes:backward", "psv:lanes:backward"])),
-                    })
+                    RoadError::from(TagsToLanesMsg::unsupported(
+                        &format!("lanes access {}", a),
+                        tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
+                    ))
                 })?;
                 for (lane, access) in road.forward_ltr_mut(locale).zip(forward_access.iter()) {
                     if let Access::Designated = access {
@@ -238,10 +231,10 @@ pub(in crate::transform::tags_to_lanes) fn bus_lanes(
             }
             if let Some(backward) = backward {
                 let backward_access = Access::split(backward).map_err(|a| {
-                    RoadError::from(RoadMsg::Unsupported {
-                        description: Some(format!("lanes access '{}'", a)),
-                        tags: Some(tags.subset(&["bus:lanes:backward", "psv:lanes:backward"])),
-                    })
+                    RoadError::from(TagsToLanesMsg::unsupported(
+                        &format!("lanes access {}", a),
+                        tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
+                    ))
                 })?;
                 for (lane, access) in road.backward_ltr_mut(locale).zip(backward_access.iter()) {
                     if let Access::Designated = access {
@@ -257,17 +250,17 @@ pub(in crate::transform::tags_to_lanes) fn bus_lanes(
         | (_, (Some(_), _) | (_, Some(_)), _, (Some(_), _) | (_, Some(_)))
         | (_, (Some(_), _) | (_, Some(_)), Some(_), _)
         | (_, _, Some(_), (Some(_), _) | (_, Some(_))) => {
-            return Err(RoadMsg::Unsupported {
-                description: Some("more than one bus:lanes used".to_owned()),
-                tags: Some(tags.subset(&[
+            return Err(TagsToLanesMsg::unsupported(
+                "more than one bus:lanes used",
+                tags.subset(&[
                     "bus:lanes",
                     "bus:lanes:forward",
                     "psv:lanes:backward",
                     "psv:lanes",
                     "psv:lanes:forward",
                     "psv:lanes:backward",
-                ])),
-            }
+                ]),
+            )
             .into())
         },
     }

@@ -1,174 +1,15 @@
 use serde::Serialize;
 
+use super::TagsToLanesMsg;
 use crate::road::Road;
-use crate::tag::{DuplicateKeyError, TagKey, Tags};
-use crate::transform::tags_to_lanes::LaneBuilder;
-
-/// Tranformation Logic Issue
-///
-/// ```
-/// use osm2lanes::transform::RoadMsg;
-/// let _ = RoadMsg::deprecated_tag("foo", "bar");
-/// let _ = RoadMsg::unsupported_tag("foo", "bar");
-/// let _ = RoadMsg::unsupported_str("foo=bar because x and y");
-/// ```
-///
-#[derive(Clone, Debug)]
-pub enum RoadMsg {
-    /// Deprecated OSM tags, with suggested alternative
-    Deprecated {
-        deprecated_tags: Tags,
-        suggested_tags: Option<Tags>,
-    },
-    /// Tag combination that is unsupported, and may never be supported
-    Unsupported {
-        description: Option<String>,
-        tags: Option<Tags>,
-    },
-    /// Tag combination that is known, but has yet to be implemented
-    Unimplemented {
-        description: Option<String>,
-        tags: Option<Tags>,
-    },
-    /// Tag combination that is ambiguous, and may never be supported
-    Ambiguous {
-        description: Option<String>,
-        tags: Option<Tags>,
-    },
-    /// Locale not used
-    SeparatorLocaleUnused {
-        inside: LaneBuilder,
-        outside: LaneBuilder,
-    },
-    /// Locale not used
-    SeparatorUnknown {
-        inside: LaneBuilder,
-        outside: LaneBuilder,
-    },
-    /// Other issue
-    Other {
-        description: String,
-        tags: Tags,
-    },
-    /// Internal errors
-    TagsDuplicateKey(DuplicateKeyError),
-    Internal(&'static str),
-}
-
-impl RoadMsg {
-    #[must_use]
-    pub fn deprecated_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
-        Self::Unsupported {
-            description: None,
-            tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
-        }
-    }
-
-    #[must_use]
-    pub fn unsupported_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
-        Self::Unsupported {
-            description: None,
-            tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
-        }
-    }
-
-    #[must_use]
-    pub fn unimplemented_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
-        Self::Unimplemented {
-            description: None,
-            tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
-        }
-    }
-
-    #[must_use]
-    pub fn ambiguous_tag<K: Into<TagKey>>(key: K, val: &str) -> Self {
-        Self::Ambiguous {
-            description: None,
-            tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
-        }
-    }
-
-    #[must_use]
-    pub fn unsupported_str(description: &str) -> Self {
-        Self::Unsupported {
-            description: Some(description.to_owned()),
-            tags: None,
-        }
-    }
-
-    #[must_use]
-    pub fn ambiguous_str(description: &str) -> Self {
-        Self::Ambiguous {
-            description: Some(description.to_owned()),
-            tags: None,
-        }
-    }
-}
-
-impl std::fmt::Display for RoadMsg {
-    #[allow(clippy::panic_in_result_fn)]
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Self::Deprecated {
-                deprecated_tags, ..
-            } => write!(
-                f,
-                "deprecated: {}",
-                deprecated_tags.to_vec().as_slice().join(" ")
-            ),
-            Self::Unsupported { description, tags }
-            | Self::Unimplemented { description, tags }
-            | Self::Ambiguous { description, tags } => {
-                let tags = tags.as_ref().map(|tags| tags.to_vec().as_slice().join(" "));
-                let prefix = match self {
-                    Self::Unsupported { .. } => "unsupported",
-                    Self::Unimplemented { .. } => "unimplemented",
-                    Self::Ambiguous { .. } => "ambiguous",
-                    _ => unreachable!(),
-                };
-                match (description, tags) {
-                    (None, None) => write!(f, "{}", prefix),
-                    (Some(description), None) => {
-                        write!(f, "{}: {}", prefix, description)
-                    },
-                    (None, Some(tags)) => write!(f, "{}: {}", prefix, tags),
-                    (Some(description), Some(tags)) => {
-                        write!(f, "{}: {}, {}", prefix, description, tags)
-                    },
-                }
-            },
-            Self::SeparatorLocaleUnused { inside, outside } => {
-                write!(
-                    f,
-                    "default separator may not match locale for {:?} to {:?}",
-                    inside, outside
-                )
-            },
-            Self::SeparatorUnknown { inside, outside } => {
-                write!(f, "unknown separator for {:?} to {:?}", inside, outside)
-            },
-            Self::Other { description, .. } => write!(f, "{}", description),
-            Self::TagsDuplicateKey(e) => e.fmt(f),
-            Self::Internal(e) => e.fmt(f),
-        }
-    }
-}
-
-impl Serialize for RoadMsg {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.collect_str(self)
-    }
-}
+use crate::tag::DuplicateKeyError;
 
 #[derive(Clone, Debug, Default, Serialize)]
-pub struct RoadWarnings(Vec<RoadMsg>);
+pub struct RoadWarnings(Vec<TagsToLanesMsg>);
 
 impl RoadWarnings {
     #[must_use]
-    pub fn new(msgs: Vec<RoadMsg>) -> Self {
+    pub fn new(msgs: Vec<TagsToLanesMsg>) -> Self {
         Self(msgs)
     }
 
@@ -177,7 +18,7 @@ impl RoadWarnings {
         self.0.is_empty()
     }
 
-    pub fn push(&mut self, msg: RoadMsg) {
+    pub fn push(&mut self, msg: TagsToLanesMsg) {
         self.0.push(msg);
     }
 }
@@ -198,17 +39,17 @@ impl std::fmt::Display for RoadWarnings {
 
 /// Error for transformation
 /// ```
-/// use osm2lanes::transform::{RoadMsg, RoadError};
-/// let msg: RoadMsg = RoadMsg::deprecated_tag("foo", "bar");
-/// assert_eq!("\"unsupported: foo=bar\"", serde_json::to_string(&msg).unwrap());
+/// use osm2lanes::transform::{TagsToLanesMsg, RoadError};
+/// let msg: TagsToLanesMsg = TagsToLanesMsg::deprecated_tag("foo", "bar");
+/// assert_eq!("\"deprecated: 'foo=bar' - src/transform/error.rs:5:27\"", serde_json::to_string(&msg).unwrap());
 /// let err: RoadError = msg.into();
-/// assert_eq!("{\"error\":\"unsupported: foo=bar\"}", serde_json::to_string(&err).unwrap());
+/// assert_eq!("{\"error\":\"deprecated: 'foo=bar' - src/transform/error.rs:5:27\"}", serde_json::to_string(&err).unwrap());
 /// ```
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, Serialize)]
 pub enum RoadError {
     #[serde(rename = "error")]
-    Msg(RoadMsg),
+    Msg(TagsToLanesMsg),
     #[serde(rename = "warnings")]
     Warnings(RoadWarnings),
     #[serde(rename = "round_trip")]
@@ -227,8 +68,15 @@ impl std::fmt::Display for RoadError {
     }
 }
 
-impl From<RoadMsg> for RoadError {
-    fn from(msg: RoadMsg) -> Self {
+impl From<DuplicateKeyError> for RoadError {
+    #[track_caller]
+    fn from(e: DuplicateKeyError) -> Self {
+        e.into()
+    }
+}
+
+impl From<TagsToLanesMsg> for RoadError {
+    fn from(msg: TagsToLanesMsg) -> Self {
         Self::Msg(msg)
     }
 }
