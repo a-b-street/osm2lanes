@@ -302,7 +302,7 @@ async function load(module, imports) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('index-447f5dc068a28640_bg.wasm', import.meta.url);
+        input = new URL('index-4a0c1a25e25e2582_bg.wasm', import.meta.url);
     }
     const imports = {};
     imports.wbg = {};
@@ -417,14 +417,6 @@ async function init(input) {
     imports.wbg.__wbg_restore_fa948aac9e973228 = function(arg0) {
         getObject(arg0).restore();
     };
-    imports.wbg.__wbg_lat_6d045458399b0ab4 = function(arg0) {
-        var ret = getObject(arg0).lat;
-        return ret;
-    };
-    imports.wbg.__wbg_lng_cdb7fa65e44406e9 = function(arg0) {
-        var ret = getObject(arg0).lng;
-        return ret;
-    };
     imports.wbg.__wbg_arrayBuffer_b8937ed04beb0d36 = function() { return handleError(function (arg0) {
         var ret = getObject(arg0).arrayBuffer();
         return addHeapObject(ret);
@@ -447,6 +439,14 @@ async function init(input) {
     };
     imports.wbg.__wbg_set_969ad0a60e51d320 = function(arg0, arg1, arg2) {
         getObject(arg0).set(getObject(arg1), arg2 >>> 0);
+    };
+    imports.wbg.__wbg_lat_6d045458399b0ab4 = function(arg0) {
+        var ret = getObject(arg0).lat;
+        return ret;
+    };
+    imports.wbg.__wbg_lng_cdb7fa65e44406e9 = function(arg0) {
+        var ret = getObject(arg0).lng;
+        return ret;
     };
     imports.wbg.__wbg_new_0b83d3df67ecb33e = function() {
         var ret = new Object();
@@ -822,11 +822,11 @@ async function init(input) {
         var ret = makeClosure(arg0, arg1, 24, __wbg_adapter_28);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper2806 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper2807 = function(arg0, arg1, arg2) {
         var ret = makeMutClosure(arg0, arg1, 152, __wbg_adapter_31);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper5173 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper5174 = function(arg0, arg1, arg2) {
         var ret = makeClosure(arg0, arg1, 156, __wbg_adapter_34);
         return addHeapObject(ret);
     };
