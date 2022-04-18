@@ -65,6 +65,11 @@ impl Component for Control {
             Msg::CountrySet(selected)
         });
 
+        let way_id: String = state
+            .id
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| String::from(""));
         let way_id_onclick = ctx.link().callback(|_e: MouseEvent| Msg::WayFetch);
 
         let textarea_input_onblur = ctx.link().callback(|input: FocusEvent| {
@@ -120,7 +125,9 @@ impl Component for Control {
                     }
                     <hr/>
                     <label class="row-item" for="way">{"OSM Way ID"}</label>
-                    <input class="row-item" type="text" id="way" name="way" size="12" ref={state.way_ref.clone()}/>
+                    <input class="row-item" type="text" id="way" name="way" size="12"
+                        ref={state.way_ref.clone()}
+                        value={way_id}/>
                     <button class="row-item" onclick={way_id_onclick}>
                         {"Fetch"}
                     </button>
