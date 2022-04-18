@@ -1,6 +1,8 @@
-use super::{
-    Designated, Direction, Infer, LaneBuilder, LaneType, Locale, ModeResult, RoadBuilder, Tags,
-};
+use crate::locale::Locale;
+use crate::road::{Designated, Direction};
+use crate::tag::Tags;
+use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder};
+use crate::transform::RoadError;
 
 impl LaneBuilder {
     fn parking_forward(_locale: &Locale) -> Self {
@@ -22,7 +24,11 @@ impl LaneBuilder {
 }
 
 #[allow(clippy::unnecessary_wraps)]
-pub(super) fn parking(tags: &Tags, locale: &Locale, road: &mut RoadBuilder) -> ModeResult {
+pub(in crate::transform::tags_to_lanes) fn parking(
+    tags: &Tags,
+    locale: &Locale,
+    road: &mut RoadBuilder,
+) -> Result<(), RoadError> {
     let has_parking = vec!["parallel", "diagonal", "perpendicular"];
     let parking_lane_fwd = tags.is_any("parking:lane:right", &has_parking)
         || tags.is_any("parking:lane:both", &has_parking);

@@ -4,36 +4,19 @@ use std::iter;
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::{Metre, Speed};
 use crate::road::{Color, Designated, Direction, Lane, Marking, Road, Style};
-use crate::tag::{Highway, TagKey, Tags, LIFECYCLE};
+use crate::tag::{Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
+use crate::transform::error::{RoadError, RoadFromTags, RoadMsg, RoadWarnings};
 
-mod bicycle;
-use bicycle::bicycle;
-
-mod bus;
-use bus::bus;
-
-mod foot_shoulder;
-use foot_shoulder::foot_and_shoulder;
-
-mod parking;
-use parking::parking;
+mod modes;
+use modes::LanesBusScheme;
 
 mod separator;
-use separator::{lane_to_edge_separator, lanes_to_separator};
+use separator::{lane_to_inner_edge_separator, lane_to_outer_edge_separator, lanes_to_separator};
 
 mod lane;
-use lane::LanesScheme;
+use lane::{CentreTurnLaneScheme, LanesScheme};
 
-mod non_motorized;
-
-use non_motorized::non_motorized;
-
-use super::{
-    ModeResult, RoadError, RoadFromTags, RoadMsg, RoadWarnings, WaySide, CYCLEWAY, HIGHWAY,
-    SHOULDER, SIDEWALK,
-};
-use crate::transform::tags_to_lanes::bus::{BuswayScheme, LanesBusScheme};
-use crate::transform::tags_to_lanes::lane::CentreTurnLaneScheme;
+use self::modes::BuswayScheme;
 
 #[non_exhaustive]
 pub struct Config {
@@ -212,6 +195,8 @@ pub struct LaneBuilder {
 }
 
 impl LaneBuilder {
+    #[allow(clippy::panic)]
+    #[must_use]
     fn build(self) -> Lane {
         let width = self.width.target.some();
         assert!(
@@ -238,6 +223,14 @@ impl LaneBuilder {
             None => panic!(),
         }
     }
+
+    /// Create a mirrored version of the lane
+    #[must_use]
+    fn mirror(&self) -> &Self {
+        // TODO: this doesn't need to do anything for now
+        // check back after v1.0.0 to see if this is still the case
+        self
+    }
 }
 
 struct RoadBuilder {
@@ -252,7 +245,7 @@ impl RoadBuilder {
     pub fn from(
         tags: &Tags,
         oneway: Oneway,
-        lanes: LanesScheme,
+        lanes: &LanesScheme,
         _locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
@@ -278,7 +271,7 @@ impl RoadBuilder {
                     tags: Some(tags.subset(&[MAXSPEED])),
                 });
                 None
-            }
+            },
         };
         // These are ordered from the road center, going outwards. Most of the members of fwd_side will
         // have Direction::Forward, but there can be exceptions with two-way cycletracks.
@@ -322,7 +315,7 @@ impl RoadBuilder {
                         tags: Some(tags.subset(&LIFECYCLE)),
                     }
                     .into());
-                }
+                },
             },
         };
 
@@ -335,9 +328,16 @@ impl RoadBuilder {
     }
 
     /// Number of lanes
+    ///
+    /// # Panics
+    ///
+    /// Too many lanes
     pub fn len(&self) -> usize {
-        self.forward_len() + self.backward_len()
+        self.forward_len()
+            .checked_add(self.backward_len())
+            .expect("too many lanes")
     }
+
     /// Number of forward lanes
     pub fn forward_len(&self) -> usize {
         self.forward_lanes.len()
@@ -482,18 +482,21 @@ impl RoadBuilder {
         warnings: &mut RoadWarnings,
     ) -> Result<(Vec<Lane>, Highway, Oneway), RoadError> {
         let lanes: Vec<Lane> = if include_separators {
-            let forward_edge = lane_to_edge_separator(self.forward_outside().unwrap());
-            let backward_edge = lane_to_edge_separator(self.backward_outside().unwrap());
-            let middle_separator = lanes_to_separator(
-                [
-                    self.forward_inside().unwrap(),
-                    self.backward_inside().unwrap(),
-                ],
-                &self,
-                tags,
-                locale,
-                warnings,
-            );
+            let forward_edge = self
+                .forward_outside()
+                .and_then(lane_to_outer_edge_separator);
+            let backward_edge = self
+                .backward_outside()
+                .and_then(lane_to_outer_edge_separator);
+            let middle_separator = match [self.forward_inside(), self.backward_inside()] {
+                [Some(forward), Some(backward)] => {
+                    lanes_to_separator([forward, backward], &self, tags, locale, warnings)
+                },
+                [Some(lane), None] | [None, Some(lane)] => {
+                    lane_to_inner_edge_separator(lane.mirror()).map(Lane::mirror)
+                },
+                [None, None] => return Err(RoadError::Msg(RoadMsg::Internal("no lanes"))),
+            };
 
             self.forward_lanes.make_contiguous();
             let forward_separators: Vec<Option<Lane>> = self
@@ -609,7 +612,7 @@ pub fn tags_to_lanes(
     // Parse lane count schemas first.
     let oneway =
         Oneway::from(tags.is_any("oneway", &["yes", "-1"]) || tags.is("junction", "roundabout"));
-    let busway = BuswayScheme::new(tags, locale, &oneway, &mut warnings);
+    let busway = BuswayScheme::new(tags, locale, oneway, &mut warnings);
     // let bus_lanes = BusLanes::from(tags, locale, &oneway, &mut warnings);
     // TEMP: lets use the lanes:bus schema to summarise bus lanes for the lanes scheme.
     let lanes_bus = LanesBusScheme {
@@ -632,22 +635,22 @@ pub fn tags_to_lanes(
     );
 
     // Create the road builder and start giving it schemes.
-    let mut road: RoadBuilder = RoadBuilder::from(tags, oneway, lanes, locale, &mut warnings)?;
+    let mut road: RoadBuilder = RoadBuilder::from(tags, oneway, &lanes, locale, &mut warnings)?;
 
     // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
-    if let Some(spec) = non_motorized(tags, locale, &road)? {
+    if let Some(spec) = modes::non_motorized(tags, locale, &road)? {
         return Ok(spec);
     }
 
-    road.set_busway_scheme(&busway, &locale, &mut warnings)?;
+    road.set_busway_scheme(&busway, locale, &mut warnings)?;
 
-    bus(tags, locale, &mut road, &mut warnings)?;
+    modes::bus(tags, locale, &mut road, &mut warnings)?;
 
-    bicycle(tags, locale, &mut road, &mut warnings)?;
+    modes::bicycle(tags, locale, &mut road, &mut warnings)?;
 
-    parking(tags, locale, &mut road)?;
+    modes::parking(tags, locale, &mut road)?;
 
-    foot_and_shoulder(tags, locale, &mut road, &mut warnings)?;
+    modes::foot_and_shoulder(tags, locale, &mut road, &mut warnings)?;
 
     let (lanes, highway, _oneway) =
         road.into_ltr(tags, locale, config.include_separators, &mut warnings)?;
@@ -664,6 +667,11 @@ pub fn tags_to_lanes(
     Ok(road_from_tags)
 }
 
+/// Unsupported
+///
+/// # Errors
+///
+/// Oneway reversible
 pub fn unsupported(
     tags: &Tags,
     _locale: &Locale,

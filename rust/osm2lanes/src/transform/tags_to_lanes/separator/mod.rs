@@ -27,7 +27,7 @@ pub(super) fn lanes_to_separator(
     let direction_change = match [inside.direction.some(), outside.direction.some()] {
         [None | Some(Direction::Both), _] | [_, None | Some(Direction::Both)] => {
             DirectionChange::None
-        }
+        },
         [Some(Direction::Forward), Some(Direction::Forward)]
         | [Some(Direction::Backward), Some(Direction::Backward)] => DirectionChange::Same,
         [Some(Direction::Forward), Some(Direction::Backward)]
@@ -65,7 +65,7 @@ pub(super) fn lanes_to_separator(
                 locale,
                 warnings,
             )
-        }
+        },
         // Modal separation
         ([(_, inside_designated), (_, outside_designated)], _)
             if inside_designated != outside_designated =>
@@ -81,7 +81,7 @@ pub(super) fn lanes_to_separator(
                     width: Some(Marking::DEFAULT_WIDTH),
                 }]),
             })
-        }
+        },
         // TODO: error return
         _ => {
             warnings.push(RoadMsg::SeparatorUnknown {
@@ -95,7 +95,7 @@ pub(super) fn lanes_to_separator(
                     width: Some(Marking::DEFAULT_WIDTH),
                 }]),
             })
-        }
+        },
     }
 }
 
@@ -121,7 +121,7 @@ fn motor_lanes_to_separator(
                         Marking {
                             style: Style::SolidLine,
                             color: Some(Color::Green),
-                            width: Some(2.0 * Marking::DEFAULT_SPACE),
+                            width: Some(2.0_f64 * Marking::DEFAULT_SPACE),
                         },
                         Marking {
                             style: Style::BrokenLine,
@@ -186,8 +186,24 @@ fn motor_lanes_to_separator(
     }
 }
 
-/// Given a lane on the edge of a way
-/// what should the separator be
-pub(super) fn lane_to_edge_separator(_lane: &LaneBuilder) -> Option<Lane> {
+/// Given a lane on the outer edge of a way
+/// what should the separator be.
+/// Lanes are defined inside to outside
+#[allow(clippy::unnecessary_wraps)]
+pub(super) fn lane_to_outer_edge_separator(_lane: &LaneBuilder) -> Option<Lane> {
     None
+}
+
+/// Given a lane on the inner edge of a way
+/// what should the separator be.
+/// Lanes are defined inside to outside
+#[allow(clippy::unnecessary_wraps)]
+pub(super) fn lane_to_inner_edge_separator(_lane: &LaneBuilder) -> Option<Lane> {
+    Some(Lane::Separator {
+        markings: Markings::new(vec![Marking {
+            style: Style::SolidLine,
+            color: Some(Color::White),
+            width: Some(Marking::DEFAULT_WIDTH),
+        }]),
+    })
 }

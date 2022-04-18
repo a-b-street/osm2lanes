@@ -1,6 +1,8 @@
-use super::{Infer, Locale, Oneway, RoadMsg, RoadWarnings, TagKey, Tags};
-use crate::locale::DrivingSide;
-use crate::transform::tags_to_lanes::bus::LanesBusScheme;
+use super::{Infer, Oneway};
+use crate::locale::{DrivingSide, Locale};
+use crate::tag::{TagKey, Tags};
+use crate::transform::tags_to_lanes::modes::LanesBusScheme;
+use crate::transform::{RoadMsg, RoadWarnings};
 
 const LANES: TagKey = TagKey::from("lanes");
 pub struct LanesScheme {
@@ -12,9 +14,14 @@ pub struct LanesScheme {
 
 impl LanesScheme {
     /// Parses and validates the `lanes` scheme (which excludes parking lanes, bike lanes, etc.).
-    /// See https://wiki.openstreetmap.org/wiki/Key:lanes.
+    /// See <https://wiki.openstreetmap.org/wiki/Key:lanes>.
     ///
     /// Validates `lanes[:{forward,both_ways,backward}]=*` and `centre_turn_lane=yes`.
+    #[allow(
+        clippy::integer_arithmetic,
+        clippy::integer_division,
+        clippy::too_many_lines
+    )]
     pub(super) fn new(
         tags: &Tags,
         oneway: Oneway,
@@ -124,7 +131,7 @@ impl LanesScheme {
                         backward: Infer::Direct(b),
                         bothways,
                     }
-                }
+                },
                 (None, Some(f), Some(b)) => Self {
                     lanes: Infer::Calculated(f + b + bothway_lanes),
                     forward: Infer::Direct(f),
@@ -153,7 +160,7 @@ impl LanesScheme {
                         backward,
                         bothways,
                     }
-                }
+                },
                 (Some(l), Some(f), None) => Self {
                     lanes: Infer::Direct(l),
                     forward: Infer::Direct(f),
@@ -206,7 +213,7 @@ impl LanesScheme {
                             bothways,
                         }
                     }
-                }
+                },
             }
         }
     }
@@ -231,7 +238,7 @@ pub struct CentreTurnLaneScheme {
 }
 impl CentreTurnLaneScheme {
     /// Parses and validates the `centre_turn_lane` tag and emits a deprecation warning.
-    /// See https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane.
+    /// See <https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane>.
     pub(super) fn new(
         tags: &Tags,
         _oneway: Oneway,
@@ -256,14 +263,14 @@ impl CentreTurnLaneScheme {
                     .ok(),
                 });
                 Infer::Direct(true)
-            }
+            },
             Some("no") => {
                 warnings.push(RoadMsg::Deprecated {
                     deprecated_tags: tags.subset(&[CENTRE_TURN_LANE]),
                     suggested_tags: Some(Tags::from_str_pair(["lanes:both_ways", "0"])),
                 });
                 Infer::Direct(false)
-            }
+            },
             Some(_) => {
                 warnings.push(RoadMsg::Deprecated {
                     deprecated_tags: tags.subset(&[CENTRE_TURN_LANE]),
@@ -279,7 +286,7 @@ impl CentreTurnLaneScheme {
                     tags: Some(tags.subset(&[CENTRE_TURN_LANE])),
                 });
                 Infer::Guessed(false)
-            }
+            },
         };
         Self { present }
     }

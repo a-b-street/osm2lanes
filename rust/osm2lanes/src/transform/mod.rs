@@ -1,6 +1,6 @@
 use crate::locale::{DrivingSide, Locale};
 use crate::road::{Designated, Direction, Lane};
-use crate::tag::{TagKey, Tags, HIGHWAY};
+use crate::tag::TagKey;
 
 mod error;
 pub use error::{RoadError, RoadFromTags, RoadMsg, RoadWarnings};
@@ -11,12 +11,13 @@ pub use tags_to_lanes::{tags_to_lanes, Config as TagsToLanesConfig};
 mod lanes_to_tags;
 pub use lanes_to_tags::{lanes_to_tags, Config as LanesToTagsConfig};
 
-const CYCLEWAY: TagKey = TagKey::from("cycleway");
-const SIDEWALK: TagKey = TagKey::from("sidewalk");
-const SHOULDER: TagKey = TagKey::from("shoulder");
+pub mod tags {
+    use crate::tag::TagKey;
 
-pub type ModeResult = Result<(), RoadError>;
-pub type TagsResult = Result<Tags, RoadError>;
+    pub const CYCLEWAY: TagKey = TagKey::from("cycleway");
+    pub const SIDEWALK: TagKey = TagKey::from("sidewalk");
+    pub const SHOULDER: TagKey = TagKey::from("shoulder");
+}
 
 #[derive(Clone, Debug, PartialEq)]
 enum WaySide {
