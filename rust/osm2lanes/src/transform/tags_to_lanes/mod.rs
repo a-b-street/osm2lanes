@@ -8,6 +8,10 @@ use crate::tag::{Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
 use crate::transform::error::{RoadError, RoadMsg, RoadWarnings};
 use crate::transform::RoadFromTags;
 
+mod access_by_lane;
+
+mod lane_count;
+
 mod modes;
 
 mod separator;
@@ -15,6 +19,9 @@ use separator::{
     lane_pair_to_semantic_separator, lane_to_inner_edge_separator, lane_to_outer_edge_separator,
     semantic_separator_to_lane,
 };
+
+use self::lane_count::Counts;
+use self::modes::{bus_lanes, lanes_bus, Scheme};
 
 #[non_exhaustive]
 pub struct Config {
@@ -73,7 +80,7 @@ pub enum Infer<T> {
     None,
     Default(T),
     // Locale(T),
-    // Calculated(T),
+    Calculated(T),
     Direct(T),
 }
 
@@ -81,7 +88,7 @@ impl<T> Infer<T> {
     pub fn some(self) -> Option<T> {
         match self {
             Self::None => None,
-            Self::Default(v) | Self::Direct(v) => Some(v),
+            Self::Default(v) | Self::Calculated(v) | Self::Direct(v) => Some(v),
         }
     }
     fn direct(some: Option<T>) -> Self {
@@ -97,6 +104,7 @@ impl<T> Infer<T> {
         match self {
             Infer::None => Infer::None,
             Infer::Default(x) => Infer::Default(f(x)),
+            Infer::Calculated(x) => Infer::Calculated(f(x)),
             Infer::Direct(x) => Infer::Direct(f(x)),
         }
     }
@@ -197,69 +205,12 @@ struct RoadBuilder {
 
 impl RoadBuilder {
     #[allow(clippy::items_after_statements)]
-    pub fn from(
+    fn from(
         tags: &Tags,
-        locale: &Locale,
-        warnings: &mut RoadWarnings,
+        _locale: &Locale,
+        _warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
         let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
-
-        let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
-
-        let designated = if tags.is("access", "no")
-            && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
-            || tags
-                .get("motor_vehicle:conditional")
-                .map_or(false, |x| x.starts_with("no"))
-                && tags.is("bus", "yes")
-        // Example: 3rd Ave in downtown Seattle
-        {
-            Designated::Bus
-        } else {
-            Designated::Motor
-        };
-
-        const MAXSPEED: TagKey = TagKey::from("maxspeed");
-        let max_speed = match tags.get(MAXSPEED).map(str::parse::<Speed>).transpose() {
-            Ok(max_speed) => max_speed,
-            Err(_e) => {
-                warnings.push(RoadMsg::Unsupported {
-                    description: None,
-                    tags: Some(tags.subset(&[MAXSPEED])),
-                });
-                None
-            },
-        };
-
-        // These are ordered from the road center, going outwards. Most of the members of fwd_side will
-        // have Direction::Forward, but there can be exceptions with two-way cycletracks.
-        let mut forward_lanes: VecDeque<_> = iter::repeat_with(|| LaneBuilder {
-            r#type: Infer::Default(LaneType::Travel),
-            direction: Infer::Default(Direction::Forward),
-            designated: Infer::Default(designated),
-            max_speed: Infer::direct(max_speed),
-            ..Default::default()
-        })
-        .take(num_driving_fwd)
-        .collect();
-        let backward_lanes = iter::repeat_with(|| LaneBuilder {
-            r#type: Infer::Default(LaneType::Travel),
-            direction: Infer::Default(Direction::Backward),
-            designated: Infer::Default(designated),
-            max_speed: Infer::direct(max_speed),
-            ..Default::default()
-        })
-        .take(num_driving_back)
-        .collect();
-        // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
-        if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
-            forward_lanes.push_front(LaneBuilder {
-                r#type: Infer::Default(LaneType::Travel),
-                direction: Infer::Default(Direction::Both),
-                designated: Infer::Default(designated),
-                ..Default::default()
-            });
-        }
 
         let highway = Highway::from_tags(tags);
         let highway = match highway {
@@ -278,11 +229,101 @@ impl RoadBuilder {
         };
 
         Ok(RoadBuilder {
-            forward_lanes,
-            backward_lanes,
+            forward_lanes: VecDeque::<LaneBuilder>::new(),
+            backward_lanes: VecDeque::<LaneBuilder>::new(),
             highway,
             oneway,
         })
+    }
+
+    /// Backfill lanes to match expected lane counts
+    /// Filled from inside as busways and similar are usually on the outside lane
+    fn infill_lanes(&mut self, tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) {
+        let counts = Counts::new(tags, &self, _locale, warnings);
+
+        log::trace!("counts: {:?}", counts);
+
+        let designated = if tags.is("access", "no")
+            && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
+            || tags
+                .get("motor_vehicle:conditional")
+                .map_or(false, |x| x.starts_with("no"))
+                && tags.is("bus", "yes")
+        // Example: 3rd Ave in downtown Seattle
+        {
+            Designated::Bus
+        } else {
+            Designated::Motor
+        };
+
+        // TODO apply maxspeed to all motor lanes as a standalone step
+        const MAXSPEED: TagKey = TagKey::from("maxspeed");
+        let max_speed = match tags.get(MAXSPEED).map(str::parse::<Speed>).transpose() {
+            Ok(max_speed) => max_speed,
+            Err(_e) => {
+                warnings.push(RoadMsg::Unsupported {
+                    description: None,
+                    tags: Some(tags.subset(&[MAXSPEED])),
+                });
+                None
+            },
+        };
+
+        let forward_to_add = counts
+            .forward
+            .some()
+            .unwrap_or(0)
+            .checked_sub(self.forward_len())
+            .unwrap();
+        for _ in 0..forward_to_add {
+            self.push_forward_inside(LaneBuilder {
+                r#type: Infer::Default(LaneType::Travel),
+                direction: Infer::Default(Direction::Forward),
+                designated: Infer::Default(designated),
+                max_speed: Infer::direct(max_speed),
+                ..Default::default()
+            })
+        }
+
+        let backward_to_add = counts
+            .backward
+            .some()
+            .unwrap_or(0)
+            .checked_sub(self.backward_len())
+            .unwrap();
+        for _ in 0..backward_to_add {
+            self.push_backward_inside(LaneBuilder {
+                r#type: Infer::Default(LaneType::Travel),
+                direction: Infer::Default(Direction::Backward),
+                designated: Infer::Default(designated),
+                max_speed: Infer::direct(max_speed),
+                ..Default::default()
+            })
+        }
+
+        let both_ways_to_add = counts.both_ways.some().unwrap_or(0);
+        for _ in 0..both_ways_to_add {
+            self.push_forward_inside(LaneBuilder {
+                r#type: Infer::Default(LaneType::Travel),
+                direction: Infer::Default(Direction::Both),
+                designated: Infer::Default(designated),
+                max_speed: Infer::direct(max_speed),
+                ..Default::default()
+            })
+        }
+
+        if let Some(total_lanes) = counts.lanes.some() {
+            let no_direction_to_add = total_lanes - self.len();
+            for _ in 0..no_direction_to_add {
+                self.push_forward_inside(LaneBuilder {
+                    r#type: Infer::Default(LaneType::Travel),
+                    direction: Infer::None,
+                    designated: Infer::Default(designated),
+                    max_speed: Infer::direct(max_speed),
+                    ..Default::default()
+                })
+            }
+        }
     }
 
     /// Number of lanes
@@ -321,11 +362,11 @@ impl RoadBuilder {
         self.backward_lanes.back()
     }
     /// Get inner-most forward lane
-    pub fn forward_inside_mut(&mut self) -> Option<&mut LaneBuilder> {
+    pub fn _forward_inside_mut(&mut self) -> Option<&mut LaneBuilder> {
         self.forward_lanes.front_mut()
     }
     /// Get outer-most forward lane
-    pub fn forward_outside_mut(&mut self) -> Option<&mut LaneBuilder> {
+    pub fn _forward_outside_mut(&mut self) -> Option<&mut LaneBuilder> {
         self.forward_lanes.back_mut()
     }
     /// Get inner-most backward lane
@@ -333,7 +374,7 @@ impl RoadBuilder {
         self.backward_lanes.front_mut()
     }
     /// Get outer-most backward lane
-    pub fn backward_outside_mut(&mut self) -> Option<&mut LaneBuilder> {
+    pub fn _backward_outside_mut(&mut self) -> Option<&mut LaneBuilder> {
         self.backward_lanes.back_mut()
     }
     /// Push new inner-most forward lane
@@ -345,7 +386,7 @@ impl RoadBuilder {
         self.forward_lanes.push_back(lane);
     }
     /// Push new inner-most backward lane
-    pub fn _push_backward_inside(&mut self, lane: LaneBuilder) {
+    pub fn push_backward_inside(&mut self, lane: LaneBuilder) {
         self.backward_lanes.push_front(lane);
     }
     /// Push new outer-most backward lane
@@ -601,7 +642,7 @@ impl RoadBuilder {
 ///
 /// Warnings or errors are produced for situations that may make the lanes inaccurate, such as:
 ///
-/// - Unimplemented or sunuspported tags
+/// - Unimplemented or unsupported tags
 /// - Ambiguous tags
 /// - Unknown internal errors
 ///
@@ -624,7 +665,16 @@ pub fn tags_to_lanes(
         return Ok(spec);
     }
 
-    modes::bus(tags, locale, &mut road, &mut warnings)?;
+    // Check busway before populating motor travel lanes
+    let bus_scheme = modes::check_bus(tags, locale, &mut road, &mut warnings)?;
+
+    road.infill_lanes(tags, locale, &mut warnings);
+
+    match bus_scheme {
+        Scheme::None => {},
+        Scheme::LanesBus => lanes_bus(tags, locale, &mut road, &mut warnings)?,
+        Scheme::BusLanes => bus_lanes(tags, locale, &mut road, &mut warnings)?,
+    }
 
     modes::bicycle(tags, locale, &mut road, &mut warnings)?;
 
@@ -645,62 +695,6 @@ pub fn tags_to_lanes(
     }
 
     Ok(road_from_tags)
-}
-
-#[allow(clippy::integer_arithmetic, clippy::integer_division)]
-fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (usize, usize) {
-    let both_ways = if let Some(n) = tags
-        .get("lanes:both_ways")
-        .and_then(|num| num.parse::<usize>().ok())
-    {
-        n
-    } else {
-        0
-    };
-    let num_driving_fwd = if let Some(n) = tags
-        .get("lanes:forward")
-        .and_then(|num| num.parse::<usize>().ok())
-    {
-        n
-    } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
-        let half = if oneway.into() {
-            n
-        } else {
-            // usize division rounded up
-            (n + 1) / 2
-        };
-        half - both_ways
-    } else if tags.is("lanes:bus", "2") {
-        2
-    } else {
-        1
-    };
-    let num_driving_back = if let Some(n) = tags
-        .get("lanes:backward")
-        .and_then(|num| num.parse::<usize>().ok())
-    {
-        n
-    } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
-        let base = n - num_driving_fwd;
-        let half = if oneway.into() {
-            base
-        } else {
-            // lanes=1 but not oneway... what is this supposed to mean?
-            base.max(1)
-        };
-        half - both_ways
-    } else if tags.is("lanes:bus", "2") {
-        if oneway.into() {
-            1
-        } else {
-            2
-        }
-    } else if oneway.into() {
-        0
-    } else {
-        1
-    };
-    (num_driving_fwd, num_driving_back)
 }
 
 pub fn unsupported(

@@ -1,16 +1,16 @@
 use crate::locale::Locale;
+use crate::metric::Metre;
 use crate::road::{Designated, Direction};
 use crate::tag::{TagKey, Tags};
-use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneBuilderError, RoadBuilder};
+use crate::transform::tags_to_lanes::access_by_lane::Access;
+use crate::transform::tags_to_lanes::{
+    Infer, LaneBuilder, LaneBuilderError, LaneType, RoadBuilder, Width,
+};
 use crate::transform::{RoadError, RoadMsg, RoadWarnings};
 
 const LANES: TagKey = TagKey::from("lanes");
-
-impl RoadError {
-    fn unsupported_str(description: &str) -> Self {
-        RoadMsg::unsupported_str(description).into()
-    }
-}
+const ONEWAY: TagKey = TagKey::from("oneway");
+const ONEWAY_BUS: TagKey = TagKey::from("oneway:bus");
 
 impl LaneBuilder {
     #[allow(clippy::unnecessary_wraps)]
@@ -21,16 +21,45 @@ impl LaneBuilder {
 }
 
 #[allow(clippy::unnecessary_wraps)]
-pub(in crate::transform::tags_to_lanes) fn bus(
+fn get_bus(_locale: &Locale, direction: Direction) -> Result<LaneBuilder, LaneBuilderError> {
+    Ok(LaneBuilder {
+        r#type: Infer::Direct(LaneType::Travel),
+        direction: Infer::Direct(direction),
+        designated: Infer::Direct(Designated::Bus),
+        width: Width {
+            min: Infer::Default(Metre::new(3.0)),
+            target: Infer::Default(Metre::new(4.0)),
+            max: Infer::Default(Metre::new(4.5)),
+        },
+        max_speed: Infer::None,
+    })
+}
+
+#[derive(Debug)]
+pub(in crate::transform::tags_to_lanes) enum Scheme {
+    None,
+    // Busway, handled upfront
+    LanesBus,
+    BusLanes,
+}
+
+#[allow(clippy::unnecessary_wraps)]
+#[must_use]
+pub(in crate::transform::tags_to_lanes) fn check_bus(
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
-) -> Result<(), RoadError> {
+) -> Result<Scheme, RoadError> {
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
-    // 3 schemes, for simplicity we only allow one at a time
-    match (
-        tags.tree().get("busway").is_some(),
+    // 3 schemes,
+    // busway is handled before lanes are constructed and the others after
+
+    if tags.tree().get("busway").is_some() {
+        busway(tags, locale, road, warnings)?;
+    }
+
+    let bus_scheme = match (
         tags.tree()
             .get("lanes:bus")
             .or_else(|| tags.tree().get("lanes:psv"))
@@ -40,59 +69,47 @@ pub(in crate::transform::tags_to_lanes) fn bus(
             .or_else(|| tags.tree().get("psv:lanes"))
             .is_some(),
     ) {
-        (false, false, false) => {},
-        (true, _, false) => busway(tags, locale, road, warnings)?,
-        (false, true, false) => lanes_bus(tags, locale, road, warnings)?,
-        (false, false, true) => bus_lanes(tags, locale, road, warnings)?,
-        _ => {
-            return Err(RoadMsg::Unsupported {
-                description: Some("more than one bus lanes scheme used".to_owned()),
-                tags: None,
-            }
-            .into())
-        },
-    }
-
-    Ok(())
+        (false, false) => Ok(Scheme::None),
+        (true, false) => Ok(Scheme::LanesBus),
+        (false, true) => Ok(Scheme::BusLanes),
+        (true, true) => Err(RoadMsg::Unsupported {
+            description: Some("more than one bus lanes scheme used".to_owned()),
+            tags: None,
+        }
+        .into()),
+    };
+    log::trace!("bus_scheme={bus_scheme:?}");
+    bus_scheme
 }
 
 fn busway(
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
-    _warnings: &mut RoadWarnings,
+    warnings: &mut RoadWarnings,
 ) -> Result<(), RoadError> {
     const BUSWAY: TagKey = TagKey::from("busway");
     if tags.is(BUSWAY, "lane") {
-        road.forward_outside_mut()
-            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus(locale)?;
+        road.push_forward_outside(get_bus(locale, Direction::Forward)?);
         if !tags.is("oneway", "yes") && !tags.is("oneway:bus", "yes") {
-            road.backward_outside_mut()
-                .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-                .set_bus(locale)?;
+            road.push_backward_outside(get_bus(locale, Direction::Backward)?);
         }
     }
     if tags.is(BUSWAY, "opposite_lane") {
-        road.backward_outside_mut()
-            .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-            .set_bus(locale)?;
+        road.push_backward_outside(get_bus(locale, Direction::Backward)?);
     }
     if tags.is(BUSWAY + "both", "lane") {
-        road.forward_outside_mut()
-            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus(locale)?;
-        road.backward_outside_mut()
-            .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?
-            .set_bus(locale)?;
+        road.push_forward_outside(get_bus(locale, Direction::Forward)?);
+        road.push_backward_outside(get_bus(locale, Direction::Backward)?);
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            return Err(RoadMsg::ambiguous_str("busway:both=lane for oneway roads").into());
+            warnings.push(RoadMsg::Ambiguous {
+                description: None,
+                tags: Some(tags.subset(&[BUSWAY + "both", ONEWAY, ONEWAY_BUS])),
+            });
         }
     }
     if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
-        road.forward_outside_mut()
-            .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-            .set_bus(locale)?;
+        road.push_forward_outside(get_bus(locale, Direction::Forward)?);
     }
     if tags.is(BUSWAY + locale.driving_side.tag(), "opposite_lane") {
         return Err(
@@ -101,10 +118,9 @@ fn busway(
     }
     if tags.is(BUSWAY + locale.driving_side.opposite().tag(), "lane") {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            road.forward_inside_mut()
-                .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?
-                .set_bus(locale)?;
+            road.push_forward_inside(get_bus(locale, Direction::Forward)?);
         } else {
+            // Need an example of this being tagged
             return Err(
                 RoadMsg::ambiguous_str("busway:BACKWARD=lane for bidirectional roads").into(),
             );
@@ -116,11 +132,7 @@ fn busway(
     ) {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
             // TODO: does it make sense to have a backward lane on the forward_side????
-            let lane = road
-                .forward_inside_mut()
-                .ok_or_else(|| RoadError::unsupported_str("no forward lanes for busway"))?;
-            lane.set_bus(locale)?;
-            lane.direction = Infer::Direct(Direction::Backward);
+            road.push_forward_inside(get_bus(locale, Direction::Backward)?);
         } else {
             return Err(RoadMsg::Ambiguous {
                 description: None,
@@ -137,7 +149,7 @@ fn busway(
 }
 
 #[allow(clippy::unnecessary_wraps)]
-fn lanes_bus(
+pub(in crate::transform::tags_to_lanes) fn lanes_bus(
     tags: &Tags,
     _locale: &Locale,
     _road: &mut RoadBuilder,
@@ -161,32 +173,7 @@ fn lanes_bus(
     Ok(())
 }
 
-#[derive(Debug)]
-enum Access {
-    None,
-    No,
-    Yes,
-    Designated,
-}
-
-impl std::str::FromStr for Access {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "" => Ok(Self::None),
-            "no" => Ok(Self::No),
-            "yes" => Ok(Self::Yes),
-            "designated" => Ok(Self::Designated),
-            _ => Err(s.to_owned()),
-        }
-    }
-}
-
-fn split_access(lanes: &str) -> Result<Vec<Access>, String> {
-    lanes.split('|').map(str::parse).collect()
-}
-
-fn bus_lanes(
+pub(in crate::transform::tags_to_lanes) fn bus_lanes(
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
@@ -207,12 +194,13 @@ fn bus_lanes(
         // lanes:bus or lanes:psv
         (Some(lanes), (None, None), None, (None, None))
         | (None, (None, None), Some(lanes), (None, None)) => {
-            let access = split_access(lanes).map_err(|a| {
+            let access = Access::split(lanes).map_err(|a| {
                 RoadError::from(RoadMsg::Unsupported {
-                    description: Some(format!("lanes access {}", a)),
+                    description: Some(format!("lanes access '{}'", a)),
                     tags: Some(tags.subset(&["bus:lanes", "psv:lanes"])),
                 })
             })?;
+            log::trace!("bus:lanes={:?}", access);
             if access.len() != road.len() {
                 return Err(RoadMsg::Unsupported {
                     description: Some("lane count mismatch".to_owned()),
@@ -236,9 +224,9 @@ fn bus_lanes(
         (None, (forward, backward), None, (None, None))
         | (None, (None, None), None, (forward, backward)) => {
             if let Some(forward) = forward {
-                let forward_access = split_access(forward).map_err(|a| {
+                let forward_access = Access::split(forward).map_err(|a| {
                     RoadError::from(RoadMsg::Unsupported {
-                        description: Some(format!("lanes access {}", a)),
+                        description: Some(format!("lanes access '{}'", a)),
                         tags: Some(tags.subset(&["bus:lanes:backward", "psv:lanes:backward"])),
                     })
                 })?;
@@ -249,9 +237,9 @@ fn bus_lanes(
                 }
             }
             if let Some(backward) = backward {
-                let backward_access = split_access(backward).map_err(|a| {
+                let backward_access = Access::split(backward).map_err(|a| {
                     RoadError::from(RoadMsg::Unsupported {
-                        description: Some(format!("lanes access {}", a)),
+                        description: Some(format!("lanes access '{}'", a)),
                         tags: Some(tags.subset(&["bus:lanes:backward", "psv:lanes:backward"])),
                     })
                 })?;
