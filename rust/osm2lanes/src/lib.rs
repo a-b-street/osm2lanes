@@ -7,7 +7,7 @@
 #![warn(clippy::pedantic, clippy::cargo, clippy::restriction)]
 // Allow cargo lints
 #![allow(clippy::cargo_common_metadata)]
-#![allow(clippy::multiple_crate_versions)] // itoa 0.4 and 1.0
+#![allow(clippy::multiple_crate_versions)] // itoa
 // Allow restriction lints
 #![allow(
     clippy::blanket_clippy_restriction_lints,

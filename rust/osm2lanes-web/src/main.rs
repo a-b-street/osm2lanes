@@ -32,6 +32,7 @@ type ShouldRender = bool;
 #[derive(Debug, PartialEq)]
 pub struct State {
     pub locale: Locale,
+    pub id: Option<String>,
     /// The editable input, line and equal separated tags
     pub edit_tags: String,
     /// The input normalised
@@ -47,7 +48,11 @@ pub struct State {
 #[derive(Debug)]
 pub enum Msg {
     TagsSet(String),
-    TagsLocaleSet((Tags, Locale)),
+    TagsLocaleSet {
+        id: String,
+        tags: Tags,
+        locale: Locale,
+    },
     ToggleDrivingSide,
     CountrySet(Result<Country, &'static str>),
     WayFetch,
@@ -67,6 +72,7 @@ impl Component for App {
         let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nbusway=lane\nsidewalk=right".to_owned();
         let state = Rc::new(RefCell::new(State {
             locale,
+            id: None,
             edit_tags,
             normalized_tags: None,
             road: None,
@@ -89,11 +95,12 @@ impl Component for App {
                 self.update_tags();
                 true
             },
-            Msg::TagsLocaleSet((tags, locale)) => {
+            Msg::TagsLocaleSet { id, tags, locale } => {
                 {
                     let mut state = self.state.borrow_mut();
                     state.edit_tags = tags.to_string();
                     state.locale = locale;
+                    state.id = Some(id);
                 }
                 self.update_tags();
                 true
@@ -130,7 +137,11 @@ impl Component for App {
                     Ok(way_id) => {
                         ctx.link().send_future(async move {
                             match get_way(&way_id).await {
-                                Ok((tags, _geom, locale)) => Msg::TagsLocaleSet((tags, locale)),
+                                Ok((tags, _geom, locale)) => Msg::TagsLocaleSet {
+                                    id: way_id.to_string(),
+                                    tags,
+                                    locale,
+                                },
                                 Err(e) => Msg::Error(e.to_string()),
                             }
                         });
@@ -150,14 +161,13 @@ impl Component for App {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let state = self.state.borrow();
 
-        let tags_locale_cb = ctx.link().callback(Msg::TagsLocaleSet);
         let callback_error = ctx.link().callback(Msg::Error);
         let callback_msg = ctx.link().callback(|msg| msg);
 
         html! {
             <div>
                 <h1>{"osm2lanes"}</h1>
-                <Control callback_msg={callback_msg} state={self.state.clone()}/>
+                <Control callback_msg={callback_msg.clone()} state={self.state.clone()}/>
                 <hr/>
                 {
                     if let Some(message) = &state.message {
@@ -196,7 +206,7 @@ impl Component for App {
                 }
                 <Canvas callback_error={callback_error} state={self.state.clone()}/>
                 <hr/>
-                <MapComponent tags_locale={tags_locale_cb}/>
+                <MapComponent callback_msg={callback_msg.clone()}/>
             </div>
         }
     }
