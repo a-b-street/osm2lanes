@@ -1056,6 +1056,8 @@
 
 - way_id: 389654080
   mapillary: https://www.mapillary.com/app/?pKey=331760328316020
+  rust:
+    expect_warnings: true
   # TODO: the cycleway is actually two marked lanes,
   # how should we know that given the tags or what should the tags be?
   tags:
@@ -1161,6 +1163,8 @@
 
 - way_id: 898731283
   comment: how should an odd number of lanes forward/backwards be split without any clues?
+  rust:
+    expect_warnings: true
   tags:
     highway: "road"
     lanes: "3"
@@ -1183,6 +1187,8 @@
 
 # I didn't look for a real example of this
 - description: "5 lanes"
+  rust:
+   expect_warnings: true
   tags:
     highway: "road"
     lanes: "5"
@@ -1208,6 +1214,8 @@
     - type: shoulder
 
 - way_id: 335668924
+  skip_python: true
+  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "1"
@@ -1216,10 +1224,7 @@
   output:
     - type: shoulder
     - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
+      direction: both
       designated: motor_vehicle
     - type: shoulder
 

@@ -42,7 +42,6 @@ pub(in crate::transform::tags_to_lanes) enum Scheme {
 }
 
 #[allow(clippy::unnecessary_wraps)]
-#[must_use]
 pub(in crate::transform::tags_to_lanes) fn check_bus(
     tags: &Tags,
     locale: &Locale,
@@ -100,8 +99,9 @@ fn busway(
         road.push_forward_outside(get_bus(locale, Direction::Forward)?);
         road.push_backward_outside(get_bus(locale, Direction::Backward)?);
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            warnings
-                .push(TagsToLanesMsg::ambiguous_str("busway:both=lane for oneway roads").into());
+            warnings.push(TagsToLanesMsg::ambiguous_str(
+                "busway:both=lane for oneway roads",
+            ));
         }
     }
     if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
@@ -130,8 +130,7 @@ fn busway(
         "opposite_lane",
     ) {
         if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-            // TODO: does it make sense to have a backward lane on the forward_side????
-            road.push_forward_inside(get_bus(locale, Direction::Backward)?);
+            road.push_backward_inside(get_bus(locale, Direction::Backward)?);
         } else {
             return Err(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
                 BUSWAY + locale.driving_side.opposite().tag(),
@@ -141,6 +140,7 @@ fn busway(
             .into());
         }
     }
+    log::trace!("busway: {road:?}");
     Ok(())
 }
 

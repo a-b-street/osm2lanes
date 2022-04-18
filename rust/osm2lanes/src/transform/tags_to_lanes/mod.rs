@@ -53,7 +53,7 @@ impl Default for Config {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Oneway {
     Yes,
     No,
@@ -201,6 +201,7 @@ impl LaneBuilder {
     }
 }
 
+#[derive(Debug)]
 struct RoadBuilder {
     forward_lanes: VecDeque<LaneBuilder>,
     backward_lanes: VecDeque<LaneBuilder>,
@@ -239,8 +240,9 @@ impl RoadBuilder {
 
     /// Backfill lanes to match expected lane counts
     /// Filled from inside as busways and similar are usually on the outside lane
-    fn infill_lanes(&mut self, tags: &Tags, _locale: &Locale, warnings: &mut RoadWarnings) {
-        let counts = Counts::new(tags, &self, _locale, warnings);
+    #[allow(clippy::items_after_statements)]
+    fn infill_lanes(&mut self, tags: &Tags, locale: &Locale, warnings: &mut RoadWarnings) {
+        let counts = Counts::new(tags, self, locale, warnings);
 
         log::trace!("counts: {:?}", counts);
 
@@ -271,8 +273,7 @@ impl RoadBuilder {
             .forward
             .some()
             .unwrap_or(0)
-            .checked_sub(self.forward_len())
-            .unwrap();
+            .saturating_sub(self.forward_len());
         for _ in 0..forward_to_add {
             self.push_forward_inside(LaneBuilder {
                 r#type: Infer::Default(LaneType::Travel),
@@ -280,15 +281,14 @@ impl RoadBuilder {
                 designated: Infer::Default(designated),
                 max_speed: Infer::direct(max_speed),
                 ..Default::default()
-            })
+            });
         }
 
         let backward_to_add = counts
             .backward
             .some()
             .unwrap_or(0)
-            .checked_sub(self.backward_len())
-            .unwrap();
+            .saturating_sub(self.backward_len());
         for _ in 0..backward_to_add {
             self.push_backward_inside(LaneBuilder {
                 r#type: Infer::Default(LaneType::Travel),
@@ -296,7 +296,7 @@ impl RoadBuilder {
                 designated: Infer::Default(designated),
                 max_speed: Infer::direct(max_speed),
                 ..Default::default()
-            })
+            });
         }
 
         let both_ways_to_add = counts.both_ways.some().unwrap_or(0);
@@ -307,11 +307,11 @@ impl RoadBuilder {
                 designated: Infer::Default(designated),
                 max_speed: Infer::direct(max_speed),
                 ..Default::default()
-            })
+            });
         }
 
         if let Some(total_lanes) = counts.lanes.some() {
-            let no_direction_to_add = total_lanes - self.len();
+            let no_direction_to_add = total_lanes.saturating_sub(self.len());
             for _ in 0..no_direction_to_add {
                 self.push_forward_inside(LaneBuilder {
                     r#type: Infer::Default(LaneType::Travel),
@@ -319,7 +319,7 @@ impl RoadBuilder {
                     designated: Infer::Default(designated),
                     max_speed: Infer::direct(max_speed),
                     ..Default::default()
-                })
+                });
             }
         }
     }

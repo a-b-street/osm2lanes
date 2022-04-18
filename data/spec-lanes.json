@@ -137,17 +137,7 @@
                 }
             },
             "width": {
-                "type": "object",
-                "description": "A lane width.",
-                "properties": {
-                    "value": {
-                        "type": "number",
-                        "description": "The average width of the lane in meters."
-                    },
-                    "source": {
-                        "$ref": "/schemas/source"
-                    }
-                }
+                "type": "number"
             },
             "source": {
                 "$ref": "/schemas/source"
