@@ -1,6 +1,7 @@
 use crate::locale::Locale;
 use crate::road::{Designated, Direction};
 use crate::tag::{TagKey, Tags};
+use crate::transform::tags_to_lanes::access_by_lane::Access;
 use crate::transform::tags_to_lanes::{
     Infer, LaneBuilder, LaneBuilderError, RoadBuilder, TagsToLanesMsg,
 };
@@ -160,31 +161,6 @@ fn lanes_bus(
     Ok(())
 }
 
-#[derive(Debug)]
-enum Access {
-    None,
-    No,
-    Yes,
-    Designated,
-}
-
-impl std::str::FromStr for Access {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "" => Ok(Self::None),
-            "no" => Ok(Self::No),
-            "yes" => Ok(Self::Yes),
-            "designated" => Ok(Self::Designated),
-            _ => Err(s.to_owned()),
-        }
-    }
-}
-
-fn split_access(lanes: &str) -> Result<Vec<Access>, String> {
-    lanes.split('|').map(str::parse).collect()
-}
-
 fn bus_lanes(
     tags: &Tags,
     locale: &Locale,
@@ -206,7 +182,7 @@ fn bus_lanes(
         // lanes:bus or lanes:psv
         (Some(lanes), (None, None), None, (None, None))
         | (None, (None, None), Some(lanes), (None, None)) => {
-            let access = split_access(lanes).map_err(|a| {
+            let access = Access::split(lanes).map_err(|a| {
                 RoadError::from(TagsToLanesMsg::unsupported(
                     &format!("lanes access {}", a),
                     tags.subset(&["bus:lanes", "psv:lanes"]),
@@ -235,7 +211,7 @@ fn bus_lanes(
         (None, (forward, backward), None, (None, None))
         | (None, (None, None), None, (forward, backward)) => {
             if let Some(forward) = forward {
-                let forward_access = split_access(forward).map_err(|a| {
+                let forward_access = Access::split(forward).map_err(|a| {
                     RoadError::from(TagsToLanesMsg::unsupported(
                         &format!("lanes access {}", a),
                         tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
@@ -248,7 +224,7 @@ fn bus_lanes(
                 }
             }
             if let Some(backward) = backward {
-                let backward_access = split_access(backward).map_err(|a| {
+                let backward_access = Access::split(backward).map_err(|a| {
                     RoadError::from(TagsToLanesMsg::unsupported(
                         &format!("lanes access {}", a),
                         tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
