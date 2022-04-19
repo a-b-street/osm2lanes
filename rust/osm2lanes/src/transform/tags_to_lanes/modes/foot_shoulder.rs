@@ -5,9 +5,8 @@ use crate::metric::Metre;
 use crate::road::Designated;
 use crate::tag::Tags;
 use crate::transform::tags::{SHOULDER, SIDEWALK};
-use crate::transform::tags_to_lanes::{
-    Infer, LaneBuilder, LaneType, RoadBuilder, TagsToLanesMsg, Width,
-};
+use crate::transform::tags_to_lanes::road::Width;
+use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder, TagsToLanesMsg};
 use crate::transform::{RoadError, RoadWarnings};
 
 impl LaneBuilder {
@@ -143,9 +142,9 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
     impl RoadBuilder {
         fn lane_outside(&self, forward: bool) -> Option<&LaneBuilder> {
             if forward {
-                self.forward_lanes.back()
+                self.forward_outside()
             } else {
-                self.backward_lanes.back()
+                self.backward_outside()
             }
         }
         fn push_outside(&mut self, lane: LaneBuilder, forward: bool) {
