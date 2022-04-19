@@ -13,6 +13,8 @@ use crate::transform::RoadFromTags;
 mod error;
 pub use error::TagsToLanesMsg;
 
+mod access_by_lane;
+
 mod modes;
 
 mod separator;

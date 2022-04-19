@@ -123,6 +123,20 @@
             color: white
       - type: shoulder
 
+- description: service road width
+  rust: false
+  skip_python: true
+  skip_kotlin: true
+  tags:
+    highway: "service"
+  driving_side: right
+  road:
+    highway: service
+    lanes:
+      - type: travel
+        designated: motor_vehicle
+        width: 7
+
 ## Netherlands
 
 # https://nl.wikipedia.org/wiki/Autoweg
