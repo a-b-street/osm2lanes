@@ -1,10 +1,12 @@
 use super::{Infer, Oneway};
 use crate::locale::{DrivingSide, Locale};
+use crate::road::Direction;
 use crate::tag::{TagKey, Tags};
-use crate::transform::tags_to_lanes::modes::LanesBusScheme;
+use crate::transform::tags_to_lanes::modes::{BuswayScheme, LanesBusScheme};
 use crate::transform::{RoadMsg, RoadWarnings};
 
 const LANES: TagKey = TagKey::from("lanes");
+#[derive(Debug)]
 pub struct LanesScheme {
     pub lanes: Infer<usize>,
     pub forward: Infer<usize>,
@@ -26,6 +28,7 @@ impl LanesScheme {
         tags: &Tags,
         oneway: Oneway,
         centre_turn_lane: &CentreTurnLaneScheme, // TODO prefer TurnLanesScheme
+        busway: &BuswayScheme,
         lanes_bus: &LanesBusScheme,
         _locale: &Locale,
         warnings: &mut RoadWarnings,
@@ -63,6 +66,7 @@ impl LanesScheme {
 
         if oneway.into() {
             // Ignore lanes:{both_ways,backward}=
+            // TODO ignore oneway instead?
             if tagged_bothways.is_some() || tagged_backward.is_some() {
                 warnings.push(RoadMsg::Ambiguous {
                     description: None,
@@ -71,19 +75,28 @@ impl LanesScheme {
             }
 
             if let Some(l) = tagged_lanes {
-                if tagged_forward.map_or(false, |f| f != l) {
+                let mut result = Self {
+                    lanes: Infer::Direct(l),
+                    forward: Infer::Calculated(l),
+                    backward: Infer::Default(0),
+                    bothways,
+                };
+                // Roads with car traffic in one direction and bus traffic in the other, can be
+                // tagged `oneway=yes` `busway:<backward>=opposite_lane` but are more "canonically"
+                // tagged `oneway=no` `lanes:backward=1` `busway:<backward>=lane`.
+                if let Some(Some(Direction::Backward)) = busway.backward_side_direction.some() {
+                    result.forward = Infer::Calculated(l - 1);
+                    result.backward = Infer::Calculated(1);
+                }
+
+                if tagged_forward.map_or(false, |f| f != result.forward.some().unwrap()) {
                     // TODO What is the right warning for straight up conflicts in tag values?
                     warnings.push(RoadMsg::Ambiguous {
                         description: None,
                         tags: Some(tags.subset(&["oneway", "lanes", "lanes:forward"])),
                     });
                 }
-                Self {
-                    lanes: Infer::Direct(l),
-                    forward: Infer::Calculated(l),
-                    backward: Infer::Default(0),
-                    bothways,
-                }
+                result
             } else if let Some(f) = tagged_forward {
                 Self {
                     lanes: Infer::Calculated(f),

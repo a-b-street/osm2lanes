@@ -804,7 +804,6 @@
 - description: bus:lanes:backward=designated
   skip_python: true
   skip_kotlin: true
-  rust: false # fails roundtrip (outputs busway:right=opposite_lane tag)
   tags:
     highway: "road"
     lanes: "2"

@@ -363,7 +363,7 @@ impl RoadBuilder {
         self.backward_lanes.back()
     }
     /// Get inner-most forward lane
-    pub fn _forward_inside_mut(&mut self) -> Option<&mut LaneBuilder> {
+    pub fn forward_inside_mut(&mut self) -> Option<&mut LaneBuilder> {
         self.forward_lanes.front_mut()
     }
     /// Get outer-most forward lane
@@ -629,6 +629,7 @@ pub fn tags_to_lanes(
         tags,
         /*highway,*/ oneway,
         &centre_turn_lanes,
+        &busway,
         &lanes_bus,
         locale,
         &mut warnings,
@@ -642,7 +643,7 @@ pub fn tags_to_lanes(
         return Ok(spec);
     }
 
-    road.set_busway_scheme(&busway, locale, &mut warnings)?;
+    road.set_busway_scheme(&oneway, &busway, locale, &mut warnings);
 
     modes::bus(tags, locale, &mut road, &mut warnings)?;
 

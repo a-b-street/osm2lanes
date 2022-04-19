@@ -146,6 +146,7 @@ impl BuswayScheme {
 impl RoadBuilder {
     pub fn set_busway_scheme(
         &mut self,
+        oneway: &Oneway,
         busway: &BuswayScheme,
         locale: &Locale,
         _warnings: &mut RoadWarnings,
@@ -157,12 +158,31 @@ impl RoadBuilder {
             lane.set_bus(locale)?;
             lane.direction = Infer::Direct(d);
         }
-        if let Some(Some(d)) = busway.backward_side_direction.some() {
-            let lane = self
-                .backward_outside_mut()
-                .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?;
-            lane.set_bus(locale)?;
-            lane.direction = Infer::Direct(d);
+        match (oneway, busway.backward_side_direction.some()) {
+            (Oneway::Yes, Some(Some(Direction::Backward))) => {
+                // Tagged oneway, but there *is* a backward (bus) lane.
+                self.backward_outside_mut()
+                    .ok_or_else(|| {
+                        RoadError::unsupported_str("no backward lanes for contraflow busway")
+                    })?
+                    .set_bus(locale)?;
+            },
+            (Oneway::Yes, Some(Some(Direction::Forward))) => {
+                // Busway on the "inside" side of the oneway road.
+                self.forward_inside_mut()
+                    .ok_or_else(|| {
+                        RoadError::unsupported_str("no forward lanes for backward side busway")
+                    })?
+                    .set_bus(locale)?;
+            },
+            (Oneway::No, Some(Some(d))) => {
+                let lane = self
+                    .backward_outside_mut()
+                    .ok_or_else(|| RoadError::unsupported_str("no backward lanes for busway"))?;
+                lane.set_bus(locale)?;
+                lane.direction = Infer::Direct(d);
+            },
+            _ => {},
         }
         Ok(())
     }
