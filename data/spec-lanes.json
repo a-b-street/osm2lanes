@@ -137,7 +137,8 @@
                 }
             },
             "width": {
-                "type": "number"
+                "type": "number",
+                "description": "lane width in metres."
             },
             "source": {
                 "$ref": "/schemas/source"
