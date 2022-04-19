@@ -19,8 +19,14 @@ impl Counts {
     /// Parses and validates the `lanes` scheme (which excludes parking lanes, bike lanes, etc.).
     /// See <https://wiki.openstreetmap.org/wiki/Key:lanes>.
     ///
-    /// Validates `lanes[:{forward,both_ways,backward}]=*` and `centre_turn_lane=yes`.
-    #[allow(clippy::too_many_lines)]
+    /// Uses data from tags like `lanes[:{forward,both_ways,backward}]=*` and `centre_turn_lane=yes`.
+    /// Tags with pipe separated access strings are also used.
+    /// Lanes already existing in `road` used to determine the minima (e.g. for busway).
+    #[allow(
+        clippy::integer_arithmetic,
+        clippy::integer_division,
+        clippy::too_many_lines
+    )]
     pub(in crate::transform::tags_to_lanes) fn new(
         tags: &Tags,
         road: &RoadBuilder,
@@ -120,7 +126,10 @@ impl Counts {
                 forward: tagged_forward.map_or_else(
                     || {
                         tagged_lanes.map_or(Infer::Default(assumed_forward), |l| {
-                            Infer::Direct(l.checked_sub(pre_backward).unwrap())
+                            Infer::Direct(
+                                l.checked_sub(pre_backward)
+                                    .expect("road already has too many backward lanes"),
+                            )
                         })
                     },
                     Infer::Direct,
@@ -132,12 +141,7 @@ impl Counts {
             // Not oneway
             match (tagged_lanes, tagged_forward, tagged_backward) {
                 (Some(l), Some(f), Some(b)) => {
-                    if l != f
-                        .checked_add(b)
-                        .unwrap()
-                        .checked_add(both_way_lanes)
-                        .unwrap()
-                    {
+                    if l != f + b + both_way_lanes {
                         warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
                             "lanes",
                             "lanes:forward",
@@ -153,12 +157,7 @@ impl Counts {
                     }
                 },
                 (None, Some(f), Some(b)) => Self {
-                    lanes: Infer::Calculated(
-                        f.checked_add(b)
-                            .unwrap()
-                            .checked_add(both_way_lanes)
-                            .unwrap(),
-                    ),
+                    lanes: Infer::Calculated(f + b + both_way_lanes),
                     forward: Infer::Direct(f),
                     backward: Infer::Direct(b),
                     both_ways,
@@ -168,9 +167,9 @@ impl Counts {
                     forward: Infer::Direct(f),
                     backward: Infer::Calculated(
                         l.checked_sub(f)
-                            .unwrap()
+                            .expect("too many forward lanes")
                             .checked_sub(both_way_lanes)
-                            .unwrap(),
+                            .expect(" too many both way lanes"),
                     ),
                     both_ways,
                 },
@@ -178,9 +177,9 @@ impl Counts {
                     lanes: Infer::Direct(l),
                     forward: Infer::Calculated(
                         l.checked_sub(b)
-                            .unwrap()
+                            .expect("too many backward lanes")
                             .checked_sub(both_way_lanes)
-                            .unwrap(),
+                            .expect("too many both way lanes"),
                     ),
                     backward: Infer::Direct(b),
                     both_ways,
@@ -197,9 +196,9 @@ impl Counts {
                         // Only tagged with lanes and deprecated center_turn_lane tag.
                         // Assume the center_turn_lane is in addition to evenly divided lanes.
                         Self {
-                            lanes: Infer::Calculated(l.checked_add(1).unwrap()),
-                            forward: Infer::Default(l.checked_div(2).unwrap()),
-                            backward: Infer::Default(l.checked_div(2).unwrap()),
+                            lanes: Infer::Calculated(l + 1),
+                            forward: Infer::Default(l / 2),
+                            backward: Infer::Default(l / 2),
                             both_ways: Infer::Calculated(1),
                         }
                     } else {
@@ -213,11 +212,7 @@ impl Counts {
                                 ]),
                             ));
                         }
-                        let half = remaining_lanes
-                            .checked_add(1)
-                            .unwrap()
-                            .checked_div(2)
-                            .unwrap(); // usize division rounded up.
+                        let half = (remaining_lanes + 1) / 2; // usize division rounded up. (https://github.com/rust-lang/rust/issues/88581)
                         Self {
                             lanes: Infer::Direct(l),
                             forward: Infer::Direct(half),
@@ -234,31 +229,27 @@ impl Counts {
                         tags.get_parsed(&(LANES + "bus"), warnings);
                     let tagged_bus_forward = tags
                         .get_parsed(&(LANES + "bus" + "forward"), warnings)
-                        .or_else(|| tagged_bus_lanes.map(|l| l.checked_div(2).unwrap()))
+                        .or_else(|| tagged_bus_lanes.map(|l| l / 2))
                         .unwrap_or(0);
                     let tagged_bus_backward = tags
                         .get_parsed(&(LANES + "bus" + "backward"), warnings)
-                        .or_else(|| tagged_bus_lanes.map(|l| l.checked_div(2).unwrap()))
+                        .or_else(|| tagged_bus_lanes.map(|l| l / 2))
                         .unwrap_or(0);
                     let forward = match tagged_forward {
                         Some(f) => Infer::Direct(f),
-                        None => Infer::Calculated(tagged_bus_forward.checked_add(DEFAULT).unwrap()),
+                        None => Infer::Calculated(tagged_bus_forward + DEFAULT),
                     };
                     let backward = match tagged_backward {
                         Some(b) => Infer::Direct(b),
-                        None => Infer::Default(tagged_bus_backward.checked_add(DEFAULT).unwrap()),
+                        None => Infer::Default(tagged_bus_backward + DEFAULT),
                     };
                     let lanes = Infer::Default(
-                        tagged_forward
-                            .unwrap_or(DEFAULT)
-                            .checked_add(tagged_backward.unwrap_or(DEFAULT))
-                            .unwrap()
-                            .checked_add(tagged_bus_lanes.unwrap_or_else(|| {
+                        tagged_forward.unwrap_or(DEFAULT)
+                            + tagged_backward.unwrap_or(DEFAULT)
+                            + tagged_bus_lanes.unwrap_or_else(|| {
                                 tagged_bus_forward.checked_add(tagged_bus_backward).unwrap()
-                            }))
-                            .unwrap()
-                            .checked_add(both_way_lanes)
-                            .unwrap(),
+                            })
+                            + both_way_lanes,
                     );
                     Self {
                         lanes,
