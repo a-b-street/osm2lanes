@@ -147,6 +147,8 @@ mod tests {
         TagsToLanesConfig,
     };
 
+    static LOG_INIT: std::sync::Once = std::sync::Once::new();
+
     fn approx_eq<T: std::cmp::PartialEq>(left: &Option<T>, right: &Option<T>) -> bool {
         match (left, right) {
             (None, None) | (Some(_), None) | (None, Some(_)) => true,
@@ -379,10 +381,15 @@ mod tests {
         }
     }
 
+    fn env_logger_init() {
+        LOG_INIT.call_once(|| {
+            env_logger::builder().is_test(true).init();
+        });
+    }
+
     #[test]
     fn test_from_data() {
-        env_logger::builder().is_test(true).init();
-
+        env_logger_init();
         let tests = get_tests();
 
         assert!(
@@ -460,6 +467,7 @@ mod tests {
 
     #[test]
     fn test_roundtrip() {
+        env_logger_init();
         let tests = get_tests();
 
         assert!(
