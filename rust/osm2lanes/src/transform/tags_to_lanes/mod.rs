@@ -27,6 +27,8 @@ use separator::{
     semantic_separator_to_lane,
 };
 
+use crate::transform::tags_to_lanes::modes::BuswayScheme;
+
 #[non_exhaustive]
 pub struct Config {
     pub error_on_warnings: bool,
@@ -696,7 +698,7 @@ pub fn tags_to_lanes(
         return Ok(spec);
     }
 
-    road.set_busway_scheme(&oneway, &busway, locale, &mut warnings);
+    road.set_busway_scheme(&oneway, &busway, locale, &mut warnings)?;
 
     modes::bus(tags, locale, &mut road, &mut warnings)?;
 

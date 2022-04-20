@@ -11,7 +11,7 @@ pub use key::TagKey;
 mod osm;
 pub use osm::{Highway, HighwayType, Lifecycle, HIGHWAY, LIFECYCLE};
 
-use crate::transform::{RoadMsg, RoadWarnings};
+use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DuplicateKeyError(String);
@@ -93,7 +93,7 @@ impl Tags {
     }
 
     /// Get the value for the given key and parse it into T.
-    /// Add a `RoadMsg::Unsupported` if parsing fails.
+    /// Add a `TagsToLanesMsg::Unsupported` if parsing fails.
     pub fn get_parsed<K: AsRef<str>, T: FromStr>(
         &self,
         key: &K,
@@ -103,7 +103,10 @@ impl Tags {
             if let Ok(n) = val.parse::<T>() {
                 Some(n)
             } else {
-                warnings.push(RoadMsg::unsupported_tag(key.as_ref().to_owned(), val));
+                warnings.push(TagsToLanesMsg::unsupported_tag(
+                    key.as_ref().to_owned(),
+                    val,
+                ));
                 None
             }
         })

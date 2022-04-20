@@ -101,14 +101,16 @@ impl BuswayScheme {
             busway.forward_side_direction = Infer::Direct(Some(Direction::Forward));
             busway.backward_side_direction = Infer::Direct(Some(Direction::Backward));
             if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
-                warnings.push(RoadMsg::ambiguous_str("busway:both=lane for oneway roads"));
+                warnings.push(TagsToLanesMsg::ambiguous_str(
+                    "busway:both=lane for oneway roads",
+                ));
             }
         }
         if tags.is(BUSWAY + locale.driving_side.tag(), "lane") {
             busway.forward_side_direction = Infer::Direct(Some(Direction::Forward));
         }
         if tags.is(BUSWAY + locale.driving_side.tag(), "opposite_lane") {
-            warnings.push(RoadMsg::ambiguous_tag(
+            warnings.push(TagsToLanesMsg::ambiguous_tag(
                 BUSWAY + locale.driving_side.tag(),
                 "opposite_lane",
             ));
@@ -117,7 +119,7 @@ impl BuswayScheme {
             if tags.is("oneway", "yes") || tags.is("oneway:bus", "yes") {
                 busway.forward_side_direction = Infer::Direct(Some(Direction::Forward));
             } else {
-                warnings.push(RoadMsg::ambiguous_str(
+                warnings.push(TagsToLanesMsg::ambiguous_str(
                     "busway:BACKWARD=lane for bidirectional roads",
                 ));
             }
@@ -132,13 +134,10 @@ impl BuswayScheme {
 
             if tags.is("oneway:bus", "yes") {
                 // TODO ignore the busway tag, or ignore oneway:bus=yes?
-                warnings.push(RoadMsg::Ambiguous {
-                    description: None,
-                    tags: Some(tags.subset(&[
-                        BUSWAY + locale.driving_side.opposite().tag(),
-                        TagKey::from("oneway:bus"),
-                    ])),
-                });
+                warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                    BUSWAY + locale.driving_side.opposite().tag(),
+                    TagKey::from("oneway:bus"),
+                ])));
             }
         }
 
@@ -235,7 +234,7 @@ fn bus_lanes(
         (Some(lanes), (None, None), None, (None, None))
         | (None, (None, None), Some(lanes), (None, None)) => {
             let access = Access::split(lanes).map_err(|a| {
-                RoadError::from(TagsToLanesMsg::unsupported(
+                RoadError::Msg(TagsToLanesMsg::unsupported(
                     &format!("lanes access {}", a),
                     tags.subset(&["bus:lanes", "psv:lanes"]),
                 ))
@@ -264,7 +263,7 @@ fn bus_lanes(
         | (None, (None, None), None, (forward, backward)) => {
             if let Some(forward) = forward {
                 let forward_access = Access::split(forward).map_err(|a| {
-                    RoadError::from(TagsToLanesMsg::unsupported(
+                    RoadError::Msg(TagsToLanesMsg::unsupported(
                         &format!("lanes access {}", a),
                         tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
                     ))
@@ -277,7 +276,7 @@ fn bus_lanes(
             }
             if let Some(backward) = backward {
                 let backward_access = Access::split(backward).map_err(|a| {
-                    RoadError::from(TagsToLanesMsg::unsupported(
+                    RoadError::Msg(TagsToLanesMsg::unsupported(
                         &format!("lanes access {}", a),
                         tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
                     ))

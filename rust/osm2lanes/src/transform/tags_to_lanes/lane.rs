@@ -1,9 +1,9 @@
 use super::{Infer, Oneway};
-use crate::locale::{DrivingSide, Locale};
+use crate::locale::Locale;
 use crate::road::Direction;
 use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::modes::{BuswayScheme, LanesBusScheme};
-use crate::transform::{RoadMsg, RoadWarnings};
+use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 const LANES: TagKey = TagKey::from("lanes");
 #[derive(Debug)]
@@ -51,10 +51,9 @@ impl LanesScheme {
         if let (Infer::Direct(bw), Infer::Direct(t)) = (bothways, centre_turn_lane.present) {
             // TODO what if the values conflict but are not Direct? Might not ever happen.
             if (!t && bw > 0) || (t && bw == 0) {
-                warnings.push(RoadMsg::Ambiguous {
-                    description: None,
-                    tags: Some(tags.subset(&[LANES + "both_ways", CENTRE_TURN_LANE])),
-                });
+                warnings.push(TagsToLanesMsg::ambiguous_tags(
+                    tags.subset(&[LANES + "both_ways", CENTRE_TURN_LANE]),
+                ));
             }
         }
 
@@ -68,10 +67,11 @@ impl LanesScheme {
             // Ignore lanes:{both_ways,backward}=
             // TODO ignore oneway instead?
             if tagged_bothways.is_some() || tagged_backward.is_some() {
-                warnings.push(RoadMsg::Ambiguous {
-                    description: None,
-                    tags: Some(tags.subset(&["oneway", "lanes:both_ways", "lanes:backward"])),
-                });
+                warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                    "oneway",
+                    "lanes:both_ways",
+                    "lanes:backward",
+                ])));
             }
 
             if let Some(l) = tagged_lanes {
@@ -91,10 +91,11 @@ impl LanesScheme {
 
                 if tagged_forward.map_or(false, |f| f != result.forward.some().unwrap()) {
                     // TODO What is the right warning for straight up conflicts in tag values?
-                    warnings.push(RoadMsg::Ambiguous {
-                        description: None,
-                        tags: Some(tags.subset(&["oneway", "lanes", "lanes:forward"])),
-                    });
+                    warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                        "oneway",
+                        "lanes",
+                        "lanes:forward",
+                    ])));
                 }
                 result
             } else if let Some(f) = tagged_forward {
@@ -128,15 +129,12 @@ impl LanesScheme {
             match (tagged_lanes, tagged_forward, tagged_backward) {
                 (Some(l), Some(f), Some(b)) => {
                     if l != f + b + bothway_lanes {
-                        warnings.push(RoadMsg::Ambiguous {
-                            description: None,
-                            tags: Some(tags.subset(&[
-                                "lanes",
-                                "lanes:forward",
-                                "lanes:both_ways",
-                                "lanes:backward",
-                            ])),
-                        });
+                        warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                            "lanes",
+                            "lanes:forward",
+                            "lanes:both_ways",
+                            "lanes:backward",
+                        ])));
                     }
                     Self {
                         lanes: Infer::Direct(l),
@@ -208,13 +206,7 @@ impl LanesScheme {
                         let remaining_lanes =
                             l - bothway_lanes - forward_bus_lanes - backward_bus_lanes;
                         if remaining_lanes % 2 != 0 {
-                            warnings.push(RoadMsg::Ambiguous {
-                                description: Some(String::from("Total lane count cannot be evenly divided between the forward and backward")),
-                                tags: Some(tags.subset(&[
-                                    "lanes",
-                                    "lanes:both_ways",
-                                ])),
-                            });
+                            warnings.push(TagsToLanesMsg::ambiguous_str("Total lane count cannot be evenly divided between the forward and backward"));
                         }
                         let half = (remaining_lanes + 1) / 2; // usize division rounded up.
                         Self {
@@ -255,49 +247,27 @@ impl CentreTurnLaneScheme {
     pub(super) fn new(
         tags: &Tags,
         _oneway: Oneway,
-        locale: &Locale,
+        _locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Self {
         let present = match tags.get(CENTRE_TURN_LANE) {
             None => Infer::Default(false),
             Some("yes") => {
-                warnings.push(RoadMsg::Deprecated {
-                    deprecated_tags: tags.subset(&[CENTRE_TURN_LANE]),
-                    suggested_tags: Tags::from_str_pairs(&[
-                        ["lanes:both_ways", "1"],
-                        [
-                            "turn:lanes:both_ways",
-                            match locale.driving_side.opposite() {
-                                DrivingSide::Left => "left",
-                                DrivingSide::Right => "right",
-                            },
-                        ],
-                    ])
-                    .ok(),
-                });
+                warnings.push(TagsToLanesMsg::deprecated_tags(
+                    tags.subset(&[CENTRE_TURN_LANE]),
+                ));
                 Infer::Direct(true)
             },
             Some("no") => {
-                warnings.push(RoadMsg::Deprecated {
-                    deprecated_tags: tags.subset(&[CENTRE_TURN_LANE]),
-                    suggested_tags: Some(Tags::from_str_pair(["lanes:both_ways", "0"])),
-                });
+                warnings.push(TagsToLanesMsg::deprecated_tag(CENTRE_TURN_LANE, ""));
                 Infer::Direct(false)
             },
             Some(_) => {
-                warnings.push(RoadMsg::Deprecated {
-                    deprecated_tags: tags.subset(&[CENTRE_TURN_LANE]),
-                    suggested_tags: Tags::from_str_pairs(&[
-                        ["lanes:both_ways", "*"],
-                        ["turn:lanes:both_ways", "*"],
-                    ])
-                    .ok(),
-                });
+                warnings.push(TagsToLanesMsg::deprecated_tag(CENTRE_TURN_LANE, ""));
                 // TODO what's the right warning for bad tag values?
-                warnings.push(RoadMsg::Unsupported {
-                    description: None,
-                    tags: Some(tags.subset(&[CENTRE_TURN_LANE])),
-                });
+                warnings.push(TagsToLanesMsg::unsupported_tags(
+                    tags.subset(&[CENTRE_TURN_LANE]),
+                ));
                 Infer::Guessed(false)
             },
         };
