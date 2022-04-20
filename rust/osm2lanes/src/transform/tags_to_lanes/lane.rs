@@ -228,18 +228,21 @@ impl LanesScheme {
     }
 }
 
-// struct TurnLanesScheme {
-//     lanes: Vec<Option<TurnDirections>>,
-// }
-// struct TurnDirections {
-//     through: bool,
-//     left: bool,
-//     right: bool,
-//     slight_left: bool,
-//     slight_right: bool,
-//     merge_left: bool,
-//     merge_right: bool,
-// }
+#[allow(unused)]
+struct TurnLanesScheme {
+    lanes: Infer<Vec<TurnMarking>>,
+}
+
+#[allow(unused)]
+struct TurnMarking {
+    through: bool,
+    left: bool,
+    right: bool,
+    slight_left: bool,
+    slight_right: bool,
+    merge_left: bool,
+    merge_right: bool,
+}
 
 const CENTRE_TURN_LANE: TagKey = TagKey::from("centre_turn_lane");
 pub struct CentreTurnLaneScheme {
