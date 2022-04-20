@@ -132,8 +132,9 @@ impl LanesScheme {
                         warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
                             "lanes",
                             "lanes:forward",
-                            "lanes:both_ways",
                             "lanes:backward",
+                            "lanes:both_ways",
+                            "center_turn_lanes",
                         ])));
                     }
                     Self {
