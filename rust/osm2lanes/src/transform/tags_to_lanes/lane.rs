@@ -93,7 +93,6 @@ impl LanesScheme {
                 }
 
                 if tagged_forward.map_or(false, |f| f != result.forward.some().unwrap()) {
-                    // TODO What is the right warning for straight up conflicts in tag values?
                     warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
                         "oneway",
                         "lanes",
