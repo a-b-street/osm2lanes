@@ -218,6 +218,15 @@ impl Highway {
         })
     }
 
+    /// Active Highway
+    #[must_use]
+    pub fn active(r#type: HighwayType) -> Self {
+        Self {
+            highway: r#type,
+            lifecycle: Lifecycle::Active,
+        }
+    }
+
     /// Is Highway Construction
     #[must_use]
     pub fn is_construction(&self) -> bool {

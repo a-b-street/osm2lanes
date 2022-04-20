@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::locale::DrivingSide;
 use crate::road::{Lane, Road};
-use crate::tag::Tags;
+use crate::tag::{Highway, HighwayType, Tags};
 
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
@@ -53,6 +53,16 @@ impl TestCase {
         match &self.expected {
             Expected::Road(road) => &road.lanes,
             Expected::Output(lanes) => lanes,
+        }
+    }
+    /// Road of expected output
+    pub fn road(&self) -> Road {
+        match &self.expected {
+            Expected::Road(road) => road.clone(),
+            Expected::Output(lanes) => Road {
+                highway: Highway::active(HighwayType::UnknownRoad),
+                lanes: lanes.clone(),
+            },
         }
     }
     /// Test case is enabled, true by default
@@ -133,8 +143,11 @@ mod tests {
     use crate::road::{Lane, Marking, Printable, Road};
     use crate::tag::Highway;
     use crate::transform::{
-        lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadError, RoadFromTags, TagsToLanesConfig,
+        lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadError, RoadFromTags, RoadWarnings,
+        TagsToLanesConfig,
     };
+
+    static LOG_INIT: std::sync::Once = std::sync::Once::new();
 
     fn approx_eq<T: std::cmp::PartialEq>(left: &Option<T>, right: &Option<T>) -> bool {
         match (left, right) {
@@ -277,16 +290,19 @@ mod tests {
 
     impl RoadFromTags {
         /// Return a Road based upon a `RoadFromTags` with irrelevant parts filtered out.
-        fn into_filtered_road(self, test: &TestCase) -> Road {
-            Road {
-                lanes: self
-                    .road
-                    .lanes
-                    .into_iter()
-                    .filter(|lane| test.is_lane_enabled(lane))
-                    .collect(),
-                highway: self.road.highway,
-            }
+        fn into_filtered_road(self, test: &TestCase) -> (Road, RoadWarnings) {
+            (
+                Road {
+                    lanes: self
+                        .road
+                        .lanes
+                        .into_iter()
+                        .filter(|lane| test.is_lane_enabled(lane))
+                        .collect(),
+                    highway: self.road.highway,
+                },
+                self.warnings,
+            )
         }
     }
 
@@ -365,8 +381,15 @@ mod tests {
         }
     }
 
+    fn env_logger_init() {
+        LOG_INIT.call_once(|| {
+            env_logger::builder().is_test(true).init();
+        });
+    }
+
     #[test]
     fn test_from_data() {
+        env_logger_init();
         let tests = get_tests();
 
         assert!(
@@ -394,7 +417,7 @@ mod tests {
                             println!();
                             false
                         } else {
-                            let actual_road = road_from_tags.into_filtered_road(test);
+                            let (actual_road, warnings) = road_from_tags.into_filtered_road(test);
                             if actual_road.approx_eq(&expected_road) {
                                 true
                             } else {
@@ -405,6 +428,7 @@ mod tests {
                                 println!("Expected:");
                                 println!("    {}", stringify_lane_types(&expected_road));
                                 println!("    {}", stringify_directions(&expected_road));
+                                println!("{}", warnings);
                                 if stringify_lane_types(&actual_road)
                                     == stringify_lane_types(&expected_road)
                                     || stringify_directions(&actual_road)
@@ -443,6 +467,7 @@ mod tests {
 
     #[test]
     fn test_roundtrip() {
+        env_logger_init();
         let tests = get_tests();
 
         assert!(
@@ -453,7 +478,7 @@ mod tests {
                     .build();
                 let input_road = test.expected_road();
                 let tags = lanes_to_tags(
-                    &test.lanes(),
+                    &test.road(),
                     &locale,
                     &LanesToTagsConfig {
                         check_roundtrip: false,
@@ -471,7 +496,7 @@ mod tests {
                     },
                 )
                 .unwrap();
-                let output_road = output_lanes.into_filtered_road(test);
+                let (output_road, _warnings) = output_lanes.into_filtered_road(test);
                 if input_road.approx_eq(&output_road) {
                     true
                 } else {

@@ -9,7 +9,7 @@ mod key;
 pub use key::TagKey;
 
 mod osm;
-pub use osm::{Highway, Lifecycle, HIGHWAY, LIFECYCLE};
+pub use osm::{Highway, HighwayType, Lifecycle, HIGHWAY, LIFECYCLE};
 
 use crate::transform::{RoadMsg, RoadWarnings};
 

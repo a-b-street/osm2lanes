@@ -3,13 +3,13 @@ use crate::road::{Designated, Direction, Lane};
 use crate::tag::TagKey;
 
 mod error;
-pub use error::{RoadError, RoadFromTags, RoadMsg, RoadWarnings};
+pub use error::{RoadError, RoadFromTags, RoadWarnings};
 
-pub mod tags_to_lanes;
-pub use tags_to_lanes::{tags_to_lanes, Config as TagsToLanesConfig};
+mod tags_to_lanes;
+pub use tags_to_lanes::{tags_to_lanes, Config as TagsToLanesConfig, TagsToLanesMsg};
 
 mod lanes_to_tags;
-pub use lanes_to_tags::{lanes_to_tags, Config as LanesToTagsConfig};
+pub use lanes_to_tags::{lanes_to_tags, Config as LanesToTagsConfig, LanesToTagsMsg};
 
 pub mod tags {
     use crate::tag::TagKey;

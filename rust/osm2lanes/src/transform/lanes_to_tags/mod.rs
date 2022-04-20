@@ -1,16 +1,13 @@
+#![allow(clippy::module_name_repetitions)] // TODO: fix upstream
+
 use celes::Country;
 
-use super::{tags_to_lanes, RoadError, RoadMsg, TagsToLanesConfig};
+pub use self::error::LanesToTagsMsg;
+use super::{tags_to_lanes, TagsToLanesConfig};
 use crate::locale::Locale;
 use crate::metric::Speed;
-use crate::road::{Designated, Direction, Lane};
-use crate::tag::{DuplicateKeyError, Tags, TagsWrite};
-
-impl std::convert::From<DuplicateKeyError> for RoadError {
-    fn from(e: DuplicateKeyError) -> Self {
-        RoadError::Msg(RoadMsg::TagsDuplicateKey(e))
-    }
-}
+use crate::road::{Designated, Direction, Lane, Road};
+use crate::tag::{Tags, TagsWrite};
 
 #[non_exhaustive]
 pub struct Config {
@@ -38,29 +35,127 @@ impl Lane {
     }
 }
 
+mod error {
+    use std::panic::Location;
+
+    use crate::tag::DuplicateKeyError;
+    use crate::transform::RoadError;
+
+    /// Lanes To Tags Transformation Logic Issue
+    ///
+    /// ```
+    /// use osm2lanes::transform::LanesToTagsMsg;
+    /// let _ = LanesToTagsMsg::unimplemented("foobar");
+    /// ```
+    #[derive(Clone, Debug)]
+    pub struct LanesToTagsMsg {
+        location: &'static Location<'static>,
+        issue: LanesToTagsIssue,
+    }
+
+    #[derive(Clone, Debug)]
+    pub enum LanesToTagsIssue {
+        Unimplemented(String),
+        TagsDuplicateKey(DuplicateKeyError),
+        Roundtrip(Option<RoadError>),
+    }
+
+    impl std::fmt::Display for LanesToTagsMsg {
+        #[allow(clippy::panic_in_result_fn)]
+        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            match &self.issue {
+                LanesToTagsIssue::Unimplemented(description) => {
+                    write!(f, "unimplemented: '{}' - {}", description, self.location)
+                },
+                LanesToTagsIssue::TagsDuplicateKey(e) => write!(f, "{} - {}", e, self.location),
+                LanesToTagsIssue::Roundtrip(None) => write!(f, "roundtrip - {}", self.location),
+                LanesToTagsIssue::Roundtrip(Some(e)) => {
+                    write!(f, "roundtrip: {} - {}", e, self.location)
+                },
+            }
+        }
+    }
+
+    impl std::error::Error for LanesToTagsMsg {}
+
+    impl LanesToTagsMsg {
+        #[must_use]
+        #[track_caller]
+        pub fn unimplemented(description: &str) -> Self {
+            LanesToTagsMsg {
+                location: Location::caller(),
+                issue: LanesToTagsIssue::Unimplemented(description.to_owned()),
+            }
+        }
+
+        #[must_use]
+        #[track_caller]
+        pub fn roundtrip() -> Self {
+            LanesToTagsMsg {
+                location: Location::caller(),
+                issue: LanesToTagsIssue::Roundtrip(None),
+            }
+        }
+    }
+
+    impl From<DuplicateKeyError> for LanesToTagsMsg {
+        #[track_caller]
+        fn from(e: DuplicateKeyError) -> Self {
+            LanesToTagsMsg {
+                location: Location::caller(),
+                issue: LanesToTagsIssue::TagsDuplicateKey(e),
+            }
+        }
+    }
+
+    impl From<RoadError> for LanesToTagsMsg {
+        #[track_caller]
+        fn from(e: RoadError) -> Self {
+            LanesToTagsMsg {
+                location: Location::caller(),
+                issue: LanesToTagsIssue::Roundtrip(Some(e)),
+            }
+        }
+    }
+}
+
 /// Convert Lanes back to Tags
-///
-/// TODO: Take a Road struct instead of a slice of lanes
 ///
 /// # Errors
 ///
 /// Any of:
 /// - internal error
-/// - uninmplemented or unsupported functionality
+/// - unimplemented or unsupported functionality
 /// - the OSM tag spec cannot represent the lanes
 ///
 /// # Panics
 ///
 /// Lanes slice is empty
-pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> Result<Tags, RoadError> {
+pub fn lanes_to_tags(
+    road: &Road,
+    locale: &Locale,
+    config: &Config,
+) -> Result<Tags, LanesToTagsMsg> {
     let mut tags = Tags::default();
 
-    if !lanes.iter().any(|lane| lane.is_motor() || lane.is_bus()) {
+    if !road
+        .lanes
+        .iter()
+        .any(|lane| lane.is_motor() || lane.is_bus())
+    {
         tags.checked_insert("highway", "path")?;
         return Ok(tags);
     }
 
-    tags.checked_insert("highway", "road")?; // TODO, add `highway` to `Lanes`
+    tags.checked_insert("highway", road.highway.r#type().to_string())?;
+    if road.highway.is_construction() {
+        return Err(LanesToTagsMsg::unimplemented("construction=*"));
+    }
+    if road.highway.is_proposed() {
+        return Err(LanesToTagsMsg::unimplemented("construction=*"));
+    }
+
+    let lanes = &road.lanes;
 
     let lane_count = set_lanes(lanes, &mut tags)?;
     let oneway = set_oneway(lanes, &mut tags, locale, lane_count)?;
@@ -80,7 +175,7 @@ pub fn lanes_to_tags(lanes: &[Lane], locale: &Locale, config: &Config) -> Result
     Ok(tags)
 }
 
-fn set_lanes(lanes: &[Lane], tags: &mut Tags) -> Result<usize, RoadError> {
+fn set_lanes(lanes: &[Lane], tags: &mut Tags) -> Result<usize, LanesToTagsMsg> {
     let lane_count = lanes
         .iter()
         .filter(|lane| {
@@ -103,7 +198,7 @@ fn set_oneway(
     tags: &mut Tags,
     locale: &Locale,
     lane_count: usize,
-) -> Result<bool, RoadError> {
+) -> Result<bool, LanesToTagsMsg> {
     if lanes.iter().filter(|lane| lane.is_motor()).all(|lane| {
         matches!(
             lane,
@@ -169,7 +264,7 @@ fn set_oneway(
     }
 }
 
-fn set_shoulder(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
+fn set_shoulder(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
     match (
         lanes.first().unwrap().is_shoulder(),
         lanes.last().unwrap().is_shoulder(),
@@ -189,7 +284,7 @@ fn set_shoulder(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
     Ok(())
 }
 
-fn set_pedestrian(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
+fn set_pedestrian(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
     match (
         lanes.first().unwrap().is_foot(),
         lanes.last().unwrap().is_foot(),
@@ -205,7 +300,7 @@ fn set_pedestrian(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
     Ok(())
 }
 
-fn set_parking(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
+fn set_parking(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
     match (
         lanes
             .iter()
@@ -224,7 +319,7 @@ fn set_parking(lanes: &[Lane], tags: &mut Tags) -> Result<(), RoadError> {
     Ok(())
 }
 
-fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), RoadError> {
+fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), LanesToTagsMsg> {
     let left_cycle_lane: Option<Direction> = lanes
         .iter()
         .take_while(|lane| !lane.is_motor())
@@ -280,7 +375,7 @@ fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), Roa
     Ok(())
 }
 
-fn set_busway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), RoadError> {
+fn set_busway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), LanesToTagsMsg> {
     let left_bus_lane = lanes
         .iter()
         .take_while(|lane| !lane.is_motor())
@@ -318,7 +413,7 @@ fn set_busway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), RoadE
     Ok(())
 }
 
-fn get_max_speed(lanes: &[Lane], tags: &mut Tags) -> Result<Option<Speed>, RoadError> {
+fn get_max_speed(lanes: &[Lane], tags: &mut Tags) -> Result<Option<Speed>, LanesToTagsMsg> {
     let max_speeds: Vec<Speed> = lanes
         .iter()
         .filter_map(|lane| match lane {
@@ -336,11 +431,9 @@ fn get_max_speed(lanes: &[Lane], tags: &mut Tags) -> Result<Option<Speed>, RoadE
             tags.checked_insert("maxspeed", max_speed.to_string())?;
             Ok(Some(*max_speed))
         } else {
-            Err(RoadMsg::Unimplemented {
-                description: Some("different max speeds per lane".to_owned()),
-                tags: None,
-            }
-            .into())
+            Err(LanesToTagsMsg::unimplemented(
+                "different max speeds per lane",
+            ))
         }
     } else {
         Ok(None)
@@ -351,7 +444,7 @@ fn locale_additions(
     max_speed: Option<Speed>,
     locale: &Locale,
     tags: &mut Tags,
-) -> Result<(), RoadError> {
+) -> Result<(), LanesToTagsMsg> {
     if max_speed == Some(Speed::Kph(100.0)) && locale.country == Some(Country::the_netherlands()) {
         tags.checked_insert("motorroad", "yes")?;
     }
@@ -363,7 +456,7 @@ fn check_roundtrip(
     tags: &Tags,
     locale: &Locale,
     lanes: &[Lane],
-) -> Result<(), RoadError> {
+) -> Result<(), LanesToTagsMsg> {
     if config.check_roundtrip {
         let rountrip = tags_to_lanes(
             tags,
@@ -374,7 +467,7 @@ fn check_roundtrip(
             },
         )?;
         if lanes != rountrip.road.lanes {
-            return Err(RoadError::RoundTrip);
+            return Err(LanesToTagsMsg::roundtrip());
         }
     }
     Ok(())

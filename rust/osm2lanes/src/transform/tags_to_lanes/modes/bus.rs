@@ -1,14 +1,17 @@
 use crate::locale::Locale;
 use crate::road::{Designated, Direction};
 use crate::tag::{TagKey, Tags};
-use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneBuilderError, Oneway, RoadBuilder};
-use crate::transform::{RoadError, RoadMsg, RoadWarnings};
+use crate::transform::tags_to_lanes::access_by_lane::Access;
+use crate::transform::tags_to_lanes::{
+    Infer, LaneBuilder, LaneBuilderError, Oneway, RoadBuilder, TagsToLanesMsg,
+};
+use crate::transform::{RoadError, RoadWarnings};
 
 const LANES: TagKey = TagKey::from("lanes");
 
 impl RoadError {
     fn unsupported_str(description: &str) -> Self {
-        RoadMsg::unsupported_str(description).into()
+        TagsToLanesMsg::unsupported_str(description).into()
     }
 }
 
@@ -59,10 +62,10 @@ pub(in crate::transform::tags_to_lanes) fn bus(
         (false, true, false) => lanes_bus(tags, locale, road, warnings)?,
         (false, false, true) => bus_lanes(tags, locale, road, warnings)?,
         _ => {
-            return Err(RoadMsg::Unsupported {
-                description: Some("more than one bus lanes scheme used".to_owned()),
-                tags: None,
-            }
+            return Err(TagsToLanesMsg::unsupported(
+                "more than one bus lanes scheme used",
+                tags.subset(&["busway", "lanes:bus", "lanes:psv", "bus:lanes", "psv:lanes"]),
+            )
             .into())
         },
     }
@@ -195,47 +198,19 @@ fn lanes_bus(
     _road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
 ) -> Result<(), RoadError> {
-    warnings.push(RoadMsg::Unimplemented {
-        description: None,
-        tags: Some(tags.subset(&[
-            LANES + "psv",
-            LANES + "psv" + "forward",
-            LANES + "psv" + "backward",
-            LANES + "psv" + "left",
-            LANES + "psv" + "right",
-            LANES + "bus",
-            LANES + "bus" + "forward",
-            LANES + "bus" + "backward",
-            LANES + "bus" + "left",
-            LANES + "bus" + "right",
-        ])),
-    });
+    warnings.push(TagsToLanesMsg::unimplemented_tags(tags.subset(&[
+        LANES + "psv",
+        LANES + "psv" + "forward",
+        LANES + "psv" + "backward",
+        LANES + "psv" + "left",
+        LANES + "psv" + "right",
+        LANES + "bus",
+        LANES + "bus" + "forward",
+        LANES + "bus" + "backward",
+        LANES + "bus" + "left",
+        LANES + "bus" + "right",
+    ])));
     Ok(())
-}
-
-#[derive(Debug)]
-enum Access {
-    None,
-    No,
-    Yes,
-    Designated,
-}
-
-impl std::str::FromStr for Access {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "" => Ok(Self::None),
-            "no" => Ok(Self::No),
-            "yes" => Ok(Self::Yes),
-            "designated" => Ok(Self::Designated),
-            _ => Err(s.to_owned()),
-        }
-    }
-}
-
-fn split_access(lanes: &str) -> Result<Vec<Access>, String> {
-    lanes.split('|').map(str::parse).collect()
 }
 
 fn bus_lanes(
@@ -259,23 +234,23 @@ fn bus_lanes(
         // lanes:bus or lanes:psv
         (Some(lanes), (None, None), None, (None, None))
         | (None, (None, None), Some(lanes), (None, None)) => {
-            let access = split_access(lanes).map_err(|a| {
-                RoadError::from(RoadMsg::Unsupported {
-                    description: Some(format!("lanes access {}", a)),
-                    tags: Some(tags.subset(&["bus:lanes", "psv:lanes"])),
-                })
+            let access = Access::split(lanes).map_err(|a| {
+                RoadError::from(TagsToLanesMsg::unsupported(
+                    &format!("lanes access {}", a),
+                    tags.subset(&["bus:lanes", "psv:lanes"]),
+                ))
             })?;
             if access.len() != road.len() {
-                return Err(RoadMsg::Unsupported {
-                    description: Some("lane count mismatch".to_owned()),
-                    tags: Some(tags.subset(&[
+                return Err(TagsToLanesMsg::unsupported(
+                    "lane count mismatch",
+                    tags.subset(&[
                         "bus:lanes",
                         "psv:lanes",
                         "lanes",
                         "lanes:forward",
                         "lanes:backward",
-                    ])),
-                }
+                    ]),
+                )
                 .into());
             }
             for (lane, access) in road.lanes_ltr_mut(locale).zip(access.iter()) {
@@ -288,11 +263,11 @@ fn bus_lanes(
         (None, (forward, backward), None, (None, None))
         | (None, (None, None), None, (forward, backward)) => {
             if let Some(forward) = forward {
-                let forward_access = split_access(forward).map_err(|a| {
-                    RoadError::from(RoadMsg::Unsupported {
-                        description: Some(format!("lanes access {}", a)),
-                        tags: Some(tags.subset(&["bus:lanes:backward", "psv:lanes:backward"])),
-                    })
+                let forward_access = Access::split(forward).map_err(|a| {
+                    RoadError::from(TagsToLanesMsg::unsupported(
+                        &format!("lanes access {}", a),
+                        tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
+                    ))
                 })?;
                 for (lane, access) in road.forward_ltr_mut(locale).zip(forward_access.iter()) {
                     if let Access::Designated = access {
@@ -301,11 +276,11 @@ fn bus_lanes(
                 }
             }
             if let Some(backward) = backward {
-                let backward_access = split_access(backward).map_err(|a| {
-                    RoadError::from(RoadMsg::Unsupported {
-                        description: Some(format!("lanes access {}", a)),
-                        tags: Some(tags.subset(&["bus:lanes:backward", "psv:lanes:backward"])),
-                    })
+                let backward_access = Access::split(backward).map_err(|a| {
+                    RoadError::from(TagsToLanesMsg::unsupported(
+                        &format!("lanes access {}", a),
+                        tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
+                    ))
                 })?;
                 for (lane, access) in road.backward_ltr_mut(locale).zip(backward_access.iter()) {
                     if let Access::Designated = access {
@@ -321,17 +296,17 @@ fn bus_lanes(
         | (_, (Some(_), _) | (_, Some(_)), _, (Some(_), _) | (_, Some(_)))
         | (_, (Some(_), _) | (_, Some(_)), Some(_), _)
         | (_, _, Some(_), (Some(_), _) | (_, Some(_))) => {
-            return Err(RoadMsg::Unsupported {
-                description: Some("more than one bus:lanes used".to_owned()),
-                tags: Some(tags.subset(&[
+            return Err(TagsToLanesMsg::unsupported(
+                "more than one bus:lanes used",
+                tags.subset(&[
                     "bus:lanes",
                     "bus:lanes:forward",
                     "psv:lanes:backward",
                     "psv:lanes",
                     "psv:lanes:forward",
                     "psv:lanes:backward",
-                ])),
-            }
+                ]),
+            )
             .into())
         },
     }

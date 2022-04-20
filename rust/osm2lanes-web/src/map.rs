@@ -9,11 +9,21 @@ use web_sys::{Element, HtmlElement, Node};
 use yew::prelude::*;
 use yew::Html;
 
+use crate::Msg as WebMsg;
+
 #[allow(clippy::large_enum_variant)]
 pub enum Msg {
     MapClick(LatLng),
-    MapUpdate(Tags, Locale, Vec<LatLon>),
+    MapUpdate(String, Tags, Locale, Vec<LatLon>),
     Error(String),
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Point(pub f64, pub f64);
+
+#[derive(Properties, Clone, PartialEq)]
+pub struct Props {
+    pub callback_msg: Callback<WebMsg>,
 }
 
 pub struct MapComponent {
@@ -22,14 +32,6 @@ pub struct MapComponent {
     point: Point,
     path: Option<Path>,
     _map_click_closure: Closure<dyn Fn(MouseEvent)>,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Point(pub f64, pub f64);
-
-#[derive(Properties, Clone, PartialEq)]
-pub struct Props {
-    pub tags_locale: Callback<(Tags, Locale)>,
 }
 
 impl MapComponent {
@@ -69,7 +71,7 @@ impl Component for MapComponent {
     fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
         if first_render {
             self.map
-                .setView(&LatLng::new(self.point.0, self.point.1), 2.0);
+                .setView(&LatLng::new(self.point.0, self.point.1), 4.0);
             log::debug!("add tile layer");
             add_tile_layer(&self.map);
         }
@@ -80,13 +82,15 @@ impl Component for MapComponent {
             Msg::MapClick(lat_lng) => {
                 ctx.link().send_future(async move {
                     match get_nearby((lat_lng.lat(), lat_lng.lng())).await {
-                        Ok((tags, locale, geometry)) => Msg::MapUpdate(tags, locale, geometry),
+                        Ok((id, tags, geometry, locale)) => {
+                            Msg::MapUpdate(id.to_string(), tags, locale, geometry)
+                        },
                         Err(e) => Msg::Error(e.to_string()),
                     }
                 });
                 true
             },
-            Msg::MapUpdate(tags, locale, geometry) => {
+            Msg::MapUpdate(id, tags, locale, geometry) => {
                 if let Some(path) = self.path.take() {
                     path.remove();
                 }
@@ -102,7 +106,9 @@ impl Component for MapComponent {
                 self.path = Some(path);
                 // TODO: Add to upstream leaflet crate
                 // self.map.fitBounds(polyline.getBounds());
-                ctx.props().tags_locale.emit((tags, locale));
+                ctx.props()
+                    .callback_msg
+                    .emit(WebMsg::TagsLocaleSet { id, tags, locale });
                 true
             },
             Msg::Error(_) => todo!(),

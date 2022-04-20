@@ -1,22 +1,31 @@
+#![allow(clippy::module_name_repetitions)] // TODO: fix upstream
+
 use std::collections::VecDeque;
 use std::iter;
 
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::{Metre, Speed};
-use crate::road::{Color, Designated, Direction, Lane, Marking, Road, Style};
+use crate::road::{Designated, Direction, Lane, Road};
 use crate::tag::{Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
-use crate::transform::error::{RoadError, RoadFromTags, RoadMsg, RoadWarnings};
+use crate::transform::error::{RoadError, RoadWarnings};
+use crate::transform::RoadFromTags;
+
+mod error;
+pub use error::TagsToLanesMsg;
+
+mod access_by_lane;
+
+mod lane;
+use lane::{CentreTurnLaneScheme, LanesScheme};
 
 mod modes;
 use modes::LanesBusScheme;
 
 mod separator;
-use separator::{lane_to_inner_edge_separator, lane_to_outer_edge_separator, lanes_to_separator};
-
-mod lane;
-use lane::{CentreTurnLaneScheme, LanesScheme};
-
-use self::modes::BuswayScheme;
+use separator::{
+    lane_pair_to_semantic_separator, lane_to_inner_edge_separator, lane_to_outer_edge_separator,
+    semantic_separator_to_lane,
+};
 
 #[non_exhaustive]
 pub struct Config {
@@ -127,7 +136,7 @@ impl<T> Infer<T> {
         }
     }
 
-    fn _map<U, F: FnOnce(T) -> U>(self, func: F) -> Infer<U> {
+    fn map<U, F: FnOnce(T) -> U>(self, func: F) -> Infer<U> {
         match self {
             Self::None => Infer::None,
             Self::Guessed(v) => Infer::Guessed(func(v)),
@@ -166,7 +175,7 @@ impl std::error::Error for LaneBuilderError {}
 
 impl std::convert::From<LaneBuilderError> for RoadError {
     fn from(error: LaneBuilderError) -> Self {
-        Self::Msg(RoadMsg::Internal(error.0))
+        Self::Msg(TagsToLanesMsg::internal(error.0))
     }
 }
 
@@ -266,10 +275,7 @@ impl RoadBuilder {
         let max_speed = match tags.get(MAXSPEED).map(str::parse::<Speed>).transpose() {
             Ok(max_speed) => max_speed,
             Err(_e) => {
-                warnings.push(RoadMsg::Unsupported {
-                    description: None,
-                    tags: Some(tags.subset(&[MAXSPEED])),
-                });
+                warnings.push(TagsToLanesMsg::unsupported_tags(tags.subset(&[MAXSPEED])));
                 None
             },
         };
@@ -305,16 +311,12 @@ impl RoadBuilder {
 
         let highway = Highway::from_tags(tags);
         let highway = match highway {
-            Err(None) => return Err(RoadMsg::unsupported_str("way is not highway").into()),
-            Err(Some(s)) => return Err(RoadMsg::unsupported_tag(HIGHWAY, &s).into()),
+            Err(None) => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
+            Err(Some(s)) => return Err(TagsToLanesMsg::unsupported_tag(HIGHWAY, &s).into()),
             Ok(highway) => match highway {
                 highway if highway.is_supported() => highway,
                 _ => {
-                    return Err(RoadMsg::Unimplemented {
-                        description: None,
-                        tags: Some(tags.subset(&LIFECYCLE)),
-                    }
-                    .into());
+                    return Err(TagsToLanesMsg::unimplemented_tags(tags.subset(&LIFECYCLE)).into());
                 },
             },
         };
@@ -473,7 +475,12 @@ impl RoadBuilder {
     }
 
     /// Consume Road Builder to return Lanes left to right
-    #[allow(clippy::needless_collect, clippy::unnecessary_wraps)]
+    // TODO: a refactor...
+    #[allow(
+        clippy::needless_collect,
+        clippy::unnecessary_wraps,
+        clippy::too_many_lines
+    )]
     pub fn into_ltr(
         mut self,
         tags: &Tags,
@@ -489,13 +496,27 @@ impl RoadBuilder {
                 .backward_outside()
                 .and_then(lane_to_outer_edge_separator);
             let middle_separator = match [self.forward_inside(), self.backward_inside()] {
-                [Some(forward), Some(backward)] => {
-                    lanes_to_separator([forward, backward], &self, tags, locale, warnings)
-                },
+                [Some(forward), Some(backward)] => lane_pair_to_semantic_separator(
+                    [forward, backward],
+                    &self,
+                    tags,
+                    locale,
+                    warnings,
+                )
+                .and_then(|separator| {
+                    semantic_separator_to_lane(
+                        [forward, backward],
+                        &separator,
+                        &self,
+                        tags,
+                        locale,
+                        warnings,
+                    )
+                }),
                 [Some(lane), None] | [None, Some(lane)] => {
                     lane_to_inner_edge_separator(lane.mirror()).map(Lane::mirror)
                 },
-                [None, None] => return Err(RoadError::Msg(RoadMsg::Internal("no lanes"))),
+                [None, None] => return Err(RoadError::Msg(TagsToLanesMsg::internal("no lanes"))),
             };
 
             self.forward_lanes.make_contiguous();
@@ -506,7 +527,23 @@ impl RoadBuilder {
                 .windows(2)
                 .map(|window| {
                     let lanes: &[LaneBuilder; 2] = window.try_into().unwrap();
-                    lanes_to_separator([&lanes[0], &lanes[1]], &self, tags, locale, warnings)
+                    lane_pair_to_semantic_separator(
+                        [&lanes[0], &lanes[1]],
+                        &self,
+                        tags,
+                        locale,
+                        warnings,
+                    )
+                    .and_then(|separator| {
+                        semantic_separator_to_lane(
+                            [&lanes[0], &lanes[1]],
+                            &separator,
+                            &self,
+                            tags,
+                            locale,
+                            warnings,
+                        )
+                    })
                 })
                 .collect();
 
@@ -518,7 +555,23 @@ impl RoadBuilder {
                 .windows(2)
                 .map(|window| {
                     let lanes: &[LaneBuilder; 2] = window.try_into().unwrap();
-                    lanes_to_separator([&lanes[0], &lanes[1]], &self, tags, locale, warnings)
+                    lane_pair_to_semantic_separator(
+                        [&lanes[0], &lanes[1]],
+                        &self,
+                        tags,
+                        locale,
+                        warnings,
+                    )
+                    .and_then(|separator| {
+                        semantic_separator_to_lane(
+                            [&lanes[0], &lanes[1]],
+                            &separator,
+                            &self,
+                            tags,
+                            locale,
+                            warnings,
+                        )
+                    })
                 })
                 .collect();
 
@@ -728,16 +781,16 @@ pub fn unsupported(
         .iter()
         .any(|k| tags.get(TagKey::from(k)).is_some())
     {
-        warnings.push(RoadMsg::Unimplemented {
-            description: Some("access".to_owned()),
+        warnings.push(TagsToLanesMsg::unimplemented(
+            "access",
             // TODO, TagTree should support subset
-            tags: Some(tags.subset(&ACCESS_KEYS)),
-        });
+            tags.subset(&ACCESS_KEYS),
+        ));
     }
 
     if tags.is("oneway", "reversible") {
         // TODO reversible roads should be handled differently
-        return Err(RoadMsg::unimplemented_tag("oneway", "reversible").into());
+        return Err(TagsToLanesMsg::unimplemented_tag("oneway", "reversible").into());
     }
 
     Ok(())
