@@ -48,8 +48,11 @@ impl LanesScheme {
         };
         let bothway_lanes = bothways.some().unwrap_or(0);
         // Check it against the centre turn lane tag.
-        if let (Infer::Direct(bw), Infer::Direct(t)) = (bothways, centre_turn_lane.present) {
-            // TODO what if the values conflict but are not Direct? Might not ever happen.
+        if let (
+            Infer::Direct(bw) | Infer::Calculated(bw),
+            Infer::Direct(t) | Infer::Calculated(t),
+        ) = (bothways, centre_turn_lane.present)
+        {
             if (!t && bw > 0) || (t && bw == 0) {
                 warnings.push(TagsToLanesMsg::ambiguous_tags(
                     tags.subset(&[LANES + "both_ways", CENTRE_TURN_LANE]),
