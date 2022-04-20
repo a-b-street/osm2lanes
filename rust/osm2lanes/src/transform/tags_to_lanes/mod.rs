@@ -698,7 +698,7 @@ pub fn tags_to_lanes(
         return Ok(spec);
     }
 
-    road.set_busway_scheme(&oneway, &busway, locale, &mut warnings)?;
+    road.set_busway_scheme(oneway, &busway, locale, &mut warnings)?;
 
     modes::bus(tags, locale, &mut road, &mut warnings)?;
 

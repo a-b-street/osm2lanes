@@ -148,7 +148,7 @@ impl BuswayScheme {
 impl RoadBuilder {
     pub fn set_busway_scheme(
         &mut self,
-        oneway: &Oneway,
+        oneway: Oneway,
         busway: &BuswayScheme,
         locale: &Locale,
         _warnings: &mut RoadWarnings,
