@@ -1218,6 +1218,8 @@
       - type: shoulder
 
 - description: assume lanes:forward to be lanes - lanes:backward
+  skip_python: true
+  skip_kotlin: true
   tags:
     highway: secondary
     lanes: 4
