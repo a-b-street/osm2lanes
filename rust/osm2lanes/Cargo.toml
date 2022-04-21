@@ -14,13 +14,17 @@ authors = [
 edition = "2021"
 
 [dependencies]
-celes = "2.1"
-locale-codes = "0.3"
 log = "0.4"
-thiserror = "1"
-reqwest = { version = "0.11", optional = true, features = ["blocking", "json"] }
-serde = { version = "1", features = ["derive"] }
-serde_yaml = { version = "0.8", optional = true }
+celes = "2.1" # For countries, TODO: overlaps with locale-codes
+locale-codes = "0.3" # For continents, TODO: overlaps with celes
+serde = { version = "1", features = [
+    "derive",
+] } # Crate interface is serde compatible
+reqwest = { version = "0.11", optional = true, features = [
+    "blocking",
+    "json",
+] } # Requests to Overpass
+serde_yaml = { version = "0.8", optional = true } # Parsing test data
 
 [features]
 overpass = ["reqwest", "reqwest/blocking", "reqwest/json"]
