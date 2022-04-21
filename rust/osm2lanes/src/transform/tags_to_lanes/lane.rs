@@ -240,26 +240,22 @@ impl CentreTurnLaneScheme {
         _locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Self {
-        let present = match tags.get(CENTRE_TURN_LANE) {
-            None => Infer::Default(false),
-            Some("yes") => {
-                warnings.push(TagsToLanesMsg::deprecated_tags(
-                    tags.subset(&[CENTRE_TURN_LANE]),
-                ));
-                Infer::Direct(true)
-            },
-            Some("no") => {
-                warnings.push(TagsToLanesMsg::deprecated_tag(CENTRE_TURN_LANE, ""));
-                Infer::Direct(false)
-            },
-            Some(_) => {
-                warnings.push(TagsToLanesMsg::deprecated_tag(CENTRE_TURN_LANE, ""));
-                // TODO what's the right warning for bad tag values?
-                warnings.push(TagsToLanesMsg::unsupported_tags(
-                    tags.subset(&[CENTRE_TURN_LANE]),
-                ));
-                Infer::Guessed(false)
-            },
+        let present = if let Some(v) = tags.get(CENTRE_TURN_LANE) {
+            warnings.push(TagsToLanesMsg::deprecated_tags(
+                tags.subset(&[CENTRE_TURN_LANE]),
+            ));
+            match v {
+                "yes" => Infer::Direct(true),
+                "no" => Infer::Direct(false),
+                _ => {
+                    warnings.push(TagsToLanesMsg::unsupported_tags(
+                        tags.subset(&[CENTRE_TURN_LANE]),
+                    ));
+                    Infer::Guessed(false)
+                },
+            }
+        } else {
+            Infer::Default(false)
         };
         Self { present }
     }
