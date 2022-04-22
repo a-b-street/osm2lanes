@@ -5,6 +5,7 @@ pub(super) use bicycle::bicycle;
 
 mod bus;
 pub(super) use bus::{bus, BuswayScheme, LanesBusScheme};
+
 mod foot_shoulder;
 pub(super) use foot_shoulder::foot_and_shoulder;
 
