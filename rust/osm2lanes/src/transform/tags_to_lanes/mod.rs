@@ -676,7 +676,7 @@ pub fn tags_to_lanes(
         backward: busway
             .backward_side_direction
             .map_or(0, |o| if o.is_some() { 1 } else { 0 }),
-        bothways: Infer::Default(0),
+        both_ways: Infer::Default(0),
     };
     let centre_turn_lanes = CentreTurnLaneScheme::new(tags, oneway, locale, &mut warnings);
     let lanes = LanesScheme::new(

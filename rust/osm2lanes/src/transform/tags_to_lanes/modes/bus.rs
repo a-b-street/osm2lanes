@@ -35,7 +35,7 @@ pub struct BuswayScheme {
 pub struct LanesBusScheme {
     pub forward: Infer<usize>,
     pub backward: Infer<usize>,
-    pub bothways: Infer<usize>,
+    pub both_ways: Infer<usize>,
 }
 
 #[allow(clippy::unnecessary_wraps)]
@@ -212,6 +212,7 @@ fn lanes_bus(
     Ok(())
 }
 
+//noinspection ALL
 fn bus_lanes(
     tags: &Tags,
     locale: &Locale,
@@ -234,7 +235,7 @@ fn bus_lanes(
         (Some(lanes), (None, None), None, (None, None))
         | (None, (None, None), Some(lanes), (None, None)) => {
             let access = Access::split(lanes).map_err(|a| {
-                RoadError::Msg(TagsToLanesMsg::unsupported(
+                RoadError::from(TagsToLanesMsg::unsupported(
                     &format!("lanes access {}", a),
                     tags.subset(&["bus:lanes", "psv:lanes"]),
                 ))
