@@ -11,7 +11,7 @@ pub struct LanesScheme {
     pub lanes: Infer<usize>,
     pub forward: Infer<usize>,
     pub backward: Infer<usize>,
-    pub bothways: Infer<usize>,
+    pub both_ways: Infer<usize>,
 }
 
 impl LanesScheme {
@@ -82,7 +82,7 @@ impl LanesScheme {
                     lanes: Infer::Direct(l),
                     forward: Infer::Calculated(l),
                     backward: Infer::Default(0),
-                    bothways,
+                    both_ways: bothways,
                 };
                 // Roads with car traffic in one direction and bus traffic in the other, can be
                 // tagged `oneway=yes` `busway:<backward>=opposite_lane` but are more "canonically"
@@ -105,7 +105,7 @@ impl LanesScheme {
                     lanes: Infer::Calculated(f),
                     forward: Infer::Direct(f),
                     backward: Infer::Default(0),
-                    bothways,
+                    both_ways: bothways,
                 }
             } else {
                 // Assume 1 lane, but guess 1 normal lane plus bus lanes.
@@ -115,14 +115,14 @@ impl LanesScheme {
                         lanes: Infer::Guessed(assumed_forward + forward_bus_lanes),
                         forward: Infer::Guessed(assumed_forward + forward_bus_lanes),
                         backward: Infer::Default(0),
-                        bothways,
+                        both_ways: bothways,
                     }
                 } else {
                     Self {
                         lanes: Infer::Default(assumed_forward),
                         forward: Infer::Default(assumed_forward),
                         backward: Infer::Default(0),
-                        bothways,
+                        both_ways: bothways,
                     }
                 }
             }
@@ -143,14 +143,14 @@ impl LanesScheme {
                         lanes: Infer::Direct(l),
                         forward: Infer::Direct(f),
                         backward: Infer::Direct(b),
-                        bothways,
+                        both_ways: bothways,
                     }
                 },
                 (None, Some(f), Some(b)) => Self {
                     lanes: Infer::Calculated(f + b + bothway_lanes),
                     forward: Infer::Direct(f),
                     backward: Infer::Direct(b),
-                    bothways,
+                    both_ways: bothways,
                 },
                 (None, _, _) => {
                     // Without the "lanes" tag, assume one normal lane in each dir, plus bus lanes.
@@ -172,27 +172,27 @@ impl LanesScheme {
                         lanes,
                         forward,
                         backward,
-                        bothways,
+                        both_ways: bothways,
                     }
                 },
                 (Some(l), Some(f), None) => Self {
                     lanes: Infer::Direct(l),
                     forward: Infer::Direct(f),
                     backward: Infer::Calculated(l - f - bothway_lanes),
-                    bothways,
+                    both_ways: bothways,
                 },
                 (Some(l), None, Some(b)) => Self {
                     lanes: Infer::Direct(l),
                     forward: Infer::Calculated(l - b - bothway_lanes),
                     backward: Infer::Direct(b),
-                    bothways,
+                    both_ways: bothways,
                 },
                 // Alleyways or narrow unmarked roads, usually:
                 (Some(1), None, None) => Self {
                     lanes: Infer::Direct(1),
                     forward: Infer::Default(0),
                     backward: Infer::Default(0),
-                    bothways: Infer::Guessed(1),
+                    both_ways: Infer::Guessed(1),
                 },
                 (Some(l), None, None) => {
                     if l % 2 == 0 && centre_turn_lane.present.some().unwrap_or(false) {
@@ -202,7 +202,7 @@ impl LanesScheme {
                             lanes: Infer::Calculated(l + 1),
                             forward: Infer::Guessed(l / 2),
                             backward: Infer::Guessed(l / 2),
-                            bothways: Infer::Calculated(1),
+                            both_ways: Infer::Calculated(1),
                         }
                     } else {
                         // Distribute normal lanes evenly.
@@ -218,7 +218,7 @@ impl LanesScheme {
                             backward: Infer::Guessed(
                                 remaining_lanes - half - bothway_lanes + backward_bus_lanes,
                             ),
-                            bothways,
+                            both_ways: bothways,
                         }
                     }
                 },
