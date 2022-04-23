@@ -74,6 +74,17 @@ mod oneway {
 use oneway::Oneway;
 
 mod infer {
+    #[derive(Debug)]
+    pub struct InferConflict;
+
+    impl std::fmt::Display for InferConflict {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "inferred values conflict")
+        }
+    }
+
+    impl std::error::Error for InferConflict {}
+
     // TODO: implement try when this is closed: https://github.com/rust-lang/rust/issues/84277
     /// A value with various levels of inference
     #[derive(Copy, Clone, Debug)]
@@ -84,7 +95,11 @@ mod infer {
         Direct(T),
     }
 
-    impl<T> Infer<T> {
+    impl<T> Infer<T>
+    where
+        T: PartialEq<T>,
+    {
+        /// Convert any non-`Infer::None` value into `Option::Some`
         pub fn some(self) -> Option<T> {
             match self {
                 Self::None => None,
@@ -92,13 +107,59 @@ mod infer {
             }
         }
 
-        pub(super) fn direct(some: Option<T>) -> Self {
+        /// `Infer::Direct` or `Infer::None` from Option
+        pub fn direct(some: Option<T>) -> Self {
             match some {
                 None => Self::None,
                 Some(v) => Self::Direct(v),
             }
         }
+        /// Conditionally replaces value.
+        ///
+        /// # Replaces
+        /// - The same value at a higher confidence
+        /// - A different value at a higher confidence
+        ///
+        /// # Ignores
+        /// - The same value at the same confidence
+        /// - The same value at a lower confidence
+        /// - A different value at a lower confidence
+        ///
+        /// # Errors
+        /// - A different value at the same confidence
+        ///
+        /// ```
+        /// use osm2lanes::transform::Infer;
+        /// let mut i = Infer::Default(0);
+        /// assert!(i._set(Infer::Direct(1)).is_ok());
+        /// assert!(i._set(Infer::Direct(2)).is_err());
+        /// assert!(i._set(Infer::Default(3)).is_ok());
+        /// assert!(i._set(Infer::None).is_ok());
+        /// ```
+        pub fn _set(&mut self, value: Infer<T>) -> Result<(), InferConflict> {
+            match (self, value) {
+                (_, Infer::None)
+                | (Infer::Direct(_), Infer::Calculated(_) | Infer::Default(_))
+                | (Infer::Calculated(_), Infer::Default(_)) => Ok(()),
+                (swap @ Infer::None, value)
+                | (swap @ Infer::Default(_), value @ (Infer::Direct(_) | Infer::Calculated(_)))
+                | (swap @ Infer::Calculated(_), value @ Infer::Direct(_)) => {
+                    *swap = value;
+                    Ok(())
+                },
+                (Infer::Default(left), Infer::Default(right))
+                | (Infer::Calculated(left), Infer::Calculated(right))
+                | (Infer::Direct(left), Infer::Direct(right)) => {
+                    if left == &right {
+                        Ok(())
+                    } else {
+                        Err(InferConflict)
+                    }
+                },
+            }
+        }
 
+        /// Analogous to `Option::map`
         pub fn map<U, F>(self, f: F) -> Infer<U>
         where
             F: FnOnce(T) -> U,
@@ -118,7 +179,7 @@ mod infer {
         }
     }
 }
-use infer::Infer;
+pub use infer::Infer;
 
 /// From an OpenStreetMap way's tags,
 /// determine the lanes along the road from left to right.
@@ -127,7 +188,7 @@ use infer::Infer;
 ///
 /// Warnings or errors are produced for situations that may make the lanes inaccurate, such as:
 ///
-/// - Unimplemented or sunuspported tags
+/// - Unimplemented or unsupported tags
 /// - Ambiguous tags
 /// - Unknown internal errors
 ///

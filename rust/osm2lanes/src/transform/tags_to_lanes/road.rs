@@ -35,7 +35,7 @@ impl std::convert::From<LaneBuilderError> for RoadError {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LaneType {
     Travel,
     Parking,
