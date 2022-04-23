@@ -12,7 +12,7 @@ use super::separator::{
 use super::TagsToLanesMsg;
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::{Metre, Speed};
-use crate::road::{Designated, Direction, Lane};
+use crate::road::{Access, Designated, Direction, Lane};
 use crate::tag::{Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::tags_to_lanes::lane::{CentreTurnLaneScheme, Counts};
@@ -57,6 +57,7 @@ pub struct LaneBuilder {
     pub designated: Infer<Designated>,
     pub width: Width,
     pub max_speed: Infer<Speed>,
+    pub access: Infer<Access>,
 }
 
 impl LaneBuilder {
@@ -78,6 +79,7 @@ impl LaneBuilder {
                 designated: self.designated.some().unwrap(),
                 width,
                 max_speed: self.max_speed.some(),
+                access: self.access.some(),
             },
             Some(LaneType::Parking) => Lane::Parking {
                 direction: self.direction.some().unwrap(),

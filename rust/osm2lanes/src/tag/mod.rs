@@ -5,13 +5,16 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
+use crate::transform::{RoadWarnings, TagsToLanesMsg};
+
 mod key;
 pub use key::TagKey;
 
 mod osm;
 pub use osm::{Highway, HighwayType, Lifecycle, HIGHWAY, LIFECYCLE};
 
-use crate::transform::{RoadWarnings, TagsToLanesMsg};
+mod access;
+pub use access::Access;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DuplicateKeyError(String);

@@ -78,6 +78,7 @@ impl Lane {
             designated,
             width: Some(locale.travel_width(&designated)),
             max_speed: None,
+            access: None,
         }
     }
 
@@ -87,6 +88,7 @@ impl Lane {
             designated,
             width: Some(locale.travel_width(&designated)),
             max_speed: None,
+            access: None,
         }
     }
 

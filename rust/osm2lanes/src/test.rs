@@ -187,12 +187,14 @@ mod tests {
                         direction: actual_direction,
                         width: actual_width,
                         max_speed: actual_max_speed,
+                        access: _actual_access,
                     },
                     Lane::Travel {
                         designated: expected_designated,
                         direction: expected_direction,
                         width: expected_width,
                         max_speed: expected_max_speed,
+                        access: _expected_access,
                     },
                 ) => {
                     actual_designated == expected_designated
