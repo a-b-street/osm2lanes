@@ -56,7 +56,7 @@
   way_id: 62176050
   image: "https://upload.wikimedia.org/wikipedia/commons/4/44/Onderweg_-_Fitzroy_Crossing_-_Purnululu_%288991950691%29.jpg"
   rust:
-    expect_warnings: true
+    separator: false
   skip_kotlin: true
   tags:
     highway: "trunk"
@@ -157,31 +157,40 @@
     highway: trunk
     lanes:
       - type: shoulder
+        width: 0.6
       - type: separator
         markings:
           - style: solid_line
             color: white
+            width: 0.2
       - type: travel
         direction: backward
         designated: motor_vehicle
         max_speed: 100
+        width: 3.35
       - type: separator
         markings:
           - style: broken_line
             color: white
+            width: 0.15
           - style: solid_line
             color: green
+            width: 0.2
           - style: broken_line
             color: white
+            width: 0.15
       - type: travel
         direction: forward
         designated: motor_vehicle
         max_speed: 100
+        width: 3.35
       - type: separator
         markings:
           - style: solid_line
             color: white
+            width: 0.2
       - type: shoulder
+        width: 0.6
 
 ### Multi-lane Trunk
 

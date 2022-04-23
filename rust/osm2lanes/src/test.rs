@@ -149,74 +149,82 @@ mod tests {
 
     static LOG_INIT: std::sync::Once = std::sync::Once::new();
 
-    fn approx_eq<T: std::cmp::PartialEq>(left: &Option<T>, right: &Option<T>) -> bool {
-        match (left, right) {
-            (None, None) | (Some(_), None) | (None, Some(_)) => true,
-            (Some(left), Some(right)) => left == right,
+    fn approx_eq<T: std::cmp::PartialEq>(actual: &Option<T>, expected: &Option<T>) -> bool {
+        match (actual, expected) {
+            (None, None) | (Some(_), None) => true,
+            (None, Some(_)) => false,
+            (Some(actual), Some(expected)) => actual == expected,
         }
     }
 
     impl Road {
         /// Eq where None is treaty as always equal
-        fn approx_eq(&self, other: &Self) -> bool {
-            if self.lanes.len() != other.lanes.len() {
+        fn approx_eq(&self, expected: &Self) -> bool {
+            if self.lanes.len() != expected.lanes.len() {
                 return false;
             }
             self.lanes
                 .iter()
-                .zip(other.lanes.iter())
-                .all(|(left, right)| left.approx_eq(right))
+                .zip(expected.lanes.iter())
+                .all(|(actual, expected)| actual.approx_eq(expected))
         }
     }
 
     impl Lane {
         /// Eq where None is treaty as always equal
-        fn approx_eq(&self, other: &Self) -> bool {
+        fn approx_eq(&self, expected: &Self) -> bool {
             #[allow(clippy::unnested_or_patterns)]
-            match (self, other) {
-                (Lane::Separator { markings: left }, Lane::Separator { markings: right }) => left
-                    .iter()
-                    .zip(right.iter())
-                    .all(|(left, right)| left.approx_eq(right)),
+            match (self, expected) {
+                (Lane::Separator { markings: actual }, Lane::Separator { markings: expected }) => {
+                    actual
+                        .iter()
+                        .zip(expected.iter())
+                        .all(|(actual, expected)| actual.approx_eq(expected))
+                },
                 (
                     Lane::Travel {
-                        designated: left_designated,
-                        direction: left_direction,
-                        width: left_width,
-                        max_speed: left_max_speed,
+                        designated: actual_designated,
+                        direction: actual_direction,
+                        width: actual_width,
+                        max_speed: actual_max_speed,
                     },
                     Lane::Travel {
-                        designated: right_designated,
-                        direction: right_direction,
-                        width: right_width,
-                        max_speed: right_max_speed,
+                        designated: expected_designated,
+                        direction: expected_direction,
+                        width: expected_width,
+                        max_speed: expected_max_speed,
                     },
                 ) => {
-                    left_designated == right_designated
-                        && left_direction == right_direction
-                        && approx_eq(left_width, right_width)
-                        && approx_eq(left_max_speed, right_max_speed)
+                    actual_designated == expected_designated
+                        && actual_direction == expected_direction
+                        && approx_eq(actual_width, expected_width)
+                        && approx_eq(actual_max_speed, expected_max_speed)
                 },
                 (
                     Lane::Parking {
-                        designated: left_designated,
-                        direction: left_direction,
-                        width: left_width,
+                        designated: actual_designated,
+                        direction: actual_direction,
+                        width: actual_width,
                     },
                     Lane::Parking {
-                        designated: right_designated,
-                        direction: right_direction,
-                        width: right_width,
+                        designated: expected_designated,
+                        direction: expected_direction,
+                        width: expected_width,
                     },
                 ) => {
-                    left_designated == right_designated
-                        && left_direction == right_direction
-                        && approx_eq(left_width, right_width)
+                    actual_designated == expected_designated
+                        && actual_direction == expected_direction
+                        && approx_eq(actual_width, expected_width)
                 },
-                (Lane::Shoulder { width: left_width }, Lane::Shoulder { width: right_width }) => {
-                    approx_eq(left_width, right_width)
-                },
-                (left, right) => left == right,
+                (
+                    Lane::Shoulder {
+                        width: actual_width,
+                    },
+                    Lane::Shoulder {
+                        width: expected_width,
+                    },
+                ) => approx_eq(actual_width, expected_width),
+                (actual, expected) => actual == expected,
             }
         }
     }
@@ -224,10 +232,10 @@ mod tests {
     impl Marking {
         /// Eq where None is treaty as always equal
         #[allow(clippy::unnested_or_patterns)]
-        fn approx_eq(&self, other: &Self) -> bool {
-            self.style == other.style
-                && approx_eq(&self.color, &other.color)
-                && approx_eq(&self.width, &other.width)
+        fn approx_eq(&self, expected: &Self) -> bool {
+            self.style == expected.style
+                && approx_eq(&self.color, &expected.color)
+                && approx_eq(&self.width, &expected.width)
         }
     }
 
@@ -497,7 +505,7 @@ mod tests {
                 )
                 .unwrap();
                 let (output_road, _warnings) = output_lanes.into_filtered_road(test);
-                if input_road.approx_eq(&output_road) {
+                if output_road.approx_eq(&input_road) {
                     true
                 } else {
                     test.print();

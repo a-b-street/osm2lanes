@@ -1,6 +1,7 @@
 use celes::Country;
 
 use crate::locale::Locale;
+use crate::metric::Metre;
 use crate::road::{Color, Designated, Direction, Lane, Marking, Markings, Style};
 use crate::tag::Tags;
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
@@ -146,13 +147,30 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
             }]),
         }),
         // Shoulder
-        Separator::Shoulder { .. } => Some(Lane::Separator {
-            markings: Markings::new(vec![Marking {
-                style: Style::SolidLine,
-                color: Some(Color::White),
-                width: Some(Marking::DEFAULT_WIDTH),
-            }]),
-        }),
+        Separator::Shoulder { .. } => {
+            if tags.is("motorroad", "yes") {
+                if let Some(c) = &locale.country {
+                    if c == &Country::the_netherlands() {
+                        return Some(Lane::Separator {
+                            // https://puc.overheid.nl/rijkswaterstaat/doc/PUC_125514_31/
+                            // 4.2.5 and 4.2.6
+                            markings: Markings::new(vec![Marking {
+                                style: Style::SolidLine,
+                                color: Some(Color::White),
+                                width: Some(Marking::DEFAULT_WIDTH),
+                            }]),
+                        });
+                    }
+                }
+            }
+            Some(Lane::Separator {
+                markings: Markings::new(vec![Marking {
+                    style: Style::SolidLine,
+                    color: Some(Color::White),
+                    width: Some(Marking::DEFAULT_WIDTH),
+                }]),
+            })
+        },
         Separator::Centre {
             more_than_2_lanes, ..
         } => {
@@ -160,11 +178,13 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                 if let Some(c) = &locale.country {
                     if c == &Country::the_netherlands() {
                         return Some(Lane::Separator {
+                            // https://puc.overheid.nl/rijkswaterstaat/doc/PUC_125514_31/
+                            // 4.2.5 and 4.2.6
                             markings: Markings::new(vec![
                                 Marking {
                                     style: Style::BrokenLine,
                                     color: Some(Color::White),
-                                    width: Some(Marking::DEFAULT_WIDTH),
+                                    width: Some(Metre::new(0.15_f64)),
                                 },
                                 Marking {
                                     style: Style::SolidLine,
@@ -174,7 +194,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                                 Marking {
                                     style: Style::BrokenLine,
                                     color: Some(Color::White),
-                                    width: Some(Marking::DEFAULT_WIDTH),
+                                    width: Some(Metre::new(0.15_f64)),
                                 },
                             ]),
                         });
