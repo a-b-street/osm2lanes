@@ -16,7 +16,7 @@ pub use error::TagsToLanesMsg;
 mod access_by_lane;
 
 mod lane;
-use lane::{CentreTurnLaneScheme, LanesScheme};
+use lane::{CentreTurnLaneScheme, Counts};
 
 mod modes;
 use modes::BusLanesCount;
@@ -82,43 +82,9 @@ impl std::convert::From<Oneway> for bool {
 /// A value with various levels of inference
 #[derive(Copy, Clone, Debug)]
 pub enum Infer<T> {
-    /// We don't know anything about the value.
     None,
-
-    /// We can only guess what the value should be in this situation. Available tags don't
-    /// suggest any good default.
-    /// ```
-    /// use osm2lanes::transform::tags_to_lanes::Infer;
-    /// let tagged_backrest = Some(false);
-    /// let has_backrest = match tagged_backrest {
-    ///     None => Infer::Guessed(true),
-    ///     Some(v) => Infer::Direct(v),
-    /// };
-    /// ```
-    Guessed(T),
-
-    /// The value is an understood default for this situation. The absence of available tags implies
-    /// the value.
-    /// ```
-    /// use osm2lanes::transform::tags_to_lanes::Infer;
-    /// let tagged_oneway = Some(true);
-    /// let is_oneway = match tagged_oneway {
-    ///     Some(v) => Infer::Direct(v),
-    ///     None => Infer::Default(false),
-    /// };
-    /// ```
     Default(T),
-
-    /// The value has been calculated from other tags.
-    /// ```
-    /// use osm2lanes::transform::tags_to_lanes::Infer;
-    /// let tagged_forward_lanes = 1;
-    /// let tagged_backward_lanes = 1;
-    /// let total_lanes = Infer::Calculated(tagged_backward_lanes + tagged_backward_lanes);
-    /// ```
     Calculated(T),
-
-    /// The value is tagged as such.
     Direct(T),
 }
 
@@ -126,7 +92,7 @@ impl<T> Infer<T> {
     pub fn some(self) -> Option<T> {
         match self {
             Self::None => None,
-            Self::Guessed(v) | Self::Default(v) | Self::Calculated(v) | Self::Direct(v) => Some(v),
+            Self::Default(v) | Self::Calculated(v) | Self::Direct(v) => Some(v),
         }
     }
     fn direct(some: Option<T>) -> Self {
@@ -139,7 +105,6 @@ impl<T> Infer<T> {
     fn map<U, F: FnOnce(T) -> U>(self, func: F) -> Infer<U> {
         match self {
             Self::None => Infer::None,
-            Self::Guessed(v) => Infer::Guessed(func(v)),
             Self::Default(v) => Infer::Default(func(v)),
             Self::Calculated(v) => Infer::Calculated(func(v)),
             Self::Direct(v) => Infer::Direct(func(v)),
@@ -244,11 +209,24 @@ impl RoadBuilder {
     #[allow(clippy::items_after_statements)]
     pub fn from(
         tags: &Tags,
-        oneway: Oneway,
-        lanes: &LanesScheme,
-        _locale: &Locale,
+        locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
+        // Parse lane count schemas first.
+        let oneway = Oneway::from(
+            tags.is_any("oneway", &["yes", "-1"]) || tags.is("junction", "roundabout"),
+        );
+        let bus_lane_counts = BusLanesCount::from_tags(tags, locale, oneway, warnings)?;
+        let centre_turn_lanes = CentreTurnLaneScheme::new(tags, oneway, locale, warnings);
+        let lanes = Counts::new(
+            tags,
+            oneway,
+            &centre_turn_lanes,
+            &bus_lane_counts,
+            locale,
+            warnings,
+        );
+
         let designated = if tags.is("access", "no")
             && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
             || tags
@@ -653,22 +631,8 @@ pub fn tags_to_lanes(
     // Early return if we find unimplemented tags.
     unsupported(tags, locale, &mut warnings)?;
 
-    // Parse lane count schemas first.
-    let oneway =
-        Oneway::from(tags.is_any("oneway", &["yes", "-1"]) || tags.is("junction", "roundabout"));
-    let bus_lane_counts = BusLanesCount::from_tags(tags, locale, oneway, &mut warnings)?;
-    let centre_turn_lanes = CentreTurnLaneScheme::new(tags, oneway, locale, &mut warnings);
-    let lanes = LanesScheme::new(
-        tags,
-        oneway,
-        &centre_turn_lanes,
-        &bus_lane_counts,
-        locale,
-        &mut warnings,
-    );
-
     // Create the road builder and start giving it schemes.
-    let mut road: RoadBuilder = RoadBuilder::from(tags, oneway, &lanes, locale, &mut warnings)?;
+    let mut road: RoadBuilder = RoadBuilder::from(tags, locale, &mut warnings)?;
 
     // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
     if let Some(spec) = modes::non_motorized(tags, locale, &road)? {

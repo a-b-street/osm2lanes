@@ -6,14 +6,14 @@ use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 const LANES: TagKey = TagKey::from("lanes");
 #[derive(Debug)]
-pub struct LanesScheme {
+pub struct Counts {
     pub lanes: Infer<usize>,
     pub forward: Infer<usize>,
     pub backward: Infer<usize>,
     pub both_ways: Infer<usize>,
 }
 
-impl LanesScheme {
+impl Counts {
     /// Parses and validates the `lanes` scheme (which excludes parking lanes, bike lanes, etc.).
     /// See <https://wiki.openstreetmap.org/wiki/Key:lanes>.
     ///
@@ -108,20 +108,11 @@ impl LanesScheme {
             } else {
                 // Assume 1 lane, but guess 1 normal lane plus bus lanes.
                 let assumed_forward = 1; // TODO depends on highway tag
-                if forward_bus_lanes > 0 {
-                    Self {
-                        lanes: Infer::Guessed(assumed_forward + forward_bus_lanes),
-                        forward: Infer::Guessed(assumed_forward + forward_bus_lanes),
-                        backward: Infer::Default(0),
-                        both_ways: bothways,
-                    }
-                } else {
-                    Self {
-                        lanes: Infer::Default(assumed_forward),
-                        forward: Infer::Default(assumed_forward),
-                        backward: Infer::Default(0),
-                        both_ways: bothways,
-                    }
+                Self {
+                    lanes: Infer::Default(assumed_forward + forward_bus_lanes),
+                    forward: Infer::Default(assumed_forward + forward_bus_lanes),
+                    backward: Infer::Default(0),
+                    both_ways: bothways,
                 }
             }
         } else {
@@ -154,15 +145,15 @@ impl LanesScheme {
                     // Without the "lanes" tag, assume one normal lane in each dir, plus bus lanes.
                     let f = tagged_forward.unwrap_or(1 + forward_bus_lanes);
                     let b = tagged_backward.unwrap_or(1 + backward_bus_lanes);
-                    let forward = match (tagged_forward.is_some(), forward_bus_lanes) {
-                        (true, _) => Infer::Direct(f),
-                        (false, 0) => Infer::Default(f),
-                        (false, _) => Infer::Guessed(f),
+                    let forward = if tagged_forward.is_some() {
+                        Infer::Direct(f)
+                    } else {
+                        Infer::Default(f)
                     };
-                    let backward = match (tagged_backward.is_some(), backward_bus_lanes) {
-                        (true, _) => Infer::Direct(b),
-                        (false, 0) => Infer::Default(b),
-                        (false, _) => Infer::Guessed(b),
+                    let backward = if tagged_backward.is_some() {
+                        Infer::Direct(b)
+                    } else {
+                        Infer::Default(b)
                     };
                     let lanes = Infer::Default(f + b + bothway_lanes);
                     // TODO lanes.downgrade(&[forward, backward, bothways]);
@@ -190,7 +181,7 @@ impl LanesScheme {
                     lanes: Infer::Direct(1),
                     forward: Infer::Default(0),
                     backward: Infer::Default(0),
-                    both_ways: Infer::Guessed(1),
+                    both_ways: Infer::Default(1),
                 },
                 (Some(l), None, None) => {
                     if l % 2 == 0 && centre_turn_lane.present.some().unwrap_or(false) {
@@ -198,8 +189,8 @@ impl LanesScheme {
                         // Assume the center_turn_lane is in addition to evenly divided lanes.
                         Self {
                             lanes: Infer::Calculated(l + 1),
-                            forward: Infer::Guessed(l / 2),
-                            backward: Infer::Guessed(l / 2),
+                            forward: Infer::Default(l / 2),
+                            backward: Infer::Default(l / 2),
                             both_ways: Infer::Calculated(1),
                         }
                     } else {
@@ -212,8 +203,8 @@ impl LanesScheme {
                         let half = (remaining_lanes + 1) / 2; // usize division rounded up.
                         Self {
                             lanes: Infer::Direct(l),
-                            forward: Infer::Guessed(half + forward_bus_lanes),
-                            backward: Infer::Guessed(
+                            forward: Infer::Default(half + forward_bus_lanes),
+                            backward: Infer::Default(
                                 remaining_lanes - half - bothway_lanes + backward_bus_lanes,
                             ),
                             both_ways: bothways,
@@ -249,7 +240,7 @@ impl CentreTurnLaneScheme {
                     warnings.push(TagsToLanesMsg::unsupported_tags(
                         tags.subset(&[CENTRE_TURN_LANE]),
                     ));
-                    Infer::Guessed(false)
+                    Infer::Default(false)
                 },
             }
         } else {

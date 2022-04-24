@@ -296,7 +296,6 @@ fn lanes_bus(
     Ok(())
 }
 
-//noinspection ALL
 fn bus_lanes(
     tags: &Tags,
     locale: &Locale,
@@ -348,7 +347,7 @@ fn bus_lanes(
         | (None, (None, None), None, (forward, backward)) => {
             if let Some(forward) = forward {
                 let forward_access = Access::split(forward).map_err(|a| {
-                    RoadError::Msg(TagsToLanesMsg::unsupported(
+                    RoadError::from(TagsToLanesMsg::unsupported(
                         &format!("lanes access {}", a),
                         tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
                     ))
@@ -361,7 +360,7 @@ fn bus_lanes(
             }
             if let Some(backward) = backward {
                 let backward_access = Access::split(backward).map_err(|a| {
-                    RoadError::Msg(TagsToLanesMsg::unsupported(
+                    RoadError::from(TagsToLanesMsg::unsupported(
                         &format!("lanes access {}", a),
                         tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
                     ))
