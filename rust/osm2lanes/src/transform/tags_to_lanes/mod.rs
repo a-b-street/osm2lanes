@@ -217,7 +217,7 @@ impl RoadBuilder {
             tags.is_any("oneway", &["yes", "-1"]) || tags.is("junction", "roundabout"),
         );
         let bus_lane_counts = BusLanesCount::from_tags(tags, locale, oneway, warnings)?;
-        let centre_turn_lanes = CentreTurnLaneScheme::new(tags, oneway, locale, warnings);
+        let centre_turn_lanes = CentreTurnLaneScheme::from_tags(tags, oneway, locale, warnings);
         let lanes = Counts::new(
             tags,
             oneway,

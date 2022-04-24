@@ -38,7 +38,7 @@ impl Counts {
         let tagged_bothways: Option<usize> = tags.get_parsed(LANES + "both_ways", warnings);
 
         // Calculate the bothways lanes.
-        let bothways = match (tagged_bothways, centre_turn_lane.present.some()) {
+        let bothways = match (tagged_bothways, centre_turn_lane.0) {
             (Some(bw), _) => Infer::Direct(bw),
             (None, Some(true)) => Infer::Calculated(1),
             (None, Some(false)) => Infer::Calculated(0),
@@ -46,10 +46,7 @@ impl Counts {
         };
         let bothway_lanes = bothways.some().unwrap_or(0);
         // Check it against the centre turn lane tag.
-        if let (
-            Infer::Direct(bw) | Infer::Calculated(bw),
-            Infer::Direct(t) | Infer::Calculated(t),
-        ) = (bothways, centre_turn_lane.present)
+        if let (Infer::Direct(bw) | Infer::Calculated(bw), Some(t)) = (bothways, centre_turn_lane.0)
         {
             if (!t && bw > 0) || (t && bw == 0) {
                 warnings.push(TagsToLanesMsg::ambiguous_tags(
@@ -184,7 +181,7 @@ impl Counts {
                     both_ways: Infer::Default(1),
                 },
                 (Some(l), None, None) => {
-                    if l % 2 == 0 && centre_turn_lane.present.some().unwrap_or(false) {
+                    if l % 2 == 0 && centre_turn_lane.0.unwrap_or(false) {
                         // Only tagged with lanes and deprecated center_turn_lane tag.
                         // Assume the center_turn_lane is in addition to evenly divided lanes.
                         Self {
@@ -217,35 +214,32 @@ impl Counts {
 }
 
 const CENTRE_TURN_LANE: TagKey = TagKey::from("centre_turn_lane");
-pub struct CentreTurnLaneScheme {
-    pub present: Infer<bool>,
-}
+pub struct CentreTurnLaneScheme(pub Option<bool>);
 impl CentreTurnLaneScheme {
     /// Parses and validates the `centre_turn_lane` tag and emits a deprecation warning.
     /// See <https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane>.
-    pub(super) fn new(
+    pub(super) fn from_tags(
         tags: &Tags,
         _oneway: Oneway,
         _locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Self {
-        let present = if let Some(v) = tags.get(CENTRE_TURN_LANE) {
+        if let Some(v) = tags.get(CENTRE_TURN_LANE) {
             warnings.push(TagsToLanesMsg::deprecated_tags(
                 tags.subset(&[CENTRE_TURN_LANE]),
             ));
             match v {
-                "yes" => Infer::Direct(true),
-                "no" => Infer::Direct(false),
+                "yes" => Self(Some(true)),
+                "no" => Self(Some(false)),
                 _ => {
                     warnings.push(TagsToLanesMsg::unsupported_tags(
                         tags.subset(&[CENTRE_TURN_LANE]),
                     ));
-                    Infer::Default(false)
+                    Self(None)
                 },
             }
         } else {
-            Infer::Default(false)
-        };
-        Self { present }
+            Self(None)
+        }
     }
 }
