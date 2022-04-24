@@ -48,7 +48,7 @@ impl Default for Config {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum Oneway {
     Yes,
     No,
