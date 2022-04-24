@@ -157,16 +157,14 @@ pub fn lanes_to_tags(
 
     let lanes = &road.lanes;
 
-    set_lanes(lanes, &mut tags)?;
-    let oneway = set_oneway(lanes, &mut tags)?;
+    let lane_count = set_lanes(lanes, &mut tags)?;
+    let oneway = set_oneway(lanes, &mut tags, locale, lane_count)?;
 
     set_shoulder(lanes, &mut tags)?;
     set_pedestrian(lanes, &mut tags)?;
     set_parking(lanes, &mut tags)?;
     set_cycleway(lanes, &mut tags, oneway)?;
     set_busway(lanes, &mut tags, oneway)?;
-
-    lanes_both_ways(lanes, &mut tags)?;
 
     let max_speed = get_max_speed(lanes, &mut tags)?;
 
@@ -177,7 +175,7 @@ pub fn lanes_to_tags(
     Ok(tags)
 }
 
-fn set_lanes(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
+fn set_lanes(lanes: &[Lane], tags: &mut Tags) -> Result<usize, LanesToTagsMsg> {
     let lane_count = lanes
         .iter()
         .filter(|lane| {
@@ -191,11 +189,16 @@ fn set_lanes(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
         })
         .count();
     tags.checked_insert("lanes", lane_count.to_string())?;
-    Ok(())
+    Ok(lane_count)
 }
 
 /// Returns oneway
-fn set_oneway(lanes: &[Lane], tags: &mut Tags) -> Result<bool, LanesToTagsMsg> {
+fn set_oneway(
+    lanes: &[Lane],
+    tags: &mut Tags,
+    locale: &Locale,
+    lane_count: usize,
+) -> Result<bool, LanesToTagsMsg> {
     if lanes.iter().filter(|lane| lane.is_motor()).all(|lane| {
         matches!(
             lane,
@@ -208,6 +211,55 @@ fn set_oneway(lanes: &[Lane], tags: &mut Tags) -> Result<bool, LanesToTagsMsg> {
         tags.checked_insert("oneway", "yes")?;
         Ok(true)
     } else {
+        // Forward
+        let forward_lanes = lanes
+            .iter()
+            .filter(|lane| {
+                matches!(
+                    lane,
+                    Lane::Travel {
+                        designated: Designated::Motor | Designated::Bus,
+                        direction: Some(Direction::Forward),
+                        ..
+                    }
+                )
+            })
+            .count();
+        tags.checked_insert("lanes:forward", forward_lanes.to_string())?;
+        // Backward
+        let backward_lanes = lanes
+            .iter()
+            .filter(|lane| {
+                matches!(
+                    lane,
+                    Lane::Travel {
+                        designated: Designated::Motor | Designated::Bus,
+                        direction: Some(Direction::Backward),
+                        ..
+                    }
+                )
+            })
+            .count();
+        tags.checked_insert("lanes:backward", backward_lanes.to_string())?;
+        // Both ways
+        if lanes.iter().any(|lane| {
+            matches!(
+                lane,
+                Lane::Travel {
+                    designated: Designated::Motor,
+                    direction: Some(Direction::Both),
+                    ..
+                }
+            )
+        }) {
+            tags.checked_insert("lanes:both_ways", "1")?;
+            if lane_count >= 3 {
+                tags.checked_insert(
+                    "turn:lanes:both_ways",
+                    locale.driving_side.opposite().to_string(),
+                )?;
+            }
+        }
         Ok(false)
     }
 }
@@ -357,24 +409,6 @@ fn set_busway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), Lanes
             (None, Some(right)) => tags.checked_insert("busway:right", value(right))?,
             (Some(_left), Some(_right)) => tags.checked_insert("busway:both", "lane")?,
         }
-    }
-    Ok(())
-}
-
-fn lanes_both_ways(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
-    if lanes.iter().any(|lane| {
-        matches!(
-            lane,
-            Lane::Travel {
-                designated: Designated::Motor,
-                direction: Some(Direction::Both),
-                ..
-            }
-        )
-    }) {
-        tags.checked_insert("lanes:both_ways", "1")?;
-        // TODO: add LHT support
-        tags.checked_insert("turn:lanes:both_ways", "left")?;
     }
     Ok(())
 }

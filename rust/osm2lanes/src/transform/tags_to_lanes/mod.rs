@@ -15,7 +15,11 @@ pub use error::TagsToLanesMsg;
 
 mod access_by_lane;
 
+mod lane;
+use lane::{CentreTurnLaneScheme, LanesScheme};
+
 mod modes;
+use modes::BusLanesCount;
 
 mod separator;
 use separator::{
@@ -50,6 +54,7 @@ impl Default for Config {
 
 #[derive(Clone, Copy, PartialEq)]
 enum Oneway {
+    // TODO support oneway=-1
     Yes,
     No,
 }
@@ -77,10 +82,43 @@ impl std::convert::From<Oneway> for bool {
 /// A value with various levels of inference
 #[derive(Copy, Clone, Debug)]
 pub enum Infer<T> {
+    /// We don't know anything about the value.
     None,
+
+    /// We can only guess what the value should be in this situation. Available tags don't
+    /// suggest any good default.
+    /// ```
+    /// use osm2lanes::transform::tags_to_lanes::Infer;
+    /// let tagged_backrest = Some(false);
+    /// let has_backrest = match tagged_backrest {
+    ///     None => Infer::Guessed(true),
+    ///     Some(v) => Infer::Direct(v),
+    /// };
+    /// ```
+    Guessed(T),
+
+    /// The value is an understood default for this situation. The absence of available tags implies
+    /// the value.
+    /// ```
+    /// use osm2lanes::transform::tags_to_lanes::Infer;
+    /// let tagged_oneway = Some(true);
+    /// let is_oneway = match tagged_oneway {
+    ///     Some(v) => Infer::Direct(v),
+    ///     None => Infer::Default(false),
+    /// };
+    /// ```
     Default(T),
-    // Locale(T),
-    // Calculated(T),
+
+    /// The value has been calculated from other tags.
+    /// ```
+    /// use osm2lanes::transform::tags_to_lanes::Infer;
+    /// let tagged_forward_lanes = 1;
+    /// let tagged_backward_lanes = 1;
+    /// let total_lanes = Infer::Calculated(tagged_backward_lanes + tagged_backward_lanes);
+    /// ```
+    Calculated(T),
+
+    /// The value is tagged as such.
     Direct(T),
 }
 
@@ -88,7 +126,7 @@ impl<T> Infer<T> {
     pub fn some(self) -> Option<T> {
         match self {
             Self::None => None,
-            Self::Default(v) | Self::Direct(v) => Some(v),
+            Self::Guessed(v) | Self::Default(v) | Self::Calculated(v) | Self::Direct(v) => Some(v),
         }
     }
     fn direct(some: Option<T>) -> Self {
@@ -97,14 +135,14 @@ impl<T> Infer<T> {
             Some(v) => Self::Direct(v),
         }
     }
-    pub fn map<U, F>(self, f: F) -> Infer<U>
-    where
-        F: FnOnce(T) -> U,
-    {
+
+    fn map<U, F: FnOnce(T) -> U>(self, func: F) -> Infer<U> {
         match self {
-            Infer::None => Infer::None,
-            Infer::Default(x) => Infer::Default(f(x)),
-            Infer::Direct(x) => Infer::Direct(f(x)),
+            Self::None => Infer::None,
+            Self::Guessed(v) => Infer::Guessed(func(v)),
+            Self::Default(v) => Infer::Default(func(v)),
+            Self::Calculated(v) => Infer::Calculated(func(v)),
+            Self::Direct(v) => Infer::Direct(func(v)),
         }
     }
 }
@@ -206,13 +244,11 @@ impl RoadBuilder {
     #[allow(clippy::items_after_statements)]
     pub fn from(
         tags: &Tags,
-        locale: &Locale,
+        oneway: Oneway,
+        lanes: &LanesScheme,
+        _locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
-        let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
-
-        let (num_driving_fwd, num_driving_back) = driving_lane_directions(tags, locale, oneway);
-
         let designated = if tags.is("access", "no")
             && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
             || tags
@@ -234,7 +270,6 @@ impl RoadBuilder {
                 None
             },
         };
-
         // These are ordered from the road center, going outwards. Most of the members of fwd_side will
         // have Direction::Forward, but there can be exceptions with two-way cycletracks.
         let mut forward_lanes: VecDeque<_> = iter::repeat_with(|| LaneBuilder {
@@ -244,7 +279,7 @@ impl RoadBuilder {
             max_speed: Infer::direct(max_speed),
             ..Default::default()
         })
-        .take(num_driving_fwd)
+        .take(lanes.forward.some().unwrap_or(0))
         .collect();
         let backward_lanes = iter::repeat_with(|| LaneBuilder {
             r#type: Infer::Default(LaneType::Travel),
@@ -253,10 +288,10 @@ impl RoadBuilder {
             max_speed: Infer::direct(max_speed),
             ..Default::default()
         })
-        .take(num_driving_back)
+        .take(lanes.backward.some().unwrap_or(0))
         .collect();
         // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
-        if tags.is("lanes:both_ways", "1") || tags.is("centre_turn_lane", "yes") {
+        for _ in 0..(lanes.both_ways.some().unwrap_or(0)) {
             forward_lanes.push_front(LaneBuilder {
                 r#type: Infer::Default(LaneType::Travel),
                 direction: Infer::Default(Direction::Both),
@@ -615,9 +650,25 @@ pub fn tags_to_lanes(
 ) -> Result<RoadFromTags, RoadError> {
     let mut warnings = RoadWarnings::default();
 
+    // Early return if we find unimplemented tags.
     unsupported(tags, locale, &mut warnings)?;
 
-    let mut road: RoadBuilder = RoadBuilder::from(tags, locale, &mut warnings)?;
+    // Parse lane count schemas first.
+    let oneway =
+        Oneway::from(tags.is_any("oneway", &["yes", "-1"]) || tags.is("junction", "roundabout"));
+    let bus_lane_counts = BusLanesCount::from_tags(tags, locale, oneway, &mut warnings)?;
+    let centre_turn_lanes = CentreTurnLaneScheme::new(tags, oneway, locale, &mut warnings);
+    let lanes = LanesScheme::new(
+        tags,
+        oneway,
+        &centre_turn_lanes,
+        &bus_lane_counts,
+        locale,
+        &mut warnings,
+    );
+
+    // Create the road builder and start giving it schemes.
+    let mut road: RoadBuilder = RoadBuilder::from(tags, oneway, &lanes, locale, &mut warnings)?;
 
     // Early return for non-motorized ways (pedestrian paths, cycle paths, etc.)
     if let Some(spec) = modes::non_motorized(tags, locale, &road)? {
@@ -647,62 +698,11 @@ pub fn tags_to_lanes(
     Ok(road_from_tags)
 }
 
-#[allow(clippy::integer_arithmetic, clippy::integer_division)]
-fn driving_lane_directions(tags: &Tags, _locale: &Locale, oneway: Oneway) -> (usize, usize) {
-    let both_ways = if let Some(n) = tags
-        .get("lanes:both_ways")
-        .and_then(|num| num.parse::<usize>().ok())
-    {
-        n
-    } else {
-        0
-    };
-    let num_driving_fwd = if let Some(n) = tags
-        .get("lanes:forward")
-        .and_then(|num| num.parse::<usize>().ok())
-    {
-        n
-    } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
-        let half = if oneway.into() {
-            n
-        } else {
-            // usize division rounded up
-            (n + 1) / 2
-        };
-        half - both_ways
-    } else if tags.is("lanes:bus", "2") {
-        2
-    } else {
-        1
-    };
-    let num_driving_back = if let Some(n) = tags
-        .get("lanes:backward")
-        .and_then(|num| num.parse::<usize>().ok())
-    {
-        n
-    } else if let Some(n) = tags.get("lanes").and_then(|num| num.parse::<usize>().ok()) {
-        let base = n - num_driving_fwd;
-        let half = if oneway.into() {
-            base
-        } else {
-            // lanes=1 but not oneway... what is this supposed to mean?
-            base.max(1)
-        };
-        half - both_ways
-    } else if tags.is("lanes:bus", "2") {
-        if oneway.into() {
-            1
-        } else {
-            2
-        }
-    } else if oneway.into() {
-        0
-    } else {
-        1
-    };
-    (num_driving_fwd, num_driving_back)
-}
-
+/// Unsupported
+///
+/// # Errors
+///
+/// Oneway reversible
 pub fn unsupported(
     tags: &Tags,
     _locale: &Locale,

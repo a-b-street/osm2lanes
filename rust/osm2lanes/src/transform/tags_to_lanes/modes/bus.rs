@@ -3,7 +3,7 @@ use crate::road::Designated;
 use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::access_by_lane::Access;
 use crate::transform::tags_to_lanes::{
-    Infer, LaneBuilder, LaneBuilderError, RoadBuilder, TagsToLanesMsg,
+    Infer, LaneBuilder, LaneBuilderError, Oneway, RoadBuilder, TagsToLanesMsg,
 };
 use crate::transform::{RoadError, RoadWarnings};
 
@@ -20,6 +20,31 @@ impl LaneBuilder {
 impl std::convert::From<LaneBuilderError> for TagsToLanesMsg {
     fn from(error: LaneBuilderError) -> Self {
         TagsToLanesMsg::internal(error.0)
+    }
+}
+
+#[derive(Debug)]
+pub struct BusLanesCount {
+    pub forward: usize,
+    pub backward: usize,
+}
+
+impl BusLanesCount {
+    #[allow(clippy::unnecessary_wraps)]
+    pub(in crate::transform::tags_to_lanes) fn from_tags(
+        tags: &Tags,
+        locale: &Locale,
+        oneway: Oneway,
+        warnings: &mut RoadWarnings,
+    ) -> Result<Self, TagsToLanesMsg> {
+        let busway = BuswayScheme::from_tags(tags, locale, oneway, warnings)?;
+        let forward = tags
+            .get_parsed("lanes:bus:forward", warnings)
+            .unwrap_or_else(|| if busway.forward() { 1 } else { 0 });
+        let backward = tags
+            .get_parsed("lanes:bus:backward", warnings)
+            .unwrap_or_else(|| if busway.backward() { 1 } else { 0 });
+        Ok(Self { forward, backward })
     }
 }
 
@@ -80,6 +105,22 @@ mod busway {
     /// Inferred busway scheme for forward lane and backward lane existing
     #[derive(Debug)]
     pub(in crate::transform::tags_to_lanes) struct Scheme(Variant);
+
+    impl Scheme {
+        pub fn forward(&self) -> bool {
+            match self.0 {
+                Variant::None | Variant::Backward => false,
+                Variant::Forward | Variant::Both => true,
+            }
+        }
+
+        pub fn backward(&self) -> bool {
+            match self.0 {
+                Variant::None | Variant::Forward => false,
+                Variant::Backward | Variant::Both => true,
+            }
+        }
+    }
 
     enum Lane {
         None,
@@ -231,7 +272,7 @@ mod busway {
         Ok(())
     }
 }
-use busway::busway;
+use busway::{busway, Scheme as BuswayScheme};
 
 #[allow(clippy::unnecessary_wraps)]
 fn lanes_bus(
@@ -255,6 +296,7 @@ fn lanes_bus(
     Ok(())
 }
 
+//noinspection ALL
 fn bus_lanes(
     tags: &Tags,
     locale: &Locale,
@@ -306,7 +348,7 @@ fn bus_lanes(
         | (None, (None, None), None, (forward, backward)) => {
             if let Some(forward) = forward {
                 let forward_access = Access::split(forward).map_err(|a| {
-                    RoadError::from(TagsToLanesMsg::unsupported(
+                    RoadError::Msg(TagsToLanesMsg::unsupported(
                         &format!("lanes access {}", a),
                         tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
                     ))
@@ -319,7 +361,7 @@ fn bus_lanes(
             }
             if let Some(backward) = backward {
                 let backward_access = Access::split(backward).map_err(|a| {
-                    RoadError::from(TagsToLanesMsg::unsupported(
+                    RoadError::Msg(TagsToLanesMsg::unsupported(
                         &format!("lanes access {}", a),
                         tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
                     ))
