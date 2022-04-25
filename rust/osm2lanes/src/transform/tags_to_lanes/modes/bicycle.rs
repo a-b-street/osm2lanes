@@ -2,7 +2,8 @@ use crate::locale::Locale;
 use crate::road::{Designated, Direction};
 use crate::tag::Tags;
 use crate::transform::tags::CYCLEWAY;
-use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder, TagsToLanesMsg};
+use crate::transform::tags_to_lanes::road::LaneType;
+use crate::transform::tags_to_lanes::{Infer, LaneBuilder, RoadBuilder, TagsToLanesMsg};
 use crate::transform::{RoadError, RoadWarnings, WaySide};
 
 impl Tags {
