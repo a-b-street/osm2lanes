@@ -34,6 +34,8 @@ pub enum Lane {
 }
 
 impl Lane {
+    // EUROPEAN AGREEMENT 1 ON MAIN INTERNATIONAL TRAFFIC ARTERIES (AGR) 1975
+    // III.1.1.1
     pub const DEFAULT_WIDTH: Metre = Metre::new(3.5);
 
     /// Width in metres

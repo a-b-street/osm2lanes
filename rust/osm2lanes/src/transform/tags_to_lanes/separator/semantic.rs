@@ -3,6 +3,7 @@ use crate::road::{Designated, Style};
 use crate::transform::tags_to_lanes::Infer;
 
 /// Semantic speed class
+#[derive(Debug)]
 pub enum SpeedClass {
     Walking,
     /// ~30kph / ~20mph
@@ -32,6 +33,7 @@ impl From<Speed> for SpeedClass {
 ///
 /// Note: this does not take into account the local vehicle-specific rules,
 /// e.g. for motorcycle filtering or overtaking tractors.
+#[derive(Debug)]
 pub enum Overtake {
     Permitted,
     _Prohibited,
@@ -48,6 +50,7 @@ impl Default for Overtake {
 ///
 /// Note: this does not take into account the local vehicle-specific rules,
 /// e.g. for motorcycle filtering or overtaking tractors.
+#[derive(Debug)]
 pub enum LaneChange {
     Permitted,
     _Prohibited,
@@ -61,6 +64,7 @@ impl Default for LaneChange {
 }
 
 /// Semantic lane separator
+#[derive(Debug)]
 pub enum Separator {
     /// Into grass or dirt
     _SoftEdge,

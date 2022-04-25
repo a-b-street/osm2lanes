@@ -4,6 +4,9 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub struct Metre(f64);
 
 impl Metre {
+    pub const MIN: Metre = Self(f64::MIN);
+    pub const MAX: Metre = Self(f64::MAX);
+
     #[must_use]
     pub const fn new(val: f64) -> Self {
         Self(val)

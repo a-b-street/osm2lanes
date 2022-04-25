@@ -1,16 +1,30 @@
+use celes::Country;
+
 use crate::locale::Locale;
+use crate::metric::Metre;
 use crate::road::Designated;
 use crate::tag::Tags;
 use crate::transform::tags::{SHOULDER, SIDEWALK};
-use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder, TagsToLanesMsg};
+use crate::transform::tags_to_lanes::{
+    Infer, LaneBuilder, LaneType, RoadBuilder, TagsToLanesMsg, Width,
+};
 use crate::transform::{RoadError, RoadWarnings};
 
 impl LaneBuilder {
-    fn shoulder(_locale: &Locale) -> Self {
-        Self {
+    fn shoulder(locale: &Locale) -> Self {
+        let mut shoulder = Self {
             r#type: Infer::Direct(LaneType::Shoulder),
             ..Default::default()
+        };
+        if let Some(c) = &locale.country {
+            if c == &Country::the_netherlands() {
+                shoulder.width = Width {
+                    target: Infer::Default(Metre::new(0.6)),
+                    ..Default::default()
+                }
+            }
         }
+        shoulder
     }
     fn foot(_locale: &Locale) -> Self {
         Self {

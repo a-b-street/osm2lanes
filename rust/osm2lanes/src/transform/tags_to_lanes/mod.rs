@@ -11,6 +11,7 @@ use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::RoadFromTags;
 
 mod error;
+use celes::Country;
 pub use error::TagsToLanesMsg;
 
 mod access_by_lane;
@@ -166,11 +167,11 @@ impl LaneBuilder {
         let width = self.width.target.some();
         assert!(
             width.unwrap_or(Lane::DEFAULT_WIDTH).val()
-                >= self.width.min.some().unwrap_or(Lane::DEFAULT_WIDTH).val()
+                >= self.width.min.some().unwrap_or(Metre::MIN).val()
         );
         assert!(
             width.unwrap_or(Lane::DEFAULT_WIDTH).val()
-                <= self.width.max.some().unwrap_or(Lane::DEFAULT_WIDTH).val()
+                <= self.width.max.some().unwrap_or(Metre::MAX).val()
         );
         match self.r#type.some() {
             Some(LaneType::Travel) => Lane::Travel {
@@ -290,12 +291,27 @@ impl RoadBuilder {
             },
         };
 
-        Ok(RoadBuilder {
+        let mut road = RoadBuilder {
             forward_lanes,
             backward_lanes,
             highway,
             oneway,
-        })
+        };
+
+        if tags.is("motorroad", "yes") {
+            if let Some(c) = &locale.country {
+                if c == &Country::the_netherlands() {
+                    for lane in road.lanes_ltr_mut(locale) {
+                        lane.width = Width {
+                            target: Infer::Default(Metre::new(3.35)),
+                            ..Default::default()
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(road)
     }
 
     /// Number of lanes
@@ -473,6 +489,7 @@ impl RoadBuilder {
                     warnings,
                 )
                 .and_then(|separator| {
+                    log::trace!("separator: {separator:?}");
                     semantic_separator_to_lane(
                         [forward, backward],
                         &separator,
@@ -504,6 +521,7 @@ impl RoadBuilder {
                         warnings,
                     )
                     .and_then(|separator| {
+                        log::trace!("separator: {separator:?}");
                         semantic_separator_to_lane(
                             [&lanes[0], &lanes[1]],
                             &separator,
@@ -532,6 +550,7 @@ impl RoadBuilder {
                         warnings,
                     )
                     .and_then(|separator| {
+                        log::trace!("separator: {separator:?}");
                         semantic_separator_to_lane(
                             [&lanes[0], &lanes[1]],
                             &separator,
