@@ -23,33 +23,6 @@ jobs:
         python -m pip install --requirement requirements.txt
     - name: "Test Schema"
       run: sh .githooks/test_schema
-    - name: "Test"
-      run: sh .githooks/test_python
-
-  kotlin:
-    runs-on: ubuntu-latest
-    steps:
-    - name: "Checkout"
-      uses: actions/checkout@v3
-    - name: "Setup Kotlin"
-      uses: fwilhe2/setup-kotlin@main
-    - name: "Setup Ktlint"
-      run: |
-        curl -sSLO https://github.com/pinterest/ktlint/releases/download/0.43.2/ktlint && chmod a+x ktlint && sudo mv ktlint /usr/local/bin/
-    # START: For YAML to JSON conversion, TODO: remove
-    - name: "Setup Python 3.9"
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        cache: pip
-    - name: "Generate Test JSON"
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install --requirement requirements.txt
-        sh .githooks/test_schema
-    # END
-    - name: "Test"
-      run: sh .githooks/test_kotlin
 
   # Moved away from actions-rs because of
   # https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186
@@ -60,8 +33,6 @@ jobs:
       uses: actions/checkout@v3
     - name: "Cache"
       uses: Swatinem/rust-cache@v1
-      with:
-        working-directory: rust
     - name: "Install trunk"
       uses: jetli/trunk-action@v0.1.0
     - name: "Test"
@@ -75,16 +46,12 @@ jobs:
       uses: actions/checkout@v3
     - name: "Rustup"
       run: |
-        cd ./rust/
         rustup toolchain install stable
         rustup override set stable
     - name: "Cache"
       uses: Swatinem/rust-cache@v1
-      with:
-        working-directory: rust
     - name: "Test"
       run: |
-        cd ./rust/
         rustup show
         cargo test
 
@@ -99,12 +66,9 @@ jobs:
         fetch-depth: 0
     - name: "Cache"
       uses: Swatinem/rust-cache@v1
-      with:
-        working-directory: rust
     - name: "Benchmark"
       uses: boa-dev/criterion-compare-action@main
       with:
-        cwd: "rust"
         benchName: "benchmark_tests_sample"
         branchName: ${{ github.base_ref || 'HEAD~' }}
         token: ${{ secrets.GITHUB_TOKEN }}

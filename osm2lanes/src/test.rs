@@ -124,7 +124,7 @@ impl std::fmt::Display for TestCase {
 /// Get Test Cases from tests.yml
 pub fn get_tests() -> Vec<TestCase> {
     let tests: Vec<TestCase> =
-        serde_yaml::from_reader(BufReader::new(File::open("../../data/tests.yml").unwrap()))
+        serde_yaml::from_reader(BufReader::new(File::open("../data/tests.yml").unwrap()))
             .expect("invalid yaml in data/tests.yml");
     let tests: Vec<TestCase> = tests
         .into_iter()

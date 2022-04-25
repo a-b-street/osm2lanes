@@ -1,6 +1,7 @@
-# Kotlin
-.gradle
-kotlin/build
+# Rust
+dist
+target
+Cargo.lock
 
 # Python
 python/osm2lanes.egg-info

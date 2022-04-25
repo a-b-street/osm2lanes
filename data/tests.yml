@@ -26,14 +26,12 @@
 ### - iso-3166-2: e.g. US-CA
 ### Tags are a map of strings from OSM, however irrelevant tags may be omitted.
 ### Output are the lanes, matching the spec.
-### Each language defines a way to skip its tests (e.g. skip_kotlin)
 ###
 ### An example of the complete structure:
 ### - description: "An x lane road with y and z"
 ### - way_id: 123456789
 ###   image: "https://www.com/"
 ###   mapillary: https://www.mapillary.com/app/?pKey=123456789
-###   skip_kotlin: true
 ###   tags:
 ###     highway: trunk
 ###     lanes: '2'
@@ -57,7 +55,6 @@
   image: "https://upload.wikimedia.org/wikipedia/commons/4/44/Onderweg_-_Fitzroy_Crossing_-_Purnululu_%288991950691%29.jpg"
   rust:
     separator: false
-  skip_kotlin: true
   tags:
     highway: "trunk"
     surface: "asphalt"
@@ -92,7 +89,6 @@
   image: "https://www.travelyukon.com/sites/default/files/styles/hero_crop/public/hero/2017-10/alaskahighway_fn.jpg.jpeg?itok=GSSh7NDZ"
   rust:
     expect_warnings: true
-  skip_kotlin: true
   tags:
     highway: "trunk"
     lanes: "2"
@@ -125,8 +121,6 @@
 
 - description: service road width
   rust: false
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "service"
   driving_side: right
@@ -145,8 +139,6 @@
 - description: "Dutch Autoweg 100km/h"
   way_id: 6537276
   mapillary: "https://www.mapillary.com/app/?pKey=475844673620459"
-  skip_kotlin: true
-  skip_python: true
   tags:
     highway: "trunk"
     maxspeed: "100"
@@ -197,8 +189,6 @@
 - way_id: 380103730
   description: Japanese Expressway
   mapillary: https://www.mapillary.com/app/?pKey=2655760771400441
-  skip_python: true
-  skip_kotlin: true
   rust:
     expect_warnings: true
   tags:
@@ -273,8 +263,6 @@
 
 - way_id: 40297361
   mapillary: https://www.mapillary.com/app/?pKey=619551292322212
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: steps
   driving_side: right
@@ -288,8 +276,6 @@
 ### Sidewalk
 
 - description: sidewalk=no
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "1"
@@ -305,8 +291,6 @@
         designated: motor_vehicle
 
 - description: sidewalk=both
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "1"
@@ -326,8 +310,6 @@
         designated: foot
 
 - description: sidewalk=left (forward)
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "1"
@@ -345,8 +327,6 @@
         designated: motor_vehicle
 
 - description: sidewalk=right (forward)
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "1"
@@ -364,8 +344,6 @@
         designated: foot
 
 - description: sidewalk=right (backward)
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "1"
@@ -383,8 +361,6 @@
         designated: foot
 
 - description: sidewalk:both=yes
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "1"
@@ -404,8 +380,6 @@
         designated: foot
 
 - description: sidewalk:left=yes
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "1"
@@ -423,8 +397,6 @@
         designated: motor_vehicle
 
 - description: sidewalk:right=yes
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "1"
@@ -444,8 +416,6 @@
 ### Cycleways
 
 - description: cycleway=lane
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "2"
@@ -470,8 +440,6 @@
         designated: bicycle
 
 - description: cycleway=lane oneway=yes
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "2"
@@ -494,8 +462,6 @@
         designated: motor_vehicle
 
 - description: cycleway:FORWARD=lane
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "2"
@@ -629,8 +595,6 @@
         designated: foot
 
 - description: cycleway=opposite_lane oneway=yes, deprecated
-  skip_python: true
-  skip_kotlin: true
   rust: false
   tags:
     highway: "road"
@@ -651,8 +615,6 @@
         designated: motor_vehicle
 
 - description: cycleway=opposite oneway=yes oneway:bicycle=no
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "1"
@@ -682,8 +644,6 @@
 ## https://wiki.openstreetmap.org/wiki/Bus_lanes#The_busway.3D.2A_scheme
 
 - description: busway=lane
-  skip_kotlin: true
-  skip_python: true
   tags:
     highway: "road"
     lanes: "4"
@@ -708,8 +668,6 @@
         designated: bus
 
 - description: busway:both=lane
-  skip_kotlin: true
-  skip_python: true
   tags:
     highway: "road"
     lanes: "4"
@@ -734,8 +692,6 @@
         designated: bus
 
 - description: busway:FORWARD=lane
-  skip_kotlin: true
-  skip_python: true
   tags:
     highway: "road"
     lanes: "3"
@@ -757,8 +713,6 @@
         designated: bus
 
 - description: busway:BACKWARD=lane
-  skip_kotlin: true
-  skip_python: true
   rust: false
   tags:
     highway: "road"
@@ -781,8 +735,6 @@
         designated: bus
 
 - description: busway=opposite_lane, deprecated
-  skip_python: true
-  skip_kotlin: true
   rust: false
   tags:
     highway: "road"
@@ -805,8 +757,6 @@
 ## https://wiki.openstreetmap.org/wiki/Bus_lanes#The_bus:lanes.3D.2A_scheme
 
 - description: bus:lanes=designated|
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "2"
@@ -825,8 +775,6 @@
         designated: motor_vehicle
 
 - description: psv:lanes=|yes|designated|no
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "4"
@@ -851,8 +799,6 @@
         designated: motor_vehicle
 
 - description: "bus:lanes:forward=designated|"
-  skip_python: true
-  skip_kotlin: true
   rust: false # see next test
   tags:
     highway: "road"
@@ -876,8 +822,6 @@
         designated: motor_vehicle
 
 - description: "bus:lanes:forward=designated| with lane hint"
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     sidewalk: "no"
@@ -900,8 +844,6 @@
         designated: motor_vehicle
 
 - description: bus:lanes:backward=designated
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "2"
@@ -976,8 +918,6 @@
 
 ## Construction
 - description: construction
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "construction"
     construction: "road"
@@ -1254,8 +1194,6 @@
 
 - description: "lanes, lanes:backward"
   comment: "assume lanes:forward to be lanes - lanes:backward"
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "road"
     lanes: "4"
@@ -1283,8 +1221,6 @@
 - description: "a narrow alleyway tagged lanes=1"
   way_id: 335668924
   rust: false
-  skip_python: true
-  skip_kotlin: true
   tags:
     highway: "service"
     lanes: "1"
@@ -1372,9 +1308,7 @@
       # TODO: psv?
       designated: bus
 
-- skip_python: true
-  skip_kotlin: true
-  way_id: 490351863
+- way_id: 490351863
   rust: false
   tags:
     cycleway:right: share_busway
@@ -1408,9 +1342,7 @@
     - type: travel
       designated: foot
 
-- skip_python: true
-  skip_kotlin: true
-  link: https://wiki.openstreetmap.org/wiki/Lanes
+- link: https://wiki.openstreetmap.org/wiki/Lanes
   rust: false
   tags:
     lanes: "3"
@@ -1431,9 +1363,7 @@
       designated: motor_vehicle
       max_speed: 80
 
-- skip_python: true
-  skip_kotlin: true
-  link: https://wiki.openstreetmap.org/wiki/Bus_lanes
+- link: https://wiki.openstreetmap.org/wiki/Bus_lanes
   rust: false
   tags:
     highway: secondary
