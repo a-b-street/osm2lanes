@@ -12,13 +12,13 @@ jobs:
 
     - name: Install Rust
       uses: hecrj/setup-rust-action@v1
+
     - name: Install trunk
       uses: jetli/trunk-action@v0.1.0
 
     - name: Build web app
       run: |
-        cd rust/osm2lanes-web
-        trunk build --release --public-url /osm2lanes/
+        trunk --config Release.toml build
 
     - name: Publish
       uses: peaceiris/actions-gh-pages@v3
