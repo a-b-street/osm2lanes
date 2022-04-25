@@ -110,21 +110,21 @@ mod busway {
         pub(in crate::transform::tags_to_lanes) fn from_tags(
             tags: &Tags,
             locale: &Locale,
-            oneway: Oneway,
+            road_oneway: Oneway,
             warnings: &mut RoadWarnings,
         ) -> Result<Self, TagsToLanesMsg> {
-            let oneway: Oneway = match tags.get(ONEWAY + "bus") {
+            let bus_oneway: Oneway = match tags.get(ONEWAY + "bus") {
                 Some("yes") => Oneway::Yes,
                 Some("no") => Oneway::No,
-                None => oneway,
+                None => road_oneway,
                 Some(v) => {
                     warnings.push(TagsToLanesMsg::unsupported_tag(ONEWAY + "bus", v));
-                    oneway
+                    road_oneway
                 },
             };
 
             let busway_root: Lane = tags.get_bus_lane(BUSWAY, warnings);
-            let busway_root: Variant = match (busway_root, oneway) {
+            let busway_root: Variant = match (busway_root, bus_oneway) {
                 (Lane::None, _) => Variant::None,
                 (Lane::Lane, Oneway::No) => Variant::Both,
                 (Lane::Lane, Oneway::Yes) => Variant::Forward,
