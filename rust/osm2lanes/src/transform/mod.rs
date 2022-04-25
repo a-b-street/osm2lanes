@@ -5,7 +5,7 @@ use crate::tag::TagKey;
 mod error;
 pub use error::{RoadError, RoadFromTags, RoadWarnings};
 
-mod tags_to_lanes;
+pub mod tags_to_lanes;
 pub use tags_to_lanes::{tags_to_lanes, Config as TagsToLanesConfig, TagsToLanesMsg};
 
 mod lanes_to_tags;
