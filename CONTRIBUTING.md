@@ -17,6 +17,8 @@ After [installing rust](https://www.rust-lang.org/tools/install), run:
 ```shell
 cd rust/osm2lanes
 cargo test
+cargo install trunk
+trunk serve
 ```
 
 Before sending a PR, please run `cargo +nightly fmt` to format the code.
