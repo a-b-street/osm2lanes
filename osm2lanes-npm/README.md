@@ -67,3 +67,16 @@ wasm-pack publish
   for logging panic messages to the developer console.
 * [`wee_alloc`](https://github.com/rustwasm/wee_alloc), an allocator optimized
   for small code size.
+
+### Example JS bindings
+
+You can call the Rust library in JavaScript through WASM bindings.
+
+```shell
+wasm-pack build --dev --target web
+cd ./web
+ln -s ../pkg ./
+./serve_locally.py
+```
+
+Then open the link in your web browser and click a road.

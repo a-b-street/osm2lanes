@@ -8,6 +8,4 @@ dir="$(dirname "$0")"
 
 "$dir/test_schema"
 "$dir/test_rust"
-cd rust
 cargo +stable test || { echo "FAIL RUST STABLE"; exit 1; }
-cd ..
