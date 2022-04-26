@@ -1,2 +1,0 @@
-pytest>=6.2.5
-setuptools>=57.4.0

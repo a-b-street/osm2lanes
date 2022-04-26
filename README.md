@@ -3,16 +3,18 @@
 This project transforms OpenStreetMap tags to a specification of lanes on a
 street. Start with the [web demo](https://a-b-street.github.io/osm2lanes) ([Source](#web-demo)).
 
-See [discussion](https://github.com/a-b-street/abstreet/discussions/789) for further motivation. This repository is undr lots of active churn. Please get in touch before taking a dependency on it; we will clearly communicate a first public release.
+See [discussion](https://github.com/a-b-street/abstreet/discussions/789) for further motivation. This repository is under lots of active churn.
+Please get in touch before taking a dependency on it; we will clearly communicate a first public release.
 
 ## Structure
 
 - `data`
-  - `tests.yml`—tests, initially converted from Rust file.
-    `spec-lanes.json`—json specification.
-- `kotlin`—[Kotlin implementation](#kotlin).
-- `python`—[Python 3.9 implementation](#python).
-- `rust`—[Rust implementation](#rust).
+  - `tests.yml` - Test cases.
+    `spec-lanes.json` - JSON specification.
+- `osm2lanes` - Core library
+- `osm2lanes-web` - Website with lane viewer
+- `osm2lanes-npm` - NPM package
+- `osm2lanes-cli` - CLI tool
 
 ## Contributing
 
