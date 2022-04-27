@@ -1,6 +1,6 @@
 use crate::locale::{DrivingSide, Locale};
 use crate::road::{Designated, Direction, Lane};
-use crate::tag::TagKey;
+use crate::tag::{HighwayType, TagKey};
 
 mod error;
 pub use error::{RoadError, RoadFromTags, RoadWarnings};
@@ -76,7 +76,7 @@ impl Lane {
         Self::Travel {
             direction: Some(Direction::Forward),
             designated,
-            width: Some(locale.travel_width(&designated)),
+            width: Some(locale.travel_width(&designated, HighwayType::UnknownRoad)),
             max_speed: None,
             access: None,
         }
@@ -86,7 +86,7 @@ impl Lane {
         Self::Travel {
             direction: Some(Direction::Backward),
             designated,
-            width: Some(locale.travel_width(&designated)),
+            width: Some(locale.travel_width(&designated, HighwayType::UnknownRoad)),
             max_speed: None,
             access: None,
         }

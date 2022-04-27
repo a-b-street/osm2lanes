@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::metric::Metre;
 use crate::road::{Color, Designated};
+use crate::tag::{HighwayImportance, HighwayType};
 
 /// Context about the place where an OSM way exists.
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -22,9 +23,16 @@ impl Locale {
 
     #[must_use]
     #[allow(clippy::unused_self)]
-    pub fn travel_width(&self, designated: &Designated) -> Metre {
+    pub fn travel_width(&self, designated: &Designated, _highway: HighwayType) -> Metre {
         match designated {
-            Designated::Motor | Designated::Bus => Metre::new(3.5),
+            Designated::Motor | Designated::Bus => {
+                let uk = Country::the_united_kingdom_of_great_britain_and_northern_ireland();
+                match &self.country {
+                    Some(c) if c == &uk => Metre::new(3.0),
+                    Some(c) if c == &Country::the_netherlands() => Metre::new(3.35),
+                    _ => Metre::new(3.5),
+                }
+            },
             Designated::Foot => Metre::new(2.5),
             Designated::Bicycle => Metre::new(2.0),
         }
@@ -46,6 +54,40 @@ impl Locale {
             Some("Americas") => Color::Yellow,
             Some(_) | None => Color::White,
         }
+    }
+
+    /// Road marking width separating opposite directions of motor traffic
+    /// default is 0.2, TODO: is this a good default?
+    #[must_use]
+    pub fn separator_motor_width(&self) -> Metre {
+        match &self.country {
+            Some(c)
+                if c == &Country::the_united_kingdom_of_great_britain_and_northern_ireland() =>
+            {
+                Metre::new(0.1)
+            },
+            _ => Metre::new(0.2),
+        }
+    }
+
+    /// Highway type has shoulder(s) by default
+    #[allow(clippy::unused_self)]
+    #[must_use]
+    pub fn has_shoulder(&self, highway: HighwayType) -> bool {
+        matches!(
+            highway,
+            HighwayType::Classified(
+                HighwayImportance::Motorway
+                    | HighwayImportance::Trunk
+                    | HighwayImportance::Primary
+                    | HighwayImportance::Secondary,
+            ) | HighwayType::Link(
+                HighwayImportance::Motorway
+                    | HighwayImportance::Trunk
+                    | HighwayImportance::Primary
+                    | HighwayImportance::Secondary,
+            )
+        )
     }
 }
 

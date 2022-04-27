@@ -33,19 +33,21 @@
 ###   image: "https://www.com/"
 ###   mapillary: https://www.mapillary.com/app/?pKey=123456789
 ###   tags:
-###     highway: trunk
-###     lanes: '2'
+###     highway: "trunk"
+###     lanes: "2"
 ###   driving_side: right
 ###   ISO 3166-2: CA-YT
-###   output:
-###   - type: shoulder
-###   - type: separator
-###     markings:
-###     - style: solid_line
-###       color: white
-###   - type: travel
-###     direction: backward
-###     designated: motor_vehicle
+###   road:
+###     highway: trunk
+###     lanes:
+###     - type: shoulder
+###     - type: separator
+###       markings:
+###       - style: solid_line
+###         color: white
+###   - - type: travel
+###       direction: backward
+###       designated: motor_vehicle
 ###
 
 ### Trivial, Rural
@@ -119,23 +121,33 @@
             color: white
       - type: shoulder
 
-- description: service road width
-  rust: false
+- description: tertiary road
+  way_id: 3981656
+  rust:
+    expect_warnings: true
   tags:
-    highway: "service"
-  driving_side: right
+    highway: "tertiary"
+  driving_side: left
+  ISO 3166-2: GB-LEC
   road:
-    highway: service
+    highway: tertiary
     lanes:
       - type: travel
         designated: motor_vehicle
-        width: 7
-
-## Netherlands
+        direction: forward
+        width: 3
+      - type: separator
+        markings:
+          - style: dotted_line
+            color: white
+            width: 0.1
+      - type: travel
+        designated: motor_vehicle
+        direction: backward
+        width: 3
 
 # https://nl.wikipedia.org/wiki/Autoweg
 # https://www.rovz.nl/sites/zl-rovz/files/rovz_infra_ehkfoldeng.pdf
-
 - description: "Dutch Autoweg 100km/h"
   way_id: 6537276
   mapillary: "https://www.mapillary.com/app/?pKey=475844673620459"
@@ -1174,7 +1186,6 @@
   road:
     highway: road
     lanes:
-      - type: shoulder
       - type: travel
         direction: backward
         designated: motor_vehicle
@@ -1190,7 +1201,6 @@
       - type: travel
         direction: forward
         designated: motor_vehicle
-      - type: shoulder
 
 - description: "lanes, lanes:backward"
   comment: "assume lanes:forward to be lanes - lanes:backward"
@@ -1203,7 +1213,6 @@
   road:
     highway: road
     lanes:
-      - type: shoulder
       - type: travel
         direction: backward
         designated: motor_vehicle
@@ -1216,7 +1225,6 @@
       - type: travel
         direction: forward
         designated: motor_vehicle
-      - type: shoulder
 
 - description: "a narrow alleyway tagged lanes=1"
   way_id: 335668924

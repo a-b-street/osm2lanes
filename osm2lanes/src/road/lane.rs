@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::Markings;
 use crate::locale::Locale;
 use crate::metric::{Metre, Speed};
-use crate::tag::Access as AccessValue;
+use crate::tag::{Access as AccessValue, HighwayType};
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -43,16 +43,16 @@ impl Lane {
 
     /// Width in metres
     #[must_use]
-    pub fn width(&self, locale: &Locale) -> Metre {
+    pub fn width(&self, locale: &Locale, highway: HighwayType) -> Metre {
         match self {
             Lane::Separator { markings } => markings.width(locale),
             Lane::Travel {
                 width, designated, ..
-            } => width.unwrap_or_else(|| locale.travel_width(designated)),
+            } => width.unwrap_or_else(|| locale.travel_width(designated, highway)),
             // TODO: parking different from travel?
             Lane::Parking {
                 width, designated, ..
-            } => width.unwrap_or_else(|| locale.travel_width(designated)),
+            } => width.unwrap_or_else(|| locale.travel_width(designated, highway)),
             Lane::Shoulder { width, .. } => width.unwrap_or(Lane::DEFAULT_WIDTH),
         }
     }

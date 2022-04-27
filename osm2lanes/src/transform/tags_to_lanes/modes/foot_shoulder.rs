@@ -37,11 +37,115 @@ impl LaneBuilder {
     }
 }
 
-#[allow(
-    clippy::items_after_statements,
-    clippy::too_many_lines,
-    clippy::unnested_or_patterns
-)]
+enum Sidewalk {
+    None,
+    No,
+    Yes,
+    Separate,
+}
+
+impl Sidewalk {
+    /// This processes sidewalk tags by the OSM spec.
+    /// No can be implied, e.g. we assume that sidewalk:left=yes implies sidewalk:right=no
+    /// None is when information may be incomplete and should be inferred,
+    /// e.g. when sidewalk=* is missing altogether,
+    /// but this may later become a No when combined with data from shoulder=*
+    /// We catch any tag combinations that violate the OSM spec
+    #[allow(clippy::unnested_or_patterns)]
+    fn from_tags(
+        tags: &Tags,
+        locale: &Locale,
+        warnings: &mut RoadWarnings,
+    ) -> Result<(Self, Self), TagsToLanesMsg> {
+        let err = Err(TagsToLanesMsg::unsupported_tags(tags.subset(&[
+            SIDEWALK,
+            SIDEWALK + locale.driving_side.tag(),
+            SIDEWALK + locale.driving_side.opposite().tag(),
+        ])));
+        let sidewalks = match (
+            tags.get(SIDEWALK),
+            tags.get(SIDEWALK + "both"),
+            (
+                tags.get(SIDEWALK + locale.driving_side.tag()),
+                tags.get(SIDEWALK + locale.driving_side.opposite().tag()),
+            ),
+        ) {
+            (Some(v), None, (None, None)) => match v {
+                "none" => return Err(TagsToLanesMsg::deprecated_tag("sidewalk", "none")),
+                "no" => (Sidewalk::No, Sidewalk::No),
+                "yes" => {
+                    warnings.push(TagsToLanesMsg::ambiguous_tags(
+                        tags.subset(&[SIDEWALK, SIDEWALK + "both"]),
+                    ));
+                    (Sidewalk::Yes, Sidewalk::Yes)
+                },
+                "both" => (Sidewalk::Yes, Sidewalk::Yes),
+                s if s == locale.driving_side.tag().as_str() => (Sidewalk::Yes, Sidewalk::No),
+                s if s == locale.driving_side.opposite().tag().as_str() => {
+                    (Sidewalk::No, Sidewalk::Yes)
+                },
+                "separate" => (Sidewalk::Separate, Sidewalk::Separate),
+                _ => return err,
+            },
+            // sidewalk:both=
+            (None, Some(v), (None, None)) => match v {
+                "no" => (Sidewalk::No, Sidewalk::No),
+                "yes" => (Sidewalk::Yes, Sidewalk::Yes),
+                "separate" => (Sidewalk::Separate, Sidewalk::Separate),
+                _ => return err,
+            },
+            // sidewalk:left= and/or sidewalk:right=
+            (None, None, (forward, backward)) => match (forward, backward) {
+                // no scheme
+                (None, None) => (Sidewalk::None, Sidewalk::None),
+
+                (Some("yes"), Some("yes")) => (Sidewalk::Yes, Sidewalk::Yes),
+
+                (Some("yes"), None | Some("no")) => (Sidewalk::Yes, Sidewalk::No),
+                (None | Some("no"), Some("yes")) => (Sidewalk::No, Sidewalk::Yes),
+
+                (Some("separate"), None) => (Sidewalk::Separate, Sidewalk::No),
+                (None, Some("separate")) => (Sidewalk::No, Sidewalk::Separate),
+                (Some(_), None) | (None, Some(_)) | (Some(_), Some(_)) => {
+                    return err;
+                },
+            },
+            (Some(_), Some(_), (_, _))
+            | (Some(_), _, (_, Some(_)) | (Some(_), _))
+            | (_, Some(_), (_, Some(_)) | (Some(_), _)) => {
+                return err;
+            },
+        };
+        Ok(sidewalks)
+    }
+}
+
+enum Shoulder {
+    None,
+    Yes,
+    No,
+}
+
+impl Shoulder {
+    fn from_tags(
+        tags: &Tags,
+        locale: &Locale,
+        _warnings: &mut RoadWarnings,
+    ) -> Result<(Self, Self), TagsToLanesMsg> {
+        Ok(match tags.get(SHOULDER) {
+            None => (Shoulder::None, Shoulder::None),
+            Some("no") => (Shoulder::No, Shoulder::No),
+            Some("yes" | "both") => (Shoulder::Yes, Shoulder::Yes),
+            Some(s) if s == locale.driving_side.tag().as_str() => (Shoulder::Yes, Shoulder::No),
+            Some(s) if s == locale.driving_side.opposite().tag().as_str() => {
+                (Shoulder::No, Shoulder::Yes)
+            },
+            Some(s) => return Err(TagsToLanesMsg::unsupported_tag(SHOULDER, s)),
+        })
+    }
+}
+
+#[allow(clippy::items_after_statements, clippy::unnested_or_patterns)]
 pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
     tags: &Tags,
     locale: &Locale,
@@ -49,95 +153,10 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
     warnings: &mut RoadWarnings,
 ) -> Result<(), RoadError> {
     // https://wiki.openstreetmap.org/wiki/Key:sidewalk
-    // This first step processes tags by the OSM spec.
-    // No can be implied, e.g. we assume that sidewalk:left=yes implies sidewalk:right=no
-    // None is when information may be incomplete and should be inferred,
-    // e.g. when sidewalk=* is missing altogether,
-    // but this may later become a No when combined with data from shoulder=*
-    // We catch any tag combinations that violate the OSM spec
-    enum Sidewalk {
-        None,
-        No,
-        Yes,
-        Separate,
-    }
-    let err = Err(TagsToLanesMsg::unsupported_tags(tags.subset(&[
-        SIDEWALK,
-        SIDEWALK + locale.driving_side.tag(),
-        SIDEWALK + locale.driving_side.opposite().tag(),
-    ]))
-    .into());
-    let sidewalk: (Sidewalk, Sidewalk) = match (
-        tags.get(SIDEWALK),
-        tags.get(SIDEWALK + "both"),
-        (
-            tags.get(SIDEWALK + locale.driving_side.tag()),
-            tags.get(SIDEWALK + locale.driving_side.opposite().tag()),
-        ),
-    ) {
-        (Some(v), None, (None, None)) => match v {
-            "none" => return Err(TagsToLanesMsg::deprecated_tag("sidewalk", "none").into()),
-            "no" => (Sidewalk::No, Sidewalk::No),
-            "yes" => {
-                warnings.push(TagsToLanesMsg::ambiguous_tags(
-                    tags.subset(&[SIDEWALK, SIDEWALK + "both"]),
-                ));
-                (Sidewalk::Yes, Sidewalk::Yes)
-            },
-            "both" => (Sidewalk::Yes, Sidewalk::Yes),
-            s if s == locale.driving_side.tag().as_str() => (Sidewalk::Yes, Sidewalk::No),
-            s if s == locale.driving_side.opposite().tag().as_str() => {
-                (Sidewalk::No, Sidewalk::Yes)
-            },
-            "separate" => (Sidewalk::Separate, Sidewalk::Separate),
-            _ => return err,
-        },
-        // sidewalk:both=
-        (None, Some(v), (None, None)) => match v {
-            "no" => (Sidewalk::No, Sidewalk::No),
-            "yes" => (Sidewalk::Yes, Sidewalk::Yes),
-            "separate" => (Sidewalk::Separate, Sidewalk::Separate),
-            _ => return err,
-        },
-        // sidewalk:left= and/or sidewalk:right=
-        (None, None, (forward, backward)) => match (forward, backward) {
-            // no scheme
-            (None, None) => (Sidewalk::None, Sidewalk::None),
-
-            (Some("yes"), Some("yes")) => (Sidewalk::Yes, Sidewalk::Yes),
-
-            (Some("yes"), None | Some("no")) => (Sidewalk::Yes, Sidewalk::No),
-            (None | Some("no"), Some("yes")) => (Sidewalk::No, Sidewalk::Yes),
-
-            (Some("separate"), None) => (Sidewalk::Separate, Sidewalk::No),
-            (None, Some("separate")) => (Sidewalk::No, Sidewalk::Separate),
-            (Some(_), None) | (None, Some(_)) | (Some(_), Some(_)) => {
-                return err;
-            },
-        },
-        (Some(_), Some(_), (_, _))
-        | (Some(_), _, (_, Some(_)) | (Some(_), _))
-        | (_, Some(_), (_, Some(_)) | (Some(_), _)) => {
-            return err;
-        },
-    };
+    let sidewalk: (Sidewalk, Sidewalk) = Sidewalk::from_tags(tags, locale, warnings)?;
 
     // https://wiki.openstreetmap.org/wiki/Key:shoulder
-    enum Shoulder {
-        None,
-        Yes,
-        No,
-    }
-    let shoulder: (Shoulder, Shoulder) = match tags.get(SHOULDER) {
-        None => (Shoulder::None, Shoulder::None),
-        Some("no") => (Shoulder::No, Shoulder::No),
-        Some("yes" | "both") => (Shoulder::Yes, Shoulder::Yes),
-        Some(s) if s == locale.driving_side.tag().as_str() => (Shoulder::Yes, Shoulder::No),
-        Some(s) if s == locale.driving_side.opposite().tag().as_str() => {
-            (Shoulder::No, Shoulder::Yes)
-        },
-        Some(s) => return Err(TagsToLanesMsg::unsupported_tag(SHOULDER, s).into()),
-    };
+    let shoulder: (Shoulder, Shoulder) = Shoulder::from_tags(tags, locale, warnings)?;
 
     impl RoadBuilder {
         fn lane_outside(&self, forward: bool) -> Option<&LaneBuilder> {
@@ -168,7 +187,10 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
                     let has_bicycle_lane = self
                         .lane_outside(forward)
                         .map_or(false, LaneBuilder::is_bicycle);
-                    if !has_bicycle_lane && (forward || !bool::from(self.oneway)) {
+                    if !has_bicycle_lane
+                        && locale.has_shoulder(self.highway.r#type())
+                        && (forward || !bool::from(self.oneway))
+                    {
                         self.push_outside(LaneBuilder::shoulder(locale), forward);
                     }
                 },
