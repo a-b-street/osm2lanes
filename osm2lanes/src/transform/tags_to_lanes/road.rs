@@ -160,7 +160,7 @@ impl RoadBuilder {
         };
 
         let width = locale.travel_width(&designated, highway.r#type());
-        let width = || Width {
+        let width = Width {
             min: Infer::None,
             target: Infer::Default(width),
             max: Infer::None,
@@ -173,7 +173,7 @@ impl RoadBuilder {
             direction: Infer::Default(Direction::Forward),
             designated: Infer::Default(designated),
             max_speed: Infer::direct(max_speed),
-            width: width(),
+            width: width.clone(),
             ..Default::default()
         })
         .take(lanes.forward.some().unwrap_or(0))
@@ -183,7 +183,7 @@ impl RoadBuilder {
             direction: Infer::Default(Direction::Backward),
             designated: Infer::Default(designated),
             max_speed: Infer::direct(max_speed),
-            width: width(),
+            width: width.clone(),
             ..Default::default()
         })
         .take(lanes.backward.some().unwrap_or(0))
@@ -194,7 +194,7 @@ impl RoadBuilder {
                 r#type: Infer::Default(LaneType::Travel),
                 direction: Infer::Default(Direction::Both),
                 designated: Infer::Default(designated),
-                width: width(),
+                width: width.clone(),
                 ..Default::default()
             });
         }

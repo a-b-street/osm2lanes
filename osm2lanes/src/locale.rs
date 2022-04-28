@@ -28,7 +28,9 @@ impl Locale {
             Designated::Motor | Designated::Bus => {
                 let uk = Country::the_united_kingdom_of_great_britain_and_northern_ireland();
                 match &self.country {
+                    // Guessed, TODO: find DfT source.
                     Some(c) if c == &uk => Metre::new(3.0),
+                    // https://puc.overheid.nl/rijkswaterstaat/doc/PUC_125514_31/ section 4.2.5
                     Some(c) if c == &Country::the_netherlands() => Metre::new(3.35),
                     _ => Metre::new(3.5),
                 }
@@ -64,6 +66,7 @@ impl Locale {
             Some(c)
                 if c == &Country::the_united_kingdom_of_great_britain_and_northern_ireland() =>
             {
+                // https://en.wikisource.org/wiki/Traffic_Signs_Manual/Chapter_5/2009/4
                 Metre::new(0.1)
             },
             _ => Metre::new(0.2),

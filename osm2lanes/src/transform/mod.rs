@@ -1,6 +1,6 @@
-use crate::locale::{DrivingSide, Locale};
+use crate::locale::DrivingSide;
 use crate::road::{Designated, Direction, Lane};
-use crate::tag::{HighwayType, TagKey};
+use crate::tag::TagKey;
 
 mod error;
 pub use error::{RoadError, RoadFromTags, RoadWarnings};
@@ -70,26 +70,6 @@ impl Lane {
     #[must_use]
     pub fn is_separator(&self) -> bool {
         matches!(self, Lane::Separator { .. })
-    }
-
-    fn forward(designated: Designated, locale: &Locale) -> Self {
-        Self::Travel {
-            direction: Some(Direction::Forward),
-            designated,
-            width: Some(locale.travel_width(&designated, HighwayType::UnknownRoad)),
-            max_speed: None,
-            access: None,
-        }
-    }
-
-    fn backward(designated: Designated, locale: &Locale) -> Self {
-        Self::Travel {
-            direction: Some(Direction::Backward),
-            designated,
-            width: Some(locale.travel_width(&designated, HighwayType::UnknownRoad)),
-            max_speed: None,
-            access: None,
-        }
     }
 
     #[must_use]
