@@ -101,11 +101,11 @@ impl Component for MapComponent {
                         .map(|lat_lon| LatLng::new(lat_lon.lat, lat_lon.lon).into())
                         .collect(),
                 );
+                let bounds = polyline.getBounds();
                 let path = Path::from(polyline);
                 path.addTo(&self.map);
                 self.path = Some(path);
-                // TODO: Add to upstream leaflet crate
-                // self.map.fitBounds(polyline.getBounds());
+                self.map.fitBounds(&bounds);
                 ctx.props()
                     .callback_msg
                     .emit(WebMsg::TagsLocaleSet { id, tags, locale });
