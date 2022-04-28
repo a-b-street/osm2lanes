@@ -127,10 +127,6 @@ mod error {
 /// - internal error
 /// - unimplemented or unsupported functionality
 /// - the OSM tag spec cannot represent the lanes
-///
-/// # Panics
-///
-/// Lanes slice is empty
 pub fn lanes_to_tags(
     road: &Road,
     locale: &Locale,

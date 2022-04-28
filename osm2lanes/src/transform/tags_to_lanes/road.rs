@@ -14,7 +14,7 @@ use crate::road::{Access as LaneAccess, Designated, Direction, Lane};
 use crate::tag::{Access as AccessValue, Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::tags_to_lanes::counts::{CentreTurnLaneScheme, Counts};
-use crate::transform::tags_to_lanes::modes::BusLanesCount;
+use crate::transform::tags_to_lanes::modes::BusLaneCount;
 
 #[derive(Debug)]
 pub(in crate::transform) struct LaneBuilderError(pub &'static str);
@@ -162,7 +162,7 @@ impl RoadBuilder {
 
         let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
 
-        let bus_lane_counts = BusLanesCount::from_tags(tags, locale, oneway, warnings)?;
+        let bus_lane_counts = BusLaneCount::from_tags(tags, locale, oneway, warnings)?;
         let centre_turn_lanes = CentreTurnLaneScheme::from_tags(tags, oneway, locale, warnings);
         let lanes = Counts::new(
             tags,

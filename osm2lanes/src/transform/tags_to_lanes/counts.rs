@@ -1,7 +1,7 @@
 use super::{Infer, Oneway};
 use crate::locale::Locale;
 use crate::tag::{Highway, TagKey, Tags};
-use crate::transform::tags_to_lanes::modes::BusLanesCount;
+use crate::transform::tags_to_lanes::modes::BusLaneCount;
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 const LANES: TagKey = TagKey::from("lanes");
@@ -28,7 +28,7 @@ impl Counts {
         oneway: Oneway,
         highway: &Highway,
         centre_turn_lane: &CentreTurnLaneScheme, // TODO prefer TurnLanesScheme
-        bus: &BusLanesCount,
+        bus: &BusLaneCount,
         locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Self {
