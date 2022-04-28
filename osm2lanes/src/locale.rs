@@ -73,7 +73,9 @@ impl Locale {
         }
     }
 
-    /// Highway type with no `lanes=*` has one bidirectional lanes or two directions lanes
+    /// Highway type with no `lanes=*` has:
+    /// - (false) one lane with travel in both directions or 
+    /// - (true) two lanes with travel in opposite directions
     #[allow(clippy::unused_self)]
     #[must_use]
     pub fn has_split_lanes(&self, highway: HighwayType) -> bool {
