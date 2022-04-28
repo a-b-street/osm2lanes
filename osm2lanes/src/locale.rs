@@ -74,7 +74,7 @@ impl Locale {
     }
 
     /// Highway type with no `lanes=*` has:
-    /// - (false) one lane with travel in both directions or 
+    /// - (false) one lane with travel in both directions or
     /// - (true) two lanes with travel in opposite directions
     #[allow(clippy::unused_self)]
     #[must_use]
