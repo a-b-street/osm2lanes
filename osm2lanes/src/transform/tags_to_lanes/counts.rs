@@ -1,6 +1,6 @@
 use super::{Infer, Oneway};
 use crate::locale::Locale;
-use crate::tag::{TagKey, Tags};
+use crate::tag::{Highway, TagKey, Tags};
 use crate::transform::tags_to_lanes::modes::BusLanesCount;
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
@@ -26,9 +26,10 @@ impl Counts {
     pub(super) fn new(
         tags: &Tags,
         oneway: Oneway,
+        highway: &Highway,
         centre_turn_lane: &CentreTurnLaneScheme, // TODO prefer TurnLanesScheme
         bus: &BusLanesCount,
-        _locale: &Locale,
+        locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Self {
         // The tags for this schema (which we will validate).
@@ -138,29 +139,6 @@ impl Counts {
                     backward: Infer::Direct(b),
                     both_ways: bothways,
                 },
-                (None, _, _) => {
-                    // Without the "lanes" tag, assume one normal lane in each dir, plus bus lanes.
-                    let f = tagged_forward.unwrap_or(1 + forward_bus_lanes);
-                    let b = tagged_backward.unwrap_or(1 + backward_bus_lanes);
-                    let forward = if tagged_forward.is_some() {
-                        Infer::Direct(f)
-                    } else {
-                        Infer::Default(f)
-                    };
-                    let backward = if tagged_backward.is_some() {
-                        Infer::Direct(b)
-                    } else {
-                        Infer::Default(b)
-                    };
-                    let lanes = Infer::Default(f + b + bothway_lanes);
-                    // TODO lanes.downgrade(&[forward, backward, bothways]);
-                    Self {
-                        lanes,
-                        forward,
-                        backward,
-                        both_ways: bothways,
-                    }
-                },
                 (Some(l), Some(f), None) => Self {
                     lanes: Infer::Direct(l),
                     forward: Infer::Direct(f),
@@ -205,6 +183,59 @@ impl Counts {
                                 remaining_lanes - half - bothway_lanes + backward_bus_lanes,
                             ),
                             both_ways: bothways,
+                        }
+                    }
+                },
+                (None, None, None) => {
+                    if locale.has_split_lanes(highway.r#type())
+                        || forward_bus_lanes > 0
+                        || backward_bus_lanes > 0
+                    {
+                        let lanes = Infer::Default(1 + 1 + bothway_lanes);
+                        Self {
+                            lanes,
+                            forward: Infer::Default(1 + forward_bus_lanes),
+                            backward: Infer::Default(1 + backward_bus_lanes),
+                            both_ways: bothways,
+                        }
+                    } else {
+                        Self {
+                            lanes: Infer::Default(1),
+                            forward: Infer::Default(0),
+                            backward: Infer::Default(0),
+                            both_ways: Infer::Default(1),
+                        }
+                    }
+                },
+                (None, _, _) => {
+                    if locale.has_split_lanes(highway.r#type()) {
+                        // Without the "lanes" tag, assume one normal lane in each dir, plus bus lanes.
+                        let f = tagged_forward.unwrap_or(1 + forward_bus_lanes);
+                        let b = tagged_backward.unwrap_or(1 + backward_bus_lanes);
+                        let forward = if tagged_forward.is_some() {
+                            Infer::Direct(f)
+                        } else {
+                            Infer::Default(f)
+                        };
+                        let backward = if tagged_backward.is_some() {
+                            Infer::Direct(b)
+                        } else {
+                            Infer::Default(b)
+                        };
+                        let lanes = Infer::Default(f + b + bothway_lanes);
+                        // TODO lanes.downgrade(&[forward, backward, bothways]);
+                        Self {
+                            lanes,
+                            forward,
+                            backward,
+                            both_ways: bothways,
+                        }
+                    } else {
+                        Self {
+                            lanes: Infer::Default(1),
+                            forward: Infer::Default(0),
+                            backward: Infer::Default(0),
+                            both_ways: Infer::Default(1),
                         }
                     }
                 },

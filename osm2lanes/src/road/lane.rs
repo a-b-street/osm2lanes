@@ -166,17 +166,18 @@ impl Printable for Direction {
 
 /// Access by vehicle type
 /// Types as defined in <https://wiki.openstreetmap.org/wiki/Key:access#Land-based_transportation>
+// TODO: how to handle the motor_vehicle vs motorcar discussion in https://wiki.openstreetmap.org/wiki/Key:motorcar#Controversy
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub struct Access {
     #[serde(skip_serializing_if = "Option::is_none")]
-    foot: Option<AccessValue>,
+    pub(crate) foot: Option<AccessValue>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    bicycle: Option<AccessValue>,
+    pub(crate) bicycle: Option<AccessValue>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    taxi: Option<AccessValue>,
+    pub(crate) taxi: Option<AccessValue>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    bus: Option<AccessValue>,
+    pub(crate) bus: Option<AccessValue>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    motor: Option<AccessValue>,
+    pub(crate) motor: Option<AccessValue>,
 }

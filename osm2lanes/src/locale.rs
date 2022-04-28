@@ -73,6 +73,28 @@ impl Locale {
         }
     }
 
+    /// Highway type with no `lanes=*` has one bidirectional lanes or two directions lanes
+    #[allow(clippy::unused_self)]
+    #[must_use]
+    pub fn has_split_lanes(&self, highway: HighwayType) -> bool {
+        matches!(
+            highway,
+            HighwayType::Classified(
+                HighwayImportance::Motorway
+                    | HighwayImportance::Trunk
+                    | HighwayImportance::Primary
+                    | HighwayImportance::Secondary
+                    | HighwayImportance::Tertiary,
+            ) | HighwayType::Link(
+                HighwayImportance::Motorway
+                    | HighwayImportance::Trunk
+                    | HighwayImportance::Primary
+                    | HighwayImportance::Secondary
+                    | HighwayImportance::Tertiary,
+            ) | HighwayType::Residential
+        )
+    }
+
     /// Highway type has shoulder(s) by default
     #[allow(clippy::unused_self)]
     #[must_use]
