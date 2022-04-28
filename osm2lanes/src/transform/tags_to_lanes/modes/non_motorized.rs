@@ -1,14 +1,14 @@
 use crate::locale::{DrivingSide, Locale};
-use crate::road::{Designated, Lane, Road};
-use crate::tag::{Tags, HIGHWAY};
+use crate::road::{Designated, Direction, Lane, Road};
+use crate::tag::{HighwayType, Tags, HIGHWAY};
 use crate::transform::tags_to_lanes::{RoadBuilder, TagsToLanesMsg};
 use crate::transform::{RoadError, RoadFromTags, RoadWarnings};
 
 impl Lane {
     fn shoulder(locale: &Locale) -> Self {
         Self::Shoulder {
-            // TODO: width not just motor
-            width: Some(locale.travel_width(&Designated::Motor)),
+            // TODO: width specific to shoulder not just motor
+            width: Some(locale.travel_width(&Designated::Motor, HighwayType::Service)),
         }
     }
     fn foot(locale: &Locale) -> Self {
@@ -16,7 +16,26 @@ impl Lane {
         Self::Travel {
             direction: None,
             designated,
-            width: Some(locale.travel_width(&designated)),
+            width: Some(locale.travel_width(&designated, HighwayType::Footway)),
+            max_speed: None,
+            access: None,
+        }
+    }
+    fn forward(designated: Designated, locale: &Locale) -> Self {
+        Self::Travel {
+            direction: Some(Direction::Forward),
+            designated,
+            width: Some(locale.travel_width(&designated, HighwayType::Cycleway)),
+            max_speed: None,
+            access: None,
+        }
+    }
+
+    fn backward(designated: Designated, locale: &Locale) -> Self {
+        Self::Travel {
+            direction: Some(Direction::Backward),
+            designated,
+            width: Some(locale.travel_width(&designated, HighwayType::Cycleway)),
             max_speed: None,
             access: None,
         }

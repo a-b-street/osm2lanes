@@ -1,8 +1,6 @@
 use std::collections::VecDeque;
 use std::iter;
 
-use celes::Country;
-
 use super::infer::Infer;
 use super::oneway::Oneway;
 use super::separator::{
@@ -114,6 +112,18 @@ impl RoadBuilder {
         locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
+        let highway = Highway::from_tags(tags);
+        let highway = match highway {
+            Err(None) => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
+            Err(Some(s)) => return Err(TagsToLanesMsg::unsupported_tag(HIGHWAY, &s).into()),
+            Ok(highway) => match highway {
+                highway if highway.is_supported() => highway,
+                _ => {
+                    return Err(TagsToLanesMsg::unimplemented_tags(tags.subset(&LIFECYCLE)).into());
+                },
+            },
+        };
+
         let oneway = Oneway::from(tags.is("oneway", "yes") || tags.is("junction", "roundabout"));
 
         let bus_lane_counts = BusLanesCount::from_tags(tags, locale, oneway, warnings)?;
@@ -148,6 +158,14 @@ impl RoadBuilder {
                 None
             },
         };
+
+        let width = locale.travel_width(&designated, highway.r#type());
+        let width = Width {
+            min: Infer::None,
+            target: Infer::Default(width),
+            max: Infer::None,
+        };
+
         // These are ordered from the road center, going outwards. Most of the members of fwd_side will
         // have Direction::Forward, but there can be exceptions with two-way cycletracks.
         let mut forward_lanes: VecDeque<_> = iter::repeat_with(|| LaneBuilder {
@@ -155,6 +173,7 @@ impl RoadBuilder {
             direction: Infer::Default(Direction::Forward),
             designated: Infer::Default(designated),
             max_speed: Infer::direct(max_speed),
+            width: width.clone(),
             ..Default::default()
         })
         .take(lanes.forward.some().unwrap_or(0))
@@ -164,6 +183,7 @@ impl RoadBuilder {
             direction: Infer::Default(Direction::Backward),
             designated: Infer::Default(designated),
             max_speed: Infer::direct(max_speed),
+            width: width.clone(),
             ..Default::default()
         })
         .take(lanes.backward.some().unwrap_or(0))
@@ -174,42 +194,17 @@ impl RoadBuilder {
                 r#type: Infer::Default(LaneType::Travel),
                 direction: Infer::Default(Direction::Both),
                 designated: Infer::Default(designated),
+                width: width.clone(),
                 ..Default::default()
             });
         }
 
-        let highway = Highway::from_tags(tags);
-        let highway = match highway {
-            Err(None) => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
-            Err(Some(s)) => return Err(TagsToLanesMsg::unsupported_tag(HIGHWAY, &s).into()),
-            Ok(highway) => match highway {
-                highway if highway.is_supported() => highway,
-                _ => {
-                    return Err(TagsToLanesMsg::unimplemented_tags(tags.subset(&LIFECYCLE)).into());
-                },
-            },
-        };
-
-        let mut road = RoadBuilder {
+        let road = RoadBuilder {
             forward_lanes,
             backward_lanes,
             highway,
             oneway,
         };
-
-        if tags.is("motorroad", "yes") {
-            if let Some(c) = &locale.country {
-                if c == &Country::the_netherlands() {
-                    for lane in road.lanes_ltr_mut(locale) {
-                        lane.width = Width {
-                            target: Infer::Default(Metre::new(3.35)),
-                            ..Default::default()
-                        }
-                    }
-                }
-            }
-        }
-
         Ok(road)
     }
 

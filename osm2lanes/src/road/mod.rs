@@ -30,7 +30,7 @@ impl Road {
     pub fn width(&self, locale: &Locale) -> Metre {
         self.lanes
             .iter()
-            .map(|lane| lane.width(locale))
+            .map(|lane| lane.width(locale, self.highway.r#type()))
             .sum::<Metre>()
     }
 }

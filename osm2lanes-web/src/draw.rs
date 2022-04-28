@@ -67,7 +67,8 @@ pub fn lanes<R: RenderContext>(
                 width,
                 ..
             } => {
-                let width = width.unwrap_or_else(|| locale.travel_width(designated));
+                let width =
+                    width.unwrap_or_else(|| locale.travel_width(designated, road.highway.r#type()));
                 let x = scale.scale(left_edge + (0.5 * width));
                 if let Some(direction) = direction {
                     draw_arrow(
@@ -111,7 +112,8 @@ pub fn lanes<R: RenderContext>(
             Lane::Parking {
                 designated, width, ..
             } => {
-                let width = width.unwrap_or_else(|| locale.travel_width(designated));
+                let width =
+                    width.unwrap_or_else(|| locale.travel_width(designated, road.highway.r#type()));
                 let x = scale.scale(left_edge + (0.5 * width));
                 let font_size = 24.0;
                 let layout = rc

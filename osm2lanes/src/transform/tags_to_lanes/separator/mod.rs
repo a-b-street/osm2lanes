@@ -228,7 +228,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                     Markings::new(vec![Marking {
                         style: Style::DottedLine,
                         color: Some(locale.separator_motor_color()),
-                        width: Some(Marking::DEFAULT_WIDTH),
+                        width: Some(locale.separator_motor_width()),
                     }])
                 },
             })
