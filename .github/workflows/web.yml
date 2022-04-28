@@ -17,8 +17,7 @@ jobs:
         uses: jetli/trunk-action@v0.1.0
 
       - name: Build web app
-        run: |
-          trunk --config Release.toml build
+        run: trunk --config Release.toml build
 
       - name: Publish
         uses: peaceiris/actions-gh-pages@v3
