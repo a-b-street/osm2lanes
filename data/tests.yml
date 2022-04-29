@@ -275,8 +275,10 @@
 
 - way_id: 40297361
   mapillary: https://www.mapillary.com/app/?pKey=619551292322212
+  rust:
+    expect_warnings: true
   tags:
-    highway: steps
+    highway: "steps"
   driving_side: right
   ISO 3166-2: CH-VS
   road:

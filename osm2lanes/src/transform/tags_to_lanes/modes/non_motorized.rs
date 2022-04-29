@@ -1,133 +1,38 @@
-use crate::locale::{DrivingSide, Locale};
-use crate::road::{Designated, Direction, Lane, Road};
-use crate::tag::{HighwayType, Tags, HIGHWAY};
+use crate::locale::Locale;
+use crate::road::{Designated, Direction};
+use crate::tag::{Access, Tags, HIGHWAY};
 use crate::transform::tags_to_lanes::{RoadBuilder, TagsToLanesMsg};
-use crate::transform::{RoadError, RoadFromTags, RoadWarnings};
+use crate::transform::{Infer, RoadWarnings};
 
-impl Lane {
-    fn shoulder(locale: &Locale) -> Self {
-        Self::Shoulder {
-            // TODO: width specific to shoulder not just motor
-            width: Some(locale.travel_width(&Designated::Motor, HighwayType::Service)),
-        }
-    }
-    fn foot(locale: &Locale) -> Self {
-        let designated = Designated::Foot;
-        Self::Travel {
-            direction: None,
-            designated,
-            width: Some(locale.travel_width(&designated, HighwayType::Footway)),
-            max_speed: None,
-            access: None,
-        }
-    }
-    fn forward(designated: Designated, locale: &Locale) -> Self {
-        Self::Travel {
-            direction: Some(Direction::Forward),
-            designated,
-            width: Some(locale.travel_width(&designated, HighwayType::Cycleway)),
-            max_speed: None,
-            access: None,
-        }
-    }
-
-    fn backward(designated: Designated, locale: &Locale) -> Self {
-        Self::Travel {
-            direction: Some(Direction::Backward),
-            designated,
-            width: Some(locale.travel_width(&designated, HighwayType::Cycleway)),
-            max_speed: None,
-            access: None,
-        }
-    }
-}
-
-#[allow(clippy::unnecessary_wraps)]
+#[allow(clippy::unnecessary_wraps, clippy::restriction)]
 pub(in crate::transform::tags_to_lanes) fn non_motorized(
     tags: &Tags,
-    locale: &Locale,
-    road: &RoadBuilder,
-) -> Result<Option<RoadFromTags>, RoadError> {
+    _locale: &Locale,
+    road: &mut RoadBuilder,
+    warnings: &mut RoadWarnings,
+) -> Result<(), TagsToLanesMsg> {
     if road.highway.is_supported_non_motorized() {
         log::trace!("non-motorized");
     } else {
         log::trace!("motorized");
-        return Ok(None);
+        return Ok(());
     }
     // Easy special cases first.
-    if tags.is(HIGHWAY, "steps") || tags.is(HIGHWAY, "path") {
-        return Ok(Some(RoadFromTags {
-            road: Road {
-                lanes: vec![Lane::foot(locale)],
-                highway: road.highway.clone(),
-            },
-            warnings: RoadWarnings::new(if tags.is(HIGHWAY, "steps") {
-                vec![TagsToLanesMsg::unimplemented(
-                    "steps becomes sidewalk",
-                    tags.subset(&[HIGHWAY]),
-                )]
-            } else {
-                Vec::new()
-            }),
-        }));
-    }
-
-    // Eventually, we should have some kind of special LaneType for shared walking/cycling paths of
-    // different kinds. Until then, model by making bike lanes and a shoulder for walking.
-
-    // If it just allows foot traffic, simply make it a sidewalk. For most of the above highway
-    // types, assume bikes are allowed, except for footways, where they must be explicitly
-    // allowed.
-    if tags.is("bicycle", "no")
-        || (tags.is(HIGHWAY, "footway") && !tags.is_any("bicycle", &["designated", "yes"]))
-    {
-        return Ok(Some(RoadFromTags {
-            road: Road {
-                lanes: vec![Lane::foot(locale)],
-                highway: road.highway.clone(),
-            },
-            warnings: RoadWarnings::default(),
-        }));
-    }
-    // Otherwise, there'll always be a bike lane.
-
-    let mut forward_side = vec![Lane::forward(Designated::Bicycle, locale)];
-    let mut backward_side = if tags.is("oneway", "yes") {
-        vec![]
-    } else {
-        vec![Lane::backward(Designated::Bicycle, locale)]
-    };
-
-    if !tags.is("foot", "no") {
-        forward_side.push(Lane::shoulder(locale));
-        if !backward_side.is_empty() {
-            backward_side.push(Lane::shoulder(locale));
+    if let Some(v @ ("steps" | "path")) = tags.get(HIGHWAY) {
+        // TODO: how to avoid making this assumption?
+        assert_eq!(road.len(), 1);
+        let lane = road.forward_outside_mut().unwrap();
+        lane.designated.set(Infer::Direct(Designated::Foot))?;
+        lane.direction.set(Infer::Direct(Direction::Both))?;
+        lane.access.foot.set(Infer::Direct(Access::Designated))?;
+        lane.access.motor.set(Infer::Direct(Access::No))?;
+        if v == "steps" {
+            warnings.push(TagsToLanesMsg::unimplemented(
+                "steps becomes sidewalk",
+                tags.subset(&[HIGHWAY]),
+            ));
         }
     }
-    Ok(Some(RoadFromTags {
-        road: Road {
-            lanes: assemble_ltr(forward_side, backward_side, locale.driving_side),
-            highway: road.highway.clone(),
-        },
-        warnings: RoadWarnings::default(),
-    }))
-}
 
-fn assemble_ltr(
-    mut fwd_side: Vec<Lane>,
-    mut back_side: Vec<Lane>,
-    driving_side: DrivingSide,
-) -> Vec<Lane> {
-    match driving_side {
-        DrivingSide::Right => {
-            back_side.reverse();
-            back_side.extend(fwd_side);
-            back_side
-        },
-        DrivingSide::Left => {
-            fwd_side.reverse();
-            fwd_side.extend(back_side);
-            fwd_side
-        },
-    }
+    Ok(())
 }

@@ -421,34 +421,34 @@ mod tests {
                 let expected_road = test.expected_road();
                 match road_from_tags {
                     Ok(road_from_tags) => {
-                        if test.test_has_warnings() && road_from_tags.warnings.is_empty() {
-                            test.print();
-                            println!("Expected warnings. Try removing `ignore_warnings`.");
-                            println!();
-                            false
-                        } else {
-                            let (actual_road, warnings) = road_from_tags.into_filtered_road(test);
-                            if actual_road.approx_eq(&expected_road) {
-                                true
-                            } else {
+                        let (actual_road, warnings) = road_from_tags.into_filtered_road(test);
+                        if actual_road.approx_eq(&expected_road) {
+                            if test.test_has_warnings() && warnings.is_empty() {
                                 test.print();
-                                println!("Got:");
-                                println!("    {}", stringify_lane_types(&actual_road));
-                                println!("    {}", stringify_directions(&actual_road));
-                                println!("Expected:");
-                                println!("    {}", stringify_lane_types(&expected_road));
-                                println!("    {}", stringify_directions(&expected_road));
-                                println!("{}", warnings);
-                                if stringify_lane_types(&actual_road)
-                                    == stringify_lane_types(&expected_road)
-                                    || stringify_directions(&actual_road)
-                                        == stringify_directions(&expected_road)
-                                {
-                                    assert_json_eq!(actual_road, expected_road);
-                                }
+                                println!("Expected warnings. Try removing `expect_warnings`.");
                                 println!();
                                 false
+                            } else {
+                                true
                             }
+                        } else {
+                            test.print();
+                            println!("Got:");
+                            println!("    {}", stringify_lane_types(&actual_road));
+                            println!("    {}", stringify_directions(&actual_road));
+                            println!("Expected:");
+                            println!("    {}", stringify_lane_types(&expected_road));
+                            println!("    {}", stringify_directions(&expected_road));
+                            println!("{}", warnings);
+                            if stringify_lane_types(&actual_road)
+                                == stringify_lane_types(&expected_road)
+                                || stringify_directions(&actual_road)
+                                    == stringify_directions(&expected_road)
+                            {
+                                assert_json_eq!(actual_road, expected_road);
+                            }
+                            println!();
+                            false
                         }
                     },
                     Err(RoadError::Warnings(warnings)) => {

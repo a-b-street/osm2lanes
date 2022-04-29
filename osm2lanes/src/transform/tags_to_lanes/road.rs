@@ -10,10 +10,10 @@ use super::separator::{
 use super::TagsToLanesMsg;
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::{Metre, Speed};
-use crate::road::{Access, Designated, Direction, Lane};
-use crate::tag::{Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
+use crate::road::{Access as LaneAccess, Designated, Direction, Lane};
+use crate::tag::{Access as AccessValue, Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
 use crate::transform::error::{RoadError, RoadWarnings};
-use crate::transform::tags_to_lanes::lane::{CentreTurnLaneScheme, Counts};
+use crate::transform::tags_to_lanes::counts::{CentreTurnLaneScheme, Counts};
 use crate::transform::tags_to_lanes::modes::BusLanesCount;
 
 #[derive(Debug)]
@@ -48,6 +48,35 @@ pub struct Width {
 }
 
 #[derive(Clone, Default, Debug)]
+pub struct Access {
+    pub foot: Infer<AccessValue>,
+    pub bicycle: Infer<AccessValue>,
+    pub taxi: Infer<AccessValue>,
+    pub bus: Infer<AccessValue>,
+    pub motor: Infer<AccessValue>,
+}
+
+impl From<Access> for Option<LaneAccess> {
+    fn from(inferred: Access) -> Self {
+        if inferred.foot.is_none()
+            && inferred.bicycle.is_none()
+            && inferred.taxi.is_none()
+            && inferred.bus.is_none()
+            && inferred.motor.is_none()
+        {
+            return None;
+        }
+        Some(LaneAccess {
+            foot: inferred.foot.some(),
+            bicycle: inferred.bicycle.some(),
+            taxi: inferred.taxi.some(),
+            bus: inferred.bus.some(),
+            motor: inferred.motor.some(),
+        })
+    }
+}
+
+#[derive(Clone, Default, Debug)]
 pub struct LaneBuilder {
     pub r#type: Infer<LaneType>,
     // note: direction is always relative to the way
@@ -55,7 +84,7 @@ pub struct LaneBuilder {
     pub designated: Infer<Designated>,
     pub width: Width,
     pub max_speed: Infer<Speed>,
-    pub access: Infer<Access>,
+    pub access: Access,
 }
 
 impl LaneBuilder {
@@ -72,12 +101,19 @@ impl LaneBuilder {
                 <= self.width.max.some().unwrap_or(Metre::MAX).val()
         );
         match self.r#type.some() {
-            Some(LaneType::Travel) => Lane::Travel {
-                direction: self.direction.some(),
-                designated: self.designated.some().unwrap(),
-                width,
-                max_speed: self.max_speed.some(),
-                access: self.access.some(),
+            Some(LaneType::Travel) => {
+                let direction = if let Some(Designated::Foot) = self.designated.some() {
+                    None
+                } else {
+                    self.direction.some()
+                };
+                Lane::Travel {
+                    direction,
+                    designated: self.designated.some().unwrap(),
+                    width,
+                    max_speed: self.max_speed.some(),
+                    access: self.access.into(),
+                }
             },
             Some(LaneType::Parking) => Lane::Parking {
                 direction: self.direction.some().unwrap(),
@@ -131,11 +167,13 @@ impl RoadBuilder {
         let lanes = Counts::new(
             tags,
             oneway,
+            &highway,
             &centre_turn_lanes,
             &bus_lane_counts,
             locale,
             warnings,
         );
+        log::trace!("lane counts: {lanes:?}");
 
         let designated = if tags.is("access", "no")
             && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
@@ -188,6 +226,7 @@ impl RoadBuilder {
         })
         .take(lanes.backward.some().unwrap_or(0))
         .collect();
+
         // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
         for _ in 0..(lanes.both_ways.some().unwrap_or(0)) {
             forward_lanes.push_front(LaneBuilder {
