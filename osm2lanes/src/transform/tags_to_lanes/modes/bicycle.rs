@@ -48,7 +48,7 @@ pub(in crate::transform::tags_to_lanes) enum Location {
     Both { forward: Way, backward: Way },
 }
 
-/// Inferred busway scheme for forward lane and backward lane existing
+/// Bicycle lane or track scheme
 #[derive(Debug)]
 pub(in crate::transform::tags_to_lanes) struct Scheme(Location);
 
