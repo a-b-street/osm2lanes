@@ -299,7 +299,7 @@ impl RoadBuilder {
         self.backward_lanes.back_mut()
     }
     /// Push new inner-most forward lane
-    pub fn push_forward_inside(&mut self, lane: LaneBuilder) {
+    pub fn _push_forward_inside(&mut self, lane: LaneBuilder) {
         self.forward_lanes.push_front(lane);
     }
     /// Push new outer-most forward lane
