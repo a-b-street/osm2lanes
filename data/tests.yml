@@ -309,7 +309,8 @@
 # incorrect speed limit
 - way_id: 102917976
   description: Road with impossible speed limit
-  rust: false
+  rust:
+    false
     #expect_warnings: true
     #separator: true
   tags:
@@ -962,9 +963,9 @@
 # busway=* and lanes:bus=*
 - way_id: 988980354
   description: busway=* and lanes:bus=*
-  driving_side: right
   rust:
     expect_warnings: true
+  driving_side: right
   tags:
     highway: primary
     busway: lane
@@ -1006,6 +1007,45 @@
           value: 25
       - type: travel
         designated: foot
+
+- way_id: 679636490
+  description: "mixing lanes:bus and bus:lanes"
+  rust: false
+  driving_side: right
+  iso-3166-2: US-WA
+  tags:
+    highway: "secondary"
+    oneway: "yes"
+    maxspeed: "25 mph"
+    lanes: "3"
+    lanes:backward: "1"
+    lanes:bus:backward: "1"
+    lanes:forward: "2"
+    access:lanes:backward: "no"
+    bus:lanes:backward: "yes"
+    sidewalk: "separate"
+    surface: "asphalt"
+  road:
+    highway: secondary
+    lanes:
+      - type: travel
+        direction: backward
+        designated: bus
+        max_speed:
+          unit: mph
+          value: 25
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+        max_speed:
+          unit: mph
+          value: 25
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+        max_speed:
+          unit: mph
+          value: 25
 
 ### Combination
 # TODO
