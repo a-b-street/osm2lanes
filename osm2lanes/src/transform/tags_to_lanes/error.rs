@@ -254,7 +254,14 @@ impl std::fmt::Display for TagsToLanesMsg {
             TagsToLanesIssue::Unsupported { description, tags }
             | TagsToLanesIssue::Unimplemented { description, tags }
             | TagsToLanesIssue::Ambiguous { description, tags } => {
-                let tags = tags.as_ref().map(|tags| tags.to_vec().as_slice().join(" "));
+                let tags = tags.as_ref().map(|tags| {
+                    let tags = tags.to_vec();
+                    if tags.is_empty() {
+                        String::from("no tags")
+                    } else {
+                        tags.as_slice().join(" ")
+                    }
+                });
                 let prefix = match self.issue {
                     TagsToLanesIssue::Unsupported { .. } => "unsupported",
                     TagsToLanesIssue::Unimplemented { .. } => "unimplemented",

@@ -3,10 +3,8 @@ use crate::tag::{TagKey, Tags};
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 /// Unsupported
-///
-/// # Errors
-///
-/// Oneway reversible
+/// Catch-all for unsupported or unimplemented but known constructs
+#[allow(clippy::unnecessary_wraps)]
 pub fn unsupported(
     tags: &Tags,
     _locale: &Locale,
@@ -68,11 +66,5 @@ pub fn unsupported(
             tags.subset(&ACCESS_KEYS),
         ));
     }
-
-    if let Some(v @ ("reversible" | "-1")) = tags.get("oneway") {
-        // TODO reversible roads should be handled differently
-        return Err(TagsToLanesMsg::unimplemented_tag("oneway", v));
-    }
-
     Ok(())
 }

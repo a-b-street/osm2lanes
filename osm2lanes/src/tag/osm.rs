@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::tag::{TagKey, Tags};
 
+pub const ONEWAY: TagKey = TagKey::from("oneway");
 pub const HIGHWAY: TagKey = TagKey::from("highway");
 pub const CONSTRUCTION: TagKey = TagKey::from("construction");
 pub const PROPOSED: TagKey = TagKey::from("proposed");

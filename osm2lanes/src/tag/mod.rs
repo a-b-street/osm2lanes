@@ -11,7 +11,7 @@ mod key;
 pub use key::TagKey;
 
 mod osm;
-pub use osm::{Highway, HighwayImportance, HighwayType, Lifecycle, HIGHWAY, LIFECYCLE};
+pub use osm::{Highway, HighwayImportance, HighwayType, Lifecycle, HIGHWAY, LIFECYCLE, ONEWAY};
 
 mod access;
 pub use access::Access;
