@@ -255,14 +255,18 @@ impl LanesDirectionScheme {
     ) -> Self {
         let both_ways = tags
             .get_parsed(LANES + "both_ways", warnings)
-            .map(|v: usize| {
-                if v != 1 {
+            .filter(|&v: &usize| {
+                if v == 1 {
+                    true
+                } else {
                     warnings.push(TagsToLanesMsg::unsupported(
                         "lanes:both_ways must be 1",
                         tags.subset(&[LANES + "both_ways"]),
                     ));
+                    false
                 }
-            });
+            })
+            .map(|_v| {});
         Self {
             total: tags.get_parsed(LANES, warnings),
             forward: tags.get_parsed(LANES + "forward", warnings),
