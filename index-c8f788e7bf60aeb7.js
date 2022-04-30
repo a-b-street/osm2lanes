@@ -208,7 +208,7 @@ function makeClosure(arg0, arg1, dtor, f) {
     return real;
 }
 function __wbg_adapter_28(arg0, arg1, arg2) {
-    wasm._dyn_core__ops__function__Fn__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__hd34ce354926bfb80(arg0, arg1, addHeapObject(arg2));
+    wasm._dyn_core__ops__function__Fn__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h8502cfa80d8e24d9(arg0, arg1, addHeapObject(arg2));
 }
 
 function makeMutClosure(arg0, arg1, dtor, f) {
@@ -240,7 +240,7 @@ function __wbg_adapter_31(arg0, arg1, arg2) {
 }
 
 function __wbg_adapter_34(arg0, arg1, arg2) {
-    wasm._dyn_core__ops__function__Fn__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__haa9fdb198e871bad(arg0, arg1, addHeapObject(arg2));
+    wasm._dyn_core__ops__function__Fn__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h97d44ff0f10383dc(arg0, arg1, addHeapObject(arg2));
 }
 
 let cachegetUint32Memory0 = null;
@@ -302,7 +302,7 @@ async function load(module, imports) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('index-b7e9ac37f690124b_bg.wasm', import.meta.url);
+        input = new URL('index-c8f788e7bf60aeb7_bg.wasm', import.meta.url);
     }
     const imports = {};
     imports.wbg = {};
@@ -440,14 +440,6 @@ async function init(input) {
     imports.wbg.__wbg_set_969ad0a60e51d320 = function(arg0, arg1, arg2) {
         getObject(arg0).set(getObject(arg1), arg2 >>> 0);
     };
-    imports.wbg.__wbg_lat_6d045458399b0ab4 = function(arg0) {
-        var ret = getObject(arg0).lat;
-        return ret;
-    };
-    imports.wbg.__wbg_lng_cdb7fa65e44406e9 = function(arg0) {
-        var ret = getObject(arg0).lng;
-        return ret;
-    };
     imports.wbg.__wbg_new_0b83d3df67ecb33e = function() {
         var ret = new Object();
         return addHeapObject(ret);
@@ -538,6 +530,14 @@ async function init(input) {
         var len0 = WASM_VECTOR_LEN;
         getInt32Memory0()[arg0 / 4 + 1] = len0;
         getInt32Memory0()[arg0 / 4 + 0] = ptr0;
+    };
+    imports.wbg.__wbg_lat_6d045458399b0ab4 = function(arg0) {
+        var ret = getObject(arg0).lat;
+        return ret;
+    };
+    imports.wbg.__wbg_lng_cdb7fa65e44406e9 = function(arg0) {
+        var ret = getObject(arg0).lng;
+        return ret;
     };
     imports.wbg.__wbg_latlng_021965965b017acb = function(arg0) {
         var ret = getObject(arg0).latlng;
