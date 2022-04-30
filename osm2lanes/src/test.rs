@@ -402,77 +402,72 @@ mod tests {
         env_logger_init();
         let tests = get_tests();
 
-        assert!(
-            tests.iter().all(|test| {
-                let locale = Locale::builder()
-                    .driving_side(test.driving_side)
-                    .iso_3166_option(test.iso_3166_2.as_deref())
-                    .build();
-                let road_from_tags = tags_to_lanes(
-                    &test.tags,
-                    &locale,
-                    &TagsToLanesConfig {
-                        error_on_warnings: !test.test_has_warnings(),
-                        include_separators: test.test_include_separators()
-                            && test.expected_has_separators(),
-                        ..TagsToLanesConfig::default()
-                    },
-                );
-                let expected_road = test.expected_road();
-                match road_from_tags {
-                    Ok(road_from_tags) => {
-                        let (actual_road, warnings) = road_from_tags.into_filtered_road(test);
-                        if actual_road.approx_eq(&expected_road) {
-                            if test.test_has_warnings() && warnings.is_empty() {
-                                test.print();
-                                println!("Expected warnings. Try removing `expect_warnings`.");
-                                println!();
-                                false
-                            } else {
-                                true
-                            }
-                        } else {
+        for test in &tests {
+            let locale = Locale::builder()
+                .driving_side(test.driving_side)
+                .iso_3166_option(test.iso_3166_2.as_deref())
+                .build();
+            let road_from_tags = tags_to_lanes(
+                &test.tags,
+                &locale,
+                &TagsToLanesConfig {
+                    error_on_warnings: !test.test_has_warnings(),
+                    include_separators: test.test_include_separators()
+                        && test.expected_has_separators(),
+                    ..TagsToLanesConfig::default()
+                },
+            );
+            let expected_road = test.expected_road();
+            match road_from_tags {
+                Ok(road_from_tags) => {
+                    let (actual_road, warnings) = road_from_tags.into_filtered_road(test);
+                    if actual_road.approx_eq(&expected_road) {
+                        if test.test_has_warnings() && warnings.is_empty() {
                             test.print();
-                            println!("Got:");
-                            println!("    {}", stringify_lane_types(&actual_road));
-                            println!("    {}", stringify_directions(&actual_road));
-                            println!("Expected:");
-                            println!("    {}", stringify_lane_types(&expected_road));
-                            println!("    {}", stringify_directions(&expected_road));
-                            println!("{}", warnings);
-                            if stringify_lane_types(&actual_road)
-                                == stringify_lane_types(&expected_road)
-                                || stringify_directions(&actual_road)
-                                    == stringify_directions(&expected_road)
-                            {
-                                assert_json_eq!(actual_road, expected_road);
-                            }
+                            println!("Expected warnings. Try removing `expect_warnings`.");
                             println!();
-                            false
+                            panic!("tags_to_lanes expected warnings");
                         }
-                    },
-                    Err(RoadError::Warnings(warnings)) => {
+                    } else {
                         test.print();
+                        println!("Got:");
+                        println!("    {}", stringify_lane_types(&actual_road));
+                        println!("    {}", stringify_directions(&actual_road));
                         println!("Expected:");
                         println!("    {}", stringify_lane_types(&expected_road));
                         println!("    {}", stringify_directions(&expected_road));
                         println!("{}", warnings);
+                        if stringify_lane_types(&actual_road)
+                            == stringify_lane_types(&expected_road)
+                            || stringify_directions(&actual_road)
+                                == stringify_directions(&expected_road)
+                        {
+                            assert_json_eq!(actual_road, expected_road);
+                        }
                         println!();
-                        false
-                    },
-                    Err(e) => {
-                        test.print();
-                        println!("Expected:");
-                        println!("    {}", stringify_lane_types(&expected_road));
-                        println!("    {}", stringify_directions(&expected_road));
-                        println!("{}", e);
-                        println!();
-                        false
-                    },
-                }
-            }),
-            "test_from_data tags_to_lanes failed"
-        );
+                        panic!("tags_to_lanes output mismatch");
+                    }
+                },
+                Err(RoadError::Warnings(warnings)) => {
+                    test.print();
+                    println!("Expected:");
+                    println!("    {}", stringify_lane_types(&expected_road));
+                    println!("    {}", stringify_directions(&expected_road));
+                    println!("{}", warnings);
+                    println!();
+                    panic!("tags_to_lanes has warnings");
+                },
+                Err(e) => {
+                    test.print();
+                    println!("Expected:");
+                    println!("    {}", stringify_lane_types(&expected_road));
+                    println!("    {}", stringify_directions(&expected_road));
+                    println!("{}", e);
+                    println!();
+                    panic!("tags_to_lanes error");
+                },
+            }
+        }
     }
 
     #[test]
@@ -480,57 +475,52 @@ mod tests {
         env_logger_init();
         let tests = get_tests();
 
-        assert!(
-            tests.iter().all(|test| {
-                let locale = Locale::builder()
-                    .driving_side(test.driving_side)
-                    .iso_3166_option(test.iso_3166_2.as_deref())
-                    .build();
-                let input_road = test.expected_road();
-                let tags = lanes_to_tags(
-                    &test.road(),
-                    &locale,
-                    &LanesToTagsConfig {
-                        check_roundtrip: false,
-                    },
-                )
-                .unwrap();
-                let output_lanes = tags_to_lanes(
-                    &tags,
-                    &locale,
-                    &TagsToLanesConfig {
-                        error_on_warnings: false,
-                        include_separators: test.test_include_separators()
-                            && test.expected_has_separators(),
-                        ..TagsToLanesConfig::default()
-                    },
-                )
-                .unwrap();
-                let (output_road, _warnings) = output_lanes.into_filtered_road(test);
-                if output_road.approx_eq(&input_road) {
-                    true
-                } else {
-                    test.print();
-                    println!("From:");
-                    println!("    {}", stringify_lane_types(&input_road));
-                    println!("    {}", stringify_directions(&input_road));
-                    println!("Normalized OSM tags:");
-                    for [k, v] in tags.to_str_pairs() {
-                        println!("    {} = {}", k, v);
-                    }
-                    println!("Got:");
-                    println!("    {}", stringify_lane_types(&output_road));
-                    println!("    {}", stringify_directions(&output_road));
-                    if stringify_lane_types(&input_road) == stringify_lane_types(&output_road)
-                        || stringify_directions(&input_road) == stringify_directions(&output_road)
-                    {
-                        assert_json_eq!(input_road, output_road);
-                    }
-                    println!();
-                    false
+        for test in &tests {
+            let locale = Locale::builder()
+                .driving_side(test.driving_side)
+                .iso_3166_option(test.iso_3166_2.as_deref())
+                .build();
+            let input_road = test.expected_road();
+            let tags = lanes_to_tags(
+                &test.road(),
+                &locale,
+                &LanesToTagsConfig {
+                    check_roundtrip: false,
+                },
+            )
+            .unwrap();
+            let output_lanes = tags_to_lanes(
+                &tags,
+                &locale,
+                &TagsToLanesConfig {
+                    error_on_warnings: false,
+                    include_separators: test.test_include_separators()
+                        && test.expected_has_separators(),
+                    ..TagsToLanesConfig::default()
+                },
+            )
+            .unwrap();
+            let (output_road, _warnings) = output_lanes.into_filtered_road(test);
+            if !output_road.approx_eq(&input_road) {
+                test.print();
+                println!("From:");
+                println!("    {}", stringify_lane_types(&input_road));
+                println!("    {}", stringify_directions(&input_road));
+                println!("Normalized OSM tags:");
+                for [k, v] in tags.to_str_pairs() {
+                    println!("    {} = {}", k, v);
                 }
-            }),
-            "test_roundtrip lanes_to_tags failed"
-        );
+                println!("Got:");
+                println!("    {}", stringify_lane_types(&output_road));
+                println!("    {}", stringify_directions(&output_road));
+                if stringify_lane_types(&input_road) == stringify_lane_types(&output_road)
+                    || stringify_directions(&input_road) == stringify_directions(&output_road)
+                {
+                    assert_json_eq!(input_road, output_road);
+                }
+                println!();
+                panic!("lanes_to_tags roundtrip mismatch")
+            }
+        }
     }
 }
