@@ -271,6 +271,39 @@
           - style: solid_line
             color: white
 
+### Mis-tagged roads
+
+- way_id: 240294912
+  description: Invalid lanes:both_ways value
+  rust:
+    expect_warnings: true
+  tags:
+    highway: "primary"
+    lanes: "4"
+    lanes:both_ways: "2"
+    sidewalk: "both"
+  driving_side: left
+  ISO 3166-2: GB-NET
+  road:
+    highway: primary
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
+
 ### Pedestrian
 
 - way_id: 40297361
