@@ -304,6 +304,55 @@
       - type: travel
         designated: foot
 
+# This case was motivated by
+# https://www.openstreetmap.org/way/102917976/history, which used to have an
+# incorrect speed limit
+- way_id: 102917976
+  description: Road with impossible speed limit
+  rust: false
+    #expect_warnings: true
+    #separator: true
+  tags:
+    bicycle: "designated"
+    cycleway: "lane"
+    highway: "secondary"
+    lanes: "5"
+    lanes:backward: "1"
+    lanes:both_ways: "1"
+    lanes:forward: "3"
+    maxspeed: "3025 mph"
+    turn:lanes:backward: "right"
+    turn:lanes:both_ways: "left"
+  driving_side: right
+  road:
+    highway: secondary
+    lanes:
+      - type: travel
+        direction: backward
+        designated: bicycle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: both
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: bicycle
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+
 ### Pedestrian
 
 - way_id: 40297361
