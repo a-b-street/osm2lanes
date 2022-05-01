@@ -309,8 +309,7 @@
 # incorrect speed limit
 - way_id: 102917976
   description: Road with impossible speed limit
-  rust:
-    false
+  rust: false
     #expect_warnings: true
     #separator: true
   tags:
