@@ -108,10 +108,28 @@ where
             Infer::Direct(x) => Infer::Direct(f(x)),
         }
     }
+
+    /// If `Infer::None`, replaces with `Infer::Default(d)`
+    #[must_use]
+    pub fn or_default(self, d: T) -> Self {
+        match self {
+            Infer::None => Infer::Default(d),
+            other => other,
+        }
+    }
 }
 
 impl<T> Default for Infer<T> {
     fn default() -> Self {
         Self::None
+    }
+}
+
+impl<T> From<Option<T>> for Infer<T> {
+    fn from(some: Option<T>) -> Self {
+        match some {
+            Some(val) => Self::Direct(val),
+            None => Self::None,
+        }
     }
 }

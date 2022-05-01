@@ -6,11 +6,13 @@ use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 /// The number of lanes for motor vehicle traffic
 #[derive(Debug)]
-pub struct Counts {
-    pub lanes: Infer<usize>,
-    pub forward: Infer<usize>,
-    pub backward: Infer<usize>,
-    pub both_ways: Infer<usize>,
+pub enum Counts {
+    One, // One bidirectional lane
+    Directional {
+        forward: Infer<usize>,
+        backward: Infer<usize>,
+        centre_turn_lane: Infer<bool>,
+    },
 }
 
 impl Counts {
@@ -34,18 +36,22 @@ impl Counts {
     ) -> Self {
         let lanes = LanesDirectionScheme::from_tags(tags, oneway, locale, warnings);
 
-        // Calculate the bothways lanes.
-        let centre_both_ways = match (lanes.both_ways, centre_turn_lane.some()) {
-            (Some(()), None | Some(true)) => Infer::Direct(1),
-            (None, Some(true)) => Infer::Calculated(1),
-            (None, Some(false)) => Infer::Calculated(0),
-            (None, None) => Infer::Default(0),
+        let centre_turn_lane = match (lanes.both_ways, centre_turn_lane.some()) {
+            (Some(()), None | Some(true)) => Infer::Direct(true),
+            (None, Some(true)) => Infer::Calculated(true),
+            (None, Some(false)) => Infer::Calculated(false),
+            (None, None) => Infer::Default(false),
             (Some(()), Some(false)) => {
                 warnings.push(TagsToLanesMsg::ambiguous_tags(
                     tags.subset(&[LANES + "both_ways", CENTRE_TURN_LANE]),
                 ));
-                Infer::Default(1)
+                Infer::Default(true)
             },
+        };
+        let both_ways: usize = if centre_turn_lane.some().unwrap_or(false) {
+            1
+        } else {
+            0
         };
 
         // TODO: after calculating the lanes scheme here (sometimes using bus lanes to guess),
@@ -62,54 +68,49 @@ impl Counts {
                 ])));
             }
 
-            if let Some(l) = lanes.total {
-                let mut result = Self {
-                    lanes: Infer::Direct(l),
-                    forward: Infer::Calculated(l),
-                    backward: Infer::Default(0),
-                    both_ways: centre_both_ways,
-                };
+            if let Some(total) = lanes.total {
+                // Total lanes probably all going forward.
                 // Roads with car traffic in one direction and bus traffic in the other, can be
                 // tagged `oneway=yes` `busway:<backward>=opposite_lane` but are more "canonically"
                 // tagged `oneway=no` `lanes:backward=1` `busway:<backward>=lane`.
-                if bus.backward > 0 {
-                    result.forward = Infer::Calculated(l - 1);
-                    result.backward = Infer::Calculated(1);
-                }
+                let forward = total - both_ways - bus.backward;
+                let result = Self::Directional {
+                    forward: Infer::Calculated(forward),
+                    backward: Infer::Calculated(bus.backward),
+                    centre_turn_lane,
+                };
 
-                if lanes
-                    .forward
-                    .map_or(false, |f| f != result.forward.some().unwrap())
-                {
+                // TODO, shouldn't we trust the tagged value more?
+                // TODO, what about backward?
+                if lanes.forward.map_or(false, |direct| direct != forward) {
                     warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
                         "oneway",
                         "lanes",
                         "lanes:forward",
                     ])));
                 }
+
                 result
             } else if let Some(f) = lanes.forward {
-                Self {
-                    lanes: Infer::Calculated(f),
+                Self::Directional {
                     forward: Infer::Direct(f),
                     backward: Infer::Default(0),
-                    both_ways: centre_both_ways,
+                    centre_turn_lane,
                 }
             } else {
                 // Assume 1 lane, but guess 1 normal lane plus bus lanes.
                 let assumed_forward = 1; // TODO depends on highway tag
-                Self {
-                    lanes: Infer::Default(assumed_forward + bus.forward),
+                Self::Directional {
                     forward: Infer::Default(assumed_forward + bus.forward),
                     backward: Infer::Default(0),
-                    both_ways: centre_both_ways,
+                    centre_turn_lane,
                 }
             }
         } else {
             // Twoway
             match (lanes.total, lanes.forward, lanes.backward) {
                 (Some(l), Some(f), Some(b)) => {
-                    if l != f + b + centre_both_ways.some().unwrap_or(0) {
+                    if l != f + b + both_ways {
                         warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
                             "lanes",
                             "lanes:forward",
@@ -118,64 +119,51 @@ impl Counts {
                             "center_turn_lanes",
                         ])));
                     }
-                    Self {
-                        lanes: Infer::Direct(l),
+                    Self::Directional {
                         forward: Infer::Direct(f),
                         backward: Infer::Direct(b),
-                        both_ways: centre_both_ways,
+                        centre_turn_lane,
                     }
                 },
-                (None, Some(f), Some(b)) => Self {
-                    lanes: Infer::Calculated(f + b + centre_both_ways.some().unwrap_or(0)),
+                (None, Some(f), Some(b)) => Self::Directional {
                     forward: Infer::Direct(f),
                     backward: Infer::Direct(b),
-                    both_ways: centre_both_ways,
+                    centre_turn_lane,
                 },
-                (Some(l), Some(f), None) => Self {
-                    lanes: Infer::Direct(l),
+                (Some(l), Some(f), None) => Self::Directional {
                     forward: Infer::Direct(f),
-                    backward: Infer::Calculated(l - f - centre_both_ways.some().unwrap_or(0)),
-                    both_ways: centre_both_ways,
+                    backward: Infer::Calculated(l - f - both_ways),
+                    centre_turn_lane,
                 },
-                (Some(l), None, Some(b)) => Self {
-                    lanes: Infer::Direct(l),
-                    forward: Infer::Calculated(l - b - centre_both_ways.some().unwrap_or(0)),
+                (Some(l), None, Some(b)) => Self::Directional {
+                    forward: Infer::Calculated(l - b - both_ways),
                     backward: Infer::Direct(b),
-                    both_ways: centre_both_ways,
+                    centre_turn_lane,
                 },
                 // Alleyways or narrow unmarked roads, usually:
-                (Some(1), None, None) => Self {
-                    lanes: Infer::Direct(1),
-                    forward: Infer::Default(0),
-                    backward: Infer::Default(0),
-                    both_ways: Infer::Default(1),
-                },
+                (Some(1), None, None) => Self::One,
                 (Some(l), None, None) => {
-                    if l % 2 == 0 && centre_turn_lane.0.unwrap_or(false) {
+                    if l % 2 == 0 && centre_turn_lane.some().unwrap_or(false) {
                         // Only tagged with lanes and deprecated center_turn_lane tag.
                         // Assume the center_turn_lane is in addition to evenly divided lanes.
-                        Self {
-                            lanes: Infer::Calculated(l + 1),
+                        Self::Directional {
                             forward: Infer::Default(l / 2),
                             backward: Infer::Default(l / 2),
-                            both_ways: Infer::Calculated(1),
+                            centre_turn_lane,
                         }
                     } else {
                         // Distribute normal lanes evenly.
-                        let remaining_lanes =
-                            l - centre_both_ways.some().unwrap_or(0) - bus.forward - bus.backward;
+                        let remaining_lanes = l - both_ways - bus.forward - bus.backward;
                         if remaining_lanes % 2 != 0 {
                             warnings.push(TagsToLanesMsg::ambiguous_str("Total lane count cannot be evenly divided between the forward and backward"));
                         }
                         let half = (remaining_lanes + 1) / 2; // usize division rounded up.
-                        Self {
-                            lanes: Infer::Direct(l),
+                        Self::Directional {
                             forward: Infer::Default(half + bus.forward),
                             backward: Infer::Default(
-                                remaining_lanes - half - centre_both_ways.some().unwrap_or(0)
-                                    + bus.backward,
+                                remaining_lanes - half - both_ways + bus.backward,
                             ),
-                            both_ways: centre_both_ways,
+                            centre_turn_lane,
                         }
                     }
                 },
@@ -184,52 +172,28 @@ impl Counts {
                         || bus.forward > 0
                         || bus.backward > 0
                     {
-                        let lanes = Infer::Default(1 + 1 + centre_both_ways.some().unwrap_or(0));
-                        Self {
-                            lanes,
+                        Self::Directional {
                             forward: Infer::Default(1 + bus.forward),
                             backward: Infer::Default(1 + bus.backward),
-                            both_ways: centre_both_ways,
+                            centre_turn_lane,
                         }
                     } else {
-                        Self {
-                            lanes: Infer::Default(1),
-                            forward: Infer::Default(0),
-                            backward: Infer::Default(0),
-                            both_ways: Infer::Default(1),
-                        }
+                        Self::One
                     }
                 },
                 (None, _, _) => {
                     if locale.has_split_lanes(highway.r#type()) {
                         // Without the "lanes" tag, assume one normal lane in each dir, plus bus lanes.
-                        let f = lanes.forward.unwrap_or(1 + bus.forward);
-                        let b = lanes.backward.unwrap_or(1 + bus.backward);
-                        let forward = if lanes.forward.is_some() {
-                            Infer::Direct(f)
-                        } else {
-                            Infer::Default(f)
-                        };
-                        let backward = if lanes.backward.is_some() {
-                            Infer::Direct(b)
-                        } else {
-                            Infer::Default(b)
-                        };
-                        let lanes = Infer::Default(f + b + centre_both_ways.some().unwrap_or(0));
+                        let forward = Infer::from(lanes.forward).or_default(1 + bus.forward);
+                        let backward = Infer::from(lanes.backward).or_default(1 + bus.forward);
                         // TODO lanes.downgrade(&[forward, backward, bothways]);
-                        Self {
-                            lanes,
+                        Self::Directional {
                             forward,
                             backward,
-                            both_ways: centre_both_ways,
+                            centre_turn_lane,
                         }
                     } else {
-                        Self {
-                            lanes: Infer::Default(1),
-                            forward: Infer::Default(0),
-                            backward: Infer::Default(0),
-                            both_ways: Infer::Default(1),
-                        }
+                        Self::One
                     }
                 },
             }
