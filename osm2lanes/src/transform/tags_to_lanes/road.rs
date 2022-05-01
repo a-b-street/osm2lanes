@@ -142,7 +142,7 @@ pub(in crate::transform) struct RoadBuilder {
 }
 
 impl RoadBuilder {
-    #[allow(clippy::items_after_statements)]
+    #[allow(clippy::items_after_statements, clippy::too_many_lines)]
     pub fn from(
         tags: &Tags,
         locale: &Locale,
@@ -161,19 +161,6 @@ impl RoadBuilder {
         };
 
         let oneway = Oneway::from_tags(tags, locale, warnings)?;
-
-        let bus_lane_counts = BusLaneCount::from_tags(tags, locale, oneway, warnings)?;
-        let centre_turn_lanes = CentreTurnLaneScheme::from_tags(tags, oneway, locale, warnings);
-        let lanes = Counts::new(
-            tags,
-            oneway,
-            &highway,
-            &centre_turn_lanes,
-            &bus_lane_counts,
-            locale,
-            warnings,
-        );
-        log::trace!("lane counts: {lanes:?}");
 
         let designated = if tags.is("access", "no")
             && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
@@ -204,46 +191,80 @@ impl RoadBuilder {
             max: Infer::None,
         };
 
-        // These are ordered from the road center, going outwards. Most of the members of fwd_side will
-        // have Direction::Forward, but there can be exceptions with two-way cycletracks.
-        let mut forward_lanes: VecDeque<_> = iter::repeat_with(|| LaneBuilder {
-            r#type: Infer::Default(LaneType::Travel),
-            direction: Infer::Default(Direction::Forward),
-            designated: Infer::Default(designated),
-            max_speed: Infer::direct(max_speed),
-            width: width.clone(),
-            ..Default::default()
-        })
-        .take(lanes.forward.some().unwrap_or(0))
-        .collect();
-        let backward_lanes = iter::repeat_with(|| LaneBuilder {
-            r#type: Infer::Default(LaneType::Travel),
-            direction: Infer::Default(Direction::Backward),
-            designated: Infer::Default(designated),
-            max_speed: Infer::direct(max_speed),
-            width: width.clone(),
-            ..Default::default()
-        })
-        .take(lanes.backward.some().unwrap_or(0))
-        .collect();
+        let bus_lane_counts = BusLaneCount::from_tags(tags, locale, oneway, warnings)?;
+        let centre_turn_lanes = CentreTurnLaneScheme::from_tags(tags, oneway, locale, warnings);
+        let lane_counts = Counts::new(
+            tags,
+            oneway,
+            &highway,
+            &centre_turn_lanes,
+            &bus_lane_counts,
+            locale,
+            warnings,
+        );
+        log::trace!("lane counts: {lane_counts:?}");
 
-        // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
-        for _ in 0..(lanes.both_ways.some().unwrap_or(0)) {
-            forward_lanes.push_front(LaneBuilder {
+        let road = if let Counts::Directional {
+            forward,
+            backward,
+            centre_turn_lane,
+        } = lane_counts
+        {
+            // These are ordered from the road center, going outwards. Most of the members of fwd_side will
+            // have Direction::Forward, but there can be exceptions with two-way cycletracks.
+            let mut forward_lanes: VecDeque<_> = iter::repeat_with(|| LaneBuilder {
                 r#type: Infer::Default(LaneType::Travel),
-                direction: Infer::Default(Direction::Both),
+                direction: Infer::Default(Direction::Forward),
                 designated: Infer::Default(designated),
+                max_speed: Infer::direct(max_speed),
                 width: width.clone(),
                 ..Default::default()
-            });
-        }
+            })
+            .take(forward.some().unwrap_or(0))
+            .collect();
+            let backward_lanes = iter::repeat_with(|| LaneBuilder {
+                r#type: Infer::Default(LaneType::Travel),
+                direction: Infer::Default(Direction::Backward),
+                designated: Infer::Default(designated),
+                max_speed: Infer::direct(max_speed),
+                width: width.clone(),
+                ..Default::default()
+            })
+            .take(backward.some().unwrap_or(0))
+            .collect();
 
-        let road = RoadBuilder {
-            forward_lanes,
-            backward_lanes,
-            highway,
-            oneway,
+            // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
+            if centre_turn_lane.some().unwrap_or(false) {
+                forward_lanes.push_front(LaneBuilder {
+                    r#type: Infer::Default(LaneType::Travel),
+                    direction: Infer::Default(Direction::Both),
+                    designated: Infer::Default(designated),
+                    width,
+                    ..Default::default()
+                });
+            }
+
+            RoadBuilder {
+                forward_lanes,
+                backward_lanes,
+                highway,
+                oneway,
+            }
+        } else {
+            RoadBuilder {
+                forward_lanes: VecDeque::from(vec![LaneBuilder {
+                    r#type: Infer::Default(LaneType::Travel),
+                    direction: Infer::Default(Direction::Both),
+                    designated: Infer::Default(designated),
+                    width,
+                    ..Default::default()
+                }]),
+                backward_lanes: VecDeque::new(),
+                highway,
+                oneway,
+            }
         };
+
         Ok(road)
     }
 
