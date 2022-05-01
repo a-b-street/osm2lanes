@@ -233,7 +233,6 @@ impl RoadBuilder {
             .take(backward.some().unwrap_or(0))
             .collect();
 
-            // TODO Fix upstream. https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane
             if centre_turn_lane.some().unwrap_or(false) {
                 forward_lanes.push_front(LaneBuilder {
                     r#type: Infer::Default(LaneType::Travel),
