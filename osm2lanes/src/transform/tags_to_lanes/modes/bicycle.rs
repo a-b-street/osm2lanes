@@ -49,7 +49,7 @@ pub(in crate::transform::tags_to_lanes) enum Location {
 }
 
 /// Bicycle lane or track scheme
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(in crate::transform::tags_to_lanes) struct Scheme(Location);
 
 impl Scheme {
@@ -272,4 +272,76 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
         },
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Scheme;
+    use crate::locale::Locale;
+    use crate::road::Direction;
+    use crate::tag::Tags;
+    use crate::transform::tags_to_lanes::modes::bicycle::{Location, Variant, Way};
+    use crate::transform::tags_to_lanes::oneway::Oneway;
+    use crate::transform::RoadWarnings;
+
+    #[test]
+    fn cycleway_lane() {
+        let scheme = Scheme::from_tags(
+            &Tags::from_str_pair(["cycleway", "lane"]),
+            &Locale::builder().build(),
+            Oneway::No,
+            &mut RoadWarnings::default(),
+        )
+        .unwrap();
+        assert_eq!(
+            scheme,
+            Scheme(Location::Both {
+                forward: Way {
+                    variant: Variant::Lane,
+                    direction: Direction::Forward,
+                },
+                backward: Way {
+                    variant: Variant::Lane,
+                    direction: Direction::Backward,
+                }
+            })
+        )
+    }
+
+    #[test]
+    #[ignore]
+    fn err_cycleway_1() {
+        let scheme = Scheme::from_tags(
+            &Tags::from_str_pairs(&[["cycleway", "no"], ["cycleway:left", "lane"]]).unwrap(),
+            &Locale::builder().build(),
+            Oneway::No,
+            &mut RoadWarnings::default(),
+        );
+        assert!(scheme.is_err())
+    }
+
+    #[test]
+    #[ignore]
+    fn err_cycleway_2() {
+        let scheme = Scheme::from_tags(
+            &Tags::from_str_pairs(&[["cycleway", "track"], ["cycleway:left", "no"]]).unwrap(),
+            &Locale::builder().build(),
+            Oneway::No,
+            &mut RoadWarnings::default(),
+        );
+        assert!(scheme.is_err())
+    }
+
+    #[test]
+    #[ignore]
+    fn err_cycleway_3() {
+        let scheme = Scheme::from_tags(
+            &Tags::from_str_pairs(&[["cycleway:both", "lane"], ["cycleway:right", "track"]])
+                .unwrap(),
+            &Locale::builder().build(),
+            Oneway::No,
+            &mut RoadWarnings::default(),
+        );
+        assert!(scheme.is_err())
+    }
 }
