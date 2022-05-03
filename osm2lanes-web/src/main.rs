@@ -69,7 +69,7 @@ impl Component for App {
 
     fn create(_ctx: &Context<Self>) -> Self {
         let locale = Locale::builder().iso_3166("FR").build();
-        let edit_tags = "highway=secondary\ncycleway:right=track\nlanes=6\nlanes:backward=2\nbusway=lane\nsidewalk=right".to_owned();
+        let edit_tags = "Loading...".to_owned();
         let state = Rc::new(RefCell::new(State {
             locale,
             id: None,
@@ -79,9 +79,7 @@ impl Component for App {
             message: None,
             way_ref: NodeRef::default(),
         }));
-        let mut app = Self { state };
-        app.update_tags();
-        app
+        Self { state }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> ShouldRender {

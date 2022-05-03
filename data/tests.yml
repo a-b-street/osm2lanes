@@ -157,6 +157,7 @@
     motorroad: "yes"
   driving_side: right
   ISO 3166-2: NL-FR
+  example: "NL Autoweg"
   road:
     highway: trunk
     lanes:

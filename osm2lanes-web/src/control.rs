@@ -1,15 +1,30 @@
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use osm2lanes::locale::{Country, DrivingSide};
+use gloo_timers::callback::Timeout;
+use osm2lanes::locale::{Country, DrivingSide, Locale};
+use osm2lanes::test::{get_tests, TestCase};
 use web_sys::{Event, FocusEvent, HtmlInputElement, HtmlSelectElement, KeyboardEvent, MouseEvent};
 use yew::{html, Callback, Component, Context, Html, NodeRef, Properties, TargetCast};
 
-use crate::{Msg, State};
+use crate::{Msg as AppMsg, State};
+
+pub enum Msg {
+    Up(Box<AppMsg>),
+    FirstLazy,
+    Example(String),
+}
+
+impl From<AppMsg> for Msg {
+    fn from(msg: AppMsg) -> Self {
+        Self::Up(Box::new(msg))
+    }
+}
 
 #[derive(Properties, PartialEq)]
 pub struct Props {
-    pub callback_msg: Callback<Msg>,
+    pub callback_msg: Callback<AppMsg>,
     pub state: Rc<RefCell<State>>,
 }
 
@@ -17,6 +32,8 @@ pub struct Props {
 pub struct Control {
     textarea_input_ref: NodeRef,
     textarea_output_ref: NodeRef,
+    example: Option<String>,
+    examples: Option<BTreeMap<String, TestCase>>,
 }
 
 impl Component for Control {
@@ -24,13 +41,44 @@ impl Component for Control {
     type Message = Msg;
 
     fn create(_ctx: &Context<Self>) -> Self {
-        Self {
-            ..Default::default()
-        }
+        Self::default()
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        ctx.props().callback_msg.emit(msg);
+        match msg {
+            Msg::Up(msg) => ctx.props().callback_msg.emit(*msg),
+            Msg::FirstLazy => {
+                let tests = get_tests();
+                let examples: BTreeMap<_, _> = tests
+                    .into_iter()
+                    .filter_map(|t| {
+                        let example_name = t.example().map(|e| e.to_owned());
+                        example_name.map(|e| (e, t))
+                    })
+                    .collect();
+                let example = examples.iter().next().unwrap().0.to_owned();
+                self.examples = Some(examples);
+                ctx.link().send_message(Msg::Example(example));
+            },
+            Msg::Example(example) => {
+                let test_case = self
+                    .examples
+                    .as_ref()
+                    .unwrap()
+                    .get(&example)
+                    .unwrap()
+                    .clone();
+                self.example = Some(example);
+                ctx.link().send_message(Msg::from(AppMsg::TagsLocaleSet {
+                    id: test_case.way_id.unwrap().to_string(),
+                    tags: test_case.tags,
+                    locale: Locale::builder()
+                        .driving_side(test_case.driving_side)
+                        .iso_3166_option(test_case.iso_3166_2.as_deref())
+                        .build(),
+                }))
+            },
+        }
         // we let the parent do this
         false
     }
@@ -56,27 +104,39 @@ impl Component for Control {
             log::trace!("countries {:?}", countries);
             countries
         };
-
-        let driving_side_onchange = ctx.link().callback(|_e: Event| Msg::ToggleDrivingSide);
-
         let country_onchange = ctx.link().callback(|e: Event| {
             let selected: String = e.target_unchecked_into::<HtmlSelectElement>().value();
             let selected = Country::from_alpha2(selected);
-            Msg::CountrySet(selected)
+            Msg::from(AppMsg::CountrySet(selected))
         });
+
+        let driving_side_onchange = ctx
+            .link()
+            .callback(|_e: Event| Msg::from(AppMsg::ToggleDrivingSide));
 
         let way_id: String = state
             .id
             .as_ref()
             .cloned()
             .unwrap_or_else(|| String::from(""));
-        let way_id_onclick = ctx.link().callback(|_e: MouseEvent| Msg::WayFetch);
+        let way_id_onclick = ctx
+            .link()
+            .callback(|_e: MouseEvent| Msg::from(AppMsg::WayFetch));
 
         let textarea_input_onblur = ctx.link().callback(|input: FocusEvent| {
-            Msg::TagsSet(input.target_unchecked_into::<HtmlInputElement>().value())
+            Msg::from(AppMsg::TagsSet(
+                input.target_unchecked_into::<HtmlInputElement>().value(),
+            ))
         });
         let textarea_input_onkeypress = ctx.link().callback(|input: KeyboardEvent| {
-            Msg::TagsSet(input.target_unchecked_into::<HtmlInputElement>().value())
+            Msg::from(AppMsg::TagsSet(
+                input.target_unchecked_into::<HtmlInputElement>().value(),
+            ))
+        });
+
+        let example_onchange = ctx.link().callback(move |e: Event| {
+            let example: String = e.target_unchecked_into::<HtmlSelectElement>().value();
+            Msg::Example(example)
         });
 
         html! {
@@ -131,6 +191,25 @@ impl Component for Control {
                     <button class="row-item" onclick={way_id_onclick}>
                         {"Fetch"}
                     </button>
+                    <hr/>
+                    <label class="row-item" for="example">{"Examples"}</label>
+                    <select onchange={example_onchange} id="examples">
+                    {
+                        if let Some(examples) = &self.examples {
+                            html!{
+                                <>{
+                                    for examples.keys().map(|e| html!{
+                                        <option value={e.clone()} selected={Some(e) == self.example.as_ref()}>{e}</option>
+                                    })
+                                }</>
+                            }
+                        } else {
+                            html!{
+                                <option>{"LOADING..."}</option>
+                            }
+                        }
+                    }
+                    </select>
                 </section>
                 <section class="row">
                     <div class="row-item">
@@ -173,6 +252,16 @@ impl Component for Control {
                     </div>
                 </section>
             </>
+        }
+    }
+
+    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
+        if first_render {
+            let handle = {
+                let link = ctx.link().clone();
+                Timeout::new(1, move || link.send_message(Msg::FirstLazy))
+            };
+            handle.forget();
         }
     }
 }
