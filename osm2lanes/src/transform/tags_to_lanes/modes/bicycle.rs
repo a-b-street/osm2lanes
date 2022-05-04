@@ -1,9 +1,10 @@
 use crate::locale::Locale;
+use crate::metric::Metre;
 use crate::road::{Designated, Direction};
 use crate::tag::Tags;
 use crate::transform::tags::CYCLEWAY;
 use crate::transform::tags_to_lanes::oneway::Oneway;
-use crate::transform::tags_to_lanes::road::LaneType;
+use crate::transform::tags_to_lanes::road::{LaneType, Width};
 use crate::transform::tags_to_lanes::{Infer, LaneBuilder, RoadBuilder, TagsToLanesMsg};
 use crate::transform::{RoadWarnings, WaySide};
 
@@ -37,6 +38,7 @@ pub(in crate::transform::tags_to_lanes) enum Variant {
 pub(in crate::transform::tags_to_lanes) struct Way {
     variant: Variant,
     direction: Direction,
+    width: Option<Width>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -85,16 +87,19 @@ impl Scheme {
                 Ok(Self(Location::Forward(Way {
                     variant,
                     direction: Direction::Forward,
+                    width: None,
                 })))
             } else {
                 Ok(Self(Location::Both {
                     forward: Way {
                         variant,
                         direction: Direction::Forward,
+                        width: None,
                     },
                     backward: Way {
                         variant,
                         direction: Direction::Backward,
+                        width: None,
                     },
                 }))
             }
@@ -103,10 +108,12 @@ impl Scheme {
                 forward: Way {
                     variant,
                     direction: Direction::Forward,
+                    width: None,
                 },
                 backward: Way {
                     variant,
                     direction: Direction::Backward,
+                    width: None,
                 },
             }))
         } else {
@@ -118,6 +125,7 @@ impl Scheme {
                 return Ok(Self(Location::Backward(Way {
                     variant: Variant::Lane,
                     direction: Direction::Backward,
+                    width: None,
                 })));
             }
             // cycleway=opposite oneway=yes oneway:bicycle=no
@@ -130,21 +138,30 @@ impl Scheme {
                 return Ok(Self(Location::Backward(Way {
                     variant: Variant::Lane,
                     direction: Direction::Backward,
+                    width: None,
                 })));
             }
             // cycleway:FORWARD=*
             if let Ok(Some(variant)) = tags.cycleway_variant(Some(locale.driving_side.into())) {
+                let width = tags
+                    .get_parsed(CYCLEWAY + locale.driving_side.tag() + "width", warnings)
+                    .map(|w| Width {
+                        target: Infer::Direct(Metre::new(w)),
+                        ..Default::default()
+                    });
                 if tags.is(CYCLEWAY + locale.driving_side.tag() + "oneway", "no")
                     || tags.is("oneway:bicycle", "no")
                 {
                     return Ok(Self(Location::Forward(Way {
                         variant,
                         direction: Direction::Both,
+                        width,
                     })));
                 }
                 return Ok(Self(Location::Forward(Way {
                     variant,
                     direction: Direction::Forward,
+                    width,
                 })));
             }
             // cycleway:FORWARD=opposite_lane
@@ -158,12 +175,22 @@ impl Scheme {
                 return Ok(Self(Location::Forward(Way {
                     variant: Variant::Lane, // TODO distinguish oposite_ values
                     direction: Direction::Backward,
+                    width: None,
                 })));
             }
             // cycleway:BACKWARD=*
             if let Ok(Some(variant)) =
                 tags.cycleway_variant(Some(locale.driving_side.opposite().into()))
             {
+                let width = tags
+                    .get_parsed(
+                        CYCLEWAY + locale.driving_side.opposite().tag() + "width",
+                        warnings,
+                    )
+                    .map(|w| Width {
+                        target: Infer::Direct(Metre::new(w)),
+                        ..Default::default()
+                    });
                 return Ok(Self(
                     if tags.is(
                         CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
@@ -172,6 +199,7 @@ impl Scheme {
                         Location::Backward(Way {
                             variant,
                             direction: Direction::Forward,
+                            width,
                         })
                     } else if tags.is(
                         CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
@@ -180,6 +208,7 @@ impl Scheme {
                         Location::Backward(Way {
                             variant,
                             direction: Direction::Backward,
+                            width,
                         })
                     } else if tags.is(
                         CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
@@ -189,18 +218,21 @@ impl Scheme {
                         Location::Backward(Way {
                             variant,
                             direction: Direction::Both,
+                            width,
                         })
                     } else if road_oneway.into() {
                         // A oneway road with a cycleway on the wrong side
                         Location::Backward(Way {
                             variant,
                             direction: Direction::Forward,
+                            width,
                         })
                     } else {
                         // A contraflow bicycle lane
                         Location::Backward(Way {
                             variant,
                             direction: Direction::Backward,
+                            width,
                         })
                     },
                 ));
@@ -220,27 +252,30 @@ impl Scheme {
 }
 
 impl LaneBuilder {
-    fn cycle_forward(_locale: &Locale) -> Self {
+    fn cycle_forward(width: Option<Width>, _locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
             direction: Infer::Direct(Direction::Forward),
             designated: Infer::Direct(Designated::Bicycle),
+            width: width.unwrap_or_default(),
             ..Default::default()
         }
     }
-    fn cycle_backward(_locale: &Locale) -> Self {
+    fn cycle_backward(width: Option<Width>, _locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
             direction: Infer::Direct(Direction::Backward),
             designated: Infer::Direct(Designated::Bicycle),
+            width: width.unwrap_or_default(),
             ..Default::default()
         }
     }
-    fn cycle_both(_locale: &Locale) -> Self {
+    fn cycle_both(width: Option<Width>, _locale: &Locale) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
             direction: Infer::Direct(Direction::Both),
             designated: Infer::Direct(Designated::Bicycle),
+            width: width.unwrap_or_default(),
             ..Default::default()
         }
     }
@@ -253,10 +288,11 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
     warnings: &mut RoadWarnings,
 ) -> Result<(), TagsToLanesMsg> {
     let scheme = Scheme::from_tags(tags, locale, road.oneway, warnings)?;
+    log::trace!("cycleway scheme: {scheme:?}");
     let lane = |way: Way| match way.direction {
-        Direction::Forward => LaneBuilder::cycle_forward(locale),
-        Direction::Backward => LaneBuilder::cycle_backward(locale),
-        Direction::Both => LaneBuilder::cycle_both(locale),
+        Direction::Forward => LaneBuilder::cycle_forward(way.width, locale),
+        Direction::Backward => LaneBuilder::cycle_backward(way.width, locale),
+        Direction::Both => LaneBuilder::cycle_both(way.width, locale),
     };
     match scheme.0 {
         Location::None | Location::_No => {},
@@ -299,10 +335,12 @@ mod tests {
                 forward: Way {
                     variant: Variant::Lane,
                     direction: Direction::Forward,
+                    width: None,
                 },
                 backward: Way {
                     variant: Variant::Lane,
                     direction: Direction::Backward,
+                    width: None,
                 }
             })
         )

@@ -123,8 +123,6 @@
 
 - description: tertiary road
   way_id: 3981656
-  rust:
-    expect_warnings: true
   tags:
     highway: "tertiary"
   driving_side: left
@@ -138,7 +136,7 @@
         width: 3
       - type: separator
         markings:
-          - style: dotted_line
+          - style: broken_line
             color: white
             width: 0.1
       - type: travel
@@ -310,7 +308,8 @@
 # incorrect speed limit
 - way_id: 102917976
   description: Road with impossible speed limit
-  rust: false
+  rust:
+    false
     #expect_warnings: true
     #separator: true
   tags:
@@ -1052,7 +1051,8 @@
 - description: "London's Lambeth Bridge"
   way_id: 201619353
   mapillary: "https://www.mapillary.com/app/?pKey=756871468304241"
-  rust: false
+  rust:
+    expect_warnings: true
   tags:
     highway: "primary"
     busway:left: "lane"
@@ -1061,7 +1061,7 @@
     cycleway:right:lane: "exclusive"
     cycleway:right:width: "1.25"
     parking:condition:both: "no_stopping"
-    sidewalk: "both"
+    sidewalk: "no"
     surface: "asphalt"
     maxspeed: "20 mph"
     hgv: "no"
@@ -1137,7 +1137,6 @@
           - style: solid_line
             color: red
             width: 0.100
-        
 
 ### Lifecycle
 

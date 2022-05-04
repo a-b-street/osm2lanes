@@ -63,13 +63,18 @@ impl Default for LaneChange {
     }
 }
 
+/// Overtaking rules
+///
+/// Note: this does not take into account the local vehicle-specific rules,
+/// e.g. for motorcycle filtering or overtaking tractors.
+#[derive(Debug)]
+pub enum ParkingCondition {
+    NoStopping,
+}
+
 /// Semantic lane separator
 #[derive(Debug)]
 pub enum Separator {
-    /// Into grass or dirt
-    _SoftEdge,
-    /// Into a building or other hard surface
-    _HardEdge,
     /// Motorway (or other) shoulder
     Shoulder { speed: Infer<SpeedClass> },
     /// Road paint between same direction
@@ -95,7 +100,22 @@ pub enum Separator {
     _Buffer { width: Metre, style: Style },
     /// Kerb step
     // TODO: solve directionality
-    Kerb,
+    Kerb {
+        // https://wiki.openstreetmap.org/wiki/Key:parking:condition
+        parking_condition: Option<ParkingCondition>,
+    },
     /// Grassy verge
     _Verge { width: Metre },
+}
+
+/// Semantic lane edge separator
+#[derive(Debug)]
+pub enum EdgeSeparator {
+    /// Into grass or dirt
+    // Soft,
+    /// Into a building or other hard surface
+    Hard {
+        // https://wiki.openstreetmap.org/wiki/Key:parking:condition
+        parking_condition: Option<ParkingCondition>,
+    },
 }

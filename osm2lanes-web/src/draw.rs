@@ -149,30 +149,40 @@ pub fn lanes<R: RenderContext>(
                         _ => PietColor::BLUE,
                         // _ => return Err(RenderError::UnknownSeparator),
                     };
-                    rc.stroke_styled(
-                        Line::new(
-                            Point { x, y: 0.0 },
-                            Point {
-                                x,
-                                y: canvas_height,
+                    if let Style::NoFill = marking.style {
+                        // nope
+                    } else {
+                        rc.stroke_styled(
+                            Line::new(
+                                Point { x, y: 0.0 },
+                                Point {
+                                    x,
+                                    y: canvas_height,
+                                },
+                            ),
+                            &color,
+                            scale.scale(width),
+                            &match marking.style {
+                                Style::SolidLine => StrokeStyle::new(),
+                                Style::DottedLine => {
+                                    StrokeStyle::new().dash_pattern(&[50.0, 100.0])
+                                },
+                                Style::DashedLine => {
+                                    StrokeStyle::new().dash_pattern(&[100.0, 100.0])
+                                },
+                                Style::BrokenLine => {
+                                    StrokeStyle::new().dash_pattern(&[100.0, 50.0])
+                                },
+                                Style::KerbUp | Style::KerbDown => StrokeStyle::new(),
+                                // Remains for debugging, SOS
+                                _ => StrokeStyle::new().dash_pattern(&[
+                                    10.0, 10.0, 10.0, 10.0, 10.0, 50.0, 30.0, 30.0, 30.0, 30.0,
+                                    30.0, 50.0,
+                                ]),
+                                // _ => return Err(RenderError::UnknownSeparator),
                             },
-                        ),
-                        &color,
-                        scale.scale(width),
-                        &match marking.style {
-                            Style::SolidLine => StrokeStyle::new(),
-                            Style::DottedLine => StrokeStyle::new().dash_pattern(&[50.0, 100.0]),
-                            Style::DashedLine => StrokeStyle::new().dash_pattern(&[100.0, 100.0]),
-                            Style::BrokenLine => StrokeStyle::new().dash_pattern(&[100.0, 50.0]),
-                            Style::KerbUp | Style::KerbDown => StrokeStyle::new(),
-                            // Remains for debugging, SOS
-                            _ => StrokeStyle::new().dash_pattern(&[
-                                10.0, 10.0, 10.0, 10.0, 10.0, 50.0, 30.0, 30.0, 30.0, 30.0, 30.0,
-                                50.0,
-                            ]),
-                            // _ => return Err(RenderError::UnknownSeparator),
-                        },
-                    );
+                        );
+                    }
                     left_edge += width;
                 }
             },
