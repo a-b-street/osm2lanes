@@ -32,7 +32,7 @@ pub struct TestCase {
     pub comment: Option<String>,
     pub description: Option<String>,
 
-    // Examplary
+    // List as a named example in the web app
     example: Option<String>,
 
     // Config and Locale
