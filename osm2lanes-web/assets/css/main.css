@@ -1,4 +1,17 @@
-body, h1, h2, h3, h4, h5, a, button, input, textarea, .button, label, p, select {
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+a,
+button,
+input,
+textarea,
+.button,
+label,
+p,
+select {
   font-family: "Source Code Pro", monospace;
   margin: 1ex 0.5em;
   padding: 0.5ex 0em;
@@ -13,12 +26,18 @@ section {
   margin: 1ex 1em;
 }
 
-label, p {
+label,
+p {
   margin: 2ex 0.5em;
   padding: 0.5ex 0em;
 }
 
-button, .button, span, pre, input, label {
+button,
+.button,
+span,
+pre,
+input,
+label {
   font-size: 16px;
 }
 
@@ -26,7 +45,10 @@ textarea {
   font-size: 24px;
 }
 
-button, input, textarea, .button {
+button,
+input,
+textarea,
+.button {
   background-color: #323253;
   border: none;
   color: white;
@@ -37,26 +59,35 @@ button, input, textarea, .button {
   text-align: left;
   text-decoration: none;
 }
-button:hover, input:hover, .button:hover {
+
+button:hover,
+input:hover,
+.button:hover {
   background-color: #333;
 }
-button:active, input:active, .button:active {
+
+button:active,
+input:active,
+.button:active {
   background-color: rgb(78, 18, 18);
 }
+
 .button.disabled {
   background-color: #3c3c53;
   cursor: default;
 }
 
-.row, .lanes {
+.row,
+.lanes {
   display: flex;
-  max-width: 1040px;
+  max-width: 1600px;
 }
 
 .lanes {
   flex-wrap: wrap;
   max-width: 960px;
 }
+
 .lane {
   padding: 0;
   margin: 0 0.5em;
@@ -67,14 +98,15 @@ button:active, input:active, .button:active {
 canvas {
   width: 960px;
   height: 480px;
+  margin: 0px 40px;
 }
 
 hr {
   margin: 0px 1em;
 }
 
- /* The switch - the box around the slider */
- .switch {
+/* The switch - the box around the slider */
+.switch {
   position: relative;
   display: inline-block;
   width: 2.4em;
@@ -115,7 +147,7 @@ hr {
   transition: .4s;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   -webkit-transform: translateX(1em);
   -ms-transform: translateX(1em);
   transform: translateX(1em);
@@ -130,7 +162,7 @@ select {
   margin: 2ex 1em;
   padding: 0;
   height: 2em;
-  top: 0.5ex; 
+  top: 0.5ex;
   background-color: #ccc;
   -webkit-appearance: none;
   -moz-appearance: none;
@@ -151,7 +183,8 @@ p.prefixed {
 
 #map {
   height: 1024px;
-  cursor:crosshair;
+  cursor: crosshair;
+  margin: 0px 40px;
 }
 
 /* End Map */

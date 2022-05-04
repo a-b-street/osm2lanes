@@ -1,13 +1,10 @@
-use std::fs::File;
-use std::io::BufReader;
-
 use serde::Deserialize;
 
 use crate::locale::DrivingSide;
 use crate::road::{Lane, Road};
 use crate::tag::{Highway, HighwayType, Tags};
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
 pub enum RustTesting {
     Enabled(bool),
@@ -17,7 +14,7 @@ pub enum RustTesting {
     },
 }
 
-#[derive(Deserialize)]
+#[derive(Clone, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Expected {
     Road(Road),
@@ -25,7 +22,8 @@ pub enum Expected {
     Output(Vec<Lane>),
 }
 
-#[derive(Deserialize)]
+#[allow(clippy::module_name_repetitions)]
+#[derive(Clone, Deserialize)]
 pub struct TestCase {
     // Metadata
     /// The OSM way unique identifier
@@ -33,6 +31,9 @@ pub struct TestCase {
     pub link: Option<String>,
     pub comment: Option<String>,
     pub description: Option<String>,
+
+    // List as a named example in the web app
+    example: Option<String>,
 
     // Config and Locale
     pub driving_side: DrivingSide,
@@ -56,6 +57,7 @@ impl TestCase {
         }
     }
     /// Road of expected output
+    #[must_use]
     pub fn road(&self) -> Road {
         match &self.expected {
             Expected::Road(road) => road.clone(),
@@ -68,22 +70,22 @@ impl TestCase {
     /// Test case is enabled, true by default
     fn test_enabled(&self) -> bool {
         match self.rust {
-            None => true,
             Some(RustTesting::Enabled(b)) => b,
-            Some(RustTesting::WithOptions { .. }) => true,
+            None | Some(RustTesting::WithOptions { .. }) => true,
         }
     }
     /// Test case must have warnings
+    #[must_use]
     pub fn test_has_warnings(&self) -> bool {
         match self.rust {
-            None => false,
-            Some(RustTesting::Enabled(_)) => false,
+            None | Some(RustTesting::Enabled(_)) => false,
             Some(RustTesting::WithOptions {
                 expect_warnings, ..
             }) => expect_warnings.unwrap_or(false),
         }
     }
     /// Test case expects matching separators
+    #[must_use]
     pub fn test_include_separators(&self) -> bool {
         match self.rust {
             None => true,
@@ -92,12 +94,19 @@ impl TestCase {
         }
     }
     /// Expected lanes include separator
+    #[must_use]
     pub fn expected_has_separators(&self) -> bool {
-        self.lanes().iter().any(|lane| lane.is_separator())
+        self.lanes().iter().any(Lane::is_separator)
+    }
+    /// Exemplary
+    #[must_use]
+    pub fn example(&self) -> Option<&str> {
+        self.example.as_deref()
     }
 }
 
 impl std::fmt::Display for TestCase {
+    #[allow(clippy::panic, clippy::restriction)]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let way_id = self.way_id.map(|id| id.to_string());
         let names: [Option<&str>; 3] = [
@@ -105,9 +114,7 @@ impl std::fmt::Display for TestCase {
             self.link.as_deref(),
             self.description.as_deref(),
         ];
-        if names.iter().all(|n| n.is_none()) {
-            panic!("invalid test case");
-        }
+        assert!(names.iter().any(Option::is_some), "invalid test case");
         write!(
             f,
             "{}",
@@ -122,14 +129,11 @@ impl std::fmt::Display for TestCase {
 }
 
 /// Get Test Cases from tests.yml
+#[must_use]
 pub fn get_tests() -> Vec<TestCase> {
-    let tests: Vec<TestCase> =
-        serde_yaml::from_reader(BufReader::new(File::open("../data/tests.yml").unwrap()))
-            .expect("invalid yaml in data/tests.yml");
-    let tests: Vec<TestCase> = tests
-        .into_iter()
-        .filter(|test| test.test_enabled())
-        .collect();
+    let tests: Vec<TestCase> = serde_yaml::from_str(include_str!("../../data/tests.yml"))
+        .expect("invalid yaml in data/tests.yml");
+    let tests: Vec<TestCase> = tests.into_iter().filter(TestCase::test_enabled).collect();
     tests
 }
 
