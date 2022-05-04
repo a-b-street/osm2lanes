@@ -10,6 +10,7 @@ mod error;
 pub use error::TagsToLanesMsg;
 
 mod access_by_lane;
+use access_by_lane::{Access, LaneDependentAccess};
 
 mod counts;
 

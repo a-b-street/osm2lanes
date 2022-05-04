@@ -1,9 +1,9 @@
 use crate::locale::Locale;
 use crate::road::Designated;
 use crate::tag::{TagKey, Tags};
-use crate::transform::tags_to_lanes::access_by_lane::Access;
 use crate::transform::tags_to_lanes::{
-    Infer, LaneBuilder, LaneBuilderError, Oneway, RoadBuilder, TagsToLanesMsg,
+    Access, Infer, LaneBuilder, LaneBuilderError, LaneDependentAccess, Oneway, RoadBuilder,
+    TagsToLanesMsg,
 };
 use crate::transform::RoadWarnings;
 
@@ -27,14 +27,14 @@ impl std::convert::From<LaneBuilderError> for TagsToLanesMsg {
 }
 
 #[derive(Debug)]
-pub struct BusLaneCount {
+pub(in crate::transform::tags_to_lanes) struct BusLaneCount {
     pub forward: usize,
     pub backward: usize,
 }
 
 impl BusLaneCount {
     #[allow(clippy::unnecessary_wraps)]
-    pub(in crate::transform::tags_to_lanes) fn from_tags(
+    pub fn from_tags(
         tags: &Tags,
         locale: &Locale,
         oneway: Oneway,
@@ -112,84 +112,53 @@ fn bus_lanes(
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
-    _warnings: &mut RoadWarnings,
+    warnings: &mut RoadWarnings,
 ) -> Result<(), TagsToLanesMsg> {
     match (
-        tags.get("bus:lanes"),
-        (
-            tags.get("bus:lanes:forward"),
-            tags.get("bus:lanes:backward"),
-        ),
-        tags.get("psv:lanes"),
-        (
-            tags.get("psv:lanes:forward"),
-            tags.get("psv:lanes:backward"),
-        ),
+        LaneDependentAccess::from_tags("bus:lanes", tags, locale, road, warnings)?,
+        LaneDependentAccess::from_tags("psv:lanes", tags, locale, road, warnings)?,
     ) {
         // lanes:bus or lanes:psv
-        (Some(lanes), (None, None), None, (None, None))
-        | (None, (None, None), Some(lanes), (None, None)) => {
-            let access = Access::split(lanes).map_err(|a| {
-                TagsToLanesMsg::unsupported(
-                    &format!("lanes access {}", a),
-                    tags.subset(&["bus:lanes", "psv:lanes"]),
-                )
-            })?;
-            if access.len() != road.len() {
-                return Err(TagsToLanesMsg::unsupported(
-                    "lane count mismatch",
-                    tags.subset(&[
-                        "bus:lanes",
-                        "psv:lanes",
-                        "lanes",
-                        "lanes:forward",
-                        "lanes:backward",
-                    ]),
-                ));
-            }
-            for (lane, access) in road.lanes_ltr_mut(locale).zip(access.iter()) {
+        (Some(LaneDependentAccess::LeftToRight(lanes)), None)
+        | (None, Some(LaneDependentAccess::LeftToRight(lanes))) => {
+            for (lane, access) in road.lanes_ltr_mut(locale).zip(lanes.iter()) {
                 if let Access::Designated = access {
                     lane.set_bus(locale)?;
                 }
             }
         },
         // lanes:bus:forward and lanes:bus:backward, or lanes:psv:forward and lanes:psv:backward
-        (None, (forward, backward), None, (None, None))
-        | (None, (None, None), None, (forward, backward)) => {
-            if let Some(forward) = forward {
-                let forward_access = Access::split(forward).map_err(|a| {
-                    TagsToLanesMsg::unsupported(
-                        &format!("lanes access {}", a),
-                        tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
-                    )
-                })?;
-                for (lane, access) in road.forward_ltr_mut(locale).zip(forward_access.iter()) {
-                    if let Access::Designated = access {
-                        lane.set_bus(locale)?;
-                    }
-                }
-            }
-            if let Some(backward) = backward {
-                let backward_access = Access::split(backward).map_err(|a| {
-                    TagsToLanesMsg::unsupported(
-                        &format!("lanes access {}", a),
-                        tags.subset(&["bus:lanes:backward", "psv:lanes:backward"]),
-                    )
-                })?;
-                for (lane, access) in road.backward_ltr_mut(locale).zip(backward_access.iter()) {
-                    if let Access::Designated = access {
-                        lane.set_bus(locale)?;
-                    }
+        (Some(LaneDependentAccess::Forward(lanes)), None)
+        | (None, Some(LaneDependentAccess::Forward(lanes))) => {
+            for (lane, access) in road.forward_ltr_mut(locale).zip(lanes.iter()) {
+                if let Access::Designated = access {
+                    lane.set_bus(locale)?;
                 }
             }
         },
-        // Don't try to understand this
-        (Some(_), (Some(_), _) | (_, Some(_)), _, _)
-        | (Some(_), _, Some(_), _)
-        | (Some(_), _, _, (Some(_), _) | (_, Some(_)))
-        | (_, (Some(_), _) | (_, Some(_)), _, (Some(_), _) | (_, Some(_)))
-        | (_, (Some(_), _) | (_, Some(_)), Some(_), _)
-        | (_, _, Some(_), (Some(_), _) | (_, Some(_))) => {
+        (Some(LaneDependentAccess::Backward(lanes)), None)
+        | (None, Some(LaneDependentAccess::Backward(lanes))) => {
+            for (lane, access) in road.backward_ltr_mut(locale).zip(lanes.iter()) {
+                if let Access::Designated = access {
+                    lane.set_bus(locale)?;
+                }
+            }
+        },
+        (Some(LaneDependentAccess::ForwardBackward { forward, backward }), None)
+        | (None, Some(LaneDependentAccess::ForwardBackward { forward, backward })) => {
+            for (lane, access) in road.forward_ltr_mut(locale).zip(forward.iter()) {
+                if let Access::Designated = access {
+                    lane.set_bus(locale)?;
+                }
+            }
+            for (lane, access) in road.backward_ltr_mut(locale).zip(backward.iter()) {
+                if let Access::Designated = access {
+                    lane.set_bus(locale)?;
+                }
+            }
+        },
+        (None, None) => {},
+        (Some(_), Some(_)) => {
             return Err(TagsToLanesMsg::unsupported(
                 "more than one bus:lanes used",
                 tags.subset(&[
@@ -203,6 +172,5 @@ fn bus_lanes(
             ))
         },
     }
-
     Ok(())
 }

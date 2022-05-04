@@ -1,3 +1,11 @@
+use super::road::RoadBuilder;
+use crate::locale::Locale;
+use crate::tag::{TagKey, Tags};
+use crate::transform::tags_to_lanes::TagsToLanesMsg;
+use crate::transform::RoadWarnings;
+
+/// <https://wiki.openstreetmap.org/wiki/Key:access#Lane_dependent_restrictions>
+
 #[derive(Debug)]
 pub(in crate::transform::tags_to_lanes) enum Access {
     None,
@@ -22,5 +30,105 @@ impl std::str::FromStr for Access {
 impl Access {
     pub(in crate::transform::tags_to_lanes) fn split(lanes: &str) -> Result<Vec<Self>, String> {
         lanes.split('|').map(str::parse).collect()
+    }
+}
+
+#[derive(Debug)]
+pub(in crate::transform::tags_to_lanes) enum LaneDependentAccess {
+    LeftToRight(Vec<Access>),
+    Forward(Vec<Access>),
+    Backward(Vec<Access>),
+    ForwardBackward {
+        forward: Vec<Access>,
+        backward: Vec<Access>,
+    },
+}
+
+impl Tags {
+    /// Get value from tags given a key
+    pub(in crate::transform::tags_to_lanes) fn get_access<K>(
+        &self,
+        k: K,
+    ) -> Result<Option<Vec<Access>>, TagsToLanesMsg>
+    where
+        K: AsRef<str> + Clone,
+    {
+        self.get(k.clone())
+            .map(|a| {
+                Access::split(a).map_err(|a| {
+                    TagsToLanesMsg::unsupported(&format!("lanes access {}", a), self.subset(&[k]))
+                })
+            })
+            .transpose()
+    }
+}
+
+impl LaneDependentAccess {
+    // TODO: so much cloning!
+    // Look at <https://github.com/a-b-street/osm2lanes/issues/78>
+    #[allow(clippy::unnecessary_wraps)]
+    pub fn from_tags<K>(
+        key: K,
+        tags: &Tags,
+        _locale: &Locale,
+        road: &RoadBuilder,
+        warnings: &mut RoadWarnings,
+    ) -> Result<Option<Self>, TagsToLanesMsg>
+    where
+        TagKey: From<K>,
+    {
+        const LANES: TagKey = TagKey::from("LANES");
+        let key: TagKey = key.into();
+        Ok(
+            match (
+                tags.get_access(key.clone())?,
+                (
+                    tags.get_access(key.clone() + "forward")?,
+                    tags.get_access(key.clone() + "backward")?,
+                ),
+            ) {
+                (Some(lanes), (None, None)) => {
+                    if lanes.len() != road.len() {
+                        return Err(TagsToLanesMsg::unsupported(
+                            "lane count mismatch",
+                            tags.subset(&[key, LANES, LANES + "forward", LANES + "backward"]),
+                        ));
+                    }
+                    Some(Self::LeftToRight(lanes))
+                },
+                (None, (Some(forward), None)) => Some(Self::Forward(forward)),
+                (None, (None, Some(backward))) => Some(Self::Backward(backward)),
+                (total, (Some(forward), Some(backward))) => {
+                    if forward.len().checked_add(backward.len()) != Some(road.len()) {
+                        return Err(TagsToLanesMsg::unsupported(
+                            "lane count mismatch",
+                            tags.subset(&[
+                                key.clone() + "forward",
+                                key + "backward",
+                                LANES,
+                                LANES + "forward",
+                                LANES + "backward",
+                            ]),
+                        ));
+                    }
+                    if total.is_some() {
+                        warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                            key.clone(),
+                            key.clone() + "forward",
+                            key + "backward",
+                        ])));
+                    }
+                    Some(Self::ForwardBackward { forward, backward })
+                },
+                (None, (None, None)) => None,
+                (Some(_), (Some(_), None) | (None, Some(_))) => {
+                    return Err(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                        key.clone(),
+                        key.clone() + "forward",
+                        key + "backward",
+                    ])))
+                },
+            },
+        )
     }
 }
