@@ -76,7 +76,7 @@ impl TestCase {
     }
     /// Test case must have warnings
     #[must_use]
-    pub fn test_has_warnings(&self) -> bool {
+    pub fn test_expects_warnings(&self) -> bool {
         match self.rust {
             None | Some(RustTesting::Enabled(_)) => false,
             Some(RustTesting::WithOptions {
@@ -273,7 +273,7 @@ mod tests {
                 self.driving_side.as_tla(),
                 self.test_include_separators(),
                 self.expected_has_separators(),
-                self.test_has_warnings(),
+                self.test_expects_warnings(),
             );
             if let Some(comment) = self.comment.as_ref() {
                 println!("        Comment: {}", comment);
@@ -415,7 +415,6 @@ mod tests {
                 &test.tags,
                 &locale,
                 &TagsToLanesConfig {
-                    error_on_warnings: !test.test_has_warnings(),
                     include_separators: test.test_include_separators()
                         && test.expected_has_separators(),
                     ..TagsToLanesConfig::default()
@@ -426,11 +425,19 @@ mod tests {
                 Ok(road_from_tags) => {
                     let (actual_road, warnings) = road_from_tags.into_filtered_road(test);
                     if actual_road.approx_eq(&expected_road) {
-                        if test.test_has_warnings() && warnings.is_empty() {
+                        if test.test_expects_warnings() && warnings.is_empty() {
                             test.print();
                             println!("Expected warnings. Try removing `expect_warnings`.");
                             println!();
                             panic!("tags_to_lanes expected warnings");
+                        } else if !test.test_expects_warnings() && !warnings.is_empty() {
+                            test.print();
+                            println!("Expected:");
+                            println!("    {}", stringify_lane_types(&expected_road));
+                            println!("    {}", stringify_directions(&expected_road));
+                            println!("{}", warnings);
+                            println!();
+                            panic!("tags_to_lanes has warnings");
                         }
                     } else {
                         test.print();
@@ -452,15 +459,7 @@ mod tests {
                         panic!("tags_to_lanes output mismatch");
                     }
                 },
-                Err(RoadError::Warnings(warnings)) => {
-                    test.print();
-                    println!("Expected:");
-                    println!("    {}", stringify_lane_types(&expected_road));
-                    println!("    {}", stringify_directions(&expected_road));
-                    println!("{}", warnings);
-                    println!();
-                    panic!("tags_to_lanes has warnings");
-                },
+                Err(RoadError::Warnings(_warnings)) => unreachable!(),
                 Err(e) => {
                     test.print();
                     println!("Expected:");

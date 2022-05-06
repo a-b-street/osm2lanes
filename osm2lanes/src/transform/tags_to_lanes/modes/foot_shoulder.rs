@@ -190,6 +190,7 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
                     if !has_bicycle_lane
                         && locale.has_shoulder(self.highway.r#type())
                         && (forward || !bool::from(self.oneway))
+                        && !tags.is("parking:condition:both", "no_stopping")
                     {
                         self.push_outside(LaneBuilder::shoulder(locale), forward);
                     }

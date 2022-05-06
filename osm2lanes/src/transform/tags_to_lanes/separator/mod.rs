@@ -10,7 +10,7 @@ mod semantic;
 
 use semantic::{Overtake, Separator, SpeedClass};
 
-use self::semantic::LaneChange;
+use self::semantic::{EdgeSeparator, LaneChange, ParkingCondition};
 use super::{LaneBuilder, LaneType, RoadBuilder};
 
 #[derive(Clone, Copy)]
@@ -49,7 +49,9 @@ pub(in crate::transform::tags_to_lanes) fn lane_pair_to_semantic_separator(
         direction_change,
     ) {
         // Foot
-        ([_, (_, Some(Designated::Foot))], _) => Some(Separator::Kerb),
+        ([_, (_, Some(Designated::Foot))], _) => Some(Separator::Kerb {
+            parking_condition: None,
+        }),
         // Shoulder
         ([_, (Some(LaneType::Shoulder), _)], _) => Some(Separator::Shoulder {
             speed: inside.max_speed.map(SpeedClass::from),
@@ -139,7 +141,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
 ) -> Option<Lane> {
     match separator {
         // Foot
-        Separator::Kerb => Some(Lane::Separator {
+        Separator::Kerb { .. } => Some(Lane::Separator {
             markings: Markings::new(vec![Marking {
                 style: Style::KerbUp,
                 color: None,
@@ -201,6 +203,20 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                     }
                 }
             }
+            if let Some(c) = &locale.country {
+                if c == &Country::the_united_kingdom_of_great_britain_and_northern_ireland() {
+                    return Some(Lane::Separator {
+                        // https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/782724/traffic-signs-manual-chapter-03.pdf
+                        // Traffic Signs Manual, Chapter 3
+                        // Page 90, 9.3.3
+                        markings: Markings::new(vec![Marking {
+                            style: Style::BrokenLine,
+                            color: Some(Color::White),
+                            width: Some(Metre::new(0.100_f64)),
+                        }]),
+                    });
+                }
+            }
             warnings.push(TagsToLanesMsg::separator_locale_unused(
                 inside.clone(),
                 outside.clone(),
@@ -241,7 +257,38 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
             }]),
         }),
         // Modal separation
-        Separator::Modal { .. } => {
+        Separator::Modal {
+            outside: designated,
+            ..
+        } => {
+            if let Some(c) = &locale.country {
+                if c == &Country::the_united_kingdom_of_great_britain_and_northern_ireland() {
+                    if designated == &Designated::Bus {
+                        return Some(Lane::Separator {
+                            // https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/782724/traffic-signs-manual-chapter-03.pdf
+                            // Traffic Signs Manual, Chapter 3
+                            // Page 90, 9.3.3
+                            markings: Markings::new(vec![Marking {
+                                style: Style::SolidLine,
+                                color: Some(Color::White),
+                                width: Some(Metre::new(0.250_f64)),
+                            }]),
+                        });
+                    }
+                    if designated == &Designated::Bicycle {
+                        return Some(Lane::Separator {
+                            // https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/782724/traffic-signs-manual-chapter-03.pdf
+                            // Traffic Signs Manual, Chapter 3
+                            // Page 90, 9.3.3
+                            markings: Markings::new(vec![Marking {
+                                style: Style::SolidLine,
+                                color: Some(Color::White),
+                                width: Some(Metre::new(0.150_f64)),
+                            }]),
+                        });
+                    }
+                }
+            }
             warnings.push(TagsToLanesMsg::separator_locale_unused(
                 inside.clone(),
                 outside.clone(),
@@ -275,8 +322,56 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
 /// what should the separator be.
 /// Lanes are defined inside to outside
 #[allow(clippy::unnecessary_wraps)]
-pub(super) fn lane_to_outer_edge_separator(_lane: &LaneBuilder) -> Option<Lane> {
+pub(super) fn outer_edge_semantic_separator(
+    lane: &LaneBuilder,
+    tags: &Tags,
+    locale: &Locale,
+) -> Option<EdgeSeparator> {
+    if lane.r#type.some() == Some(LaneType::Travel) {
+        if let Some(c) = &locale.country {
+            if c == &Country::the_united_kingdom_of_great_britain_and_northern_ireland()
+                && tags.is("parking:condition:both", "no_stopping")
+            {
+                return Some(EdgeSeparator::Hard {
+                    parking_condition: Some(ParkingCondition::NoStopping),
+                });
+            }
+        }
+    }
     None
+}
+
+/// Given a pair of lanes, inside to outside
+/// what should the separator between them be
+#[allow(clippy::unnecessary_wraps, clippy::too_many_lines)]
+pub(in crate::transform::tags_to_lanes) fn semantic_edge_separator_to_lane(
+    separator: &EdgeSeparator,
+    _road: &RoadBuilder,
+    _tags: &Tags,
+    _locale: &Locale,
+    _warnings: &mut RoadWarnings,
+) -> Option<Lane> {
+    match separator {
+        EdgeSeparator::Hard { .. } => Some(Lane::Separator {
+            markings: Markings::new(vec![
+                Marking {
+                    style: Style::SolidLine,
+                    color: Some(Color::Red),
+                    width: Some(Metre::new(0.100)),
+                },
+                Marking {
+                    style: Style::NoFill,
+                    color: None,
+                    width: Some(Metre::new(0.080)),
+                },
+                Marking {
+                    style: Style::SolidLine,
+                    color: Some(Color::Red),
+                    width: Some(Metre::new(0.100)),
+                },
+            ]),
+        }),
+    }
 }
 
 /// Given a lane on the inner edge of a way

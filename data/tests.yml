@@ -123,8 +123,6 @@
 
 - description: tertiary road
   way_id: 3981656
-  rust:
-    expect_warnings: true
   tags:
     highway: "tertiary"
   driving_side: left
@@ -138,7 +136,7 @@
         width: 3
       - type: separator
         markings:
-          - style: dotted_line
+          - style: broken_line
             color: white
             width: 0.1
       - type: travel
@@ -310,7 +308,8 @@
 # incorrect speed limit
 - way_id: 102917976
   description: Road with impossible speed limit
-  rust: false
+  rust:
+    false
     #expect_warnings: true
     #separator: true
   tags:
@@ -1048,7 +1047,96 @@
           value: 25
 
 ### Combination
-# TODO
+
+- description: "London's Lambeth Bridge"
+  way_id: 201619353
+  mapillary: "https://www.mapillary.com/app/?pKey=756871468304241"
+  rust:
+    expect_warnings: true
+  tags:
+    highway: "primary"
+    busway:left: "lane"
+    cycleway:left: "share_busway"
+    cycleway:right: "lane"
+    cycleway:right:lane: "exclusive"
+    cycleway:right:width: "1.25"
+    parking:condition:both: "no_stopping"
+    sidewalk: "no"
+    surface: "asphalt"
+    maxspeed: "20 mph"
+    hgv: "no"
+    bridge: "yes"
+    lit: "yes"
+  driving_side: left
+  ISO 3166-2: GB-LBH
+  example: "UK Bridge"
+  road:
+    highway: trunk
+    # https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/773421/traffic-signs-manual-chapter-05.pdf
+    # Traffic Signs Manual, Chapter 5, Road Markings
+    # Page 20, Table 2-5, 1012.1,
+    # or
+    # https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/782724/traffic-signs-manual-chapter-03.pdf
+    # Traffic Signs Manual, Chapter 3
+    # Page 90, 9.3.3
+    lanes:
+      - type: separator
+        markings:
+          - style: solid_line
+            color: red
+            width: 0.100
+          - style: no_fill
+            width: 0.080
+          - style: solid_line
+            color: red
+            width: 0.100
+      - type: travel
+        direction: forward
+        designated: bus
+        max_speed:
+          value: 20
+          unit: mph
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+            width: 0.250
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+        max_speed:
+          value: 20
+          unit: mph
+      - type: separator
+        markings:
+          - style: broken_line
+            color: white
+            width: 0.100
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+        max_speed:
+          value: 20
+          unit: mph
+      - type: separator
+        markings:
+          - style: solid_line
+            color: white
+            width: 0.150
+      - type: travel
+        direction: backward
+        designated: bicycle
+        width: 1.25
+      - type: separator
+        markings:
+          - style: solid_line
+            color: red
+            width: 0.100
+          - style: no_fill
+            width: 0.080
+          - style: solid_line
+            color: red
+            width: 0.100
 
 ### Lifecycle
 

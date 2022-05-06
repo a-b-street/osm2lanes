@@ -4,8 +4,8 @@ use std::iter;
 use super::infer::Infer;
 use super::oneway::Oneway;
 use super::separator::{
-    lane_pair_to_semantic_separator, lane_to_inner_edge_separator, lane_to_outer_edge_separator,
-    semantic_separator_to_lane,
+    lane_pair_to_semantic_separator, lane_to_inner_edge_separator, outer_edge_semantic_separator,
+    semantic_edge_separator_to_lane, semantic_separator_to_lane,
 };
 use super::TagsToLanesMsg;
 use crate::locale::{DrivingSide, Locale};
@@ -40,7 +40,7 @@ pub enum LaneType {
     Shoulder,
 }
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct Width {
     pub min: Infer<Metre>,
     pub target: Infer<Metre>,
@@ -429,10 +429,16 @@ impl RoadBuilder {
         let lanes: Vec<Lane> = if include_separators {
             let forward_edge = self
                 .forward_outside()
-                .and_then(lane_to_outer_edge_separator);
+                .and_then(|lane| outer_edge_semantic_separator(lane, tags, locale))
+                .and_then(|separator| {
+                    semantic_edge_separator_to_lane(&separator, &self, tags, locale, warnings)
+                });
             let backward_edge = self
                 .backward_outside()
-                .and_then(lane_to_outer_edge_separator);
+                .and_then(|lane| outer_edge_semantic_separator(lane, tags, locale))
+                .and_then(|separator| {
+                    semantic_edge_separator_to_lane(&separator, &self, tags, locale, warnings)
+                });
             let middle_separator = match [self.forward_inside(), self.backward_inside()] {
                 [Some(forward), Some(backward)] => lane_pair_to_semantic_separator(
                     [forward, backward],

@@ -6,7 +6,7 @@ pub use self::error::LanesToTagsMsg;
 use super::{tags_to_lanes, TagsToLanesConfig};
 use crate::locale::Locale;
 use crate::metric::Speed;
-use crate::road::{Designated, Direction, Lane, Road};
+use crate::road::{Color, Designated, Direction, Lane, Marking, Road};
 use crate::tag::{Tags, TagsWrite};
 
 #[non_exhaustive]
@@ -312,21 +312,30 @@ fn set_parking(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
         (false, true) => tags.checked_insert("parking:lane:right", "parallel")?,
         (true, true) => tags.checked_insert("parking:lane:both", "parallel")?,
     }
+
+    if let Some(Lane::Separator { markings }) = lanes.first() {
+        if let Some(Marking {
+            color: Some(Color::Red),
+            ..
+        }) = markings.first()
+        {
+            tags.checked_insert("parking:condition:both", "no_stopping")?;
+        }
+    }
+
     Ok(())
 }
 
 fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), LanesToTagsMsg> {
-    let left_cycle_lane: Option<Direction> = lanes
+    let left_cycle_lane: Option<&Lane> = lanes
         .iter()
         .take_while(|lane| !lane.is_motor())
-        .find(|lane| lane.is_bicycle())
-        .and_then(Lane::direction);
-    let right_cycle_lane: Option<Direction> = lanes
+        .find(|lane| lane.is_bicycle());
+    let right_cycle_lane: Option<&Lane> = lanes
         .iter()
         .rev()
         .take_while(|lane| !lane.is_motor())
-        .find(|lane| lane.is_bicycle())
-        .and_then(Lane::direction);
+        .find(|lane| lane.is_bicycle());
     match (left_cycle_lane.is_some(), right_cycle_lane.is_some()) {
         (false, false) => {},
         (true, false) => tags.checked_insert("cycleway:left", "lane")?,
@@ -338,8 +347,12 @@ fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), Lan
     // also add oneway:bicycle=no to make it easier
     // for bicycle routers to see that the way can be used in two directions.
     if oneway
-        && (left_cycle_lane.map_or(false, |direction| direction == Direction::Backward)
-            || right_cycle_lane.map_or(false, |direction| direction == Direction::Backward))
+        && (left_cycle_lane
+            .and_then(Lane::direction)
+            .map_or(false, |direction| direction == Direction::Backward)
+            || right_cycle_lane
+                .and_then(Lane::direction)
+                .map_or(false, |direction| direction == Direction::Backward))
     {
         tags.checked_insert("oneway:bicycle", "no")?;
     }
@@ -347,7 +360,7 @@ fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), Lan
     // yes: same direction
     // -1: contraflow
     // no: bidirectional
-    match left_cycle_lane {
+    match left_cycle_lane.and_then(Lane::direction) {
         Some(Direction::Forward) => {
             tags.checked_insert("cycleway:left:oneway", "yes")?;
         },
@@ -357,7 +370,7 @@ fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), Lan
         Some(Direction::Both) => tags.checked_insert("cycleway:left:oneway", "no")?,
         None => {},
     }
-    match right_cycle_lane {
+    match right_cycle_lane.and_then(Lane::direction) {
         Some(Direction::Forward) => {
             tags.checked_insert("cycleway:right:oneway", "yes")?;
         },
@@ -366,6 +379,19 @@ fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), Lan
         },
         Some(Direction::Both) => tags.checked_insert("cycleway:right:oneway", "no")?,
         None => {},
+    }
+
+    if let Some(Lane::Travel {
+        width: Some(width), ..
+    }) = left_cycle_lane
+    {
+        tags.checked_insert("cycleway:left:width", width.val().to_string())?;
+    }
+    if let Some(Lane::Travel {
+        width: Some(width), ..
+    }) = right_cycle_lane
+    {
+        tags.checked_insert("cycleway:right:width", width.val().to_string())?;
     }
 
     Ok(())
