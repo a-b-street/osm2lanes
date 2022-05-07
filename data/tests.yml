@@ -309,9 +309,8 @@
 - way_id: 102917976
   description: Road with impossible speed limit
   rust:
-    false
-    #expect_warnings: true
-    #separator: true
+    expect_warnings: true
+    separator: false
   tags:
     bicycle: "designated"
     cycleway: "lane"
