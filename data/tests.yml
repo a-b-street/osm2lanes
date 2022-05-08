@@ -236,7 +236,7 @@
 - way_id: 560651884
   description: Italian Autostrada, motorway in mountainous terrain with no shoulder
   mapillary: https://www.mapillary.com/app/?pKey=998353037635549
-  rust: false
+  rust: false # TODO: how to determine no shoulder
   tags:
     highway: motorway
     lanes: "2"
@@ -715,7 +715,7 @@
     lanes: "1"
     oneway: "yes"
     oneway:bicycle: "no"
-    cycleway: opposite
+    cycleway: "opposite"
     sidewalk: "no"
     shoulder: "no"
   driving_side: right
@@ -728,6 +728,76 @@
       - type: travel
         direction: forward
         designated: motor_vehicle
+
+- description: "cycleway:BACKWARD:lane=advisory oneway=yes oneway:bicycle=no"
+  way_id: 25745877
+  rust: false
+  # separators: false
+  # expect_warnings: true
+  tags:
+    highway: "residential"
+    oneway: "yes"
+    oneway:bicycle: "no"
+    sidewalk: "both"
+    shoulder: "no"
+    cycleway:left: "lane"
+    cycleway:left:lane: "advisory"
+    # cycleway:left:oneway: "-1" should be assumed
+    cycleway:right: "no"
+  driving_side: right
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        designated: foot
+      # TODO: kerb spec not yet defined
+      # - type: separator
+      #   markings:
+      #     - style: kerb
+      - type: travel
+        direction: backward
+        designated: bicycle
+      - type: separator
+        markings:
+          - style: dashed_line
+            color: white
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      # TODO: kerb spec not yet defined
+      # - type: separator
+      #   markings:
+      #     - style: kerb
+      - type: travel
+        designated: foot
+
+- description: "cycleway:BACKWARD:lane=advisory oneway=yes oneway:bicycle=no cycleway:left:BACKWARD=yes"
+  way_id: 25745877 # but modified
+  rust: false
+  tags:
+    highway: "residential"
+    oneway: "yes"
+    oneway:bicycle: "no"
+    sidewalk: "both"
+    shoulder: "no"
+    cycleway:left: "lane"
+    cycleway:left:lane: "advisory"
+    cycleway:left:oneway: "yes"
+    cycleway:right: "no"
+  driving_side: right
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 ## TODO: shared cycle lanes
 
