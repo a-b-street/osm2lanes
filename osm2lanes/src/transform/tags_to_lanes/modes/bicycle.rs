@@ -8,18 +8,52 @@ use crate::transform::tags_to_lanes::road::{LaneType, Width};
 use crate::transform::tags_to_lanes::{Infer, LaneBuilder, RoadBuilder, TagsToLanesMsg};
 use crate::transform::{RoadWarnings, WaySide};
 
-struct UnknownVariant;
+#[derive(Debug)]
+enum VariantError {
+    UnknownVariant(String),
+    UnimplementedVariant(String),
+}
 
-impl Tags {
-    fn get_variant<T: AsRef<str>>(&self, k: T) -> Result<Option<Variant>, UnknownVariant> {
-        match self.get(k) {
-            Some("lane") => Ok(Some(Variant::Lane)),
-            Some("track") => Ok(Some(Variant::Track)),
-            Some(_) => Err(UnknownVariant),
-            None => Ok(None),
+impl std::fmt::Display for VariantError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnknownVariant(v) => write!(f, "unknown variant '{v}'"),
+            Self::UnimplementedVariant(v) => write!(f, "unimplemented variant '{v}'"),
         }
     }
-    fn cycleway_variant(&self, side: Option<WaySide>) -> Result<Option<Variant>, UnknownVariant> {
+}
+
+impl std::error::Error for VariantError {}
+
+struct Opposite;
+
+impl Tags {
+    fn get_variant<T: AsRef<str>>(
+        &self,
+        k: T,
+    ) -> Result<Option<(Variant, Option<Opposite>)>, VariantError> {
+        match self.get(k) {
+            Some("lane") => Ok(Some((Variant::Lane, None))),
+            Some("track") => Ok(Some((Variant::Track, None))),
+            Some("opposite_lane") => Ok(Some((Variant::Lane, Some(Opposite)))),
+            Some("opposite_track") => Ok(Some((Variant::Track, Some(Opposite)))),
+            Some("no") | None => Ok(None),
+            Some(
+                v @ ("opposite"
+                | "shared_lane"
+                | "share_busway"
+                | "opposite_share_busway"
+                | "shared"
+                | "shoulder"
+                | "separate"),
+            ) => Err(VariantError::UnimplementedVariant(v.to_owned())),
+            Some(v) => Err(VariantError::UnknownVariant(v.to_owned())),
+        }
+    }
+    fn cycleway_variant(
+        &self,
+        side: Option<WaySide>,
+    ) -> Result<Option<(Variant, Option<Opposite>)>, VariantError> {
         if let Some(side) = side {
             self.get_variant(CYCLEWAY + side.as_str())
         } else {
@@ -44,7 +78,6 @@ pub(in crate::transform::tags_to_lanes) struct Way {
 #[derive(Debug, PartialEq)]
 pub(in crate::transform::tags_to_lanes) enum Location {
     None,
-    _No,
     Forward(Way),
     Backward(Way),
     Both { forward: Way, backward: Way },
@@ -62,7 +95,7 @@ impl Scheme {
         road_oneway: Oneway,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, TagsToLanesMsg> {
-        if let Ok(Some(variant)) = tags.cycleway_variant(None) {
+        if let Ok(Some((variant, opposite))) = tags.cycleway_variant(None) {
             if tags
                 .cycleway_variant(Some(WaySide::Both))
                 .ok()
@@ -84,12 +117,23 @@ impl Scheme {
                 ));
             }
             if road_oneway.into() {
-                Ok(Self(Location::Forward(Way {
-                    variant,
-                    direction: Direction::Forward,
-                    width: None,
-                })))
+                if let Some(Opposite) = opposite {
+                    Ok(Self(Location::Forward(Way {
+                        variant,
+                        direction: Direction::Forward,
+                        width: None,
+                    })))
+                } else {
+                    Ok(Self(Location::Backward(Way {
+                        variant,
+                        direction: Direction::Backward,
+                        width: None,
+                    })))
+                }
             } else {
+                if let Some(Opposite) = opposite {
+                    warnings.push(TagsToLanesMsg::unsupported_tags(tags.subset(&["cycleway"])));
+                }
                 Ok(Self(Location::Both {
                     forward: Way {
                         variant,
@@ -103,7 +147,12 @@ impl Scheme {
                     },
                 }))
             }
-        } else if let Ok(Some(variant)) = tags.cycleway_variant(Some(WaySide::Both)) {
+        } else if let Ok(Some((variant, opposite))) = tags.cycleway_variant(Some(WaySide::Both)) {
+            if let Some(Opposite) = opposite {
+                warnings.push(TagsToLanesMsg::unsupported_tags(
+                    tags.subset(&["cycleway:both"]),
+                ));
+            }
             Ok(Self(Location::Both {
                 forward: Way {
                     variant,
@@ -117,32 +166,10 @@ impl Scheme {
                 },
             }))
         } else {
-            // cycleway=opposite_lane
-            if tags.is(CYCLEWAY, "opposite_lane") {
-                warnings.push(TagsToLanesMsg::deprecated_tags(
-                    tags.subset(&["cycleway", "oneway"]),
-                ));
-                return Ok(Self(Location::Backward(Way {
-                    variant: Variant::Lane,
-                    direction: Direction::Backward,
-                    width: None,
-                })));
-            }
-            // cycleway=opposite oneway=yes oneway:bicycle=no
-            if tags.is(CYCLEWAY, "opposite") {
-                if !(road_oneway.into() && tags.is("oneway:bicycle", "no")) {
-                    return Err(TagsToLanesMsg::unsupported_str(
-                        "cycleway=opposite without oneway=yes oneway:bicycle=no",
-                    ));
-                }
-                return Ok(Self(Location::Backward(Way {
-                    variant: Variant::Lane,
-                    direction: Direction::Backward,
-                    width: None,
-                })));
-            }
             // cycleway:FORWARD=*
-            if let Ok(Some(variant)) = tags.cycleway_variant(Some(locale.driving_side.into())) {
+            if let Ok(Some((variant, _opposite))) =
+                tags.cycleway_variant(Some(locale.driving_side.into()))
+            {
                 let width = tags
                     .get_parsed(CYCLEWAY + locale.driving_side.tag() + "width", warnings)
                     .map(|w| Width {
@@ -179,7 +206,7 @@ impl Scheme {
                 })));
             }
             // cycleway:BACKWARD=*
-            if let Ok(Some(variant)) =
+            if let Ok(Some((variant, _opposite))) =
                 tags.cycleway_variant(Some(locale.driving_side.opposite().into()))
             {
                 let width = tags
@@ -295,7 +322,7 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
         Direction::Both => LaneBuilder::cycle_both(way.width, locale),
     };
     match scheme.0 {
-        Location::None | Location::_No => {},
+        Location::None => {},
         Location::Forward(way) => {
             road.push_forward_outside(lane(way));
         },

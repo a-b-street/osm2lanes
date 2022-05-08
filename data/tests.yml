@@ -711,6 +711,7 @@
         designated: motor_vehicle
 
 - description: cycleway=opposite oneway=yes oneway:bicycle=no
+  rust: false # https://github.com/a-b-street/osm2lanes/issues/162
   tags:
     highway: "road"
     lanes: "1"
