@@ -743,6 +743,7 @@
     shoulder: "no"
     cycleway:left: "lane"
     cycleway:left:lane: "advisory"
+    # cycleway:left:oneway: "-1" should be assumed
     cycleway:right: "no"
   driving_side: right
   road:
@@ -750,6 +751,7 @@
     lanes:
       - type: travel
         designated: foot
+      # TODO: kerb spec not yet defined
       # - type: separator
       #   markings:
       #     - style: kerb
@@ -763,16 +765,16 @@
       - type: travel
         direction: forward
         designated: motor_vehicle
+      # TODO: kerb spec not yet defined
       # - type: separator
       #   markings:
-      #     - style: dashed_line
-      #       color: white
+      #     - style: kerb
       - type: travel
         designated: foot
 
 - description: "cycleway:BACKWARD:lane=advisory oneway=yes oneway:bicycle=no cycleway:left:BACKWARD=yes"
   way_id: 25745877 # but modified
-  rust: false # TODO: figure out what cycleway:left:oneway=yes should do
+  rust: false
   tags:
     highway: "residential"
     oneway: "yes"
@@ -789,23 +791,12 @@
     lanes:
       - type: travel
         designated: foot
-      # - type: separator
-      #   markings:
-      #     - style: kerb
       - type: travel
-        direction: backward
+        direction: forward
         designated: bicycle
-      - type: separator
-        markings:
-          - style: dashed_line
-            color: white
       - type: travel
         direction: forward
         designated: motor_vehicle
-      # - type: separator
-      #   markings:
-      #     - style: dashed_line
-      #       color: white
       - type: travel
         designated: foot
 
