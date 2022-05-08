@@ -178,8 +178,11 @@ impl RoadBuilder {
         const MAXSPEED: TagKey = TagKey::from("maxspeed");
         let max_speed = match tags.get(MAXSPEED).map(str::parse::<Speed>).transpose() {
             Ok(max_speed) => max_speed,
-            Err(_e) => {
-                warnings.push(TagsToLanesMsg::unsupported_tags(tags.subset(&[MAXSPEED])));
+            Err(e) => {
+                warnings.push(TagsToLanesMsg::unsupported(
+                    &e.to_string(),
+                    tags.subset(&[MAXSPEED]),
+                ));
                 None
             },
         };
