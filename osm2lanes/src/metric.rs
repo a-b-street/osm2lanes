@@ -75,7 +75,21 @@ pub enum SpeedError {
     Empty,
     Parse(std::num::ParseFloatError),
     UnknownUnit(String),
+    OutOfRange,
 }
+
+impl std::fmt::Display for SpeedError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Empty => write!(f, "empty"),
+            Self::Parse(e) => e.fmt(f),
+            Self::UnknownUnit(unit) => write!(f, "unknown unit '{unit}'"),
+            Self::OutOfRange => write!(f, "out of range"),
+        }
+    }
+}
+
+impl std::error::Error for SpeedError {}
 
 impl std::convert::From<std::num::ParseFloatError> for SpeedError {
     fn from(e: std::num::ParseFloatError) -> Self {
@@ -89,12 +103,16 @@ impl std::str::FromStr for Speed {
         if s.is_empty() {
             return Err(SpeedError::Empty);
         }
-        match s.split_once(' ') {
-            None => Ok(Self::Kph(s.parse()?)),
-            Some((s, "mph")) => Ok(Self::Mph(s.parse()?)),
-            Some((s, "knots")) => Ok(Self::Knots(s.parse()?)),
-            Some((_, unit)) => Err(SpeedError::UnknownUnit(unit.to_owned())),
+        let speed = match s.split_once(' ') {
+            None => Self::Kph(s.parse()?),
+            Some((s, "mph")) => Self::Mph(s.parse()?),
+            Some((s, "knots")) => Self::Knots(s.parse()?),
+            Some((_, unit)) => return Err(SpeedError::UnknownUnit(unit.to_owned())),
+        };
+        if speed.kph() < 0_f64 || speed.kph() > 300_f64 {
+            return Err(SpeedError::OutOfRange);
         }
+        Ok(speed)
     }
 }
 
