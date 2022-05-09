@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::locale::Locale;
 use crate::metric::{Metre, Speed};
 use crate::road::separator::{Markings, Semantic};
-use crate::tag::{Access as AccessValue, HighwayType};
+use crate::tag::{Access as AccessTagValue, HighwayType};
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -19,7 +19,7 @@ pub enum Lane {
         #[serde(skip_serializing_if = "Option::is_none")]
         max_speed: Option<Speed>,
         #[serde(skip_serializing_if = "Option::is_none")]
-        access: Option<Access>,
+        access: Option<AccessByType>,
     },
     Parking {
         direction: Direction,
@@ -170,19 +170,31 @@ impl Printable for Direction {
 }
 
 /// Access by vehicle type
+///
 /// Types as defined in <https://wiki.openstreetmap.org/wiki/Key:access#Land-based_transportation>
 // TODO: how to handle the motor_vehicle vs motorcar discussion in https://wiki.openstreetmap.org/wiki/Key:motorcar#Controversy
+// TODO: separating weight class by usage?
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub struct Access {
+pub struct AccessByType {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) foot: Option<AccessValue>,
+    pub(crate) foot: Option<AccessAndDirection>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) bicycle: Option<AccessValue>,
+    pub(crate) bicycle: Option<AccessAndDirection>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) taxi: Option<AccessValue>,
+    pub(crate) taxi: Option<AccessAndDirection>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) bus: Option<AccessValue>,
+    pub(crate) bus: Option<AccessAndDirection>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub(crate) motor: Option<AccessValue>,
+    pub(crate) motor: Option<AccessAndDirection>,
+}
+
+/// Access for a given user
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub struct AccessAndDirection {
+    pub(crate) access: AccessTagValue,
+    /// Direction, if different from designated direction
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) direction: Option<Direction>,
 }
