@@ -179,12 +179,17 @@ mod tests {
         fn approx_eq(&self, expected: &Self) -> bool {
             #[allow(clippy::unnested_or_patterns)]
             match (self, expected) {
-                (Lane::Separator { markings: actual }, Lane::Separator { markings: expected }) => {
-                    actual
-                        .iter()
-                        .zip(expected.iter())
-                        .all(|(actual, expected)| actual.approx_eq(expected))
-                },
+                (
+                    Lane::Separator {
+                        markings: actual, ..
+                    },
+                    Lane::Separator {
+                        markings: expected, ..
+                    },
+                ) => actual
+                    .iter()
+                    .zip(expected.iter())
+                    .all(|(actual, expected)| actual.approx_eq(expected)),
                 (
                     Lane::Travel {
                         designated: actual_designated,
@@ -331,7 +336,7 @@ mod tests {
                 .lanes
                 .iter()
                 .filter_map(|lane| {
-                    if let Lane::Separator { markings } = lane {
+                    if let Lane::Separator { markings, .. } = lane {
                         Some(
                             markings
                                 .iter()
@@ -375,7 +380,7 @@ mod tests {
                 .lanes
                 .iter()
                 .filter_map(|lane| {
-                    if let Lane::Separator { markings } = lane {
+                    if let Lane::Separator { markings, .. } = lane {
                         Some(
                             markings
                                 .iter()

@@ -4,6 +4,20 @@ use super::Printable;
 use crate::locale::Locale;
 use crate::metric::Metre;
 
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Semantic {
+    Buffer,
+    Centre,
+    Hard,
+    Kerb,
+    Lane,
+    Modal,
+    Shoulder,
+    Verge,
+}
+
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Markings(Vec<Marking>);
 

@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use super::Markings;
 use crate::locale::Locale;
 use crate::metric::{Metre, Speed};
+use crate::road::separator::{Markings, Semantic};
 use crate::tag::{Access as AccessValue, HighwayType};
 
 /// A single lane
@@ -32,6 +32,8 @@ pub enum Lane {
         width: Option<Metre>,
     },
     Separator {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        semantic: Option<Semantic>,
         markings: Markings,
     },
 }
@@ -45,7 +47,7 @@ impl Lane {
     #[must_use]
     pub fn width(&self, locale: &Locale, highway: HighwayType) -> Metre {
         match self {
-            Lane::Separator { markings } => markings.width(locale),
+            Lane::Separator { markings, .. } => markings.width(locale),
             Lane::Travel {
                 width, designated, ..
             } => width.unwrap_or_else(|| locale.travel_width(designated, highway)),
@@ -61,9 +63,12 @@ impl Lane {
     #[must_use]
     pub fn mirror(self) -> Self {
         match self {
-            Self::Separator { mut markings } => {
+            Self::Separator {
+                mut markings,
+                semantic,
+            } => {
                 markings.flip();
-                Self::Separator { markings }
+                Self::Separator { markings, semantic }
             },
             _ => self,
         }

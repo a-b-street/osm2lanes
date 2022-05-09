@@ -138,7 +138,7 @@ pub fn lanes<R: RenderContext>(
                 rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
                 left_edge += width;
             },
-            Lane::Separator { markings } => {
+            Lane::Separator { markings, .. } => {
                 for marking in markings.iter() {
                     let width = marking.width.unwrap_or_else(|| Metre::new(0.2));
                     let x = scale.scale(left_edge + 0.5 * width);
