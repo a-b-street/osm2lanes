@@ -313,7 +313,7 @@ fn set_parking(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
         (true, true) => tags.checked_insert("parking:lane:both", "parallel")?,
     }
 
-    if let Some(Lane::Separator { markings }) = lanes.first() {
+    if let Some(Lane::Separator { markings, .. }) = lanes.first() {
         if let Some(Marking {
             color: Some(Color::Red),
             ..

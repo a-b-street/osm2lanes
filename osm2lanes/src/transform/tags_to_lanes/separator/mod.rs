@@ -13,6 +13,28 @@ use semantic::{Overtake, Separator, SpeedClass};
 use self::semantic::{EdgeSeparator, LaneChange, ParkingCondition};
 use super::{LaneBuilder, LaneType, RoadBuilder};
 
+impl From<&Separator> for crate::road::Semantic {
+    fn from(internal: &Separator) -> Self {
+        match internal {
+            Separator::Shoulder { .. } => Self::Shoulder,
+            Separator::Lane { .. } => Self::Lane,
+            Separator::Centre { .. } => Self::Centre,
+            Separator::Modal { .. } => Self::Modal,
+            Separator::_Buffer { .. } => Self::Buffer,
+            Separator::Kerb { .. } => Self::Kerb,
+            Separator::_Verge { .. } => Self::Verge,
+        }
+    }
+}
+
+impl From<&EdgeSeparator> for crate::road::Semantic {
+    fn from(internal: &EdgeSeparator) -> Self {
+        match internal {
+            EdgeSeparator::Hard { .. } => Self::Hard,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 enum DirectionChange {
     // One of the sides is bidirectional
@@ -142,6 +164,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
     match separator {
         // Foot
         Separator::Kerb { .. } => Some(Lane::Separator {
+            semantic: Some(separator.into()),
             markings: Markings::new(vec![Marking {
                 style: Style::KerbUp,
                 color: None,
@@ -154,6 +177,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                 if let Some(c) = &locale.country {
                     if c == &Country::the_netherlands() {
                         return Some(Lane::Separator {
+                            semantic: Some(separator.into()),
                             // https://puc.overheid.nl/rijkswaterstaat/doc/PUC_125514_31/
                             // 4.2.5 and 4.2.6
                             markings: Markings::new(vec![Marking {
@@ -166,6 +190,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                 }
             }
             Some(Lane::Separator {
+                semantic: Some(separator.into()),
                 markings: Markings::new(vec![Marking {
                     style: Style::SolidLine,
                     color: Some(Color::White),
@@ -180,6 +205,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                 if let Some(c) = &locale.country {
                     if c == &Country::the_netherlands() {
                         return Some(Lane::Separator {
+                            semantic: Some(separator.into()),
                             // https://puc.overheid.nl/rijkswaterstaat/doc/PUC_125514_31/
                             // 4.2.5 and 4.2.6
                             markings: Markings::new(vec![
@@ -206,6 +232,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
             if let Some(c) = &locale.country {
                 if c == &Country::the_united_kingdom_of_great_britain_and_northern_ireland() {
                     return Some(Lane::Separator {
+                        semantic: Some(separator.into()),
                         // https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/782724/traffic-signs-manual-chapter-03.pdf
                         // Traffic Signs Manual, Chapter 3
                         // Page 90, 9.3.3
@@ -222,6 +249,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                 outside.clone(),
             ));
             Some(Lane::Separator {
+                semantic: Some(separator.into()),
                 markings: if *more_than_2_lanes {
                     Markings::new(vec![
                         Marking {
@@ -250,6 +278,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
             })
         },
         Separator::Lane { .. } => Some(Lane::Separator {
+            semantic: Some(separator.into()),
             markings: Markings::new(vec![Marking {
                 style: Style::DottedLine,
                 color: Some(Color::White),
@@ -265,6 +294,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                 if c == &Country::the_united_kingdom_of_great_britain_and_northern_ireland() {
                     if designated == &Designated::Bus {
                         return Some(Lane::Separator {
+                            semantic: Some(separator.into()),
                             // https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/782724/traffic-signs-manual-chapter-03.pdf
                             // Traffic Signs Manual, Chapter 3
                             // Page 90, 9.3.3
@@ -277,6 +307,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                     }
                     if designated == &Designated::Bicycle {
                         return Some(Lane::Separator {
+                            semantic: Some(separator.into()),
                             // https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/782724/traffic-signs-manual-chapter-03.pdf
                             // Traffic Signs Manual, Chapter 3
                             // Page 90, 9.3.3
@@ -294,6 +325,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                 outside.clone(),
             ));
             Some(Lane::Separator {
+                semantic: Some(separator.into()),
                 markings: Markings::new(vec![Marking {
                     style: Style::SolidLine,
                     color: Some(Color::White),
@@ -308,6 +340,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                 outside.clone(),
             ));
             Some(Lane::Separator {
+                semantic: Some(separator.into()),
                 markings: Markings::new(vec![Marking {
                     style: Style::BrokenLine,
                     color: Some(Color::Red),
@@ -353,6 +386,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_edge_separator_to_lane(
 ) -> Option<Lane> {
     match separator {
         EdgeSeparator::Hard { .. } => Some(Lane::Separator {
+            semantic: Some(separator.into()),
             markings: Markings::new(vec![
                 Marking {
                     style: Style::SolidLine,
@@ -380,6 +414,8 @@ pub(in crate::transform::tags_to_lanes) fn semantic_edge_separator_to_lane(
 #[allow(clippy::unnecessary_wraps)]
 pub(super) fn lane_to_inner_edge_separator(_lane: &LaneBuilder) -> Option<Lane> {
     Some(Lane::Separator {
+        // TODO, semantic separator
+        semantic: None,
         markings: Markings::new(vec![Marking {
             style: Style::SolidLine,
             color: Some(Color::White),
