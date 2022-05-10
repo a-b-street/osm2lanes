@@ -10,7 +10,10 @@ use super::separator::{
 use super::TagsToLanesMsg;
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::{Metre, Speed};
-use crate::road::{Access as LaneAccess, Designated, Direction, Lane};
+use crate::road::{
+    AccessAndDirection as LaneAccessAndDirection, AccessByType as LaneAccessByType, Designated,
+    Direction, Lane,
+};
 use crate::tag::{Access as AccessValue, Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::tags_to_lanes::counts::{CentreTurnLaneScheme, Counts};
@@ -56,8 +59,16 @@ pub struct Access {
     pub motor: Infer<AccessValue>,
 }
 
-impl From<Access> for Option<LaneAccess> {
+impl From<Access> for Option<LaneAccessByType> {
     fn from(inferred: Access) -> Self {
+        impl LaneAccessAndDirection {
+            fn from(v: Infer<AccessValue>) -> Option<Self> {
+                v.some().map(|v| Self {
+                    access: v,
+                    direction: None,
+                })
+            }
+        }
         if inferred.foot.is_none()
             && inferred.bicycle.is_none()
             && inferred.taxi.is_none()
@@ -66,12 +77,12 @@ impl From<Access> for Option<LaneAccess> {
         {
             return None;
         }
-        Some(LaneAccess {
-            foot: inferred.foot.some(),
-            bicycle: inferred.bicycle.some(),
-            taxi: inferred.taxi.some(),
-            bus: inferred.bus.some(),
-            motor: inferred.motor.some(),
+        Some(LaneAccessByType {
+            foot: LaneAccessAndDirection::from(inferred.foot),
+            bicycle: LaneAccessAndDirection::from(inferred.bicycle),
+            taxi: LaneAccessAndDirection::from(inferred.taxi),
+            bus: LaneAccessAndDirection::from(inferred.bus),
+            motor: LaneAccessAndDirection::from(inferred.motor),
         })
     }
 }

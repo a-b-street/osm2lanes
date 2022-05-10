@@ -5,7 +5,7 @@ use crate::metric::Metre;
 use crate::tag::Highway;
 
 mod lane;
-pub use lane::{Access, Designated, Direction, Lane, Printable};
+pub use lane::{AccessAndDirection, AccessByType, Designated, Direction, Lane, Printable};
 
 mod separator;
 pub use separator::{Color, Marking, Markings, Semantic, Style};
