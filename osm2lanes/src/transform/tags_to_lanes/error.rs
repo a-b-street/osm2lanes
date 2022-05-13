@@ -59,6 +59,18 @@ pub enum TagsToLanesIssue {
 impl TagsToLanesMsg {
     #[must_use]
     #[track_caller]
+    pub fn deprecated(deprecated: Tags, suggested: Tags) -> Self {
+        TagsToLanesMsg {
+            location: Location::caller(),
+            issue: TagsToLanesIssue::Deprecated {
+                deprecated_tags: deprecated,
+                suggested_tags: Some(suggested),
+            },
+        }
+    }
+
+    #[must_use]
+    #[track_caller]
     pub fn deprecated_tags(tags: Tags) -> Self {
         TagsToLanesMsg {
             location: Location::caller(),
