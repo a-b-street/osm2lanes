@@ -19,6 +19,7 @@ gloo-utils = "0.1"
 gloo-timers = "0.2"
 leaflet = { git = "https://github.com/droogmic/leaflet-rs", branch = "polyline_get_bounds" }
 log = "0.4"
+osm-tags = { path = "../osm-tags" }
 osm2lanes = { path = "../osm2lanes", features = ["tests", "overpass"] }
 piet = { version = "0.5", features = ["samples"] }
 piet-web = "0.5"

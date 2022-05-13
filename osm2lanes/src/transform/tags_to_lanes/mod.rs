@@ -19,10 +19,40 @@ mod modes;
 mod separator;
 
 mod road;
+use osm_tags::TagKey;
 use road::{LaneBuilder, LaneBuilderError, LaneType, RoadBuilder};
 
 mod unsupported;
 use unsupported::unsupported;
+
+mod infer;
+pub use infer::Infer;
+
+trait TagsNumeric {
+    fn get_parsed<K, T>(&self, key: K, warnings: &mut RoadWarnings) -> Option<T>
+    where
+        K: AsRef<str>,
+        TagKey: From<K>,
+        T: std::str::FromStr;
+}
+
+impl TagsNumeric for Tags {
+    fn get_parsed<K, T>(&self, key: K, warnings: &mut RoadWarnings) -> Option<T>
+    where
+        K: AsRef<str>,
+        TagKey: From<K>,
+        T: std::str::FromStr,
+    {
+        self.get(&key).and_then(|val| {
+            if let Ok(w) = val.parse::<T>() {
+                Some(w)
+            } else {
+                warnings.push(TagsToLanesMsg::unsupported_tag(key, val));
+                None
+            }
+        })
+    }
+}
 
 #[non_exhaustive]
 pub struct Config {
@@ -105,9 +135,6 @@ mod oneway {
     }
 }
 use oneway::Oneway;
-
-mod infer;
-pub use infer::Infer;
 
 /// From an OpenStreetMap way's tags,
 /// determine the lanes along the road from left to right.

@@ -41,21 +41,19 @@ enum Lane {
     Opposite,
 }
 
-impl Tags {
-    fn get_bus_lane<T>(&self, key: T, warnings: &mut RoadWarnings) -> Lane
-    where
-        T: AsRef<str>,
-        TagKey: From<T>,
-    {
-        match self.get(&key) {
-            None => Lane::None,
-            Some("lane") => Lane::Lane,
-            Some("opposite_lane") => Lane::Opposite,
-            Some(v) => {
-                warnings.push(TagsToLanesMsg::unsupported_tag(key, v));
-                Lane::None
-            },
-        }
+fn get_bus_lane<T>(tags: &Tags, key: T, warnings: &mut RoadWarnings) -> Lane
+where
+    T: AsRef<str>,
+    TagKey: From<T>,
+{
+    match tags.get(&key) {
+        None => Lane::None,
+        Some("lane") => Lane::Lane,
+        Some("opposite_lane") => Lane::Opposite,
+        Some(v) => {
+            warnings.push(TagsToLanesMsg::unsupported_tag(key, v));
+            Lane::None
+        },
     }
 }
 
@@ -77,7 +75,7 @@ impl Scheme {
             },
         };
 
-        let busway_root: Lane = tags.get_bus_lane(BUSWAY, warnings);
+        let busway_root: Lane = get_bus_lane(tags, BUSWAY, warnings);
         let busway_root: Variant = match (busway_root, bus_oneway) {
             (Lane::None, _) => Variant::None,
             (Lane::Lane, Oneway::No) => Variant::Both,
@@ -93,7 +91,7 @@ impl Scheme {
             (Lane::Opposite, Oneway::Yes) => Variant::Backward,
         };
 
-        let busway_both: Lane = tags.get_bus_lane(BUSWAY + "both", warnings);
+        let busway_both: Lane = get_bus_lane(tags, BUSWAY + "both", warnings);
         let busway_both: Variant = match busway_both {
             Lane::None => Variant::None,
             Lane::Lane => Variant::Both,
@@ -106,14 +104,14 @@ impl Scheme {
         };
 
         let busway_forward_key = || BUSWAY + locale.driving_side.tag();
-        let busway_forward: Lane = tags.get_bus_lane(busway_forward_key(), warnings);
+        let busway_forward: Lane = get_bus_lane(tags, busway_forward_key(), warnings);
         if let Lane::Opposite = busway_forward {
             warnings.push(TagsToLanesMsg::unsupported_tags(
                 tags.subset(&[busway_forward_key()]),
             ));
         }
         let busway_backward_key = || BUSWAY + locale.driving_side.opposite().tag();
-        let busway_backward: Lane = tags.get_bus_lane(busway_backward_key(), warnings);
+        let busway_backward: Lane = get_bus_lane(tags, busway_backward_key(), warnings);
         let busway_forward_backward = match (busway_forward, busway_backward) {
             (Lane::None | Lane::Opposite, Lane::None) => Variant::None,
             (Lane::Lane, Lane::None) => Variant::Forward,
