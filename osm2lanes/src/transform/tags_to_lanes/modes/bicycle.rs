@@ -365,7 +365,7 @@ mod tests {
     use crate::transform::RoadWarnings;
 
     #[test]
-    fn cycleway_lane() {
+    fn lane() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
             &Tags::from_str_pair(["cycleway", "lane"]),
@@ -393,6 +393,112 @@ mod tests {
     }
 
     #[test]
+    fn oneway_opposite_track() {
+        let mut warnings = RoadWarnings::default();
+        let scheme = Scheme::from_tags(
+            &Tags::from_str_pair(["cycleway", "opposite_track"]),
+            &Locale::builder().build(),
+            Oneway::Yes,
+            &mut warnings,
+        )
+        .unwrap();
+        assert!(warnings.is_empty(), "{:?}", warnings);
+        assert_eq!(
+            scheme,
+            Scheme(Location::Backward(Way {
+                variant: Variant::Track,
+                direction: Direction::Backward,
+                width: None,
+            }))
+        );
+    }
+
+    #[test]
+    fn forward_lane() {
+        let mut warnings = RoadWarnings::default();
+        let scheme = Scheme::from_tags(
+            &Tags::from_str_pair(["cycleway:right", "lane"]),
+            &Locale::builder().build(),
+            Oneway::No,
+            &mut warnings,
+        )
+        .unwrap();
+        assert!(warnings.is_empty(), "{:?}", warnings);
+        assert_eq!(
+            scheme,
+            Scheme(Location::Forward(Way {
+                variant: Variant::Lane,
+                direction: Direction::Forward,
+                width: None,
+            }))
+        );
+    }
+
+    #[test]
+    fn backward_track() {
+        let mut warnings = RoadWarnings::default();
+        let scheme = Scheme::from_tags(
+            &Tags::from_str_pair(["cycleway:left", "track"]),
+            &Locale::builder().build(),
+            Oneway::No,
+            &mut warnings,
+        )
+        .unwrap();
+        assert!(warnings.is_empty(), "{:?}", warnings);
+        assert_eq!(
+            scheme,
+            Scheme(Location::Backward(Way {
+                variant: Variant::Track,
+                direction: Direction::Backward,
+                width: None,
+            }))
+        );
+    }
+
+    #[test]
+    fn backward_opposite_track() {
+        let mut warnings = RoadWarnings::default();
+        let scheme = Scheme::from_tags(
+            &Tags::from_str_pair(["cycleway:left", "opposite_track"]),
+            &Locale::builder().build(),
+            Oneway::No,
+            &mut warnings,
+        )
+        .unwrap();
+        assert!(warnings.is_empty(), "{:?}", warnings);
+        assert_eq!(
+            scheme,
+            Scheme(Location::Backward(Way {
+                variant: Variant::Track,
+                direction: Direction::Backward,
+                width: None,
+            }))
+        );
+    }
+
+    #[test]
+    fn backward_lane_min1() {
+        let mut warnings = RoadWarnings::default();
+        let scheme = Scheme::from_tags(
+            &Tags::from_str_pairs(&[["cycleway:left", "track"], ["cycleway:left:oneway", "-1"]])
+                .unwrap(),
+            &Locale::builder().build(),
+            Oneway::No,
+            &mut warnings,
+        )
+        .unwrap();
+        assert!(warnings.is_empty(), "{:?}", warnings);
+        assert_eq!(
+            scheme,
+            Scheme(Location::Backward(Way {
+                variant: Variant::Track,
+                direction: Direction::Backward,
+                width: None,
+            }))
+        );
+    }
+
+    #[test]
     fn cycleway_opposite() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
@@ -410,7 +516,7 @@ mod tests {
                 direction: Direction::Backward,
                 width: None,
             }))
-        )
+        );
     }
 
     #[test]
@@ -422,7 +528,7 @@ mod tests {
             Oneway::No,
             &mut warnings,
         );
-        assert!(!warnings.is_empty(), "{:?}", scheme)
+        assert!(!warnings.is_empty(), "{:?}", scheme);
     }
 
     #[test]
@@ -434,7 +540,7 @@ mod tests {
             Oneway::No,
             &mut RoadWarnings::default(),
         );
-        assert!(scheme.is_err())
+        assert!(scheme.is_err());
     }
 
     #[test]
@@ -446,7 +552,7 @@ mod tests {
             Oneway::No,
             &mut RoadWarnings::default(),
         );
-        assert!(scheme.is_err())
+        assert!(scheme.is_err());
     }
 
     #[test]
@@ -459,6 +565,6 @@ mod tests {
             Oneway::No,
             &mut RoadWarnings::default(),
         );
-        assert!(scheme.is_err())
+        assert!(scheme.is_err());
     }
 }
