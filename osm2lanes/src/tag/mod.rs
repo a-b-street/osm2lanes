@@ -401,7 +401,7 @@ mod tests {
         assert!(tags.subset(&["bar"]).to_vec().is_empty());
 
         // Key interfaces
-        const FOO_KEY: TagKey = TagKey::from("foo");
+        const FOO_KEY: TagKey = TagKey::from_static("foo");
         assert!(tags.is(FOO_KEY, "bar"));
         assert!(!tags.is(FOO_KEY, "foo"));
         assert_eq!(tags.subset(&[FOO_KEY]).to_vec(), vec!["foo=bar"]);

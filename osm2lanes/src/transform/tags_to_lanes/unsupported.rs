@@ -58,7 +58,7 @@ pub fn unsupported(
     ];
     if ACCESS_KEYS
         .iter()
-        .any(|k| tags.get(TagKey::from(k)).is_some())
+        .any(|k| tags.get(TagKey::from(*k)).is_some())
     {
         warnings.push(TagsToLanesMsg::unimplemented(
             "access",

@@ -10,7 +10,7 @@ use crate::transform::RoadWarnings;
 mod busway;
 use busway::{busway, Scheme as BuswayScheme};
 
-const LANES: TagKey = TagKey::from("lanes");
+const LANES: TagKey = TagKey::from_static("lanes");
 
 impl LaneBuilder {
     #[allow(clippy::unnecessary_wraps)]

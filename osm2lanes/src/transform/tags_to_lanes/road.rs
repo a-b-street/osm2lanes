@@ -186,7 +186,7 @@ impl RoadBuilder {
             Designated::Motor
         };
 
-        const MAXSPEED: TagKey = TagKey::from("maxspeed");
+        const MAXSPEED: TagKey = TagKey::from_static("maxspeed");
         let max_speed = match tags.get(MAXSPEED).map(str::parse::<Speed>).transpose() {
             Ok(max_speed) => max_speed,
             Err(e) => {
