@@ -35,10 +35,10 @@ impl Tags {
             Some("track") => Ok(Some((Variant::Track, None))),
             Some("opposite_lane") => Ok(Some((Variant::Lane, Some(Opposite)))),
             Some("opposite_track") => Ok(Some((Variant::Track, Some(Opposite)))),
+            Some("opposite") => Ok(Some((Variant::SharedMotor, Some(Opposite)))),
             Some("no") | None => Ok(None),
             Some(
-                v @ ("opposite"
-                | "shared_lane"
+                v @ ("shared_lane"
                 | "share_busway"
                 | "opposite_share_busway"
                 | "shared"
@@ -125,7 +125,7 @@ impl Scheme {
                     ));
                 }
                 return if road_oneway.into() {
-                    if let Some(Opposite) = opposite {
+                    if opposite.is_none() {
                         Ok(Self(Location::Forward(Way {
                             variant,
                             direction: Direction::Forward,
@@ -140,7 +140,9 @@ impl Scheme {
                     }
                 } else {
                     if let Some(Opposite) = opposite {
-                        warnings.push(TagsToLanesMsg::unsupported_tags(tags.subset(&["cycleway"])));
+                        warnings.push(TagsToLanesMsg::unsupported_tags(
+                            tags.subset(&["oneway", "cycleway"]),
+                        ));
                     }
                     Ok(Self(Location::Both {
                         forward: Way {
@@ -372,7 +374,7 @@ mod tests {
             &mut warnings,
         )
         .unwrap();
-        assert!(warnings.is_empty());
+        assert!(warnings.is_empty(), "{:?}", warnings);
         assert_eq!(
             scheme,
             Scheme(Location::Both {
@@ -391,17 +393,16 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn cycleway_opposite() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
             &Tags::from_str_pair(["cycleway", "opposite"]),
             &Locale::builder().build(),
-            Oneway::No,
+            Oneway::Yes,
             &mut warnings,
         )
         .unwrap();
-        assert!(warnings.is_empty());
+        assert!(warnings.is_empty(), "{:?}", warnings);
         assert_eq!(
             scheme,
             Scheme(Location::Backward(Way {
@@ -410,6 +411,18 @@ mod tests {
                 width: None,
             }))
         )
+    }
+
+    #[test]
+    fn warn_shoulder() {
+        let mut warnings = RoadWarnings::default();
+        let scheme = Scheme::from_tags(
+            &Tags::from_str_pair(["cycleway", "shoulder"]),
+            &Locale::builder().build(),
+            Oneway::No,
+            &mut warnings,
+        );
+        assert!(!warnings.is_empty(), "{:?}", scheme)
     }
 
     #[test]
@@ -442,17 +455,6 @@ mod tests {
         let scheme = Scheme::from_tags(
             &Tags::from_str_pairs(&[["cycleway:both", "lane"], ["cycleway:right", "track"]])
                 .unwrap(),
-            &Locale::builder().build(),
-            Oneway::No,
-            &mut RoadWarnings::default(),
-        );
-        assert!(scheme.is_err())
-    }
-
-    #[test]
-    fn err_opposite() {
-        let scheme = Scheme::from_tags(
-            &Tags::from_str_pairs(&[["cycleway", "opposite"]]).unwrap(),
             &Locale::builder().build(),
             Oneway::No,
             &mut RoadWarnings::default(),
