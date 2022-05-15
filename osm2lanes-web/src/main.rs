@@ -1,3 +1,36 @@
+#![warn(clippy::pedantic, clippy::cargo, clippy::restriction)]
+// Allow cargo lints
+#![allow(clippy::cargo_common_metadata)]
+// Allow restriction lints
+#![allow(
+    clippy::blanket_clippy_restriction_lints,
+    clippy::default_numeric_fallback,
+    clippy::exhaustive_enums,
+    clippy::exhaustive_structs,
+    clippy::expect_used,
+    clippy::float_arithmetic,
+    clippy::implicit_return,
+    clippy::missing_docs_in_private_items,
+    clippy::missing_inline_in_public_items,
+    clippy::module_name_repetitions,
+    clippy::multiple_inherent_impl,
+    clippy::non_ascii_literal,
+    clippy::pattern_type_mismatch,
+    clippy::panic_in_result_fn,
+    clippy::same_name_method,
+    clippy::separated_literal_suffix,
+    clippy::shadow_reuse,
+    clippy::shadow_same,
+    clippy::shadow_unrelated,
+    clippy::single_char_lifetime_names,
+    clippy::unimplemented,
+    clippy::unnecessary_wraps,
+    clippy::unreachable,
+    clippy::unwrap_in_result,
+    clippy::unwrap_used,
+    clippy::wildcard_enum_match_arm
+)]
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -165,7 +198,7 @@ impl Component for App {
         html! {
             <div>
                 <h1>{"osm2lanes"}</h1>
-                <Control callback_msg={callback_msg.clone()} state={self.state.clone()}/>
+                <Control callback_msg={callback_msg.clone()} state={Rc::clone(&self.state)}/>
                 <hr/>
                 {
                     if let Some(message) = &state.message {
@@ -202,7 +235,7 @@ impl Component for App {
                         html!{}
                     }
                 }
-                <Canvas callback_error={callback_error} state={self.state.clone()}/>
+                <Canvas callback_error={callback_error} state={Rc::clone(&self.state)}/>
                 <hr/>
                 <MapComponent callback_msg={callback_msg.clone()}/>
             </div>
@@ -256,11 +289,14 @@ impl App {
         };
     }
 
+    #[allow(clippy::unused_self)]
     fn view_lane_type(&self, lane: &Lane) -> Html {
         html! {
             <div class="lane"><span>{lane.as_utf8()}</span></div>
         }
     }
+
+    #[allow(clippy::unused_self)]
     fn view_lane_direction(&self, lane: &Lane) -> Html {
         html! {
             <div class="lane"><span>{if let Lane::Travel {

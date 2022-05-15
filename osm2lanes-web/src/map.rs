@@ -95,6 +95,7 @@ impl Component for MapComponent {
         }
     }
 
+    #[allow(clippy::todo)]
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         self.is_searching = false;
         match msg {
