@@ -14,9 +14,9 @@ pub use lanes_to_tags::{lanes_to_tags, Config as LanesToTagsConfig, LanesToTagsM
 pub mod tags {
     use crate::tag::TagKey;
 
-    pub const CYCLEWAY: TagKey = TagKey::from("cycleway");
-    pub const SIDEWALK: TagKey = TagKey::from("sidewalk");
-    pub const SHOULDER: TagKey = TagKey::from("shoulder");
+    pub const CYCLEWAY: TagKey = TagKey::from_static("cycleway");
+    pub const SIDEWALK: TagKey = TagKey::from_static("sidewalk");
+    pub const SHOULDER: TagKey = TagKey::from_static("shoulder");
 }
 
 #[derive(Clone, Debug, PartialEq)]

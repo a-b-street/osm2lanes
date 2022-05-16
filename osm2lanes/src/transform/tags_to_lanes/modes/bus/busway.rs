@@ -4,8 +4,8 @@ use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::{Infer, Oneway, RoadBuilder};
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
-const BUSWAY: TagKey = TagKey::from("busway");
-const ONEWAY: TagKey = TagKey::from("oneway");
+const BUSWAY: TagKey = TagKey::from_static("busway");
+const ONEWAY: TagKey = TagKey::from_static("oneway");
 
 #[derive(Debug, PartialEq)]
 pub(in crate::transform::tags_to_lanes) enum Variant {

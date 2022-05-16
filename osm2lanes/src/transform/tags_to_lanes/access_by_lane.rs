@@ -75,7 +75,7 @@ impl LaneDependentAccess {
     where
         TagKey: From<K>,
     {
-        const LANES: TagKey = TagKey::from("LANES");
+        const LANES: TagKey = TagKey::from_static("lanes");
         let key: TagKey = key.into();
         Ok(
             match (
