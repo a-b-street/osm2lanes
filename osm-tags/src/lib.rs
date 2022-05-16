@@ -5,8 +5,6 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use crate::transform::{RoadWarnings, TagsToLanesMsg};
-
 mod key;
 pub use key::TagKey;
 
@@ -64,7 +62,7 @@ impl Tags {
     /// Construct from pair
     #[allow(clippy::missing_panics_doc)]
     #[must_use]
-    pub(crate) fn from_str_pair(tag: [&str; 2]) -> Self {
+    pub fn from_str_pair(tag: [&str; 2]) -> Self {
         let mut map = BTreeMap::new();
         map.insert(tag[0].to_owned(), tag[1].to_owned());
         let mut tree = TagTree::default();
@@ -93,26 +91,6 @@ impl Tags {
     /// Get value from tags given a key
     pub fn get<T: AsRef<str>>(&self, k: T) -> Option<&str> {
         self.map.get(k.as_ref()).map(String::as_str)
-    }
-
-    /// Get the value for the given key and parse it into T.
-    /// Add a `TagsToLanesMsg::Unsupported` if parsing fails.
-    pub fn get_parsed<K: AsRef<str>, T: FromStr>(
-        &self,
-        key: K,
-        warnings: &mut RoadWarnings,
-    ) -> Option<T> {
-        self.get(&key).and_then(|val| {
-            if let Ok(n) = val.parse::<T>() {
-                Some(n)
-            } else {
-                warnings.push(TagsToLanesMsg::unsupported_tag(
-                    key.as_ref().to_owned(),
-                    val,
-                ));
-                None
-            }
-        })
     }
 
     /// Return if tags key has value,
@@ -164,7 +142,7 @@ impl FromStr for Tags {
     ///
     /// ```
     /// use std::str::FromStr;
-    /// use osm2lanes::tag::Tags;
+    /// use osm_tags::Tags;
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
     /// assert_eq!(tags.get("foo"), Some("bar"));
     /// ```
@@ -188,7 +166,7 @@ impl ToString for Tags {
     /// ```
     /// use std::str::FromStr;
     /// use std::string::ToString;
-    /// use osm2lanes::tag::Tags;
+    /// use osm_tags::Tags;
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
     /// assert_eq!(tags.to_string(), "abra=cadabra\nfoo=bar");
     /// ```
@@ -361,7 +339,7 @@ impl TagsWrite for Tags {
 #[cfg(test)]
 #[allow(clippy::items_after_statements)]
 mod tests {
-    use crate::tag::{TagKey, Tags};
+    use crate::{TagKey, Tags};
 
     #[test]
     fn test_tags() {

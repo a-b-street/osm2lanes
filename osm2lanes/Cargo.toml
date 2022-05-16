@@ -2,7 +2,6 @@
 name = "osm2lanes"
 version = "0.1.0"
 description = "Transforms tags from an OpenStreetMap way into a specification of the lanes"
-readme = true
 repository = "https://github.com/a-b-street/osm2lanes"
 license = "Apache 2.0"
 keywords = ["osm", "lanes"]
@@ -15,6 +14,7 @@ edition = "2021"
 
 [dependencies]
 log = "0.4"
+osm-tags = { path = "../osm-tags" }
 celes = "2.1" # For countries, TODO: overlaps with locale-codes
 locale-codes = "0.3" # For continents, TODO: overlaps with celes
 serde = { version = "1", features = [
@@ -25,7 +25,6 @@ reqwest = { version = "0.11", optional = true, features = [
     "json",
 ] } # Requests to Overpass
 serde_yaml = { version = "0.8", optional = true } # Parsing test data
-kstring = "2.0"
 
 [features]
 overpass = ["reqwest", "reqwest/blocking", "reqwest/json"]

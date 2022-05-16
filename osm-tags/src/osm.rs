@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::tag::{TagKey, Tags};
+use crate::{TagKey, Tags};
 
 pub const ONEWAY: TagKey = TagKey::from_static("oneway");
 pub const HIGHWAY: TagKey = TagKey::from_static("highway");

@@ -3,7 +3,7 @@ use kstring::KString;
 /// A representation for the key of an OSM tag
 ///
 /// ```
-/// use osm2lanes::tag::TagKey;
+/// use osm_tags::TagKey;
 /// const example_key: TagKey = TagKey::from_static("example");
 /// assert_eq!(example_key.as_str(), "example");
 /// assert_eq!((example_key + "foo").as_str(), "example:foo");

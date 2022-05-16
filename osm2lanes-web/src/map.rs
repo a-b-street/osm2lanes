@@ -2,7 +2,7 @@ use gloo_utils::document;
 use leaflet::{LatLng, Map, MouseEvent, Path, Polyline, TileLayer};
 use osm2lanes::locale::Locale;
 use osm2lanes::overpass::{get_nearby, LatLon};
-use osm2lanes::tag::Tags;
+use osm_tags::Tags;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, HtmlElement, Node};

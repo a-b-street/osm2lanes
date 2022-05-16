@@ -6,8 +6,8 @@ use clap::{Parser, Subcommand};
 use futures::executor::block_on;
 use osm2lanes::locale::Locale;
 use osm2lanes::overpass::get_way;
-use osm2lanes::tag::Tags;
 use osm2lanes::transform::{tags_to_lanes, TagsToLanesConfig};
+use osm_tags::Tags;
 
 /// Generate lanes from an OSM way
 #[derive(Parser, Debug)]
