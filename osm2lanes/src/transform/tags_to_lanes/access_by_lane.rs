@@ -44,23 +44,21 @@ pub(in crate::transform::tags_to_lanes) enum LaneDependentAccess {
     },
 }
 
-impl Tags {
-    /// Get value from tags given a key
-    pub(in crate::transform::tags_to_lanes) fn get_access<K>(
-        &self,
-        k: K,
-    ) -> Result<Option<Vec<Access>>, TagsToLanesMsg>
-    where
-        K: AsRef<str> + Clone,
-    {
-        self.get(k.clone())
-            .map(|a| {
-                Access::split(a).map_err(|a| {
-                    TagsToLanesMsg::unsupported(&format!("lanes access {}", a), self.subset(&[k]))
-                })
+/// Get value from tags given a key
+pub(in crate::transform::tags_to_lanes) fn get_access<K>(
+    tags: &Tags,
+    k: K,
+) -> Result<Option<Vec<Access>>, TagsToLanesMsg>
+where
+    K: AsRef<str> + Clone,
+{
+    tags.get(k.clone())
+        .map(|a| {
+            Access::split(a).map_err(|a| {
+                TagsToLanesMsg::unsupported(&format!("lanes access {}", a), tags.subset(&[k]))
             })
-            .transpose()
-    }
+        })
+        .transpose()
 }
 
 impl LaneDependentAccess {
@@ -81,10 +79,10 @@ impl LaneDependentAccess {
         let key: TagKey = key.into();
         Ok(
             match (
-                tags.get_access(key.clone())?,
+                get_access(tags, key.clone())?,
                 (
-                    tags.get_access(key.clone() + "forward")?,
-                    tags.get_access(key.clone() + "backward")?,
+                    get_access(tags, key.clone() + "forward")?,
+                    get_access(tags, key.clone() + "backward")?,
                 ),
             ) {
                 (Some(lanes), (None, None)) => {

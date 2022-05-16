@@ -1,0 +1,19 @@
+[package]
+name = "osm-tags"
+version = "0.1.0"
+description = "Transforms tags from an OpenStreetMap way into a specification of the lanes"
+readme = true
+repository = "https://github.com/a-b-street/osm2lanes"
+license = "Apache 2.0"
+keywords = ["osm", "lanes"]
+categories = []
+authors = [
+    "Dustin Carlino <dabreegster@gmail.com>",
+    "Michael Droogleever Fortuyn <droogmic@gmail.com>",
+]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }

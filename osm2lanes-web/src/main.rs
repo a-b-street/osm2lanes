@@ -5,10 +5,10 @@ use std::str::FromStr;
 use osm2lanes::locale::{Country, Locale};
 use osm2lanes::overpass::get_way;
 use osm2lanes::road::{Lane, Printable, Road};
-use osm2lanes::tag::Tags;
 use osm2lanes::transform::{
     lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadFromTags, TagsToLanesConfig,
 };
+use osm_tags::Tags;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 

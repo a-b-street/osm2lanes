@@ -3,7 +3,7 @@ use crate::road::Designated;
 use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::{
     Access, Infer, LaneBuilder, LaneBuilderError, LaneDependentAccess, Oneway, RoadBuilder,
-    TagsToLanesMsg,
+    TagsNumeric, TagsToLanesMsg,
 };
 use crate::transform::RoadWarnings;
 

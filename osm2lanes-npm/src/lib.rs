@@ -3,8 +3,8 @@ mod utils;
 use std::collections::HashMap;
 
 use osm2lanes::locale::{DrivingSide, Locale};
-use osm2lanes::tag::{Tags, TagsWrite};
 use osm2lanes::transform::{tags_to_lanes, TagsToLanesConfig};
+use osm_tags::{Tags, TagsWrite};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
