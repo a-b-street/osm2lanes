@@ -7,7 +7,7 @@ use super::{tags_to_lanes, TagsToLanesConfig};
 use crate::locale::Locale;
 use crate::metric::Speed;
 use crate::road::{Color, Designated, Direction, Lane, Marking, Road};
-use crate::tag::{Tags, TagsWrite};
+use crate::tag::Tags;
 
 #[non_exhaustive]
 pub struct Config {
