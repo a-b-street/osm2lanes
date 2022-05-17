@@ -4,8 +4,8 @@ use crate::{TagKey, Tags};
 
 pub const ONEWAY: TagKey = TagKey::from_static("oneway");
 pub const HIGHWAY: TagKey = TagKey::from_static("highway");
-pub const CONSTRUCTION: TagKey = TagKey::from_static("construction");
-pub const PROPOSED: TagKey = TagKey::from_static("proposed");
+const CONSTRUCTION: TagKey = TagKey::from_static("construction");
+const PROPOSED: TagKey = TagKey::from_static("proposed");
 pub const LIFECYCLE: [TagKey; 3] = [HIGHWAY, CONSTRUCTION, PROPOSED];
 
 #[derive(Clone, Copy, Debug, PartialEq)]

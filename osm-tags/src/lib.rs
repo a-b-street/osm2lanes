@@ -1,9 +1,52 @@
-#![allow(clippy::module_name_repetitions)]
+//! OSM Tags
+//!
+//! Provides `Tags`, `TagKey`, and `TagVal` structures to represent and help manipulate OpenStreetMap tags
+
+#![warn(explicit_outlives_requirements)]
+#![warn(missing_abi)]
+#![deny(non_ascii_idents)]
+#![warn(trivial_casts)]
+#![warn(unreachable_pub)]
+#![deny(unsafe_code)]
+#![deny(unsafe_op_in_unsafe_fn)]
+#![warn(unused_crate_dependencies)]
+#![warn(unused_lifetimes)]
+#![warn(unused_qualifications)]
+// Clippy
+#![warn(clippy::pedantic, clippy::cargo)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::cargo_common_metadata)]
+#![warn(
+    clippy::allow_attributes_without_reason,
+    clippy::as_conversions,
+    clippy::clone_on_ref_ptr,
+    clippy::create_dir,
+    clippy::dbg_macro,
+    clippy::decimal_literal_representation,
+    clippy::default_numeric_fallback,
+    clippy::deref_by_slicing,
+    clippy::empty_structs_with_brackets,
+    clippy::float_cmp_const,
+    clippy::fn_to_numeric_cast_any,
+    clippy::if_then_some_else_none,
+    clippy::indexing_slicing,
+    clippy::let_underscore_must_use,
+    clippy::map_err_ignore,
+    clippy::print_stderr,
+    clippy::print_stdout,
+    clippy::single_char_lifetime_names,
+    clippy::str_to_string,
+    clippy::string_add,
+    clippy::string_slice,
+    clippy::string_to_string,
+    clippy::todo,
+    clippy::try_err,
+    clippy::unseparated_literal_suffix,
+    clippy::use_debug
+)]
 
 use std::collections::BTreeMap;
 use std::str::FromStr;
-
-use serde::{Deserialize, Serialize};
 
 mod key;
 pub use key::TagKey;
@@ -13,15 +56,24 @@ pub use osm::{Highway, HighwayImportance, HighwayType, Lifecycle, HIGHWAY, LIFEC
 
 mod access;
 pub use access::Access;
+use serde::Deserialize;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DuplicateKeyError(String);
+#[derive(Debug, Clone)]
+pub struct DuplicateKeyError(TagKey);
+
+impl From<String> for DuplicateKeyError {
+    fn from(string: String) -> Self {
+        DuplicateKeyError(TagKey::from(string))
+    }
+}
 
 impl std::fmt::Display for DuplicateKeyError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "duplicate tag key {}", self.0)
+        write!(f, "duplicate tag key {}", self.0.as_str())
     }
 }
+
+impl std::error::Error for DuplicateKeyError {}
 
 /// A map from string keys to string values. This makes copies of strings for
 /// convenience; don't use in performance sensitive contexts.
@@ -46,11 +98,15 @@ impl Tags {
     ///
     /// If a duplicate key is provided.
     ///
-    pub fn from_str_pairs(tags: &[[&str; 2]]) -> Result<Self, DuplicateKeyError> {
+    pub fn from_string_pairs<I: IntoIterator<Item = [String; 2]>>(
+        tags: I,
+    ) -> Result<Self, DuplicateKeyError> {
         let mut map = BTreeMap::new();
-        for tag in tags {
-            map.insert(tag[0].to_owned(), tag[1].to_owned())
-                .map_or(Ok(()), |_| Err(DuplicateKeyError(tag[0].to_owned())))?;
+        for tag_pair in tags {
+            let [key, val] = tag_pair;
+            if let Some(duplicate) = map.insert(key, val) {
+                return Err(duplicate.into());
+            }
         }
         let mut tree = TagTree::default();
         for (k, v) in &map {
@@ -59,15 +115,35 @@ impl Tags {
         Ok(Self { map, tree })
     }
 
+    /// Construct from slice of pairs
+    ///
+    /// # Errors
+    ///
+    /// If a duplicate key is provided.
+    ///
+    pub fn from_str_pairs(tags: &[[&str; 2]]) -> Result<Self, DuplicateKeyError> {
+        Self::from_string_pairs(
+            tags.iter()
+                .map(|pair| [pair[0].to_owned(), pair[1].to_owned()])
+                .collect::<Vec<_>>(),
+        )
+    }
+
     /// Construct from pair
-    #[allow(clippy::missing_panics_doc)]
+    #[must_use]
+    pub fn from_string_pair(tag_pair: [String; 2]) -> Self {
+        let [key, val] = tag_pair;
+        let mut tree = TagTree::default();
+        let mut map = BTreeMap::new();
+        tree.insert(&key, val.clone()).unwrap();
+        map.insert(key, val);
+        Self { map, tree }
+    }
+
+    /// Construct from pair
     #[must_use]
     pub fn from_str_pair(tag: [&str; 2]) -> Self {
-        let mut map = BTreeMap::new();
-        map.insert(tag[0].to_owned(), tag[1].to_owned());
-        let mut tree = TagTree::default();
-        tree.insert(tag[0], tag[1].to_owned()).unwrap();
-        Self { map, tree }
+        Self::from_string_pair([tag[0].to_owned(), tag[1].to_owned()])
     }
 
     /// Expose data as vector of pairs
@@ -135,10 +211,27 @@ impl Tags {
     }
 }
 
-impl FromStr for Tags {
-    type Err = String;
+#[derive(Debug)]
+pub enum ParseTagsError {
+    MissingEquals(String),
+    DuplicateKey(DuplicateKeyError),
+}
 
-    /// Parse tags from an '=' separated list
+impl std::fmt::Display for ParseTagsError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::MissingEquals(_val) => write!(f, "tag must be = separated"),
+            Self::DuplicateKey(duplicate_key_err) => duplicate_key_err.fmt(f),
+        }
+    }
+}
+
+impl std::error::Error for ParseTagsError {}
+
+impl FromStr for Tags {
+    type Err = ParseTagsError;
+
+    /// Parse '=' separated tag pairs from a newline separated list.
     ///
     /// ```
     /// use std::str::FromStr;
@@ -146,17 +239,18 @@ impl FromStr for Tags {
     /// let tags = Tags::from_str("foo=bar\nabra=cadabra").unwrap();
     /// assert_eq!(tags.get("foo"), Some("bar"));
     /// ```
-    #[allow(clippy::map_err_ignore)]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tags = s
             .lines()
             .map(|line| {
-                let (key, val) = line.split_once('=').ok_or("tag must be = separated")?;
+                let (key, val) = line
+                    .split_once('=')
+                    .ok_or_else(|| ParseTagsError::MissingEquals(line.to_owned()))?;
                 Ok([key, val])
             })
             .collect::<Result<Vec<_>, Self::Err>>()?;
         // TODO: better error handling
-        Self::from_str_pairs(&tags).map_err(|_| "Duplicate Key Error".to_owned())
+        Self::from_str_pairs(&tags).map_err(ParseTagsError::DuplicateKey)
     }
 }
 
@@ -223,7 +317,6 @@ impl<'de> Deserialize<'de> for Tags {
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Default, Debug)]
 pub struct TagTree(BTreeMap<String, TagTreeVal>);
 
@@ -256,7 +349,6 @@ impl TagTree {
     }
 }
 
-#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Default, Debug)]
 pub struct TagTreeVal {
     tree: Option<TagTree>,
@@ -276,7 +368,7 @@ impl TagTreeVal {
 
     fn set(&mut self, input: String) -> Result<(), DuplicateKeyError> {
         if let Some(val) = &self.val {
-            return Err(DuplicateKeyError(val.clone()));
+            return Err(val.clone().into());
         }
         self.val = Some(input);
         Ok(())
@@ -328,16 +420,15 @@ impl TagsWrite for Tags {
         let tag_key = k.into();
         let key = tag_key.as_str();
         let val: String = v.into();
-        self.map
-            .insert(key.to_owned(), val.clone())
-            .map_or(Ok(()), |_| Err(DuplicateKeyError(key.to_owned())))?;
+        if let Some(duplicate) = self.map.insert(key.to_owned(), val.clone()) {
+            return Err(duplicate.into());
+        }
         self.tree.insert(key, val)?;
         Ok(())
     }
 }
 
 #[cfg(test)]
-#[allow(clippy::items_after_statements)]
 mod tests {
     use crate::{TagKey, Tags};
 
