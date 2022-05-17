@@ -9,14 +9,18 @@ use kstring::KString;
 /// assert_eq!((example_key + "foo").as_str(), "example:foo");
 /// ```
 #[allow(clippy::module_name_repetitions)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TagKey(KString);
 
 impl TagKey {
-    // TODO: const
     #[must_use]
     pub const fn from_static(string: &'static str) -> Self {
         Self(KString::from_static(string))
+    }
+
+    #[must_use]
+    pub fn from_ref(string: &str) -> Self {
+        Self(KString::from_ref(string))
     }
 
     #[must_use]
