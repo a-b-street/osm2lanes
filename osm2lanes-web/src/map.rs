@@ -1,7 +1,8 @@
+use geo::{LineString, Point};
 use gloo_utils::document;
 use leaflet::{LatLng, Map, MouseEvent, Path, Polyline, TileLayer};
 use osm2lanes::locale::Locale;
-use osm2lanes::overpass::{get_nearby, LatLon};
+use osm2lanes::overpass::get_nearby;
 use osm_tags::Tags;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -13,13 +14,10 @@ use crate::Msg as WebMsg;
 
 #[allow(clippy::large_enum_variant)]
 pub enum Msg {
-    MapClick(LatLng),
-    MapUpdate(String, Tags, Locale, Vec<LatLon>),
+    MapClick(Point<f64>),
+    MapUpdate(String, Tags, Locale, LineString<f64>),
     Error(String),
 }
-
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Point(pub f64, pub f64);
 
 #[derive(Properties, Clone, PartialEq)]
 pub struct Props {
@@ -29,7 +27,7 @@ pub struct Props {
 pub struct MapComponent {
     container: HtmlElement,
     map: Map,
-    point: Point,
+    point: Point<f64>,
     path: Option<Path>,
     _map_click_closure: Closure<dyn Fn(MouseEvent)>,
 }
@@ -54,14 +52,15 @@ impl Component for MapComponent {
         let map_click_callback = ctx.link().callback(Msg::MapClick);
         let map_click_closure = Closure::<dyn Fn(MouseEvent)>::wrap(Box::new(move |click_event| {
             log::debug!("map click");
-            map_click_callback.emit(click_event.latlng());
+            let lat_lng = click_event.latlng();
+            map_click_callback.emit(Point::new(lat_lng.lat(), lat_lng.lng()));
         }));
         map.on("click", map_click_closure.as_ref());
 
         Self {
             container,
             map,
-            point: Point(40.0, 10.0),
+            point: Point::new(40.0, 10.0),
             path: None,
             // to avoid dropping the closure and invalidating the callback
             _map_click_closure: map_click_closure,
@@ -71,7 +70,7 @@ impl Component for MapComponent {
     fn rendered(&mut self, _ctx: &Context<Self>, first_render: bool) {
         if first_render {
             self.map
-                .setView(&LatLng::new(self.point.0, self.point.1), 4.0);
+                .setView(&LatLng::new(self.point.x(), self.point.y()), 4.0);
             log::debug!("add tile layer");
             add_tile_layer(&self.map);
         }
@@ -79,9 +78,9 @@ impl Component for MapComponent {
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
-            Msg::MapClick(lat_lng) => {
+            Msg::MapClick(point) => {
                 ctx.link().send_future(async move {
-                    match get_nearby((lat_lng.lat(), lat_lng.lng())).await {
+                    match get_nearby(point).await {
                         Ok((id, tags, geometry, locale)) => {
                             Msg::MapUpdate(id.to_string(), tags, locale, geometry)
                         },
@@ -98,7 +97,7 @@ impl Component for MapComponent {
                 let polyline = Polyline::new(
                     geometry
                         .into_iter()
-                        .map(|lat_lon| LatLng::new(lat_lon.lat, lat_lon.lon).into())
+                        .map(|coordinate| LatLng::new(coordinate.x, coordinate.y).into())
                         .collect(),
                 );
                 let bounds = polyline.getBounds();
