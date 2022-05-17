@@ -6,13 +6,13 @@ use crate::locale::{DrivingSide, Locale};
 use crate::tag::Tags;
 
 #[derive(Debug, Clone, Deserialize)]
-struct OverpassResult {
+struct OverpassResponse {
     // version: f32,
     // osm3s: Osm3s
     elements: Vec<Element>,
 }
 
-impl OverpassResult {
+impl OverpassResponse {
     fn iso3166_2(&self) -> Option<&str> {
         self.elements
             .iter()
@@ -74,6 +74,31 @@ enum ElementType {
 
 type ElementId = u64;
 
+#[derive(Debug)]
+pub enum Error {
+    Reqwest(reqwest::Error),
+    Empty,
+    Malformed,
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Reqwest(e) => e.fmt(f),
+            Self::Empty => write!(f, "empty"),
+            Self::Malformed => write!(f, "malformed"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
+
+impl From<reqwest::Error> for Error {
+    fn from(e: reqwest::Error) -> Self {
+        Self::Reqwest(e)
+    }
+}
+
 /// Get Tags from Overpass
 ///
 /// # Errors
@@ -84,7 +109,7 @@ type ElementId = u64;
 ///
 /// Unexpected data from overpass and/or openstreetmap.
 ///
-pub async fn get_tags(id: ElementId) -> Result<Tags, reqwest::Error> {
+pub async fn get_tags(id: &ElementId) -> Result<Tags, Error> {
     let mut resp = reqwest::Client::new()
         .get(format!(
             "https://overpass-api.de/api/interpreter?data=[out:json][timeout:2];way(id:{});out tags;",
@@ -92,14 +117,15 @@ pub async fn get_tags(id: ElementId) -> Result<Tags, reqwest::Error> {
         ))
         .send()
         .await?
-        .json::<OverpassResult>()
+        .json::<OverpassResponse>()
         .await?;
     log::debug!("{:#?}", resp);
-    assert_eq!(resp.elements.len(), 1);
-    let element = resp.elements.pop().unwrap();
-    assert_eq!(element.r#type, ElementType::Way);
-    assert_eq!(element.id, id);
-    Ok(element.tags)
+    let way_element = resp.elements.pop().ok_or(Error::Empty)?;
+    if !resp.elements.is_empty() || way_element.r#type != ElementType::Way || &way_element.id != id
+    {
+        return Err(Error::Malformed);
+    }
+    Ok(way_element.tags)
 }
 
 /// Get Way from Overpass
@@ -112,7 +138,7 @@ pub async fn get_tags(id: ElementId) -> Result<Tags, reqwest::Error> {
 ///
 /// Unexpected data from overpass and/or openstreetmap.
 ///
-pub async fn get_way(id: &ElementId) -> Result<(Tags, LineString<f64>, Locale), reqwest::Error> {
+pub async fn get_way(id: &ElementId) -> Result<(Tags, LineString<f64>, Locale), Error> {
     let resp = reqwest::Client::new()
         .get(format!(
             r#"https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];
@@ -129,27 +155,23 @@ pub async fn get_way(id: &ElementId) -> Result<(Tags, LineString<f64>, Locale), 
         ))
         .send()
         .await?
-        .json::<OverpassResult>()
+        .json::<OverpassResponse>()
         .await?;
     log::debug!("{:#?}", resp);
 
     let locale = resp.locale();
-
     let way_element = {
         let mut elements = resp.elements;
         elements.truncate(1);
-        elements.pop().unwrap()
+        elements.pop().ok_or(Error::Empty)?
     };
-    assert_eq!(way_element.r#type, ElementType::Way);
-    assert_eq!(&way_element.id, id);
 
+    if way_element.r#type != ElementType::Way || &way_element.id != id {
+        return Err(Error::Malformed);
+    }
     Ok((
         way_element.tags,
-        convert(
-            &way_element
-                .geometry
-                .expect("overpass response missing geometry"),
-        ),
+        convert(&way_element.geometry.ok_or(Error::Malformed)?),
         locale,
     ))
 }
@@ -167,7 +189,7 @@ pub async fn get_way(id: &ElementId) -> Result<(Tags, LineString<f64>, Locale), 
 ///
 pub async fn get_nearby(
     point: Point<f64>,
-) -> Result<(ElementId, Tags, LineString<f64>, Locale), reqwest::Error> {
+) -> Result<(ElementId, Tags, LineString<f64>, Locale), Error> {
     const RADIUS: f64 = 100.0_f64;
     let lat = point.x();
     let lon = point.y();
@@ -189,12 +211,12 @@ pub async fn get_nearby(
         ))
         .send()
         .await?
-        .json::<OverpassResult>()
+        .json::<OverpassResponse>()
         .await?;
     log::debug!("{:#?}", resp);
 
     let locale = resp.locale();
-    let (element, geometry, _distance) = resp
+    let (way_element, geometry, _distance) = resp
         .elements
         .into_iter()
         .filter_map(|element| {
@@ -207,10 +229,13 @@ pub async fn get_nearby(
         .min_by(|(_, _, left_distance), (_, _, right_distance)| {
             left_distance.partial_cmp(right_distance).unwrap()
         })
-        .expect("overpass response missing geometry");
-    assert_eq!(element.r#type, ElementType::Way);
+        .ok_or(Error::Malformed)?;
 
-    Ok((element.id, element.tags, geometry, locale))
+    if way_element.r#type != ElementType::Way {
+        return Err(Error::Malformed);
+    }
+
+    Ok((way_element.id, way_element.tags, geometry, locale))
 }
 
 #[cfg(test)]
@@ -300,11 +325,11 @@ mod tests {
       }      
     "#;
 
-    use super::OverpassResult;
+    use super::OverpassResponse;
 
     #[test]
     fn element_from_response() {
-        let result: OverpassResult = serde_json::from_str(RESPONSE).unwrap();
+        let result: OverpassResponse = serde_json::from_str(RESPONSE).unwrap();
         assert_eq!(result.elements.len(), 3);
         let element = result.elements.first().unwrap();
         assert!(element.geometry.is_some());
