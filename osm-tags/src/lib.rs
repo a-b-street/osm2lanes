@@ -209,6 +209,25 @@ impl Tags {
     pub fn tree(&self) -> &TagTree {
         &self.tree
     }
+
+    /// # Errors
+    ///
+    /// If duplicate key is inserted.   
+    ///
+    pub fn checked_insert<K: Into<TagKey>, V: Into<String>>(
+        &mut self,
+        k: K,
+        v: V,
+    ) -> Result<(), DuplicateKeyError> {
+        let tag_key = k.into();
+        let key = tag_key.as_str();
+        let val: String = v.into();
+        if let Some(duplicate) = self.map.insert(key.to_owned(), val.clone()) {
+            return Err(duplicate.into());
+        }
+        self.tree.insert(key, val)?;
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -390,41 +409,6 @@ impl TagTreeVal {
     #[must_use]
     pub fn tree(&self) -> Option<&TagTree> {
         self.tree.as_ref()
-    }
-}
-
-pub trait TagsWrite {
-    ///
-    /// # Errors
-    ///
-    /// If duplicate key is inserted.
-    ///
-    fn checked_insert<K: Into<TagKey>, V: Into<String>>(
-        &mut self,
-        k: K,
-        v: V,
-    ) -> Result<(), DuplicateKeyError>;
-}
-
-impl TagsWrite for Tags {
-    ///
-    /// # Errors
-    ///
-    /// If duplicate key is inserted.   
-    ///
-    fn checked_insert<K: Into<TagKey>, V: Into<String>>(
-        &mut self,
-        k: K,
-        v: V,
-    ) -> Result<(), DuplicateKeyError> {
-        let tag_key = k.into();
-        let key = tag_key.as_str();
-        let val: String = v.into();
-        if let Some(duplicate) = self.map.insert(key.to_owned(), val.clone()) {
-            return Err(duplicate.into());
-        }
-        self.tree.insert(key, val)?;
-        Ok(())
     }
 }
 
