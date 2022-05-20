@@ -139,9 +139,9 @@ impl Component for MapComponent {
     fn view(&self, _ctx: &Context<Self>) -> Html {
         log::debug!("map redraw");
         html! {
-            <div class="map-container component-container">
+            <section>
                 {self.render_map()}
-            </div>
+            </section>
         }
     }
 }

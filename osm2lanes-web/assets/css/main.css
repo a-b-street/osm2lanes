@@ -184,7 +184,6 @@ p.prefixed {
 #map {
   height: 1024px;
   cursor: crosshair;
-  margin: 0px 40px;
 }
 
 #map.searching {
