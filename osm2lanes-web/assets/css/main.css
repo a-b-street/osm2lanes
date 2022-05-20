@@ -187,4 +187,8 @@ p.prefixed {
   margin: 0px 40px;
 }
 
+#map.searching {
+  cursor: wait;
+}
+
 /* End Map */
