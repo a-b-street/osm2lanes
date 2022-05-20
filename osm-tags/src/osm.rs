@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{TagKey, Tags};
+use crate::{TagKey, TagKeyPart, Tags};
 
-pub const ONEWAY: TagKey = TagKey::from_static("oneway");
-pub const HIGHWAY: TagKey = TagKey::from_static("highway");
-const CONSTRUCTION: TagKey = TagKey::from_static("construction");
-const PROPOSED: TagKey = TagKey::from_static("proposed");
+pub const ONEWAY: TagKeyPart = TagKeyPart::from_static("oneway");
+pub const HIGHWAY: TagKeyPart = TagKeyPart::from_static("highway");
+const CONSTRUCTION: TagKeyPart = TagKeyPart::from_static("construction");
+const PROPOSED: TagKeyPart = TagKeyPart::from_static("proposed");
 pub const LIFECYCLE: [TagKey; 3] = [HIGHWAY, CONSTRUCTION, PROPOSED];
 
 #[derive(Clone, Copy, Debug, PartialEq)]
