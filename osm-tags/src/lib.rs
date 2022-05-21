@@ -45,7 +45,6 @@
     clippy::use_debug
 )]
 
-use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
@@ -85,7 +84,7 @@ impl std::error::Error for DuplicateKeyError {}
 // TODO: fix this in the serialization by having the keys sorted.
 #[derive(Clone, Debug, Default)]
 pub struct Tags {
-    tree: TagTree,
+    tree: TagNode,
 }
 
 impl Tags {
@@ -98,7 +97,7 @@ impl Tags {
     pub fn from_string_pairs<I: IntoIterator<Item = [String; 2]>>(
         tags: I,
     ) -> Result<Self, DuplicateKeyError> {
-        let mut tree = TagTree::default();
+        let mut tree = TagNode::default();
         for tag_pair in tags {
             let [key, val] = dbg!(tag_pair);
             tree.insert(&dbg!(TagKey::from_string(key)).0, val)?;
@@ -124,7 +123,7 @@ impl Tags {
     #[must_use]
     pub fn from_string_pair(tag_pair: [String; 2]) -> Self {
         let [key, val] = tag_pair;
-        let mut tree = TagTree::default();
+        let mut tree = TagNode::default();
         tree.insert(&TagKey::from_string(key).0, val).unwrap();
         Self { tree }
     }
@@ -138,13 +137,13 @@ impl Tags {
     /// Expose data as vector of pairs
     #[must_use]
     pub fn to_str_pairs(&self) -> Vec<(String, &str)> {
-        self.tree.to_str_pairs()
+        self.tree.to_str_pairs().unwrap()
     }
 
     /// Vector of `=` separated strings
     #[must_use]
     pub fn to_vec(&self) -> Vec<String> {
-        let pairs = self.tree.to_str_pairs();
+        let pairs = self.to_str_pairs();
         pairs
             .into_iter()
             .map(|(mut key, val)| {
@@ -156,10 +155,11 @@ impl Tags {
     }
 
     /// Get value from tags given a key
-    pub fn get(&self, q: &'static str) -> Option<&str> {
-        self.tree
-            .get(&TagKey::from_ref(q).0)
-            .and_then(TagTreeVal::val)
+    pub fn get<Q>(&self, q: Q) -> Option<&str>
+    where
+        Q: Into<TagKey>,
+    {
+        self.tree.get(&q.into().0).and_then(TagNode::val)
     }
     // pub fn get<Q, B>(&self, q: &Q) -> Option<&str>
     // where
@@ -173,20 +173,22 @@ impl Tags {
     /// Return if tags key has value,
     /// return false if key does not exist.
     #[must_use]
-    pub fn is(&self, q: &'static str, v: &str) -> bool {
+    pub fn is<Q>(&self, q: Q, v: &str) -> bool
+    where
+        Q: Into<TagKey>,
+    {
         self.get(q) == Some(v)
     }
 
     /// Return if tags key has any of the values,
     /// return false if the key does not exist.
     #[must_use]
-    pub fn is_any<T: AsRef<str>>(&self, k: T, values: &[&str]) -> bool {
-        todo!();
-        // if let Some(v) = self.get(k) {
-        //     values.contains(&v)
-        // } else {
-        //     false
-        // }
+    pub fn is_any<Q: Into<TagKey>>(&self, q: Q, values: &[&str]) -> bool {
+        if let Some(v) = self.get(q) {
+            values.contains(&v)
+        } else {
+            false
+        }
     }
 
     /// Get a subset of the tags
@@ -208,11 +210,6 @@ impl Tags {
         // map
     }
 
-    #[must_use]
-    pub fn tree(&self) -> &TagTree {
-        &self.tree
-    }
-
     /// # Errors
     ///
     /// If duplicate key is inserted.   
@@ -222,7 +219,7 @@ impl Tags {
         k: K,
         v: V,
     ) -> Result<(), DuplicateKeyError> {
-        todo!();
+        self.tree.insert(&k.into().0, v.into())
     }
 }
 
@@ -332,109 +329,81 @@ impl<'de> Deserialize<'de> for Tags {
 }
 
 #[derive(Clone, Default, Debug)]
-pub struct TagTree(BTreeMap<TagKeyPart, TagTreeVal>);
+pub struct TagNode {
+    val: Option<String>,
+    children: Option<BTreeMap<TagKeyPart, TagNode>>,
+}
 
-impl TagTree {
+impl TagNode {
     fn insert(&mut self, parts: &[TagKeyPart], val: String) -> Result<(), DuplicateKeyError> {
-        if let Some(key) = parts.get(0) {
-            self.0
+        match parts {
+            [] => {
+                self.val = Some(val);
+                Ok(())
+            },
+            [key, rest @ ..] => self
+                .children
+                .get_or_insert(BTreeMap::new())
                 .entry(key.to_owned())
                 .or_default()
-                .insert(parts.get(1..), val)
-        } else {
-            // TODO: enforce this at compile time using a non-empty slice?
-            unreachable!()
+                .insert(rest, val),
         }
     }
 
+    /// Get value of node
+    #[must_use]
+    pub fn val(&self) -> Option<&str> {
+        Some(self.val.as_ref()?.as_str())
+    }
+
     /// Get tree node
-    pub fn get(&self, parts: &[TagKeyPart]) -> Option<&TagTreeVal> {
-        let next = self.0.get(parts.get(0).unwrap());
-        if let Some(rest_key) = parts.get(1..) {
-            if !rest_key.is_empty() {
-                return next?.tree.as_ref()?.get(rest_key);
-            }
+    pub fn get(&self, parts: &[TagKeyPart]) -> Option<&Self> {
+        match parts {
+            [] => Some(self),
+            [key, rest @ ..] => self.children.as_ref()?.get(key)?.get(rest),
         }
-        next
     }
 
     /// Expose data as vector of pairs
     #[must_use]
-    pub fn to_str_pairs(&self) -> Vec<(String, &str)> {
-        self.0
-            .iter()
-            .map(|(parent_key, v)| {
-                let mut ret_pairs = Vec::new();
-                if let Some(nested_val) = v.val() {
-                    ret_pairs.push((parent_key.to_string(), nested_val))
-                }
-                if let Some(nested_pairs) = v.tree.as_ref().map(|tree| tree.to_str_pairs()) {
-                    for nested_pair in nested_pairs {
-                        let (part_key, tag_val) = nested_pair;
-                        ret_pairs.push((
-                            format!("{}:{}", parent_key.as_str(), part_key.as_str()),
-                            tag_val,
-                        ))
+    pub fn to_str_pairs(&self) -> Option<Vec<(String, &str)>> {
+        Some(
+            self.children
+                .as_ref()?
+                .iter()
+                .map(|(parent_key, node)| {
+                    let mut ret_pairs = Vec::new();
+                    if let Some(nested_val) = node.val() {
+                        ret_pairs.push((parent_key.to_string(), nested_val))
                     }
-                }
-                ret_pairs
-            })
-            .flatten()
-            .collect::<Vec<_>>()
-    }
-}
-
-#[derive(Clone, Default, Debug)]
-pub struct TagTreeVal {
-    tree: Option<TagTree>,
-    val: Option<String>,
-}
-
-impl TagTreeVal {
-    fn insert(
-        &mut self,
-        parts: Option<&[TagKeyPart]>,
-        val: String,
-    ) -> Result<(), DuplicateKeyError> {
-        match parts {
-            Some(parts) if parts.len() > 0 => self
-                .tree
-                .get_or_insert_with(TagTree::default)
-                .insert(parts, val),
-            Some(_) | None => self.set(val),
-        }
+                    if let Some(str_pairs) = node.to_str_pairs() {
+                        for nested_pair in str_pairs {
+                            let (part_key, tag_val) = nested_pair;
+                            ret_pairs.push((
+                                format!("{}:{}", parent_key.as_str(), part_key.as_str()),
+                                tag_val,
+                            ))
+                        }
+                    }
+                    ret_pairs
+                })
+                .flatten()
+                .collect::<Vec<_>>(),
+        )
     }
 
-    fn set(&mut self, input: String) -> Result<(), DuplicateKeyError> {
+    fn _set(&mut self, input: String) -> Result<(), DuplicateKeyError> {
         if let Some(val) = &self.val {
             return Err(val.clone().into());
         }
         self.val = Some(input);
         Ok(())
     }
-
-    /// Get nested value from tree given key
-    #[must_use]
-    pub fn get(&self, parts: &[TagKeyPart]) -> Option<&TagTreeVal> {
-        self.tree.as_ref()?.get(parts)
-    }
-
-    /// Get value of root
-    #[must_use]
-    pub fn val(&self) -> Option<&str> {
-        Some(self.val.as_ref()?.as_str())
-    }
-
-    /// Get tree
-    #[must_use]
-    pub fn tree(&self) -> Option<&TagTree> {
-        self.tree.as_ref()
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{TagKey, TagKeyPart, Tags};
+    use crate::{TagKeyPart, Tags};
 
     #[test]
     fn test_tags() {
@@ -461,10 +430,10 @@ mod tests {
         assert!(tags.is("foo", "bar"));
         assert!(!tags.is("foo", "foo"));
         assert!(!tags.is("bar", "foo"));
-        // assert!(tags.is_any("foo", &["bar"]));
-        // assert!(tags.is_any("foo", &["foo", "bar"]));
-        // assert!(!tags.is_any("foo", &["foo"]));
-        // assert!(!tags.is_any("bar", &["foo", "bar"]));
+        assert!(tags.is_any("foo", &["bar"]));
+        assert!(tags.is_any("foo", &["foo", "bar"]));
+        assert!(!tags.is_any("foo", &["foo"]));
+        assert!(!tags.is_any("bar", &["foo", "bar"]));
         // assert_eq!(tags.subset(&["foo"]).to_vec(), vec!["foo=bar"]);
         // assert_eq!(
         //     tags.subset(&["foo", "abra"]).to_vec(),
@@ -474,14 +443,17 @@ mod tests {
         // assert!(tags.subset(&["bar"]).to_vec().is_empty());
 
         // Key interfaces
-        // const FOO_KEY: TagKeyPart = TagKeyPart::from_static("foo");
-        // assert!(tags.is(FOO_KEY, "bar"));
-        // assert!(tags.is(&FOO_KEY, "bar"));
-        // assert!(!tags.is(FOO_KEY, "foo"));
-        // assert_eq!(tags.subset(&[FOO_KEY]).to_vec(), vec!["foo=bar"]);
-        // assert!(tags.is(FOO_KEY + "multi" + "key", "value"));
-        // let foo_key = FOO_KEY + "multi" + "key";
-        // assert!(tags.is(&foo_key, "value"));
+        const FOO_KEY: TagKeyPart = TagKeyPart::from_static("foo");
+        assert_eq!(tags.get(FOO_KEY), Some("bar"));
+        assert_eq!(tags.get(&FOO_KEY), Some("bar"));
+        assert_eq!(tags.get(TagKeyPart::from_static("bar")), None);
+        assert!(tags.is(FOO_KEY, "bar"));
+        assert!(tags.is(&FOO_KEY, "bar"));
+        assert!(!tags.is(FOO_KEY, "foo"));
+        assert_eq!(tags.subset(&[FOO_KEY]).to_vec(), vec!["foo=bar"]);
+        assert!(tags.is(FOO_KEY + "multi" + "key", "value"));
+        let foo_key = FOO_KEY + "multi" + "key";
+        assert!(tags.is(&foo_key, "value"));
 
         // TODO: Tree interfaces
 

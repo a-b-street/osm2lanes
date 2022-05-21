@@ -142,6 +142,12 @@ impl From<TagKeyPart> for TagKey {
     }
 }
 
+impl From<&TagKeyPart> for TagKey {
+    fn from(part: &TagKeyPart) -> Self {
+        Self(vec![part.to_owned()])
+    }
+}
+
 impl ToString for TagKey {
     fn to_string(&self) -> String {
         self.0.join(":")
