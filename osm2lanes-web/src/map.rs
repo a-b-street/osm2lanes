@@ -49,9 +49,12 @@ impl MapComponent {
 #[serde(rename_all = "camelCase")]
 struct MapOptions {
     scroll_wheel_zoom: bool,
+    // https://github.com/elmarquis/Leaflet.GestureHandling
+    gesture_handling: bool,
 }
 const MAP_OPTIONS: MapOptions = MapOptions {
     scroll_wheel_zoom: false,
+    gesture_handling: true,
 };
 
 impl Component for MapComponent {
@@ -96,18 +99,23 @@ impl Component for MapComponent {
         self.is_searching = false;
         match msg {
             Msg::MapClick(point) => {
-                log::debug!("map search click");
-                ctx.link().send_future(async move {
-                    match get_nearby(point).await {
-                        Ok((id, tags, geometry, locale)) => {
-                            Msg::MapUpdate(id.to_string(), tags, locale, geometry)
-                        },
-                        Err(OverpassError::Empty) => Msg::Error(String::from("no ways found")),
-                        Err(e) => Msg::Error(e.to_string()),
-                    }
-                });
-                self.is_searching = true;
-                true
+                if !self.is_searching {
+                    log::debug!("map search click");
+                    ctx.link().send_future(async move {
+                        match get_nearby(point).await {
+                            Ok((id, tags, geometry, locale)) => {
+                                Msg::MapUpdate(id.to_string(), tags, locale, geometry)
+                            },
+                            Err(OverpassError::Empty) => Msg::Error(String::from("no ways found")),
+                            Err(e) => Msg::Error(e.to_string()),
+                        }
+                    });
+                    self.is_searching = true;
+                    true
+                } else {
+                    log::debug!("map search click ignored, search ongoing");
+                    false
+                }
             },
             Msg::MapUpdate(id, tags, locale, geometry) => {
                 log::debug!("map search complete");
@@ -146,7 +154,7 @@ impl Component for MapComponent {
     fn view(&self, _ctx: &Context<Self>) -> Html {
         log::debug!("map redraw");
         html! {
-            <section class={classes!("map", self.is_searching.then(|| "searching"))}>
+            <section class="map">
                 {self.render_map()}
             </section>
         }
