@@ -182,12 +182,16 @@ p.prefixed {
 /* Start Map */
 
 #map {
-  height: 1024px;
+  height: 640px;
+}
+
+#map.leaflet-dragging {
+  cursor: grabbing;
+}
+
+#map.leaflet-grab {
   cursor: crosshair;
 }
 
-#map.searching {
-  cursor: wait;
-}
 
 /* End Map */

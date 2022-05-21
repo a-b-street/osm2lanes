@@ -4,6 +4,7 @@ use leaflet::{LatLng, Map, MouseEvent, Path, Polyline, TileLayer};
 use osm2lanes::locale::Locale;
 use osm2lanes::overpass::{get_nearby, Error as OverpassError};
 use osm_tags::Tags;
+use serde::Serialize;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element, HtmlElement};
@@ -37,15 +38,21 @@ impl MapComponent {
     const MAP_ID: &'static str = "map";
 
     fn render_map(&self) -> Html {
-        let container = self.container.clone();
-        if self.is_searching {
-            container.set_class_name("searching");
-        } else {
-            container.set_class_name("");
-        }
-        Html::VRef(container.into())
+        // creating the container here doesn't work
+        // modifying the container here breaks things
+        // regardless, it is unclear if this clone is OK
+        Html::VRef(self.container.clone().into())
     }
 }
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MapOptions {
+    scroll_wheel_zoom: bool,
+}
+const MAP_OPTIONS: MapOptions = MapOptions {
+    scroll_wheel_zoom: false,
+};
 
 impl Component for MapComponent {
     type Message = Msg;
@@ -53,10 +60,10 @@ impl Component for MapComponent {
 
     fn create(ctx: &Context<Self>) -> Self {
         let container: Element = document().create_element("div").unwrap();
-        let container: HtmlElement = container.dyn_into().unwrap();
         container.set_id(Self::MAP_ID);
+        let container: HtmlElement = container.dyn_into().unwrap();
 
-        let map = Map::new_with_element(&container, &JsValue::NULL);
+        let map = Map::new_with_element(&container, &JsValue::from_serde(&MAP_OPTIONS).unwrap());
 
         let map_click_callback = ctx.link().callback(Msg::MapClick);
         let map_click_closure = Closure::<dyn Fn(MouseEvent)>::wrap(Box::new(move |click_event| {
@@ -139,7 +146,7 @@ impl Component for MapComponent {
     fn view(&self, _ctx: &Context<Self>) -> Html {
         log::debug!("map redraw");
         html! {
-            <section>
+            <section class={classes!("map", self.is_searching.then(|| "searching"))}>
                 {self.render_map()}
             </section>
         }
