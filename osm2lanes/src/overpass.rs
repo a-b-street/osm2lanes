@@ -85,8 +85,8 @@ impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Reqwest(e) => e.fmt(f),
-            Self::Empty => write!(f, "empty"),
-            Self::Malformed => write!(f, "malformed"),
+            Self::Empty => write!(f, "overpass response empty"),
+            Self::Malformed => write!(f, "overpass response malformed"),
         }
     }
 }
@@ -229,7 +229,7 @@ pub async fn get_nearby(
         .min_by(|(_, _, left_distance), (_, _, right_distance)| {
             left_distance.partial_cmp(right_distance).unwrap()
         })
-        .ok_or(Error::Malformed)?;
+        .ok_or(Error::Empty)?;
 
     if way_element.r#type != ElementType::Way {
         return Err(Error::Malformed);

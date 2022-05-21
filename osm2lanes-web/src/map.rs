@@ -2,11 +2,12 @@ use geo::{LineString, Point};
 use gloo_utils::document;
 use leaflet::{LatLng, Map, MouseEvent, Path, Polyline, TileLayer};
 use osm2lanes::locale::Locale;
-use osm2lanes::overpass::get_nearby;
+use osm2lanes::overpass::{get_nearby, Error as OverpassError};
 use osm_tags::Tags;
+use serde::Serialize;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{Element, HtmlElement, Node};
+use web_sys::{Element, HtmlElement};
 use yew::prelude::*;
 use yew::Html;
 
@@ -30,14 +31,31 @@ pub struct MapComponent {
     point: Point<f64>,
     path: Option<Path>,
     _map_click_closure: Closure<dyn Fn(MouseEvent)>,
+    is_searching: bool,
 }
 
 impl MapComponent {
+    const MAP_ID: &'static str = "map";
+
     fn render_map(&self) -> Html {
-        let node: &Node = &self.container.clone().into();
-        Html::VRef(node.clone())
+        // creating the container here doesn't work
+        // modifying the container here breaks things
+        // regardless, it is unclear if this clone is OK
+        Html::VRef(self.container.clone().into())
     }
 }
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MapOptions {
+    scroll_wheel_zoom: bool,
+    // https://github.com/elmarquis/Leaflet.GestureHandling
+    gesture_handling: bool,
+}
+const MAP_OPTIONS: MapOptions = MapOptions {
+    scroll_wheel_zoom: false,
+    gesture_handling: true,
+};
 
 impl Component for MapComponent {
     type Message = Msg;
@@ -45,13 +63,13 @@ impl Component for MapComponent {
 
     fn create(ctx: &Context<Self>) -> Self {
         let container: Element = document().create_element("div").unwrap();
+        container.set_id(Self::MAP_ID);
         let container: HtmlElement = container.dyn_into().unwrap();
-        container.set_id("map");
-        let map = Map::new_with_element(&container, &JsValue::NULL);
+
+        let map = Map::new_with_element(&container, &JsValue::from_serde(&MAP_OPTIONS).unwrap());
 
         let map_click_callback = ctx.link().callback(Msg::MapClick);
         let map_click_closure = Closure::<dyn Fn(MouseEvent)>::wrap(Box::new(move |click_event| {
-            log::debug!("map click");
             let lat_lng = click_event.latlng();
             map_click_callback.emit(Point::new(lat_lng.lat(), lat_lng.lng()));
         }));
@@ -64,6 +82,7 @@ impl Component for MapComponent {
             path: None,
             // to avoid dropping the closure and invalidating the callback
             _map_click_closure: map_click_closure,
+            is_searching: false,
         }
     }
 
@@ -71,25 +90,35 @@ impl Component for MapComponent {
         if first_render {
             self.map
                 .setView(&LatLng::new(self.point.x(), self.point.y()), 4.0);
-            log::debug!("add tile layer");
+            log::debug!("add osm tile layer");
             add_tile_layer(&self.map);
         }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
+        self.is_searching = false;
         match msg {
             Msg::MapClick(point) => {
-                ctx.link().send_future(async move {
-                    match get_nearby(point).await {
-                        Ok((id, tags, geometry, locale)) => {
-                            Msg::MapUpdate(id.to_string(), tags, locale, geometry)
-                        },
-                        Err(e) => Msg::Error(e.to_string()),
-                    }
-                });
-                true
+                if !self.is_searching {
+                    log::debug!("map search click");
+                    ctx.link().send_future(async move {
+                        match get_nearby(point).await {
+                            Ok((id, tags, geometry, locale)) => {
+                                Msg::MapUpdate(id.to_string(), tags, locale, geometry)
+                            },
+                            Err(OverpassError::Empty) => Msg::Error(String::from("no ways found")),
+                            Err(e) => Msg::Error(e.to_string()),
+                        }
+                    });
+                    self.is_searching = true;
+                    true
+                } else {
+                    log::debug!("map search click ignored, search ongoing");
+                    false
+                }
             },
             Msg::MapUpdate(id, tags, locale, geometry) => {
+                log::debug!("map search complete");
                 if let Some(path) = self.path.take() {
                     path.remove();
                 }
@@ -110,7 +139,11 @@ impl Component for MapComponent {
                     .emit(WebMsg::TagsLocaleSet { id, tags, locale });
                 true
             },
-            Msg::Error(_) => todo!(),
+            Msg::Error(e) => {
+                log::debug!("map error: {e}");
+                ctx.props().callback_msg.emit(WebMsg::Error(e));
+                true
+            },
         }
     }
 
@@ -119,10 +152,11 @@ impl Component for MapComponent {
     }
 
     fn view(&self, _ctx: &Context<Self>) -> Html {
+        log::debug!("map redraw");
         html! {
-            <div class="map-container component-container">
+            <section class="map">
                 {self.render_map()}
-            </div>
+            </section>
         }
     }
 }
