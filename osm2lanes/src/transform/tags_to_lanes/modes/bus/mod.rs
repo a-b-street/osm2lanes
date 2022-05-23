@@ -1,6 +1,5 @@
 use crate::locale::Locale;
 use crate::road::Designated;
-use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::{
     Access, Infer, LaneBuilder, LaneBuilderError, LaneDependentAccess, Oneway, RoadBuilder,
     TagsNumeric, TagsToLanesMsg,
@@ -9,8 +8,9 @@ use crate::transform::RoadWarnings;
 
 mod busway;
 use busway::{busway, Scheme as BuswayScheme};
+use osm_tags::{TagKeyPart, Tags};
 
-const LANES: TagKey = TagKey::from_static("lanes");
+const LANES: TagKeyPart = TagKeyPart::from_static("lanes");
 
 impl LaneBuilder {
     #[allow(clippy::unnecessary_wraps)]
@@ -61,14 +61,12 @@ pub(in crate::transform::tags_to_lanes) fn bus(
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
     // 3 schemes, for simplicity we only allow one at a time
     match (
-        tags.tree().get("busway").is_some(),
-        tags.tree()
-            .get("lanes:bus")
-            .or_else(|| tags.tree().get("lanes:psv"))
+        tags.get_node("busway").is_some(),
+        tags.get_node("lanes:bus")
+            .or_else(|| tags.get_node("lanes:psv"))
             .is_some(),
-        tags.tree()
-            .get("bus:lanes")
-            .or_else(|| tags.tree().get("psv:lanes"))
+        tags.get_node("bus:lanes")
+            .or_else(|| tags.get_node("psv:lanes"))
             .is_some(),
     ) {
         (false, false, false) => {},

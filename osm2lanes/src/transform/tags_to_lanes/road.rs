@@ -1,6 +1,8 @@
 use std::collections::VecDeque;
 use std::iter;
 
+use osm_tags::{TagKeyPart, Tags};
+
 use super::infer::Infer;
 use super::oneway::Oneway;
 use super::separator::{
@@ -14,7 +16,7 @@ use crate::road::{
     AccessAndDirection as LaneAccessAndDirection, AccessByType as LaneAccessByType, Designated,
     Direction, Lane,
 };
-use crate::tag::{Access as AccessValue, Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
+use crate::tag::{Access as AccessValue, Highway, HIGHWAY, LIFECYCLE};
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::tags_to_lanes::counts::{CentreTurnLaneScheme, Counts};
 use crate::transform::tags_to_lanes::modes::BusLaneCount;
@@ -186,7 +188,7 @@ impl RoadBuilder {
             Designated::Motor
         };
 
-        const MAXSPEED: TagKey = TagKey::from_static("maxspeed");
+        const MAXSPEED: TagKeyPart = TagKeyPart::from_static("maxspeed");
         let max_speed = match tags.get(MAXSPEED).map(str::parse::<Speed>).transpose() {
             Ok(max_speed) => max_speed,
             Err(e) => {

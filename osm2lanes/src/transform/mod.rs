@@ -1,22 +1,22 @@
 use crate::locale::DrivingSide;
 use crate::road::{Designated, Direction, Lane};
-use crate::tag::TagKey;
 
 mod error;
 pub use error::{RoadError, RoadFromTags, RoadWarnings};
 
 mod tags_to_lanes;
+use osm_tags::TagKeyPart;
 pub use tags_to_lanes::{tags_to_lanes, Config as TagsToLanesConfig, Infer, TagsToLanesMsg};
 
 mod lanes_to_tags;
 pub use lanes_to_tags::{lanes_to_tags, Config as LanesToTagsConfig, LanesToTagsMsg};
 
 pub mod tags {
-    use crate::tag::TagKey;
+    use osm_tags::TagKeyPart;
 
-    pub const CYCLEWAY: TagKey = TagKey::from_static("cycleway");
-    pub const SIDEWALK: TagKey = TagKey::from_static("sidewalk");
-    pub const SHOULDER: TagKey = TagKey::from_static("shoulder");
+    pub const CYCLEWAY: TagKeyPart = TagKeyPart::from_static("cycleway");
+    pub const SIDEWALK: TagKeyPart = TagKeyPart::from_static("sidewalk");
+    pub const SHOULDER: TagKeyPart = TagKeyPart::from_static("shoulder");
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -51,17 +51,17 @@ impl std::convert::From<DrivingSide> for WaySide {
     }
 }
 
-impl std::convert::From<DrivingSide> for TagKey {
+impl std::convert::From<DrivingSide> for TagKeyPart {
     fn from(side: DrivingSide) -> Self {
         match side {
-            DrivingSide::Right => Self::from("right"),
-            DrivingSide::Left => Self::from("left"),
+            DrivingSide::Right => Self::from_static("right"),
+            DrivingSide::Left => Self::from_static("left"),
         }
     }
 }
 
 impl DrivingSide {
-    fn tag(self) -> TagKey {
+    fn tag(self) -> TagKeyPart {
         self.into()
     }
 }

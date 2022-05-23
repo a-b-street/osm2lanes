@@ -31,18 +31,17 @@ pub use infer::Infer;
 trait TagsNumeric {
     fn get_parsed<K, T>(&self, key: K, warnings: &mut RoadWarnings) -> Option<T>
     where
-        K: AsRef<str>,
-        TagKey: From<K>,
+        K: Into<TagKey>,
         T: std::str::FromStr;
 }
 
 impl TagsNumeric for Tags {
     fn get_parsed<K, T>(&self, key: K, warnings: &mut RoadWarnings) -> Option<T>
     where
-        K: AsRef<str>,
-        TagKey: From<K>,
+        K: Into<TagKey>,
         T: std::str::FromStr,
     {
+        let key: TagKey = key.into();
         self.get(&key).and_then(|val| {
             if let Ok(w) = val.parse::<T>() {
                 Some(w)

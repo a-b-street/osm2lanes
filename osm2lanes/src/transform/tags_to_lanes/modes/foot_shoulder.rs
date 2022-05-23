@@ -58,7 +58,7 @@ impl Sidewalk {
         warnings: &mut RoadWarnings,
     ) -> Result<(Self, Self), TagsToLanesMsg> {
         let err = Err(TagsToLanesMsg::unsupported_tags(tags.subset(&[
-            SIDEWALK,
+            SIDEWALK.into(),
             SIDEWALK + locale.driving_side.tag(),
             SIDEWALK + locale.driving_side.opposite().tag(),
         ])));
@@ -75,7 +75,7 @@ impl Sidewalk {
                 "no" => (Sidewalk::No, Sidewalk::No),
                 "yes" => {
                     warnings.push(TagsToLanesMsg::ambiguous_tags(
-                        tags.subset(&[SIDEWALK, SIDEWALK + "both"]),
+                        tags.subset(&[SIDEWALK.into(), SIDEWALK + "both"]),
                     ));
                     (Sidewalk::Yes, Sidewalk::Yes)
                 },

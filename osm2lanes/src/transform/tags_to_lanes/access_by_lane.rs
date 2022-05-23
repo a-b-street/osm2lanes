@@ -1,3 +1,5 @@
+use osm_tags::TagKeyPart;
+
 use super::road::RoadBuilder;
 use crate::locale::Locale;
 use crate::tag::{TagKey, Tags};
@@ -50,9 +52,10 @@ pub(in crate::transform::tags_to_lanes) fn get_access<K>(
     k: K,
 ) -> Result<Option<Vec<Access>>, TagsToLanesMsg>
 where
-    K: AsRef<str> + Clone,
+    K: Into<TagKey>,
 {
-    tags.get(k.clone())
+    let k: TagKey = k.into();
+    tags.get(&k)
         .map(|a| {
             Access::split(a).map_err(|a| {
                 TagsToLanesMsg::unsupported(&format!("lanes access {}", a), tags.subset(&[k]))
@@ -75,7 +78,7 @@ impl LaneDependentAccess {
     where
         TagKey: From<K>,
     {
-        const LANES: TagKey = TagKey::from_static("lanes");
+        const LANES: TagKeyPart = TagKeyPart::from_static("lanes");
         let key: TagKey = key.into();
         Ok(
             match (
@@ -89,7 +92,12 @@ impl LaneDependentAccess {
                     if lanes.len() != road.len() {
                         return Err(TagsToLanesMsg::unsupported(
                             "lane count mismatch",
-                            tags.subset(&[key, LANES, LANES + "forward", LANES + "backward"]),
+                            tags.subset(&[
+                                key,
+                                LANES.into(),
+                                LANES + "forward",
+                                LANES + "backward",
+                            ]),
                         ));
                     }
                     Some(Self::LeftToRight(lanes))
@@ -103,7 +111,7 @@ impl LaneDependentAccess {
                             tags.subset(&[
                                 key.clone() + "forward",
                                 key + "backward",
-                                LANES,
+                                LANES.into(),
                                 LANES + "forward",
                                 LANES + "backward",
                             ]),

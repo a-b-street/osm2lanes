@@ -45,14 +45,15 @@
     clippy::use_debug
 )]
 
+use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
 mod key;
 pub use key::{TagKey, TagKeyPart};
 
-// mod osm;
-// pub use osm::{Highway, HighwayImportance, HighwayType, Lifecycle, HIGHWAY, LIFECYCLE, ONEWAY};
+mod osm;
+pub use osm::{Highway, HighwayImportance, HighwayType, Lifecycle, HIGHWAY, LIFECYCLE, ONEWAY};
 
 mod access;
 pub use access::Access;
@@ -105,12 +106,12 @@ impl Tags {
         Ok(dbg!(Self { tree }))
     }
 
-    /// Construct from slice of pairs
+    /// Construct from slice of pairs.
+    /// In the future this will be deprecated in favour of from_string_pairs, as it conceals a string clone
     ///
     /// # Errors
     ///
     /// If a duplicate key is provided.
-    ///
     pub fn from_str_pairs(tags: &[[&str; 2]]) -> Result<Self, DuplicateKeyError> {
         Self::from_string_pairs(
             tags.iter()
@@ -137,7 +138,7 @@ impl Tags {
     /// Expose data as vector of pairs
     #[must_use]
     pub fn to_str_pairs(&self) -> Vec<(String, &str)> {
-        self.tree.to_str_pairs().unwrap()
+        self.tree.to_str_pairs().unwrap_or_default()
     }
 
     /// Vector of `=` separated strings
@@ -157,18 +158,10 @@ impl Tags {
     /// Get value from tags given a key
     pub fn get<Q>(&self, q: Q) -> Option<&str>
     where
-        Q: Into<TagKey>,
+        Q: Into<TagKey>, // This is an issue, as TagKey allocates, so we would ideally want a no-allocate version of this
     {
         self.tree.get(&q.into().0).and_then(TagNode::val)
     }
-    // pub fn get<Q, B>(&self, q: &Q) -> Option<&str>
-    // where
-    //     Q: Into<B> + std::hash::Hash + Eq + Ord + ?Sized,
-    //     TagKeyPart: Borrow<B> + Ord,
-    // {
-    //     todo!();
-    //     // self.tree.get()
-    // }
 
     /// Return if tags key has value,
     /// return false if key does not exist.
@@ -183,7 +176,10 @@ impl Tags {
     /// Return if tags key has any of the values,
     /// return false if the key does not exist.
     #[must_use]
-    pub fn is_any<Q: Into<TagKey>>(&self, q: Q, values: &[&str]) -> bool {
+    pub fn is_any<Q>(&self, q: Q, values: &[&str]) -> bool
+    where
+        Q: Into<TagKey>,
+    {
         if let Some(v) = self.get(q) {
             values.contains(&v)
         } else {
@@ -192,22 +188,29 @@ impl Tags {
     }
 
     /// Get a subset of the tags
-    // TODO, find a way to do this without so many clones
     #[must_use]
-    pub fn subset<T>(&self, keys: &[T]) -> Self
+    pub fn subset<K>(&self, keys: K) -> Self
     where
-        T: Clone + AsRef<str>,
+        K: IntoIterator,
+        K::Item: Into<TagKey>,
     {
-        todo!();
-        // let mut map = Self::default();
-        // for key in keys {
-        //     if let Some(val) = self.get(key) {
-        //         debug_assert!(map
-        //             .checked_insert(key.as_ref().to_owned(), val.to_owned())
-        //             .is_ok());
-        //     }
-        // }
-        // map
+        let mut map = Self::default();
+        for key in keys.into_iter() {
+            let key: TagKey = key.into();
+            if let Some(val) = self.get(&key) {
+                let insert = map.checked_insert(key, val.to_owned());
+                debug_assert!(insert.is_ok());
+            }
+        }
+        map
+    }
+
+    /// Get node given a key part
+    pub fn get_node<Q>(&self, q: Q) -> Option<&TagNode>
+    where
+        Q: Into<TagKey>, // This is an issue, as TagKey allocates, so we would ideally want a no-allocate version of this
+    {
+        self.tree.get(&q.into().0)
     }
 
     /// # Errors
@@ -357,10 +360,15 @@ impl TagNode {
     }
 
     /// Get tree node
-    pub fn get(&self, parts: &[TagKeyPart]) -> Option<&Self> {
-        match parts {
-            [] => Some(self),
-            [key, rest @ ..] => self.children.as_ref()?.get(key)?.get(rest),
+    pub fn get<P>(&self, parts: P) -> Option<&Self>
+    where
+        P: IntoIterator,
+        P::Item: Borrow<TagKeyPart>,
+    {
+        let mut iter = parts.into_iter();
+        match iter.next() {
+            None => Some(self),
+            Some(key) => self.children.as_ref()?.get(key.borrow())?.get(iter),
         }
     }
 
@@ -434,13 +442,13 @@ mod tests {
         assert!(tags.is_any("foo", &["foo", "bar"]));
         assert!(!tags.is_any("foo", &["foo"]));
         assert!(!tags.is_any("bar", &["foo", "bar"]));
-        // assert_eq!(tags.subset(&["foo"]).to_vec(), vec!["foo=bar"]);
-        // assert_eq!(
-        //     tags.subset(&["foo", "abra"]).to_vec(),
-        //     vec!["abra=cadabra", "foo=bar"]
-        // );
-        // assert_eq!(tags.subset(&["foo", "bar"]).to_vec(), vec!["foo=bar"]);
-        // assert!(tags.subset(&["bar"]).to_vec().is_empty());
+        assert_eq!(tags.subset(&["foo"]).to_vec(), vec!["foo=bar"]);
+        assert_eq!(
+            tags.subset(&["foo", "abra"]).to_vec(),
+            vec!["abra=cadabra", "foo=bar"]
+        );
+        assert_eq!(tags.subset(&["foo", "bar"]).to_vec(), vec!["foo=bar"]);
+        assert!(tags.subset(&["bar"]).to_vec().is_empty());
 
         // Key interfaces
         const FOO_KEY: TagKeyPart = TagKeyPart::from_static("foo");
@@ -455,7 +463,9 @@ mod tests {
         let foo_key = FOO_KEY + "multi" + "key";
         assert!(tags.is(&foo_key, "value"));
 
-        // TODO: Tree interfaces
+        // Tree interfaces
+        assert!(tags.get_node(FOO_KEY).is_some());
+        assert!(tags.get_node(FOO_KEY + "multi").is_some());
 
         // TODO: Multi Value
     }

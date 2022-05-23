@@ -1,6 +1,8 @@
+use osm_tags::{TagKeyPart, Tags};
+
 use super::{Infer, Oneway, TagsNumeric};
 use crate::locale::Locale;
-use crate::tag::{Highway, TagKey, Tags};
+use crate::tag::Highway;
 use crate::transform::tags_to_lanes::modes::BusLaneCount;
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
@@ -43,7 +45,7 @@ impl Counts {
             (None, None) => Infer::Default(false),
             (Some(()), Some(false)) => {
                 warnings.push(TagsToLanesMsg::ambiguous_tags(
-                    tags.subset(&[LANES + "both_ways", CENTRE_TURN_LANE]),
+                    tags.subset(&[LANES + "both_ways", CENTRE_TURN_LANE.into()]),
                 ));
                 Infer::Default(true)
             },
@@ -201,7 +203,7 @@ impl Counts {
     }
 }
 
-const LANES: TagKey = TagKey::from_static("lanes");
+const LANES: TagKeyPart = TagKeyPart::from_static("lanes");
 
 /// `lanes` and directional `lanes:*` scheme, see <https://wiki.openstreetmap.org/wiki/Key:lanes>
 pub(in crate::transform::tags_to_lanes) struct LanesDirectionScheme {
@@ -240,7 +242,7 @@ impl LanesDirectionScheme {
     }
 }
 
-const CENTRE_TURN_LANE: TagKey = TagKey::from_static("centre_turn_lane");
+const CENTRE_TURN_LANE: TagKeyPart = TagKeyPart::from_static("centre_turn_lane");
 pub(in crate::transform::tags_to_lanes) struct CentreTurnLaneScheme(pub Option<bool>);
 impl CentreTurnLaneScheme {
     /// Parses and validates the `centre_turn_lane` tag and emits a deprecation warning.

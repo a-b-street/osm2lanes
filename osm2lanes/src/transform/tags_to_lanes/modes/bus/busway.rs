@@ -1,11 +1,12 @@
+use osm_tags::{TagKey, TagKeyPart, Tags};
+
 use crate::locale::Locale;
 use crate::road::Direction;
-use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::{Infer, Oneway, RoadBuilder};
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
-const BUSWAY: TagKey = TagKey::from_static("busway");
-const ONEWAY: TagKey = TagKey::from_static("oneway");
+const BUSWAY: TagKeyPart = TagKeyPart::from_static("busway");
+const ONEWAY: TagKeyPart = TagKeyPart::from_static("oneway");
 
 #[derive(Debug, PartialEq)]
 pub(in crate::transform::tags_to_lanes) enum Variant {
@@ -43,9 +44,9 @@ enum Lane {
 
 fn get_bus_lane<T>(tags: &Tags, key: T, warnings: &mut RoadWarnings) -> Lane
 where
-    T: AsRef<str>,
-    TagKey: From<T>,
+    T: Into<TagKey>,
 {
+    let key: TagKey = key.into();
     match tags.get(&key) {
         None => Lane::None,
         Some("lane") => Lane::Lane,
@@ -82,8 +83,8 @@ impl Scheme {
             (Lane::Lane, Oneway::Yes) => Variant::Forward,
             (Lane::Opposite, Oneway::No) => {
                 warnings.push(TagsToLanesMsg::unsupported_tags(tags.subset(&[
-                    BUSWAY,
-                    ONEWAY,
+                    BUSWAY.into(),
+                    ONEWAY.into(),
                     ONEWAY + "bus",
                 ])));
                 Variant::None
@@ -129,8 +130,8 @@ impl Scheme {
             }
             if let Variant::Forward | Variant::Backward = busway_root {
                 warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
-                    BUSWAY,
-                    ONEWAY,
+                    BUSWAY.into(),
+                    ONEWAY.into(),
                     ONEWAY + "bus",
                     BUSWAY + "both",
                 ])));
@@ -140,8 +141,8 @@ impl Scheme {
         {
             if busway_root != Variant::None && busway_root != busway_forward_backward {
                 warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
-                    BUSWAY,
-                    ONEWAY,
+                    BUSWAY.into(),
+                    ONEWAY.into(),
                     ONEWAY + "bus",
                     busway_forward_key(),
                     busway_backward_key(),

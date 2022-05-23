@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use osm_tags::TagKey;
+
 use crate::locale::Locale;
 use crate::metric::Metre;
 use crate::road::{Designated, Direction};
@@ -29,10 +31,11 @@ impl From<VariantError> for TagsToLanesMsg {
 
 struct Opposite;
 
-fn get_variant<T: AsRef<str>>(
+fn get_variant<K: Into<TagKey>>(
     tags: &Tags,
-    k: T,
+    k: K,
 ) -> Result<Option<(Variant, Option<Opposite>)>, VariantError> {
+    let k: TagKey = k.into();
     match tags.get(&k) {
         Some("lane") => Ok(Some((Variant::Lane, None))),
         Some("track") => Ok(Some((Variant::Track, None))),
@@ -48,13 +51,10 @@ fn get_variant<T: AsRef<str>>(
             | "shoulder"
             | "separate"),
         ) => Err(VariantError::UnimplementedVariant(
-            k.as_ref().to_owned(),
+            k.to_string(),
             v.to_owned(),
         )),
-        Some(v) => Err(VariantError::UnknownVariant(
-            k.as_ref().to_owned(),
-            v.to_owned(),
-        )),
+        Some(v) => Err(VariantError::UnknownVariant(k.to_string(), v.to_owned())),
     }
 }
 
@@ -304,14 +304,15 @@ impl Scheme {
                                 tags.subset(&["cyleway"]),
                                 Tags::from_str_pairs(&[
                                     [
-                                        (CYCLEWAY + locale.driving_side.opposite().tag()).as_str(),
+                                        &(CYCLEWAY + locale.driving_side.opposite().tag())
+                                            .to_string(),
                                         &variant.to_string(),
                                     ],
                                     [
-                                        (CYCLEWAY
+                                        &(CYCLEWAY
                                             + locale.driving_side.opposite().tag()
                                             + "oneway")
-                                            .as_str(),
+                                            .to_string(),
                                         "-1",
                                     ],
                                 ])

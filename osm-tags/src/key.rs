@@ -108,6 +108,11 @@ impl TagKey {
                 .collect(),
         )
     }
+
+    #[must_use]
+    pub fn parts(&self) -> &[TagKeyPart] {
+        &self.0
+    }
 }
 
 impl From<String> for TagKey {
@@ -124,6 +129,13 @@ impl From<&String> for TagKey {
 
 impl From<&str> for TagKey {
     fn from(string: &str) -> Self {
+        Self::from_ref(string)
+    }
+}
+
+// TODO: this seems like a hack
+impl From<&&str> for TagKey {
+    fn from(string: &&str) -> Self {
         Self::from_ref(string)
     }
 }
@@ -145,6 +157,13 @@ impl From<TagKeyPart> for TagKey {
 impl From<&TagKeyPart> for TagKey {
     fn from(part: &TagKeyPart) -> Self {
         Self(vec![part.to_owned()])
+    }
+}
+
+// TODO: this is a hidden clone, which is incorrect
+impl From<&TagKey> for TagKey {
+    fn from(key: &TagKey) -> Self {
+        key.clone()
     }
 }
 
