@@ -64,7 +64,7 @@ pub struct DuplicateKeyError(TagKey);
 
 impl From<String> for DuplicateKeyError {
     fn from(string: String) -> Self {
-        DuplicateKeyError(TagKey::from(string))
+        DuplicateKeyError(TagKey::from(&string))
     }
 }
 
@@ -100,14 +100,15 @@ impl Tags {
     ) -> Result<Self, DuplicateKeyError> {
         let mut tree = TagNode::default();
         for tag_pair in tags {
-            let [key, val] = dbg!(tag_pair);
-            tree.insert(&dbg!(TagKey::from_string(key)).0, val)?;
+            let [key, val] = tag_pair;
+            tree.insert(&TagKey::from_ref(&key).0, val)
+                .map_err(|_empty| DuplicateKeyError::from(key))?;
         }
-        Ok(dbg!(Self { tree }))
+        Ok(Self { tree })
     }
 
     /// Construct from slice of pairs.
-    /// In the future this will be deprecated in favour of from_string_pairs, as it conceals a string clone
+    /// In the future this will be deprecated in favour of `from_string_pairs`, as it conceals a string clone
     ///
     /// # Errors
     ///
@@ -125,7 +126,7 @@ impl Tags {
     pub fn from_string_pair(tag_pair: [String; 2]) -> Self {
         let [key, val] = tag_pair;
         let mut tree = TagNode::default();
-        tree.insert(&TagKey::from_string(key).0, val).unwrap();
+        tree.insert(&TagKey::from_ref(&key).0, val).unwrap();
         Self { tree }
     }
 
@@ -195,7 +196,7 @@ impl Tags {
         K::Item: Into<TagKey>,
     {
         let mut map = Self::default();
-        for key in keys.into_iter() {
+        for key in keys {
             let key: TagKey = key.into();
             if let Some(val) = self.get(&key) {
                 let insert = map.checked_insert(key, val.to_owned());
@@ -222,7 +223,10 @@ impl Tags {
         k: K,
         v: V,
     ) -> Result<(), DuplicateKeyError> {
-        self.tree.insert(&k.into().0, v.into())
+        let k: TagKey = k.into();
+        self.tree
+            .insert(&k.0, v.into())
+            .map_err(|_empty| k.to_string().into())
     }
 }
 
@@ -312,7 +316,7 @@ impl<'de> serde::de::Visitor<'de> for TagsVisitor {
 
         while let Some((key, value)) = access.next_entry::<String, String>()? {
             // TODO
-            tags.checked_insert(key, value).unwrap();
+            tags.checked_insert(&key, value).unwrap();
         }
 
         Ok(tags)
@@ -338,16 +342,19 @@ pub struct TagNode {
 }
 
 impl TagNode {
-    fn insert(&mut self, parts: &[TagKeyPart], val: String) -> Result<(), DuplicateKeyError> {
+    fn insert(&mut self, parts: &[TagKeyPart], val: String) -> Result<(), ()> {
         match parts {
             [] => {
+                if self.val.is_some() {
+                    return Err(());
+                }
                 self.val = Some(val);
                 Ok(())
             },
             [key, rest @ ..] => self
                 .children
                 .get_or_insert(BTreeMap::new())
-                .entry(key.to_owned())
+                .entry(key.clone()) // TODO: is this clone an issue?
                 .or_default()
                 .insert(rest, val),
         }
@@ -379,10 +386,10 @@ impl TagNode {
             self.children
                 .as_ref()?
                 .iter()
-                .map(|(parent_key, node)| {
+                .flat_map(|(parent_key, node)| {
                     let mut ret_pairs = Vec::new();
                     if let Some(nested_val) = node.val() {
-                        ret_pairs.push((parent_key.to_string(), nested_val))
+                        ret_pairs.push((parent_key.to_string(), nested_val));
                     }
                     if let Some(str_pairs) = node.to_str_pairs() {
                         for nested_pair in str_pairs {
@@ -390,12 +397,11 @@ impl TagNode {
                             ret_pairs.push((
                                 format!("{}:{}", parent_key.as_str(), part_key.as_str()),
                                 tag_val,
-                            ))
+                            ));
                         }
                     }
                     ret_pairs
                 })
-                .flatten()
                 .collect::<Vec<_>>(),
         )
     }
@@ -411,7 +417,7 @@ impl TagNode {
 
 #[cfg(test)]
 mod tests {
-    use crate::{TagKeyPart, Tags};
+    use crate::{DuplicateKeyError, TagKeyPart, Tags};
 
     #[test]
     fn test_tags() {
@@ -431,6 +437,18 @@ mod tests {
                 "multivalue=apple;banana;chocolate covered capybara"
             ]
         );
+
+        // Misc
+        let mut other_tags = tags.clone();
+        assert!(other_tags.checked_insert("new", "val").is_ok());
+        assert!(matches!(
+            other_tags.checked_insert("foo", "bar").unwrap_err(),
+            DuplicateKeyError(_),
+        ));
+        // TODO: owned values are not supported, should they be?:
+        // assert!(other_tags
+        //     .checked_insert(String::from("owned"), "val")
+        //     .is_ok());
 
         // String interfaces
         assert_eq!(tags.get("foo"), Some("bar"));

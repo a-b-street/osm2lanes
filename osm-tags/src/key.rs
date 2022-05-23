@@ -99,25 +99,8 @@ impl TagKey {
     }
 
     #[must_use]
-    pub fn from_string(string: String) -> Self {
-        Self(
-            string
-                .split(':')
-                .map(KString::from_ref)
-                .map(TagKeyPart)
-                .collect(),
-        )
-    }
-
-    #[must_use]
     pub fn parts(&self) -> &[TagKeyPart] {
         &self.0
-    }
-}
-
-impl From<String> for TagKey {
-    fn from(string: String) -> Self {
-        Self::from_string(string)
     }
 }
 
@@ -156,7 +139,7 @@ impl From<TagKeyPart> for TagKey {
 
 impl From<&TagKeyPart> for TagKey {
     fn from(part: &TagKeyPart) -> Self {
-        Self(vec![part.to_owned()])
+        Self(vec![part.clone()])
     }
 }
 
@@ -177,7 +160,7 @@ impl std::ops::Add for TagKey {
     type Output = Self;
     fn add(self, other: Self) -> Self {
         let val = format!("{}:{}", self.to_string(), other.to_string());
-        Self::from(val)
+        Self::from(&val)
     }
 }
 

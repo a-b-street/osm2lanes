@@ -23,8 +23,8 @@ enum VariantError {
 impl From<VariantError> for TagsToLanesMsg {
     fn from(e: VariantError) -> Self {
         match e {
-            VariantError::UnknownVariant(key, val) => Self::unsupported_tag(key, &val),
-            VariantError::UnimplementedVariant(key, val) => Self::unimplemented_tag(key, &val),
+            VariantError::UnknownVariant(key, val) => Self::unsupported_tag(&key, &val),
+            VariantError::UnimplementedVariant(key, val) => Self::unimplemented_tag(&key, &val),
         }
     }
 }

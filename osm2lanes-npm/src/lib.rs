@@ -38,7 +38,7 @@ pub fn js_tags_to_lanes(val: &JsValue) -> JsValue {
 
     let mut tags = Tags::default();
     for (key, value) in input.key_values {
-        tags.checked_insert(key, value).unwrap();
+        tags.checked_insert(&key, value).unwrap();
     }
     let lanes = tags_to_lanes(&tags, &locale, &config).unwrap();
     JsValue::from_serde(&lanes).unwrap()
