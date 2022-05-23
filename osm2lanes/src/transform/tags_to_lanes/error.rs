@@ -87,7 +87,7 @@ impl TagsToLanesMsg {
         TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Deprecated {
-                deprecated_tags: Tags::from_str_pair([key.into().as_str(), val]),
+                deprecated_tags: Tags::from_pair(key, val),
                 suggested_tags: None,
             },
         }
@@ -124,7 +124,7 @@ impl TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Unsupported {
                 description: None,
-                tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
+                tags: Some(Tags::from_pair(key, val)),
             },
         }
     }
@@ -160,7 +160,7 @@ impl TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Unimplemented {
                 description: None,
-                tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
+                tags: Some(Tags::from_pair(key, val)),
             },
         }
     }
@@ -184,7 +184,7 @@ impl TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Ambiguous {
                 description: None,
-                tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
+                tags: Some(Tags::from_pair(key, val)),
             },
         }
     }

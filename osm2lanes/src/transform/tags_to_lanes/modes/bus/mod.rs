@@ -61,15 +61,11 @@ pub(in crate::transform::tags_to_lanes) fn bus(
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
     // 3 schemes, for simplicity we only allow one at a time
     match (
-        tags.tree().get("busway").is_some(),
-        tags.tree()
-            .get("lanes:bus")
-            .or_else(|| tags.tree().get("lanes:psv"))
-            .is_some(),
-        tags.tree()
-            .get("bus:lanes")
-            .or_else(|| tags.tree().get("psv:lanes"))
-            .is_some(),
+        !tags.pairs_with_stem("busway").is_empty(),
+        !tags.pairs_with_stem("lanes:bus").is_empty()
+            || !tags.pairs_with_stem("lanes:psv").is_empty(),
+        !tags.pairs_with_stem("bus:lanes").is_empty()
+            || !tags.pairs_with_stem("psv:lanes").is_empty(),
     ) {
         (false, false, false) => {},
         (true, _, false) => busway(tags, locale, road, warnings)?,
@@ -78,7 +74,7 @@ pub(in crate::transform::tags_to_lanes) fn bus(
         _ => {
             return Err(TagsToLanesMsg::unsupported(
                 "more than one bus lanes scheme used",
-                tags.subset(&["busway", "lanes:bus", "lanes:psv", "bus:lanes", "psv:lanes"]),
+                tags.subset(["busway", "lanes:bus", "lanes:psv", "bus:lanes", "psv:lanes"]),
             ))
         },
     }
@@ -115,8 +111,20 @@ fn bus_lanes(
     warnings: &mut RoadWarnings,
 ) -> Result<(), TagsToLanesMsg> {
     match (
-        LaneDependentAccess::from_tags("bus:lanes", tags, locale, road, warnings)?,
-        LaneDependentAccess::from_tags("psv:lanes", tags, locale, road, warnings)?,
+        LaneDependentAccess::from_tags(
+            &TagKey::from_static("bus:lanes"),
+            tags,
+            locale,
+            road,
+            warnings,
+        )?,
+        LaneDependentAccess::from_tags(
+            &TagKey::from_static("psv:lanes"),
+            tags,
+            locale,
+            road,
+            warnings,
+        )?,
     ) {
         // lanes:bus or lanes:psv
         (Some(LaneDependentAccess::LeftToRight(lanes)), None)
@@ -161,7 +169,7 @@ fn bus_lanes(
         (Some(_), Some(_)) => {
             return Err(TagsToLanesMsg::unsupported(
                 "more than one bus:lanes used",
-                tags.subset(&[
+                tags.subset([
                     "bus:lanes",
                     "bus:lanes:forward",
                     "psv:lanes:backward",

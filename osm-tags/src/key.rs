@@ -83,19 +83,35 @@ impl AsRef<str> for TagKey {
     }
 }
 
+impl<'any> std::ops::Add<&str> for &'any TagKey {
+    type Output = TagKey;
+    fn add(self, other: &str) -> Self::Output {
+        let mut s = self.to_string();
+        s.push(':');
+        s.push_str(other);
+        Self::Output::from_string(s)
+    }
+}
+
+impl<'any> std::ops::Add for &'any TagKey {
+    type Output = TagKey;
+    fn add(self, other: Self) -> Self::Output {
+        self.add(other.as_str())
+    }
+}
+
+// To satisfy the `+` API
+
 impl std::ops::Add<&str> for TagKey {
     type Output = Self;
-    fn add(mut self, other: &str) -> Self::Output {
-        let mut s = self.to_string();
-        s.add(other);
-        Self::from_string(s)
+    fn add(self, other: &str) -> Self::Output {
+        (&self).add(other)
     }
 }
 
 impl std::ops::Add for TagKey {
     type Output = Self;
     fn add(self, other: Self) -> Self::Output {
-        let val = format!("{}:{}", self.as_str(), other.as_str());
-        self.add(val.as_str())
+        (&self).add(&other)
     }
 }

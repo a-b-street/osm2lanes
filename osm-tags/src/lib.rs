@@ -127,7 +127,8 @@ impl Tags {
         V: Into<TagVal>,
     {
         let mut map = BTreeMap::default();
-        map.insert(key.into(), val.into()).unwrap();
+        let duplicate_val = map.insert(key.into(), val.into());
+        debug_assert!(duplicate_val.is_none());
         Self { map }
     }
 
@@ -187,17 +188,17 @@ impl Tags {
 
     /// Get a subset of the tags
     #[must_use]
-    pub fn subset<K, Q, O>(&self, keys: K) -> Self
+    pub fn subset<'any, I, Q, O>(&self, keys: I) -> Self
     where
-        K: IntoIterator,
-        TagKey: Borrow<K::Item>,
-        K::Item: Ord + Hash + Eq + ToOwned<Owned = O>,
+        I: IntoIterator<Item = &'any Q>,
+        TagKey: Borrow<Q>,
+        Q: 'any + Ord + Hash + Eq + ?Sized + ToOwned<Owned = O>,
         O: Into<TagKey>,
     {
         let mut map = Self::default();
         for key in keys {
-            if let Some(val) = self.get(key.borrow()) {
-                let owned: O = key.borrow().to_owned();
+            if let Some(val) = self.get(key) {
+                let owned: O = key.to_owned();
                 let insert = map.checked_insert(owned.into(), TagVal::from(val));
                 debug_assert!(insert.is_ok());
             }
@@ -208,13 +209,13 @@ impl Tags {
     /// Get node given a key part
     pub fn pairs_with_stem<Q>(&self, q: &Q) -> Vec<(&str, &str)>
     where
-        Q: Borrow<TagKey>,
+        Q: AsRef<str> + ?Sized,
     {
         self.map
             .iter()
             .filter_map(|(key, val)| {
                 key.as_str()
-                    .starts_with(q.borrow().as_str())
+                    .starts_with(q.as_ref())
                     .then(|| (key.as_str(), val.as_str()))
             })
             .collect()
@@ -226,13 +227,15 @@ impl Tags {
     ///
     pub fn checked_insert<K: Into<TagKey>, V: Into<TagVal>>(
         &mut self,
-        k: K,
-        v: V,
+        key: K,
+        val: V,
     ) -> Result<(), DuplicateKeyError> {
-        let k: TagKey = k.into();
-        self.map
-            .insert(k, v.into())
-            .ok_or_else(|| DuplicateKeyError(k))?;
+        let key: TagKey = key.into();
+        // This may become cleaner with https://github.com/rust-lang/rust/issues/82766
+        match self.map.entry(key) {
+            Entry::Vacant(entry) => entry.insert(val.into()),
+            Entry::Occupied(entry) => return Err(DuplicateKeyError(entry.remove_entry().0)),
+        };
         Ok(())
     }
 }
@@ -372,10 +375,9 @@ mod tests {
             other_tags.checked_insert("foo", "bar").unwrap_err(),
             DuplicateKeyError(_),
         ));
-        // TODO: owned values are not supported, should they be?:
-        // assert!(other_tags
-        //     .checked_insert(String::from("owned"), "val")
-        //     .is_ok());
+        assert!(other_tags
+            .checked_insert(String::from("owned"), "val")
+            .is_ok());
 
         // String interfaces
         assert_eq!(tags.get("foo"), Some("bar"));
@@ -402,13 +404,14 @@ mod tests {
         assert!(tags.is(&FOO_KEY, "bar"));
         assert!(!tags.is(&FOO_KEY, "foo"));
         assert_eq!(tags.subset(&[FOO_KEY]).to_vec(), vec!["foo=bar"]);
+        dbg!(&(FOO_KEY + "multi" + "key"));
         assert!(tags.is(&(FOO_KEY + "multi" + "key"), "value"));
         let foo_key = FOO_KEY + "multi" + "key";
         assert!(tags.is(&foo_key, "value"));
 
         // Tree interfaces
         assert_eq!(tags.pairs_with_stem(&FOO_KEY).len(), 2);
-        assert_eq!(tags.pairs_with_stem(&(FOO_KEY + "multi")).len(), 2);
+        assert_eq!(tags.pairs_with_stem(&(FOO_KEY + "multi")).len(), 1);
 
         // TODO: Multi Value
     }
