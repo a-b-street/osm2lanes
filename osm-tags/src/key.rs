@@ -1,3 +1,6 @@
+use std::borrow::Borrow;
+use std::ops::Deref;
+
 use kstring::KString;
 
 /// A representation for the key of an OSM tag
@@ -9,7 +12,7 @@ use kstring::KString;
 /// assert_eq!((example_key + "foo").as_str(), "example:foo");
 /// ```
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TagKey(KString);
 
 impl TagKey {
@@ -24,8 +27,27 @@ impl TagKey {
     }
 
     #[must_use]
+    pub fn from_string(string: String) -> Self {
+        Self(KString::from_string(string))
+    }
+
+    #[must_use]
     pub fn as_str(&self) -> &str {
         self.0.as_str()
+    }
+}
+
+impl Deref for TagKey {
+    type Target = KString;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Borrow<str> for TagKey {
+    fn borrow(&self) -> &str {
+        self.as_str()
     }
 }
 
@@ -61,17 +83,19 @@ impl AsRef<str> for TagKey {
     }
 }
 
-impl std::ops::Add for TagKey {
+impl std::ops::Add<&str> for TagKey {
     type Output = Self;
-    fn add(self, other: Self) -> Self {
-        let val = format!("{}:{}", self.as_str(), other.as_str());
-        Self::from(val)
+    fn add(mut self, other: &str) -> Self::Output {
+        let mut s = self.to_string();
+        s.add(other);
+        Self::from_string(s)
     }
 }
 
-impl std::ops::Add<&'static str> for TagKey {
+impl std::ops::Add for TagKey {
     type Output = Self;
-    fn add(self, other: &'static str) -> Self {
-        self.add(TagKey::from(other))
+    fn add(self, other: Self) -> Self::Output {
+        let val = format!("{}:{}", self.as_str(), other.as_str());
+        self.add(val.as_str())
     }
 }
