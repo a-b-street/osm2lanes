@@ -194,5 +194,14 @@ p.prefixed {
   cursor: crosshair;
 }
 
-
 /* End Map */
+
+/* Start Code Block */
+
+div.json {
+  height: 480px;
+  width: 640px;
+  overflow-y: scroll;
+}
+
+/* End Code Block */

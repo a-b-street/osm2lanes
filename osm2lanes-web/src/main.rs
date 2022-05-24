@@ -227,9 +227,9 @@ impl Component for App {
                                 <summary>
                                     {"JSON Output"}
                                 </summary>
-                                <pre>
+                                <div class="json">
                                     <CodeHtml code={serde_json::to_string_pretty(&road).unwrap()}/>
-                                </pre>
+                                </div>
                                 </details>
                             </section>
                             </>
