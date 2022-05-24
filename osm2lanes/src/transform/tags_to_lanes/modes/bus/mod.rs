@@ -20,7 +20,7 @@ impl LaneBuilder {
     }
 }
 
-impl std::convert::From<LaneBuilderError> for TagsToLanesMsg {
+impl From<LaneBuilderError> for TagsToLanesMsg {
     fn from(error: LaneBuilderError) -> Self {
         TagsToLanesMsg::internal(error.0)
     }
@@ -28,13 +28,12 @@ impl std::convert::From<LaneBuilderError> for TagsToLanesMsg {
 
 #[derive(Debug)]
 pub(in crate::transform::tags_to_lanes) struct BusLaneCount {
-    pub forward: usize,
-    pub backward: usize,
+    pub(crate) forward: usize,
+    pub(crate) backward: usize,
 }
 
 impl BusLaneCount {
-    #[allow(clippy::unnecessary_wraps)]
-    pub fn from_tags(
+    pub(crate) fn from_tags(
         tags: &Tags,
         locale: &Locale,
         oneway: Oneway,

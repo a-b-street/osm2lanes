@@ -20,7 +20,7 @@ pub struct TagsToLanesMsg {
 }
 
 #[derive(Clone, Debug)]
-pub enum TagsToLanesIssue {
+pub(crate) enum TagsToLanesIssue {
     /// Deprecated OSM tags, with suggested alternative
     Deprecated {
         deprecated_tags: Tags,
@@ -241,7 +241,7 @@ impl TagsToLanesMsg {
     }
 }
 
-impl std::convert::From<DuplicateKeyError> for TagsToLanesMsg {
+impl From<DuplicateKeyError> for TagsToLanesMsg {
     #[track_caller]
     fn from(e: DuplicateKeyError) -> Self {
         TagsToLanesMsg {
@@ -256,13 +256,26 @@ impl std::fmt::Display for TagsToLanesMsg {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.issue {
             TagsToLanesIssue::Deprecated {
-                deprecated_tags, ..
-            } => write!(
-                f,
-                "deprecated: '{}' - {}",
-                deprecated_tags.to_vec().as_slice().join(" "),
-                self.location,
-            ),
+                deprecated_tags,
+                suggested_tags,
+            } => {
+                if let Some(suggested_tags) = suggested_tags {
+                    write!(
+                        f,
+                        "deprecated: replace '{}' with '{}' - {}",
+                        deprecated_tags.to_vec().as_slice().join(" "),
+                        suggested_tags.to_vec().as_slice().join(" "),
+                        self.location,
+                    )
+                } else {
+                    write!(
+                        f,
+                        "deprecated: '{}' - {}",
+                        deprecated_tags.to_vec().as_slice().join(" "),
+                        self.location,
+                    )
+                }
+            },
             TagsToLanesIssue::Unsupported { description, tags }
             | TagsToLanesIssue::Unimplemented { description, tags }
             | TagsToLanesIssue::Ambiguous { description, tags } => {

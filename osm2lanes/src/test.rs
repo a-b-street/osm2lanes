@@ -153,7 +153,7 @@ mod tests {
 
     static LOG_INIT: std::sync::Once = std::sync::Once::new();
 
-    fn approx_eq<T: std::cmp::PartialEq>(actual: &Option<T>, expected: &Option<T>) -> bool {
+    fn approx_eq<T: PartialEq>(actual: &Option<T>, expected: &Option<T>) -> bool {
         match (actual, expected) {
             (None, None) | (Some(_), None) => true,
             (None, Some(_)) => false,

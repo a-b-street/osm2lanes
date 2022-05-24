@@ -65,7 +65,7 @@ impl LaneDependentAccess {
     // TODO: so much cloning!
     // Look at <https://github.com/a-b-street/osm2lanes/issues/78>
     #[allow(clippy::unnecessary_wraps)]
-    pub fn from_tags<K>(
+    pub(crate) fn from_tags<K>(
         key: K,
         tags: &Tags,
         _locale: &Locale,

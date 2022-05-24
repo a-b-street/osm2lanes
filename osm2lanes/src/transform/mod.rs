@@ -42,7 +42,7 @@ impl ToString for WaySide {
     }
 }
 
-impl std::convert::From<DrivingSide> for WaySide {
+impl From<DrivingSide> for WaySide {
     fn from(side: DrivingSide) -> Self {
         match side {
             DrivingSide::Right => Self::Right,
@@ -51,7 +51,7 @@ impl std::convert::From<DrivingSide> for WaySide {
     }
 }
 
-impl std::convert::From<DrivingSide> for TagKey {
+impl From<DrivingSide> for TagKey {
     fn from(side: DrivingSide) -> Self {
         match side {
             DrivingSide::Right => Self::from("right"),
