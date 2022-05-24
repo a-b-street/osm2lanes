@@ -15,6 +15,7 @@ edition = "2021"
 
 [dependencies]
 console_log = { version = "0.2", optional = true, features = ["color"] }
+console_error_panic_hook = "0.1"
 geo = { version = "0.20" }
 gloo-utils = "0.1"
 gloo-timers = "0.2"
@@ -28,6 +29,7 @@ serde = { version = "1", features = ["derive"] }
 wasm-bindgen = "0.2"
 wee_alloc = { version = "0.4", optional = true }
 yew = "0.19"
+yew-agent = "0.1"
 
 [dependencies.web-sys]
 version = "0.3"

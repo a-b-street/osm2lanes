@@ -56,7 +56,7 @@ pub use osm::{Highway, HighwayImportance, HighwayType, Lifecycle, HIGHWAY, LIFEC
 
 mod access;
 pub use access::Access;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
 pub struct DuplicateKeyError(TagKey);
@@ -85,7 +85,8 @@ impl std::error::Error for DuplicateKeyError {}
 //
 // TODO: use only one of map or tree, with a zero-cost API for the other at runtime
 //
-#[derive(Clone, Debug, Default)]
+// TODO: serialize as `=` separated list of strings
+#[derive(Clone, Debug, Default, Serialize)]
 pub struct Tags {
     map: BTreeMap<String, String>,
     tree: TagTree,
@@ -336,7 +337,7 @@ impl<'de> Deserialize<'de> for Tags {
     }
 }
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, Serialize)]
 pub struct TagTree(BTreeMap<String, TagTreeVal>);
 
 impl TagTree {
@@ -368,7 +369,7 @@ impl TagTree {
     }
 }
 
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, Serialize)]
 pub struct TagTreeVal {
     tree: Option<TagTree>,
     val: Option<String>,

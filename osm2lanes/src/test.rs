@@ -1,10 +1,10 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::locale::DrivingSide;
 use crate::road::{Lane, Road};
 use crate::tag::{Highway, HighwayType, Tags};
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(untagged, deny_unknown_fields)]
 pub enum RustTesting {
     Enabled(bool),
@@ -14,7 +14,7 @@ pub enum RustTesting {
     },
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Expected {
     Road(Road),
@@ -23,7 +23,7 @@ pub enum Expected {
 }
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TestCase {
     // Metadata
     /// The OSM way unique identifier
