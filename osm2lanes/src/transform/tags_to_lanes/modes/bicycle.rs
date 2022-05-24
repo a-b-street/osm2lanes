@@ -144,54 +144,23 @@ impl Scheme {
         let scheme_cycleway = Self::from_tags_cycleway(tags, locale, road_oneway, warnings);
         let scheme_cycleway_both =
             Self::from_tags_cycleway_both(tags, locale, road_oneway, warnings);
+        let scheme_cycleway_forward =
+            Self::from_tags_cycleway_forward(tags, locale, road_oneway, warnings);
 
         if let Some(scheme_cycleway) = scheme_cycleway {
             return Ok(scheme_cycleway);
         }
 
+        // cycleway:both=*
         if let Some(scheme_cycleway_both) = scheme_cycleway_both {
             return Ok(scheme_cycleway_both);
         }
 
         // cycleway:FORWARD=*
-        if let Ok(OptionNo::Some((variant, _opposite))) =
-            cycleway_variant(tags, Some(locale.driving_side.into()))
-        {
-            let width = tags
-                .get_parsed(CYCLEWAY + locale.driving_side.tag() + "width", warnings)
-                .map(|w| Width {
-                    target: Infer::Direct(Metre::new(w)),
-                    ..Default::default()
-                });
-            if tags.is(CYCLEWAY + locale.driving_side.tag() + "oneway", "no")
-                || tags.is("oneway:bicycle", "no")
-            {
-                return Ok(Self(Location::Forward(Way {
-                    variant,
-                    direction: Direction::Both,
-                    width,
-                })));
-            }
-            return Ok(Self(Location::Forward(Way {
-                variant,
-                direction: Direction::Forward,
-                width,
-            })));
+        if let Some(scheme_cycleway_forward) = scheme_cycleway_forward {
+            return Ok(scheme_cycleway_forward);
         }
-        // cycleway:FORWARD=opposite_lane
-        if tags.is_any(
-            CYCLEWAY + locale.driving_side.tag(),
-            &["opposite_lane", "opposite_track"],
-        ) {
-            warnings.push(TagsToLanesMsg::deprecated_tags(
-                tags.subset(&[CYCLEWAY + locale.driving_side.tag()]),
-            ));
-            return Ok(Self(Location::Forward(Way {
-                variant: Variant::Lane, // TODO distinguish oposite_ values
-                direction: Direction::Backward,
-                width: None,
-            })));
-        }
+
         // cycleway:BACKWARD=*
         if let Ok(OptionNo::Some((variant, _opposite))) =
             cycleway_variant(tags, Some(locale.driving_side.opposite().into()))
@@ -335,7 +304,7 @@ impl Scheme {
         }
     }
 
-    /// Handle `cycleway=*` tags
+    /// Handle `cycleway:both=*` tags
     #[allow(clippy::unnecessary_wraps, clippy::panic_in_result_fn)]
     pub(in crate::transform::tags_to_lanes) fn from_tags_cycleway_both(
         tags: &Tags,
@@ -362,6 +331,46 @@ impl Scheme {
                         width: None,
                     },
                 }))
+            },
+            Ok(OptionNo::No) => Some(Self(Location::None)),
+            Ok(OptionNo::None) => None,
+            Err(e) => {
+                warnings.push(e.into());
+                None
+            },
+        }
+    }
+
+    /// Handle `cycleway:FORWARD=*` tags
+    #[allow(clippy::unnecessary_wraps, clippy::panic_in_result_fn)]
+    pub(in crate::transform::tags_to_lanes) fn from_tags_cycleway_forward(
+        tags: &Tags,
+        locale: &Locale,
+        _road_oneway: Oneway,
+        warnings: &mut RoadWarnings,
+    ) -> Option<Self> {
+        match cycleway_variant(tags, Some(locale.driving_side.into())) {
+            Ok(OptionNo::Some((variant, _opposite))) => {
+                let width = tags
+                    .get_parsed(CYCLEWAY + locale.driving_side.tag() + "width", warnings)
+                    .map(|w| Width {
+                        target: Infer::Direct(Metre::new(w)),
+                        ..Default::default()
+                    });
+                if tags.is(CYCLEWAY + locale.driving_side.tag() + "oneway", "no")
+                    || tags.is("oneway:bicycle", "no")
+                {
+                    return Some(Self(Location::Forward(Way {
+                        variant,
+                        direction: Direction::Both,
+                        width,
+                    })));
+                }
+                Some(Self(Location::Forward(Way {
+                    variant,
+                    direction: Direction::Forward,
+                    width,
+                })))
             },
             Ok(OptionNo::No) => Some(Self(Location::None)),
             Ok(OptionNo::None) => None,
