@@ -145,7 +145,9 @@ impl Scheme {
         let scheme_cycleway_both =
             Self::from_tags_cycleway_both(tags, locale, road_oneway, warnings);
         let scheme_cycleway_forward =
-            Self::from_tags_cycleway_forward(tags, locale, road_oneway, warnings);
+            Self::from_tags_cycleway_forward(tags, locale, road_oneway, warnings)?;
+        let scheme_cycleway_backward =
+            Self::from_tags_cycleway_backward(tags, locale, road_oneway, warnings)?;
 
         if let Some(scheme_cycleway) = scheme_cycleway {
             return Ok(scheme_cycleway);
@@ -162,73 +164,10 @@ impl Scheme {
         }
 
         // cycleway:BACKWARD=*
-        if let Ok(OptionNo::Some((variant, _opposite))) =
-            cycleway_variant(tags, Some(locale.driving_side.opposite().into()))
-        {
-            let width = tags
-                .get_parsed(
-                    CYCLEWAY + locale.driving_side.opposite().tag() + "width",
-                    warnings,
-                )
-                .map(|w| Width {
-                    target: Infer::Direct(Metre::new(w)),
-                    ..Default::default()
-                });
-            return Ok(Self(
-                if tags.is(
-                    CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
-                    "yes",
-                ) {
-                    Location::Backward(Way {
-                        variant,
-                        direction: Direction::Forward,
-                        width,
-                    })
-                } else if tags.is(
-                    CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
-                    "-1",
-                ) {
-                    Location::Backward(Way {
-                        variant,
-                        direction: Direction::Backward,
-                        width,
-                    })
-                } else if tags.is(
-                    CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
-                    "no",
-                ) || tags.is("oneway:bicycle", "no")
-                {
-                    Location::Backward(Way {
-                        variant,
-                        direction: Direction::Both,
-                        width,
-                    })
-                } else if road_oneway.into() {
-                    // A oneway road with a cycleway on the wrong side
-                    Location::Backward(Way {
-                        variant,
-                        direction: Direction::Forward,
-                        width,
-                    })
-                } else {
-                    // A contraflow bicycle lane
-                    Location::Backward(Way {
-                        variant,
-                        direction: Direction::Backward,
-                        width,
-                    })
-                },
-            ));
+        if let Some(scheme_cycleway_backward) = scheme_cycleway_backward {
+            return Ok(scheme_cycleway_backward);
         }
-        // cycleway:BACKWARD=opposite_lane
-        if tags.is_any(
-            CYCLEWAY + locale.driving_side.opposite().tag(),
-            &["opposite_lane", "opposite_track"],
-        ) {
-            return Err(TagsToLanesMsg::unsupported_tags(
-                tags.subset(&[CYCLEWAY + locale.driving_side.opposite().tag()]),
-            ));
-        }
+
         Ok(Self(Location::None))
     }
 
@@ -348,7 +287,7 @@ impl Scheme {
         locale: &Locale,
         _road_oneway: Oneway,
         warnings: &mut RoadWarnings,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, TagsToLanesMsg> {
         match cycleway_variant(tags, Some(locale.driving_side.into())) {
             Ok(OptionNo::Some((variant, _opposite))) => {
                 let width = tags
@@ -360,23 +299,97 @@ impl Scheme {
                 if tags.is(CYCLEWAY + locale.driving_side.tag() + "oneway", "no")
                     || tags.is("oneway:bicycle", "no")
                 {
-                    return Some(Self(Location::Forward(Way {
+                    return Ok(Some(Self(Location::Forward(Way {
                         variant,
                         direction: Direction::Both,
                         width,
-                    })));
+                    }))));
                 }
-                Some(Self(Location::Forward(Way {
+                Ok(Some(Self(Location::Forward(Way {
                     variant,
                     direction: Direction::Forward,
                     width,
-                })))
+                }))))
             },
-            Ok(OptionNo::No) => Some(Self(Location::None)),
-            Ok(OptionNo::None) => None,
+            Ok(OptionNo::No) => Ok(Some(Self(Location::None))),
+            Ok(OptionNo::None) => Ok(None),
             Err(e) => {
                 warnings.push(e.into());
-                None
+                Ok(None)
+            },
+        }
+    }
+
+    /// Handle `cycleway:BACKWARD=*` tags
+    #[allow(clippy::unnecessary_wraps, clippy::panic_in_result_fn)]
+    pub(in crate::transform::tags_to_lanes) fn from_tags_cycleway_backward(
+        tags: &Tags,
+        locale: &Locale,
+        road_oneway: Oneway,
+        warnings: &mut RoadWarnings,
+    ) -> Result<Option<Self>, TagsToLanesMsg> {
+        match cycleway_variant(tags, Some(locale.driving_side.opposite().into())) {
+            Ok(OptionNo::Some((variant, _opposite))) => {
+                let width = tags
+                    .get_parsed(
+                        CYCLEWAY + locale.driving_side.opposite().tag() + "width",
+                        warnings,
+                    )
+                    .map(|w| Width {
+                        target: Infer::Direct(Metre::new(w)),
+                        ..Default::default()
+                    });
+                Ok(Some(Self(
+                    if tags.is(
+                        CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                        "yes",
+                    ) {
+                        Location::Backward(Way {
+                            variant,
+                            direction: Direction::Forward,
+                            width,
+                        })
+                    } else if tags.is(
+                        CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                        "-1",
+                    ) {
+                        Location::Backward(Way {
+                            variant,
+                            direction: Direction::Backward,
+                            width,
+                        })
+                    } else if tags.is(
+                        CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                        "no",
+                    ) || tags.is("oneway:bicycle", "no")
+                    {
+                        Location::Backward(Way {
+                            variant,
+                            direction: Direction::Both,
+                            width,
+                        })
+                    } else if road_oneway.into() {
+                        // A oneway road with a cycleway on the wrong side
+                        Location::Backward(Way {
+                            variant,
+                            direction: Direction::Forward,
+                            width,
+                        })
+                    } else {
+                        // A contraflow bicycle lane
+                        Location::Backward(Way {
+                            variant,
+                            direction: Direction::Backward,
+                            width,
+                        })
+                    },
+                )))
+            },
+            Ok(OptionNo::No) => Ok(Some(Self(Location::None))),
+            Ok(OptionNo::None) => Ok(None),
+            Err(e) => {
+                warnings.push(e.into());
+                Ok(None)
             },
         }
     }
