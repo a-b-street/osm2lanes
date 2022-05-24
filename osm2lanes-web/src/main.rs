@@ -9,7 +9,9 @@ use osm2lanes::transform::{
     lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadFromTags, TagsToLanesConfig,
 };
 use osm_tags::Tags;
-use wasm_bindgen::prelude::wasm_bindgen;
+use syntect::highlighting::ThemeSet;
+use syntect::html::highlighted_html_for_string;
+use syntect::parsing::SyntaxSet;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
@@ -28,18 +30,6 @@ use map::MapComponent;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
-#[wasm_bindgen(inline_js = "export function highlight_all() { hljs.highlightAll(); }")]
-extern "C" {
-    fn highlight_all();
-}
-
-#[wasm_bindgen(
-    inline_js = "export function highlight(code) { return hljs.highlight(code, {language: 'json'}).value; }"
-)]
-extern "C" {
-    fn highlight(code: &str) -> String;
-}
-
 #[derive(Properties, PartialEq)]
 pub struct CodeProps {
     pub code: String,
@@ -47,8 +37,17 @@ pub struct CodeProps {
 
 #[function_component(CodeHtml)]
 pub fn code_html(props: &CodeProps) -> Html {
+    let html = {
+        let ss = SyntaxSet::load_defaults_newlines();
+        let ts = ThemeSet::load_defaults();
+        let syntax = ss
+            .find_syntax_by_token("json")
+            .unwrap_or_else(|| ss.find_syntax_plain_text());
+        highlighted_html_for_string(&props.code, &ss, syntax, &ts.themes["base16-ocean.dark"])
+            .unwrap()
+    };
     let div = gloo_utils::document().create_element("code").unwrap();
-    div.set_inner_html(&props.code.clone());
+    div.set_inner_html(&html);
     Html::VRef(div.into())
 }
 
@@ -229,7 +228,7 @@ impl Component for App {
                                     {"JSON Output"}
                                 </summary>
                                 <pre>
-                                    <code class="language-json">{serde_json::to_string_pretty(&road).unwrap()}</code>
+                                    <CodeHtml code={serde_json::to_string_pretty(&road).unwrap()}/>
                                 </pre>
                                 </details>
                             </section>
@@ -244,10 +243,6 @@ impl Component for App {
                 <MapComponent callback_msg={callback_msg.clone()}/>
             </div>
         }
-    }
-
-    fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
-        highlight_all();
     }
 }
 
