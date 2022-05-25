@@ -1,5 +1,4 @@
 use geo::{LineString, Point};
-use gloo_utils::document;
 use leaflet::{LatLng, Map, MouseEvent, Path, Polyline, TileLayer};
 use osm2lanes::locale::Locale;
 use osm2lanes::overpass::{get_nearby, Error as OverpassError};
@@ -62,7 +61,7 @@ impl Component for MapComponent {
     type Properties = Props;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let container: Element = document().create_element("div").unwrap();
+        let container: Element = gloo_utils::document().create_element("div").unwrap();
         container.set_id(Self::MAP_ID);
         let container: HtmlElement = container.dyn_into().unwrap();
 

@@ -9,6 +9,9 @@ use osm2lanes::transform::{
     lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadFromTags, TagsToLanesConfig,
 };
 use osm_tags::Tags;
+use syntect::highlighting::ThemeSet;
+use syntect::html::highlighted_html_for_string;
+use syntect::parsing::SyntaxSet;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
@@ -26,6 +29,27 @@ use map::MapComponent;
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+#[derive(Properties, PartialEq)]
+pub struct CodeProps {
+    pub code: String,
+}
+
+#[function_component(CodeHtml)]
+pub fn code_html(props: &CodeProps) -> Html {
+    let html = {
+        let ss = SyntaxSet::load_defaults_newlines();
+        let ts = ThemeSet::load_defaults();
+        let syntax = ss
+            .find_syntax_by_token("json")
+            .unwrap_or_else(|| ss.find_syntax_plain_text());
+        highlighted_html_for_string(&props.code, &ss, syntax, &ts.themes["base16-ocean.dark"])
+            .unwrap()
+    };
+    let div = gloo_utils::document().create_element("code").unwrap();
+    div.set_inner_html(&html);
+    Html::VRef(div.into())
+}
 
 type ShouldRender = bool;
 
@@ -184,6 +208,7 @@ impl Component for App {
                 {
                     if let Some(road) = &state.road {
                         html!{
+                            <>
                             <section>
                                 <div class="lanes">
                                     {
@@ -197,6 +222,17 @@ impl Component for App {
                                 </div>
                                 <hr/>
                             </section>
+                            <section>
+                                <details>
+                                <summary>
+                                    {"JSON Output"}
+                                </summary>
+                                <div class="json">
+                                    <CodeHtml code={serde_json::to_string_pretty(&road).unwrap()}/>
+                                </div>
+                                </details>
+                            </section>
+                            </>
                         }
                     } else {
                         html!{}
