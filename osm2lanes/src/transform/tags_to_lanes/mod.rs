@@ -15,6 +15,7 @@ use access_by_lane::{Access, LaneDependentAccess};
 mod counts;
 
 mod modes;
+use modes::BuswayScheme;
 
 mod separator;
 
@@ -136,6 +137,23 @@ mod oneway {
 }
 use oneway::Oneway;
 
+pub(in crate::transform::tags_to_lanes) struct TagSchemes {
+    oneway: Oneway,
+    busway: BuswayScheme,
+}
+
+impl TagSchemes {
+    pub(crate) fn from_tags(
+        tags: &Tags,
+        locale: &Locale,
+        warnings: &mut RoadWarnings,
+    ) -> Result<Self, TagsToLanesMsg> {
+        let oneway = Oneway::from_tags(tags, locale, warnings)?;
+        let busway = BuswayScheme::from_tags(tags, oneway, locale, warnings)?;
+        Ok(Self { oneway, busway })
+    }
+}
+
 /// From an OpenStreetMap way's tags,
 /// determine the lanes along the road from left to right.
 ///
@@ -160,12 +178,15 @@ pub fn tags_to_lanes(
     // Early return if we find unimplemented or unsupported tags.
     unsupported(tags, locale, &mut warnings)?;
 
+    // Parse each scheme independently ahead of time, to simplify the process and ensure local consistency
+    let schemes = TagSchemes::from_tags(tags, locale, &mut warnings)?;
+
     // Create the road builder and start giving it schemes.
-    let mut road: RoadBuilder = RoadBuilder::from(tags, locale, &mut warnings)?;
+    let mut road: RoadBuilder = RoadBuilder::from(&schemes, tags, locale, &mut warnings)?;
 
     modes::non_motorized(tags, locale, &mut road, &mut warnings)?;
 
-    modes::bus(tags, locale, &mut road, &mut warnings)?;
+    modes::bus(&schemes.busway, tags, locale, &mut road, &mut warnings)?;
 
     modes::bicycle(tags, locale, &mut road, &mut warnings)?;
 
