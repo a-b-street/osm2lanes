@@ -14,18 +14,18 @@ use yew::Html;
 use crate::Msg as WebMsg;
 
 #[allow(clippy::large_enum_variant)]
-pub enum Msg {
+pub(crate) enum Msg {
     MapClick(Point<f64>),
     MapUpdate(String, Tags, Locale, LineString<f64>),
     Error(String),
 }
 
 #[derive(Properties, Clone, PartialEq)]
-pub struct Props {
-    pub callback_msg: Callback<WebMsg>,
+pub(crate) struct Props {
+    pub(crate) callback_msg: Callback<WebMsg>,
 }
 
-pub struct MapComponent {
+pub(crate) struct MapComponent {
     container: HtmlElement,
     map: Map,
     point: Point<f64>,
@@ -78,7 +78,7 @@ impl Component for MapComponent {
         Self {
             container,
             map,
-            point: Point::new(40.0, 10.0),
+            point: Point::new(40.0_f64, 10.0_f64),
             path: None,
             // to avoid dropping the closure and invalidating the callback
             _map_click_closure: map_click_closure,
@@ -100,7 +100,10 @@ impl Component for MapComponent {
         self.is_searching = false;
         match msg {
             Msg::MapClick(point) => {
-                if !self.is_searching {
+                if self.is_searching {
+                    log::debug!("map search click ignored, search ongoing");
+                    false
+                } else {
                     log::debug!("map search click");
                     ctx.link().send_future(async move {
                         match get_nearby(point).await {
@@ -113,9 +116,6 @@ impl Component for MapComponent {
                     });
                     self.is_searching = true;
                     true
-                } else {
-                    log::debug!("map search click ignored, search ongoing");
-                    false
                 }
             },
             Msg::MapUpdate(id, tags, locale, geometry) => {
