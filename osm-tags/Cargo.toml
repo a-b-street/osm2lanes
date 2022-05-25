@@ -16,3 +16,6 @@ edition = "2021"
 [dependencies]
 kstring = "2.0"
 serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1"
