@@ -2,13 +2,14 @@ use crate::locale::Locale;
 use crate::road::Designated;
 use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::{
-    Access, Infer, LaneBuilder, LaneBuilderError, LaneDependentAccess, Oneway, RoadBuilder,
-    TagsNumeric, TagsToLanesMsg,
+    Access, Infer, LaneBuilder, LaneBuilderError, LaneDependentAccess, RoadBuilder, TagsNumeric,
+    TagsToLanesMsg,
 };
 use crate::transform::RoadWarnings;
 
 mod busway;
-use busway::{busway, Scheme as BuswayScheme};
+use busway::apply_busway;
+pub(in crate::transform::tags_to_lanes) use busway::Scheme as BuswayScheme;
 
 const LANES: TagKey = TagKey::from_static("lanes");
 
@@ -35,12 +36,11 @@ pub(in crate::transform::tags_to_lanes) struct BusLaneCount {
 impl BusLaneCount {
     #[allow(clippy::unnecessary_wraps)]
     pub fn from_tags(
+        busway: &BuswayScheme,
         tags: &Tags,
-        locale: &Locale,
-        oneway: Oneway,
+        _locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, TagsToLanesMsg> {
-        let busway = BuswayScheme::from_tags(tags, locale, oneway, warnings)?;
         let forward = tags
             .get_parsed("lanes:bus:forward", warnings)
             .unwrap_or_else(|| if busway.forward() { 1 } else { 0 });
@@ -53,6 +53,7 @@ impl BusLaneCount {
 
 #[allow(clippy::unnecessary_wraps)]
 pub(in crate::transform::tags_to_lanes) fn bus(
+    busway: &BuswayScheme,
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
@@ -68,7 +69,7 @@ pub(in crate::transform::tags_to_lanes) fn bus(
             || !tags.pairs_with_stem("psv:lanes").is_empty(),
     ) {
         (false, false, false) => {},
-        (true, _, false) => busway(tags, locale, road, warnings)?,
+        (true, _, false) => apply_busway(road, busway, locale)?,
         (false, true, false) => lanes_bus(tags, locale, road, warnings)?,
         (false, false, true) => bus_lanes(tags, locale, road, warnings)?,
         _ => {
@@ -78,7 +79,6 @@ pub(in crate::transform::tags_to_lanes) fn bus(
             ))
         },
     }
-
     Ok(())
 }
 

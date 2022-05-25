@@ -65,8 +65,8 @@ impl Scheme {
     #[allow(clippy::unnecessary_wraps)]
     pub(in crate::transform::tags_to_lanes) fn from_tags(
         tags: &Tags,
-        locale: &Locale,
         road_oneway: Oneway,
+        locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, TagsToLanesMsg> {
         let bus_oneway: Oneway = match tags.get(&(ONEWAY + "bus")) {
@@ -159,20 +159,16 @@ impl Scheme {
     }
 }
 
-pub(in crate::transform::tags_to_lanes) fn busway(
-    tags: &Tags,
-    locale: &Locale,
+pub(in crate::transform::tags_to_lanes) fn apply_busway(
     road: &mut RoadBuilder,
-    warnings: &mut RoadWarnings,
+    scheme: &Scheme,
+    locale: &Locale,
 ) -> Result<(), TagsToLanesMsg> {
-    let scheme = Scheme::from_tags(tags, locale, road.oneway, warnings)?;
-
     if let Variant::Forward | Variant::Both = scheme.0 {
         road.forward_outside_mut()
             .ok_or_else(|| TagsToLanesMsg::unsupported_str("no forward lanes for busway"))?
             .set_bus(locale)?;
     }
-
     if let Variant::Backward | Variant::Both = scheme.0 {
         if let Some(backward_outside) = road.backward_outside_mut() {
             backward_outside.set_bus(locale)?;
