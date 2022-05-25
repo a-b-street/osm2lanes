@@ -1,5 +1,8 @@
 #![allow(clippy::module_name_repetitions)] // TODO: fix upstream
 
+use std::borrow::Borrow;
+use std::hash::Hash;
+
 use crate::locale::Locale;
 use crate::road::Road;
 use crate::tag::Tags;
@@ -29,25 +32,27 @@ mod infer;
 pub use infer::Infer;
 
 trait TagsNumeric {
-    fn get_parsed<K, T>(&self, key: K, warnings: &mut RoadWarnings) -> Option<T>
+    fn get_parsed<Q, T, O>(&self, key: &Q, warnings: &mut RoadWarnings) -> Option<T>
     where
-        K: AsRef<str>,
-        TagKey: From<K>,
+        TagKey: Borrow<Q>,
+        Q: Ord + Hash + Eq + ?Sized + ToOwned<Owned = O>,
+        O: Into<TagKey>,
         T: std::str::FromStr;
 }
 
 impl TagsNumeric for Tags {
-    fn get_parsed<K, T>(&self, key: K, warnings: &mut RoadWarnings) -> Option<T>
+    fn get_parsed<Q, T, O>(&self, key: &Q, warnings: &mut RoadWarnings) -> Option<T>
     where
-        K: AsRef<str>,
-        TagKey: From<K>,
+        TagKey: Borrow<Q>,
+        Q: Ord + Hash + Eq + ?Sized + ToOwned<Owned = O>,
+        O: Into<TagKey>,
         T: std::str::FromStr,
     {
-        self.get(&key).and_then(|val| {
+        self.get(key).and_then(|val| {
             if let Ok(w) = val.parse::<T>() {
                 Some(w)
             } else {
-                warnings.push(TagsToLanesMsg::unsupported_tag(key, val));
+                warnings.push(TagsToLanesMsg::unsupported_tag(key.to_owned(), val));
                 None
             }
         })
@@ -117,12 +122,12 @@ mod oneway {
             _warnings: &mut RoadWarnings,
         ) -> Result<Self, TagsToLanesMsg> {
             Ok(
-                match (tags.get(ONEWAY), tags.is("junction", "roundabout")) {
+                match (tags.get(&ONEWAY), tags.is("junction", "roundabout")) {
                     (Some("yes"), _) => Self::Yes,
                     (Some("no"), false) => Self::No,
                     (Some("no"), true) => {
                         return Err(TagsToLanesMsg::ambiguous_tags(
-                            tags.subset(&["oneway", "junction"]),
+                            tags.subset(["oneway", "junction"]),
                         ));
                     },
                     (Some(value), _) => {

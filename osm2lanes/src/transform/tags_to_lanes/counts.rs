@@ -61,7 +61,7 @@ impl Counts {
             // Ignore lanes:{both_ways,backward}=
             // TODO ignore oneway instead?
             if lanes.both_ways.is_some() || lanes.backward.is_some() {
-                warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset([
                     "oneway",
                     "lanes:both_ways",
                     "lanes:backward",
@@ -83,7 +83,7 @@ impl Counts {
                 // TODO, shouldn't we trust the tagged value more?
                 // TODO, what about backward?
                 if lanes.forward.map_or(false, |direct| direct != forward) {
-                    warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                    warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset([
                         "oneway",
                         "lanes",
                         "lanes:forward",
@@ -111,7 +111,7 @@ impl Counts {
             match (lanes.total, lanes.forward, lanes.backward) {
                 (Some(l), Some(f), Some(b)) => {
                     if l != f + b + both_ways {
-                        warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                        warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset([
                             "lanes",
                             "lanes:forward",
                             "lanes:backward",
@@ -218,7 +218,7 @@ impl LanesDirectionScheme {
         warnings: &mut RoadWarnings,
     ) -> Self {
         let both_ways = tags
-            .get_parsed(LANES + "both_ways", warnings)
+            .get_parsed(&(LANES + "both_ways"), warnings)
             .filter(|&v: &usize| {
                 if v == 1 {
                     true
@@ -232,9 +232,9 @@ impl LanesDirectionScheme {
             })
             .map(|_v| {});
         Self {
-            total: tags.get_parsed(LANES, warnings),
-            forward: tags.get_parsed(LANES + "forward", warnings),
-            backward: tags.get_parsed(LANES + "backward", warnings),
+            total: tags.get_parsed(&LANES, warnings),
+            forward: tags.get_parsed(&(LANES + "forward"), warnings),
+            backward: tags.get_parsed(&(LANES + "backward"), warnings),
             both_ways,
         }
     }
@@ -251,7 +251,7 @@ impl CentreTurnLaneScheme {
         _locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Self {
-        if let Some(v) = tags.get(CENTRE_TURN_LANE) {
+        if let Some(v) = tags.get(&CENTRE_TURN_LANE) {
             warnings.push(TagsToLanesMsg::deprecated_tags(
                 tags.subset(&[CENTRE_TURN_LANE]),
             ));
@@ -260,7 +260,7 @@ impl CentreTurnLaneScheme {
                 "no" => Self(Some(false)),
                 _ => {
                     warnings.push(TagsToLanesMsg::unsupported_tags(
-                        tags.subset(&[CENTRE_TURN_LANE]),
+                        tags.subset([&CENTRE_TURN_LANE]),
                     ));
                     Self(None)
                 },
