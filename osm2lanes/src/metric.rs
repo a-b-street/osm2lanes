@@ -91,7 +91,7 @@ impl std::fmt::Display for SpeedError {
 
 impl std::error::Error for SpeedError {}
 
-impl std::convert::From<std::num::ParseFloatError> for SpeedError {
+impl From<std::num::ParseFloatError> for SpeedError {
     fn from(e: std::num::ParseFloatError) -> Self {
         SpeedError::Parse(e)
     }
@@ -176,7 +176,7 @@ mod speed {
         }
     }
 
-    pub fn serialize<S>(speed: &Speed, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn serialize<S>(speed: &Speed, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -270,7 +270,7 @@ mod speed {
         }
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Speed, D::Error>
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Speed, D::Error>
     where
         D: Deserializer<'de>,
     {

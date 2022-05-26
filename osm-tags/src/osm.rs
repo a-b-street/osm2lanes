@@ -188,10 +188,10 @@ impl Highway {
     /// If highway missing return None
     /// If highway unknown return the unknown value
     pub fn from_tags(tags: &Tags) -> Result<Self, Option<String>> {
-        tags.get(HIGHWAY).ok_or(None).and_then(|s| match s {
+        tags.get(&HIGHWAY).ok_or(None).and_then(|s| match s {
             "construction" => {
                 let highway = tags
-                    .get(CONSTRUCTION)
+                    .get(&CONSTRUCTION)
                     .map_or(Ok(HighwayType::UnknownRoad), str::parse)
                     .map_err(Some)?;
                 Ok(Self {
@@ -201,7 +201,7 @@ impl Highway {
             },
             "proposed" => {
                 let highway = tags
-                    .get(PROPOSED)
+                    .get(&PROPOSED)
                     .map_or(Ok(HighwayType::UnknownRoad), str::parse)
                     .map_err(Some)?;
                 Ok(Self {

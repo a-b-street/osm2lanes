@@ -20,7 +20,7 @@ pub struct TagsToLanesMsg {
 }
 
 #[derive(Clone, Debug)]
-pub enum TagsToLanesIssue {
+pub(crate) enum TagsToLanesIssue {
     /// Deprecated OSM tags, with suggested alternative
     Deprecated {
         deprecated_tags: Tags,
@@ -87,7 +87,7 @@ impl TagsToLanesMsg {
         TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Deprecated {
-                deprecated_tags: Tags::from_str_pair([key.into().as_str(), val]),
+                deprecated_tags: Tags::from_pair(key, val),
                 suggested_tags: None,
             },
         }
@@ -124,7 +124,7 @@ impl TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Unsupported {
                 description: None,
-                tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
+                tags: Some(Tags::from_pair(key, val)),
             },
         }
     }
@@ -160,7 +160,7 @@ impl TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Unimplemented {
                 description: None,
-                tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
+                tags: Some(Tags::from_pair(key, val)),
             },
         }
     }
@@ -184,7 +184,7 @@ impl TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Ambiguous {
                 description: None,
-                tags: Some(Tags::from_str_pair([key.into().as_str(), val])),
+                tags: Some(Tags::from_pair(key, val)),
             },
         }
     }
@@ -241,7 +241,7 @@ impl TagsToLanesMsg {
     }
 }
 
-impl std::convert::From<DuplicateKeyError> for TagsToLanesMsg {
+impl From<DuplicateKeyError> for TagsToLanesMsg {
     #[track_caller]
     fn from(e: DuplicateKeyError) -> Self {
         TagsToLanesMsg {
@@ -256,13 +256,26 @@ impl std::fmt::Display for TagsToLanesMsg {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.issue {
             TagsToLanesIssue::Deprecated {
-                deprecated_tags, ..
-            } => write!(
-                f,
-                "deprecated: '{}' - {}",
-                deprecated_tags.to_vec().as_slice().join(" "),
-                self.location,
-            ),
+                deprecated_tags,
+                suggested_tags,
+            } => {
+                if let Some(suggested_tags) = suggested_tags {
+                    write!(
+                        f,
+                        "deprecated: replace '{}' with '{}' - {}",
+                        deprecated_tags.to_vec().as_slice().join(" "),
+                        suggested_tags.to_vec().as_slice().join(" "),
+                        self.location,
+                    )
+                } else {
+                    write!(
+                        f,
+                        "deprecated: '{}' - {}",
+                        deprecated_tags.to_vec().as_slice().join(" "),
+                        self.location,
+                    )
+                }
+            },
             TagsToLanesIssue::Unsupported { description, tags }
             | TagsToLanesIssue::Unimplemented { description, tags }
             | TagsToLanesIssue::Ambiguous { description, tags } => {

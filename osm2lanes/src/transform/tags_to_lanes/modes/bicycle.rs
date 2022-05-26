@@ -1,4 +1,8 @@
+use std::borrow::Borrow;
 use std::fmt::Display;
+use std::hash::Hash;
+
+use osm_tags::TagKey;
 
 use crate::locale::Locale;
 use crate::metric::Metre;
@@ -14,8 +18,8 @@ use crate::transform::{RoadWarnings, WaySide};
 
 #[derive(Debug)]
 enum VariantError {
-    UnknownVariant(String, String),
-    UnimplementedVariant(String, String),
+    UnknownVariant(TagKey, String),
+    UnimplementedVariant(TagKey, String),
 }
 
 impl From<VariantError> for TagsToLanesMsg {
@@ -69,11 +73,16 @@ impl<T> OptionNo<T> {
     }
 }
 
-fn get_variant<T: AsRef<str>>(
+fn get_variant<Q, O>(
     tags: &Tags,
-    k: T,
-) -> Result<OptionNo<(Variant, Option<Opposite>)>, VariantError> {
-    match tags.get(&k) {
+    k: &Q,
+) -> Result<OptionNo<(Variant, Option<Opposite>)>, VariantError>
+where
+    TagKey: Borrow<Q>,
+    Q: Ord + Hash + Eq + ?Sized + ToOwned<Owned = O>,
+    O: Into<TagKey>,
+{
+    match tags.get(k) {
         Some("lane") => Ok(OptionNo::Some((Variant::Lane, None))),
         Some("track") => Ok(OptionNo::Some((Variant::Track, None))),
         Some("opposite_lane") => Ok(OptionNo::Some((Variant::Lane, Some(Opposite)))),
@@ -88,11 +97,11 @@ fn get_variant<T: AsRef<str>>(
             | "shoulder"
             | "separate"),
         ) => Err(VariantError::UnimplementedVariant(
-            k.as_ref().to_owned(),
+            k.to_owned().into(),
             v.to_owned(),
         )),
         Some(v) => Err(VariantError::UnknownVariant(
-            k.as_ref().to_owned(),
+            k.to_owned().into(),
             v.to_owned(),
         )),
         None => Ok(OptionNo::None),
@@ -104,9 +113,9 @@ fn cycleway_variant(
     side: Option<WaySide>,
 ) -> Result<OptionNo<(Variant, Option<Opposite>)>, VariantError> {
     if let Some(side) = side {
-        get_variant(tags, CYCLEWAY + side.as_str())
+        get_variant(tags, &(CYCLEWAY + side.as_str()))
     } else {
-        get_variant(tags, CYCLEWAY)
+        get_variant(tags, &CYCLEWAY)
     }
 }
 
@@ -191,19 +200,16 @@ impl Scheme {
                     } else {
                         if let Variant::Lane | Variant::Track = variant {
                             warnings.push(TagsToLanesMsg::deprecated(
-                                tags.subset(&["cyleway"]),
-                                Tags::from_str_pairs(&[
-                                    [
-                                        (CYCLEWAY + locale.driving_side.opposite().tag()).as_str(),
-                                        &variant.to_string(),
-                                    ],
-                                    [
-                                        (CYCLEWAY
-                                            + locale.driving_side.opposite().tag()
-                                            + "oneway")
-                                            .as_str(),
-                                        "-1",
-                                    ],
+                                tags.subset(["cyleway"]),
+                                Tags::from_pairs([
+                                    (
+                                        CYCLEWAY + locale.driving_side.opposite().tag(),
+                                        variant.to_string(),
+                                    ),
+                                    (
+                                        CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                                        "-1".to_owned(),
+                                    ),
                                 ])
                                 .unwrap(),
                             ));
@@ -217,7 +223,7 @@ impl Scheme {
                 } else {
                     if opposite.is_some() {
                         warnings.push(TagsToLanesMsg::unsupported_tags(
-                            tags.subset(&["oneway", "cycleway"]),
+                            tags.subset(["oneway", "cycleway"]),
                         ));
                     }
                     Some(Self(Location::Both {
@@ -255,7 +261,7 @@ impl Scheme {
             Ok(OptionNo::Some((variant, opposite))) => {
                 if let Some(Opposite) = opposite {
                     warnings.push(TagsToLanesMsg::unsupported_tags(
-                        tags.subset(&["cycleway:both"]),
+                        tags.subset(["cycleway:both"]),
                     ));
                 }
                 Some(Self(Location::Both {
@@ -291,12 +297,12 @@ impl Scheme {
         match cycleway_variant(tags, Some(locale.driving_side.into())) {
             Ok(OptionNo::Some((variant, _opposite))) => {
                 let width = tags
-                    .get_parsed(CYCLEWAY + locale.driving_side.tag() + "width", warnings)
+                    .get_parsed(&(CYCLEWAY + locale.driving_side.tag() + "width"), warnings)
                     .map(|w| Width {
                         target: Infer::Direct(Metre::new(w)),
                         ..Default::default()
                     });
-                if tags.is(CYCLEWAY + locale.driving_side.tag() + "oneway", "no")
+                if tags.is(&(CYCLEWAY + locale.driving_side.tag() + "oneway"), "no")
                     || tags.is("oneway:bicycle", "no")
                 {
                     return Ok(Some(Self(Location::Forward(Way {
@@ -332,7 +338,7 @@ impl Scheme {
             Ok(OptionNo::Some((variant, _opposite))) => {
                 let width = tags
                     .get_parsed(
-                        CYCLEWAY + locale.driving_side.opposite().tag() + "width",
+                        &(CYCLEWAY + locale.driving_side.opposite().tag() + "width"),
                         warnings,
                     )
                     .map(|w| Width {
@@ -341,7 +347,7 @@ impl Scheme {
                     });
                 Ok(Some(Self(
                     if tags.is(
-                        CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                        &(CYCLEWAY + locale.driving_side.opposite().tag() + "oneway"),
                         "yes",
                     ) {
                         Location::Backward(Way {
@@ -350,7 +356,7 @@ impl Scheme {
                             width,
                         })
                     } else if tags.is(
-                        CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                        &(CYCLEWAY + locale.driving_side.opposite().tag() + "oneway"),
                         "-1",
                     ) {
                         Location::Backward(Way {
@@ -359,7 +365,7 @@ impl Scheme {
                             width,
                         })
                     } else if tags.is(
-                        CYCLEWAY + locale.driving_side.opposite().tag() + "oneway",
+                        &(CYCLEWAY + locale.driving_side.opposite().tag() + "oneway"),
                         "no",
                     ) || tags.is("oneway:bicycle", "no")
                     {
@@ -469,7 +475,7 @@ mod tests {
     fn lane() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
-            &Tags::from_str_pair(["cycleway", "lane"]),
+            &Tags::from_pair("cycleway", "lane"),
             &Locale::builder().build(),
             Oneway::No,
             &mut warnings,
@@ -497,7 +503,7 @@ mod tests {
     fn oneway_opposite_track() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
-            &Tags::from_str_pair(["cycleway", "opposite_track"]),
+            &Tags::from_pair("cycleway", "opposite_track"),
             &Locale::builder().build(),
             Oneway::Yes,
             &mut warnings,
@@ -518,7 +524,7 @@ mod tests {
     fn forward_lane() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
-            &Tags::from_str_pair(["cycleway:right", "lane"]),
+            &Tags::from_pair("cycleway:right", "lane"),
             &Locale::builder().build(),
             Oneway::No,
             &mut warnings,
@@ -539,7 +545,7 @@ mod tests {
     fn backward_track() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
-            &Tags::from_str_pair(["cycleway:left", "track"]),
+            &Tags::from_pair("cycleway:left", "track"),
             &Locale::builder().build(),
             Oneway::No,
             &mut warnings,
@@ -560,7 +566,7 @@ mod tests {
     fn backward_opposite_track() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
-            &Tags::from_str_pair(["cycleway:left", "opposite_track"]),
+            &Tags::from_pair("cycleway:left", "opposite_track"),
             &Locale::builder().build(),
             Oneway::No,
             &mut warnings,
@@ -581,7 +587,7 @@ mod tests {
     fn backward_lane_min1() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
-            &Tags::from_str_pairs(&[["cycleway:left", "track"], ["cycleway:left:oneway", "-1"]])
+            &Tags::from_pairs([("cycleway:left", "track"), ("cycleway:left:oneway", "-1")])
                 .unwrap(),
             &Locale::builder().build(),
             Oneway::No,
@@ -603,7 +609,7 @@ mod tests {
     fn opposite() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
-            &Tags::from_str_pair(["cycleway", "opposite"]),
+            &Tags::from_pair("cycleway", "opposite"),
             &Locale::builder().build(),
             Oneway::Yes,
             &mut warnings,
@@ -624,7 +630,7 @@ mod tests {
     fn warn_shoulder() {
         let mut warnings = RoadWarnings::default();
         let scheme = Scheme::from_tags(
-            &Tags::from_str_pair(["cycleway", "shoulder"]),
+            &Tags::from_pair("cycleway", "shoulder"),
             &Locale::builder().build(),
             Oneway::No,
             &mut warnings,
@@ -635,7 +641,7 @@ mod tests {
     #[test]
     #[ignore]
     fn warn_no_lane() {
-        let tags = Tags::from_str_pairs(&[["cycleway", "no"], ["cycleway:left", "lane"]]).unwrap();
+        let tags = Tags::from_pairs([("cycleway", "no"), ("cycleway:left", "lane")]).unwrap();
         let mut warnings = RoadWarnings::default();
         let _scheme =
             Scheme::from_tags(&tags, &Locale::builder().build(), Oneway::No, &mut warnings);
@@ -653,7 +659,7 @@ mod tests {
     #[ignore]
     fn err_track_no() {
         let scheme = Scheme::from_tags(
-            &Tags::from_str_pairs(&[["cycleway", "track"], ["cycleway:left", "no"]]).unwrap(),
+            &Tags::from_pairs([("cycleway", "track"), ("cycleway:left", "no")]).unwrap(),
             &Locale::builder().build(),
             Oneway::No,
             &mut RoadWarnings::default(),
@@ -665,8 +671,7 @@ mod tests {
     #[ignore]
     fn err_lane_track() {
         let scheme = Scheme::from_tags(
-            &Tags::from_str_pairs(&[["cycleway:both", "lane"], ["cycleway:right", "track"]])
-                .unwrap(),
+            &Tags::from_pairs([("cycleway:both", "lane"), ("cycleway:right", "track")]).unwrap(),
             &Locale::builder().build(),
             Oneway::No,
             &mut RoadWarnings::default(),

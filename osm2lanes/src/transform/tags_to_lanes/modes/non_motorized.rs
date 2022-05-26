@@ -18,7 +18,7 @@ pub(in crate::transform::tags_to_lanes) fn non_motorized(
         return Ok(());
     }
     // Easy special cases first.
-    if let Some(v @ ("steps" | "path")) = tags.get(HIGHWAY) {
+    if let Some(v @ ("steps" | "path")) = tags.get(&HIGHWAY) {
         // TODO: how to avoid making this assumption?
         assert_eq!(road.len(), 1);
         let lane = road.forward_outside_mut().unwrap();

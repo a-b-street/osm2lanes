@@ -63,11 +63,11 @@ impl Sidewalk {
             SIDEWALK + locale.driving_side.opposite().tag(),
         ])));
         let sidewalks = match (
-            tags.get(SIDEWALK),
-            tags.get(SIDEWALK + "both"),
+            tags.get(&SIDEWALK),
+            tags.get(&(SIDEWALK + "both")),
             (
-                tags.get(SIDEWALK + locale.driving_side.tag()),
-                tags.get(SIDEWALK + locale.driving_side.opposite().tag()),
+                tags.get(&(SIDEWALK + locale.driving_side.tag())),
+                tags.get(&(SIDEWALK + locale.driving_side.opposite().tag())),
             ),
         ) {
             (Some(v), None, (None, None)) => match v {
@@ -132,7 +132,7 @@ impl Shoulder {
         locale: &Locale,
         _warnings: &mut RoadWarnings,
     ) -> Result<(Self, Self), TagsToLanesMsg> {
-        Ok(match tags.get(SHOULDER) {
+        Ok(match tags.get(&SHOULDER) {
             None => (Shoulder::None, Shoulder::None),
             Some("no") => (Shoulder::No, Shoulder::No),
             Some("yes" | "both") => (Shoulder::Yes, Shoulder::Yes),

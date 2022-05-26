@@ -1,26 +1,28 @@
 use std::collections::VecDeque;
 use std::iter;
 
+use osm_tags::{HIGHWAY, LIFECYCLE};
+
 use super::infer::Infer;
 use super::oneway::Oneway;
 use super::separator::{
     lane_pair_to_semantic_separator, lane_to_inner_edge_separator, outer_edge_semantic_separator,
     semantic_edge_separator_to_lane, semantic_separator_to_lane,
 };
-use super::TagsToLanesMsg;
+use super::{TagSchemes, TagsToLanesMsg};
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::{Metre, Speed};
 use crate::road::{
     AccessAndDirection as LaneAccessAndDirection, AccessByType as LaneAccessByType, Designated,
     Direction, Lane,
 };
-use crate::tag::{Access as AccessValue, Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
+use crate::tag::{Access as AccessValue, Highway, TagKey, Tags};
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::tags_to_lanes::counts::{CentreTurnLaneScheme, Counts};
 use crate::transform::tags_to_lanes::modes::BusLaneCount;
 
 #[derive(Debug)]
-pub(in crate::transform) struct LaneBuilderError(pub &'static str);
+pub(in crate::transform) struct LaneBuilderError(pub(crate) &'static str);
 
 impl std::fmt::Display for LaneBuilderError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -30,7 +32,7 @@ impl std::fmt::Display for LaneBuilderError {
 
 impl std::error::Error for LaneBuilderError {}
 
-impl std::convert::From<LaneBuilderError> for RoadError {
+impl From<LaneBuilderError> for RoadError {
     fn from(error: LaneBuilderError) -> Self {
         Self::Msg(TagsToLanesMsg::internal(error.0))
     }
@@ -145,22 +147,24 @@ impl LaneBuilder {
     }
 }
 
-pub(in crate::transform) struct RoadBuilder {
+pub(in crate::transform::tags_to_lanes) struct RoadBuilder {
     forward_lanes: VecDeque<LaneBuilder>,
     backward_lanes: VecDeque<LaneBuilder>,
-    pub highway: Highway,
-    pub oneway: Oneway,
+    pub(crate) highway: Highway,
+    pub(crate) oneway: Oneway,
 }
 
 impl RoadBuilder {
     #[allow(clippy::items_after_statements, clippy::too_many_lines)]
-    pub fn from(
+    pub(crate) fn from(
+        schemes: &TagSchemes,
         tags: &Tags,
         locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
-        let highway = Highway::from_tags(tags);
-        let highway = match highway {
+        let oneway = schemes.oneway;
+
+        let highway = match Highway::from_tags(tags) {
             Err(None) => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
             Err(Some(s)) => return Err(TagsToLanesMsg::unsupported_tag(HIGHWAY, &s).into()),
             Ok(highway) => match highway {
@@ -170,8 +174,6 @@ impl RoadBuilder {
                 },
             },
         };
-
-        let oneway = Oneway::from_tags(tags, locale, warnings)?;
 
         let designated = if tags.is("access", "no")
             && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
@@ -187,7 +189,7 @@ impl RoadBuilder {
         };
 
         const MAXSPEED: TagKey = TagKey::from_static("maxspeed");
-        let max_speed = match tags.get(MAXSPEED).map(str::parse::<Speed>).transpose() {
+        let max_speed = match tags.get(&MAXSPEED).map(str::parse::<Speed>).transpose() {
             Ok(max_speed) => max_speed,
             Err(e) => {
                 warnings.push(TagsToLanesMsg::unsupported(
@@ -205,7 +207,7 @@ impl RoadBuilder {
             max: Infer::None,
         };
 
-        let bus_lane_counts = BusLaneCount::from_tags(tags, locale, oneway, warnings)?;
+        let bus_lane_counts = BusLaneCount::from_tags(&schemes.busway, tags, locale, warnings);
         let centre_turn_lanes = CentreTurnLaneScheme::from_tags(tags, oneway, locale, warnings);
         let lane_counts = Counts::new(
             tags,
@@ -286,70 +288,73 @@ impl RoadBuilder {
     /// # Panics
     ///
     /// Too many lanes
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.forward_len()
             .checked_add(self.backward_len())
             .expect("too many lanes")
     }
 
     /// Number of forward lanes
-    pub fn forward_len(&self) -> usize {
+    pub(crate) fn forward_len(&self) -> usize {
         self.forward_lanes.len()
     }
     /// Number of backward lanes
-    pub fn backward_len(&self) -> usize {
+    pub(crate) fn backward_len(&self) -> usize {
         self.backward_lanes.len()
     }
     /// Get inner-most forward lane
-    pub fn forward_inside(&self) -> Option<&LaneBuilder> {
+    pub(crate) fn forward_inside(&self) -> Option<&LaneBuilder> {
         self.forward_lanes.front()
     }
     /// Get outer-most forward lane
-    pub fn forward_outside(&self) -> Option<&LaneBuilder> {
+    pub(crate) fn forward_outside(&self) -> Option<&LaneBuilder> {
         self.forward_lanes.back()
     }
     /// Get inner-most backward lane
-    pub fn backward_inside(&self) -> Option<&LaneBuilder> {
+    pub(crate) fn backward_inside(&self) -> Option<&LaneBuilder> {
         self.backward_lanes.front()
     }
     /// Get outer-most backward lane
-    pub fn backward_outside(&self) -> Option<&LaneBuilder> {
+    pub(crate) fn backward_outside(&self) -> Option<&LaneBuilder> {
         self.backward_lanes.back()
     }
     /// Get inner-most forward lane
-    pub fn forward_inside_mut(&mut self) -> Option<&mut LaneBuilder> {
+    pub(crate) fn forward_inside_mut(&mut self) -> Option<&mut LaneBuilder> {
         self.forward_lanes.front_mut()
     }
     /// Get outer-most forward lane
-    pub fn forward_outside_mut(&mut self) -> Option<&mut LaneBuilder> {
+    pub(crate) fn forward_outside_mut(&mut self) -> Option<&mut LaneBuilder> {
         self.forward_lanes.back_mut()
     }
     /// Get inner-most backward lane
-    pub fn _backward_inside_mut(&mut self) -> Option<&mut LaneBuilder> {
+    pub(crate) fn _backward_inside_mut(&mut self) -> Option<&mut LaneBuilder> {
         self.backward_lanes.front_mut()
     }
     /// Get outer-most backward lane
-    pub fn backward_outside_mut(&mut self) -> Option<&mut LaneBuilder> {
+    pub(crate) fn backward_outside_mut(&mut self) -> Option<&mut LaneBuilder> {
         self.backward_lanes.back_mut()
     }
     /// Push new inner-most forward lane
-    pub fn _push_forward_inside(&mut self, lane: LaneBuilder) {
+    pub(crate) fn _push_forward_inside(&mut self, lane: LaneBuilder) {
         self.forward_lanes.push_front(lane);
     }
     /// Push new outer-most forward lane
-    pub fn push_forward_outside(&mut self, lane: LaneBuilder) {
+    pub(crate) fn push_forward_outside(&mut self, lane: LaneBuilder) {
         self.forward_lanes.push_back(lane);
     }
     /// Push new inner-most backward lane
-    pub fn _push_backward_inside(&mut self, lane: LaneBuilder) {
+    pub(crate) fn _push_backward_inside(&mut self, lane: LaneBuilder) {
         self.backward_lanes.push_front(lane);
     }
     /// Push new outer-most backward lane
-    pub fn push_backward_outside(&mut self, lane: LaneBuilder) {
+    pub(crate) fn push_backward_outside(&mut self, lane: LaneBuilder) {
         self.backward_lanes.push_back(lane);
     }
     /// Get lanes left to right
-    pub fn lanes_ltr<'a>(&'a self, locale: &Locale) -> Box<dyn Iterator<Item = &LaneBuilder> + 'a> {
+    pub(crate) fn lanes_ltr<'this>(
+        &'this self,
+        locale: &Locale,
+    ) -> Box<dyn Iterator<Item = &LaneBuilder> + 'this> {
         match locale.driving_side {
             DrivingSide::Left => Box::new(
                 self.forward_lanes
@@ -366,10 +371,10 @@ impl RoadBuilder {
         }
     }
     /// Get lanes left to right
-    pub fn lanes_ltr_mut<'a>(
-        &'a mut self,
+    pub(crate) fn lanes_ltr_mut<'this>(
+        &'this mut self,
         locale: &Locale,
-    ) -> Box<dyn Iterator<Item = &mut LaneBuilder> + 'a> {
+    ) -> Box<dyn Iterator<Item = &mut LaneBuilder> + 'this> {
         match locale.driving_side {
             DrivingSide::Left => Box::new(
                 self.forward_lanes
@@ -386,40 +391,40 @@ impl RoadBuilder {
         }
     }
     /// Get forward lanes left to right
-    pub fn _forward_ltr<'a>(
-        &'a self,
+    pub(crate) fn _forward_ltr<'this>(
+        &'this self,
         locale: &Locale,
-    ) -> Box<dyn Iterator<Item = &LaneBuilder> + 'a> {
+    ) -> Box<dyn Iterator<Item = &LaneBuilder> + 'this> {
         match locale.driving_side {
             DrivingSide::Left => Box::new(self.forward_lanes.iter().rev()),
             DrivingSide::Right => Box::new(self.forward_lanes.iter()),
         }
     }
     /// Get forward lanes left to right
-    pub fn forward_ltr_mut<'a>(
-        &'a mut self,
+    pub(crate) fn forward_ltr_mut<'this>(
+        &'this mut self,
         locale: &Locale,
-    ) -> Box<dyn Iterator<Item = &mut LaneBuilder> + 'a> {
+    ) -> Box<dyn Iterator<Item = &mut LaneBuilder> + 'this> {
         match locale.driving_side {
             DrivingSide::Left => Box::new(self.forward_lanes.iter_mut().rev()),
             DrivingSide::Right => Box::new(self.forward_lanes.iter_mut()),
         }
     }
     /// Get backward lanes left to right
-    pub fn _backward_ltr<'a>(
-        &'a self,
+    pub(crate) fn _backward_ltr<'this>(
+        &'this self,
         locale: &Locale,
-    ) -> Box<dyn Iterator<Item = &LaneBuilder> + 'a> {
+    ) -> Box<dyn Iterator<Item = &LaneBuilder> + 'this> {
         match locale.driving_side {
             DrivingSide::Left => Box::new(self.backward_lanes.iter().rev()),
             DrivingSide::Right => Box::new(self.backward_lanes.iter()),
         }
     }
     /// Get backward lanes left to right
-    pub fn backward_ltr_mut<'a>(
-        &'a mut self,
+    pub(crate) fn backward_ltr_mut<'this>(
+        &'this mut self,
         locale: &Locale,
-    ) -> Box<dyn Iterator<Item = &mut LaneBuilder> + 'a> {
+    ) -> Box<dyn Iterator<Item = &mut LaneBuilder> + 'this> {
         match locale.driving_side {
             DrivingSide::Left => Box::new(self.backward_lanes.iter_mut().rev()),
             DrivingSide::Right => Box::new(self.backward_lanes.iter_mut()),
@@ -433,7 +438,7 @@ impl RoadBuilder {
         clippy::unnecessary_wraps,
         clippy::too_many_lines
     )]
-    pub fn into_ltr(
+    pub(crate) fn into_ltr(
         mut self,
         tags: &Tags,
         locale: &Locale,

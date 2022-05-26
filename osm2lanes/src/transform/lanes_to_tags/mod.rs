@@ -54,7 +54,7 @@ mod error {
     }
 
     #[derive(Clone, Debug)]
-    pub enum LanesToTagsIssue {
+    pub(in crate::transform::lanes_to_tags) enum LanesToTagsIssue {
         Unimplemented(String),
         TagsDuplicateKey(DuplicateKeyError),
         Roundtrip(Option<RoadError>),

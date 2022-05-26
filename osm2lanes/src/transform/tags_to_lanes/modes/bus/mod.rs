@@ -2,13 +2,14 @@ use crate::locale::Locale;
 use crate::road::Designated;
 use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::{
-    Access, Infer, LaneBuilder, LaneBuilderError, LaneDependentAccess, Oneway, RoadBuilder,
-    TagsNumeric, TagsToLanesMsg,
+    Access, Infer, LaneBuilder, LaneBuilderError, LaneDependentAccess, RoadBuilder, TagsNumeric,
+    TagsToLanesMsg,
 };
 use crate::transform::RoadWarnings;
 
 mod busway;
-use busway::{busway, Scheme as BuswayScheme};
+use busway::apply_busway;
+pub(in crate::transform::tags_to_lanes) use busway::Scheme as BuswayScheme;
 
 const LANES: TagKey = TagKey::from_static("lanes");
 
@@ -20,7 +21,7 @@ impl LaneBuilder {
     }
 }
 
-impl std::convert::From<LaneBuilderError> for TagsToLanesMsg {
+impl From<LaneBuilderError> for TagsToLanesMsg {
     fn from(error: LaneBuilderError) -> Self {
         TagsToLanesMsg::internal(error.0)
     }
@@ -28,31 +29,30 @@ impl std::convert::From<LaneBuilderError> for TagsToLanesMsg {
 
 #[derive(Debug)]
 pub(in crate::transform::tags_to_lanes) struct BusLaneCount {
-    pub forward: usize,
-    pub backward: usize,
+    pub(crate) forward: usize,
+    pub(crate) backward: usize,
 }
 
 impl BusLaneCount {
-    #[allow(clippy::unnecessary_wraps)]
-    pub fn from_tags(
+    pub(crate) fn from_tags(
+        busway: &BuswayScheme,
         tags: &Tags,
-        locale: &Locale,
-        oneway: Oneway,
+        _locale: &Locale,
         warnings: &mut RoadWarnings,
-    ) -> Result<Self, TagsToLanesMsg> {
-        let busway = BuswayScheme::from_tags(tags, locale, oneway, warnings)?;
+    ) -> Self {
         let forward = tags
             .get_parsed("lanes:bus:forward", warnings)
             .unwrap_or_else(|| if busway.forward() { 1 } else { 0 });
         let backward = tags
             .get_parsed("lanes:bus:backward", warnings)
             .unwrap_or_else(|| if busway.backward() { 1 } else { 0 });
-        Ok(Self { forward, backward })
+        Self { forward, backward }
     }
 }
 
 #[allow(clippy::unnecessary_wraps)]
 pub(in crate::transform::tags_to_lanes) fn bus(
+    busway: &BuswayScheme,
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
@@ -61,28 +61,23 @@ pub(in crate::transform::tags_to_lanes) fn bus(
     // https://wiki.openstreetmap.org/wiki/Bus_lanes
     // 3 schemes, for simplicity we only allow one at a time
     match (
-        tags.tree().get("busway").is_some(),
-        tags.tree()
-            .get("lanes:bus")
-            .or_else(|| tags.tree().get("lanes:psv"))
-            .is_some(),
-        tags.tree()
-            .get("bus:lanes")
-            .or_else(|| tags.tree().get("psv:lanes"))
-            .is_some(),
+        !tags.pairs_with_stem("busway").is_empty(),
+        !tags.pairs_with_stem("lanes:bus").is_empty()
+            || !tags.pairs_with_stem("lanes:psv").is_empty(),
+        !tags.pairs_with_stem("bus:lanes").is_empty()
+            || !tags.pairs_with_stem("psv:lanes").is_empty(),
     ) {
         (false, false, false) => {},
-        (true, _, false) => busway(tags, locale, road, warnings)?,
+        (true, _, false) => apply_busway(road, busway, locale)?,
         (false, true, false) => lanes_bus(tags, locale, road, warnings)?,
         (false, false, true) => bus_lanes(tags, locale, road, warnings)?,
         _ => {
             return Err(TagsToLanesMsg::unsupported(
                 "more than one bus lanes scheme used",
-                tags.subset(&["busway", "lanes:bus", "lanes:psv", "bus:lanes", "psv:lanes"]),
+                tags.subset(["busway", "lanes:bus", "lanes:psv", "bus:lanes", "psv:lanes"]),
             ))
         },
     }
-
     Ok(())
 }
 
@@ -115,8 +110,20 @@ fn bus_lanes(
     warnings: &mut RoadWarnings,
 ) -> Result<(), TagsToLanesMsg> {
     match (
-        LaneDependentAccess::from_tags("bus:lanes", tags, locale, road, warnings)?,
-        LaneDependentAccess::from_tags("psv:lanes", tags, locale, road, warnings)?,
+        LaneDependentAccess::from_tags(
+            &TagKey::from_static("bus:lanes"),
+            tags,
+            locale,
+            road,
+            warnings,
+        )?,
+        LaneDependentAccess::from_tags(
+            &TagKey::from_static("psv:lanes"),
+            tags,
+            locale,
+            road,
+            warnings,
+        )?,
     ) {
         // lanes:bus or lanes:psv
         (Some(LaneDependentAccess::LeftToRight(lanes)), None)
@@ -161,7 +168,7 @@ fn bus_lanes(
         (Some(_), Some(_)) => {
             return Err(TagsToLanesMsg::unsupported(
                 "more than one bus:lanes used",
-                tags.subset(&[
+                tags.subset([
                     "bus:lanes",
                     "bus:lanes:forward",
                     "psv:lanes:backward",
