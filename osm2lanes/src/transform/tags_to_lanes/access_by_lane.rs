@@ -68,7 +68,7 @@ where
 
 impl LaneDependentAccess {
     #[allow(clippy::unnecessary_wraps)]
-    pub fn from_tags(
+    pub(crate) fn from_tags(
         key: &TagKey,
         tags: &Tags,
         _locale: &Locale,

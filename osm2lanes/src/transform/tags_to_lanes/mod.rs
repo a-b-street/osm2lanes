@@ -97,7 +97,7 @@ mod oneway {
         No,
     }
 
-    impl std::convert::From<bool> for Oneway {
+    impl From<bool> for Oneway {
         fn from(oneway: bool) -> Self {
             if oneway {
                 Oneway::Yes
@@ -107,7 +107,7 @@ mod oneway {
         }
     }
 
-    impl std::convert::From<Oneway> for bool {
+    impl From<Oneway> for bool {
         fn from(oneway: Oneway) -> Self {
             match oneway {
                 Oneway::Yes => true,

@@ -85,8 +85,13 @@ pub fn code_html(props: &CodeProps) -> Html {
         let syntax = ss
             .find_syntax_by_token("json")
             .unwrap_or_else(|| ss.find_syntax_plain_text());
-        highlighted_html_for_string(&props.code, &ss, syntax, &ts.themes["base16-ocean.dark"])
-            .unwrap()
+        highlighted_html_for_string(
+            &props.code,
+            &ss,
+            syntax,
+            ts.themes.get("base16-ocean.dark").unwrap(),
+        )
+        .unwrap()
     };
     let div = gloo_utils::document().create_element("code").unwrap();
     div.set_inner_html(&html);

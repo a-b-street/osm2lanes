@@ -5,7 +5,7 @@ use crate::transform::{RoadWarnings, TagsToLanesMsg};
 /// Unsupported
 /// Catch-all for unsupported or unimplemented but known constructs
 #[allow(clippy::unnecessary_wraps)]
-pub fn unsupported(
+pub(in crate::transform::tags_to_lanes) fn unsupported(
     tags: &Tags,
     _locale: &Locale,
     warnings: &mut RoadWarnings,

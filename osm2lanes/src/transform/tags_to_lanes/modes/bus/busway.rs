@@ -23,14 +23,14 @@ pub(in crate::transform::tags_to_lanes) enum Variant {
 pub(in crate::transform::tags_to_lanes) struct Scheme(Variant);
 
 impl Scheme {
-    pub fn forward(&self) -> bool {
+    pub(crate) fn forward(&self) -> bool {
         match self.0 {
             Variant::None | Variant::Backward => false,
             Variant::Forward | Variant::Both => true,
         }
     }
 
-    pub fn backward(&self) -> bool {
+    pub(crate) fn backward(&self) -> bool {
         match self.0 {
             Variant::None | Variant::Forward => false,
             Variant::Backward | Variant::Both => true,

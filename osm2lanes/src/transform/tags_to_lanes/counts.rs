@@ -6,7 +6,7 @@ use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 /// The number of lanes for motor vehicle traffic
 #[derive(Debug)]
-pub enum Counts {
+pub(crate) enum Counts {
     One, // One bidirectional lane
     Directional {
         forward: Infer<usize>,
@@ -211,7 +211,7 @@ pub(in crate::transform::tags_to_lanes) struct LanesDirectionScheme {
     both_ways: Option<()>,
 }
 impl LanesDirectionScheme {
-    pub fn from_tags(
+    pub(crate) fn from_tags(
         tags: &Tags,
         _oneway: Oneway,
         _locale: &Locale,
@@ -241,11 +241,11 @@ impl LanesDirectionScheme {
 }
 
 const CENTRE_TURN_LANE: TagKey = TagKey::from_static("centre_turn_lane");
-pub(in crate::transform::tags_to_lanes) struct CentreTurnLaneScheme(pub Option<bool>);
+pub(in crate::transform::tags_to_lanes) struct CentreTurnLaneScheme(pub(crate) Option<bool>);
 impl CentreTurnLaneScheme {
     /// Parses and validates the `centre_turn_lane` tag and emits a deprecation warning.
     /// See <https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane>.
-    pub fn from_tags(
+    pub(crate) fn from_tags(
         tags: &Tags,
         _oneway: Oneway,
         _locale: &Locale,
@@ -270,7 +270,7 @@ impl CentreTurnLaneScheme {
         }
     }
 
-    pub fn some(&self) -> Option<bool> {
+    pub(crate) fn some(&self) -> Option<bool> {
         self.0
     }
 }
