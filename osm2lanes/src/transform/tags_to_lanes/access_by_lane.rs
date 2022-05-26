@@ -1,3 +1,6 @@
+use std::borrow::Borrow;
+use std::hash::Hash;
+
 use super::road::RoadBuilder;
 use crate::locale::Locale;
 use crate::tag::{TagKey, Tags};
@@ -45,51 +48,52 @@ pub(in crate::transform::tags_to_lanes) enum LaneDependentAccess {
 }
 
 /// Get value from tags given a key
-pub(in crate::transform::tags_to_lanes) fn get_access<K>(
+pub(in crate::transform::tags_to_lanes) fn get_access<Q, O>(
     tags: &Tags,
-    k: K,
+    k: &Q,
 ) -> Result<Option<Vec<Access>>, TagsToLanesMsg>
 where
-    K: AsRef<str> + Clone,
+    TagKey: Borrow<Q>,
+    Q: Ord + Hash + Eq + ?Sized + ToOwned<Owned = O>,
+    O: Into<TagKey>,
 {
-    tags.get(k.clone())
+    tags.get(k)
         .map(|a| {
             Access::split(a).map_err(|a| {
-                TagsToLanesMsg::unsupported(&format!("lanes access {}", a), tags.subset(&[k]))
+                TagsToLanesMsg::unsupported(&format!("lanes access {}", a), tags.subset([k]))
             })
         })
         .transpose()
 }
 
 impl LaneDependentAccess {
-    // TODO: so much cloning!
-    // Look at <https://github.com/a-b-street/osm2lanes/issues/78>
     #[allow(clippy::unnecessary_wraps)]
-    pub fn from_tags<K>(
-        key: K,
+    pub fn from_tags(
+        key: &TagKey,
         tags: &Tags,
         _locale: &Locale,
         road: &RoadBuilder,
         warnings: &mut RoadWarnings,
-    ) -> Result<Option<Self>, TagsToLanesMsg>
-    where
-        TagKey: From<K>,
-    {
+    ) -> Result<Option<Self>, TagsToLanesMsg> {
         const LANES: TagKey = TagKey::from_static("lanes");
-        let key: TagKey = key.into();
+        // Unstable: const evaluation https://github.com/rust-lang/rust/issues/90080
+        let lanes_forward = LANES + "forward";
+        let lanes_backward = LANES + "backward";
+        let key_forward = key + "forward";
+        let key_backward = key + "backward";
         Ok(
             match (
-                get_access(tags, key.clone())?,
+                get_access(tags, key)?,
                 (
-                    get_access(tags, key.clone() + "forward")?,
-                    get_access(tags, key.clone() + "backward")?,
+                    get_access(tags, &key_forward)?,
+                    get_access(tags, &key_backward)?,
                 ),
             ) {
                 (Some(lanes), (None, None)) => {
                     if lanes.len() != road.len() {
                         return Err(TagsToLanesMsg::unsupported(
                             "lane count mismatch",
-                            tags.subset(&[key, LANES, LANES + "forward", LANES + "backward"]),
+                            tags.subset([key, &LANES, &(LANES + "forward"), &(LANES + "backward")]),
                         ));
                     }
                     Some(Self::LeftToRight(lanes))
@@ -100,30 +104,30 @@ impl LaneDependentAccess {
                     if forward.len().checked_add(backward.len()) != Some(road.len()) {
                         return Err(TagsToLanesMsg::unsupported(
                             "lane count mismatch",
-                            tags.subset(&[
-                                key.clone() + "forward",
-                                key + "backward",
-                                LANES,
-                                LANES + "forward",
-                                LANES + "backward",
+                            tags.subset([
+                                &key_forward,
+                                &key_backward,
+                                &LANES,
+                                &lanes_forward,
+                                &lanes_backward,
                             ]),
                         ));
                     }
                     if total.is_some() {
-                        warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
-                            key.clone(),
-                            key.clone() + "forward",
-                            key + "backward",
+                        warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset([
+                            key,
+                            &key_forward,
+                            &key_backward,
                         ])));
                     }
                     Some(Self::ForwardBackward { forward, backward })
                 },
                 (None, (None, None)) => None,
                 (Some(_), (Some(_), None) | (None, Some(_))) => {
-                    return Err(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
-                        key.clone(),
-                        key.clone() + "forward",
-                        key + "backward",
+                    return Err(TagsToLanesMsg::ambiguous_tags(tags.subset([
+                        key,
+                        &key_forward,
+                        &key_backward,
                     ])))
                 },
             },

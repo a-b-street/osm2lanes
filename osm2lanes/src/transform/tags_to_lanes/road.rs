@@ -1,20 +1,22 @@
 use std::collections::VecDeque;
 use std::iter;
 
+use osm_tags::{HIGHWAY, LIFECYCLE};
+
 use super::infer::Infer;
 use super::oneway::Oneway;
 use super::separator::{
     lane_pair_to_semantic_separator, lane_to_inner_edge_separator, outer_edge_semantic_separator,
     semantic_edge_separator_to_lane, semantic_separator_to_lane,
 };
-use super::TagsToLanesMsg;
+use super::{TagSchemes, TagsToLanesMsg};
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::{Metre, Speed};
 use crate::road::{
     AccessAndDirection as LaneAccessAndDirection, AccessByType as LaneAccessByType, Designated,
     Direction, Lane,
 };
-use crate::tag::{Access as AccessValue, Highway, TagKey, Tags, HIGHWAY, LIFECYCLE};
+use crate::tag::{Access as AccessValue, Highway, TagKey, Tags};
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::tags_to_lanes::counts::{CentreTurnLaneScheme, Counts};
 use crate::transform::tags_to_lanes::modes::BusLaneCount;
@@ -145,7 +147,7 @@ impl LaneBuilder {
     }
 }
 
-pub(in crate::transform) struct RoadBuilder {
+pub(in crate::transform::tags_to_lanes) struct RoadBuilder {
     forward_lanes: VecDeque<LaneBuilder>,
     backward_lanes: VecDeque<LaneBuilder>,
     pub highway: Highway,
@@ -155,12 +157,14 @@ pub(in crate::transform) struct RoadBuilder {
 impl RoadBuilder {
     #[allow(clippy::items_after_statements, clippy::too_many_lines)]
     pub fn from(
+        schemes: &TagSchemes,
         tags: &Tags,
         locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
-        let highway = Highway::from_tags(tags);
-        let highway = match highway {
+        let oneway = schemes.oneway;
+
+        let highway = match Highway::from_tags(tags) {
             Err(None) => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
             Err(Some(s)) => return Err(TagsToLanesMsg::unsupported_tag(HIGHWAY, &s).into()),
             Ok(highway) => match highway {
@@ -170,8 +174,6 @@ impl RoadBuilder {
                 },
             },
         };
-
-        let oneway = Oneway::from_tags(tags, locale, warnings)?;
 
         let designated = if tags.is("access", "no")
             && (tags.is("bus", "yes") || tags.is("psv", "yes")) // West Seattle
@@ -187,7 +189,7 @@ impl RoadBuilder {
         };
 
         const MAXSPEED: TagKey = TagKey::from_static("maxspeed");
-        let max_speed = match tags.get(MAXSPEED).map(str::parse::<Speed>).transpose() {
+        let max_speed = match tags.get(&MAXSPEED).map(str::parse::<Speed>).transpose() {
             Ok(max_speed) => max_speed,
             Err(e) => {
                 warnings.push(TagsToLanesMsg::unsupported(
@@ -205,7 +207,7 @@ impl RoadBuilder {
             max: Infer::None,
         };
 
-        let bus_lane_counts = BusLaneCount::from_tags(tags, locale, oneway, warnings)?;
+        let bus_lane_counts = BusLaneCount::from_tags(&schemes.busway, tags, locale, warnings)?;
         let centre_turn_lanes = CentreTurnLaneScheme::from_tags(tags, oneway, locale, warnings);
         let lane_counts = Counts::new(
             tags,

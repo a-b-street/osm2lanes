@@ -45,10 +45,11 @@ textarea {
   font-size: 24px;
 }
 
+.button,
 button,
 input,
-textarea,
-.button {
+summary,
+textarea {
   background-color: #323253;
   border: none;
   color: white;
@@ -193,5 +194,14 @@ p.prefixed {
   cursor: crosshair;
 }
 
-
 /* End Map */
+
+/* Start Code Block */
+
+div.json {
+  height: 480px;
+  width: 640px;
+  overflow-y: scroll;
+}
+
+/* End Code Block */
