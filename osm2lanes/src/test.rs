@@ -515,7 +515,7 @@ mod tests {
                 println!("    {}", stringify_lane_types(&input_road));
                 println!("    {}", stringify_directions(&input_road));
                 println!("Normalized OSM tags:");
-                for [k, v] in tags.to_str_pairs() {
+                for (k, v) in tags.to_str_pairs() {
                     println!("    {} = {}", k, v);
                 }
                 println!("Got:");

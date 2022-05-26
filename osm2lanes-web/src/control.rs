@@ -10,7 +10,7 @@ use yew::{html, Callback, Component, Context, Html, NodeRef, Properties, TargetC
 
 use crate::{Msg as AppMsg, State};
 
-pub enum Msg {
+pub(crate) enum Msg {
     Up(Box<AppMsg>),
     FirstLazy,
     Example(String),
@@ -23,13 +23,13 @@ impl From<AppMsg> for Msg {
 }
 
 #[derive(Properties, PartialEq)]
-pub struct Props {
-    pub callback_msg: Callback<AppMsg>,
-    pub state: Rc<RefCell<State>>,
+pub(crate) struct Props {
+    pub(crate) callback_msg: Callback<AppMsg>,
+    pub(crate) state: Rc<RefCell<State>>,
 }
 
 #[derive(Default)]
-pub struct Control {
+pub(crate) struct Control {
     textarea_input_ref: NodeRef,
     textarea_output_ref: NodeRef,
     example: Option<String>,
@@ -52,11 +52,11 @@ impl Component for Control {
                 let examples: BTreeMap<_, _> = tests
                     .into_iter()
                     .filter_map(|t| {
-                        let example_name = t.example().map(|e| e.to_owned());
+                        let example_name = t.example().map(std::borrow::ToOwned::to_owned);
                         example_name.map(|e| (e, t))
                     })
                     .collect();
-                let example = examples.iter().next().unwrap().0.to_owned();
+                let example = examples.iter().next().unwrap().0.clone();
                 self.examples = Some(examples);
                 ctx.link().send_message(Msg::Example(example));
             },
@@ -76,13 +76,15 @@ impl Component for Control {
                         .driving_side(test_case.driving_side)
                         .iso_3166_option(test_case.iso_3166_2.as_deref())
                         .build(),
-                }))
+                }));
             },
         }
         // we let the parent do this
         false
     }
 
+    #[allow(clippy::if_then_some_else_none)] // TODO: bug report upstream
+    #[allow(clippy::too_many_lines)]
     fn view(&self, ctx: &Context<Self>) -> Html {
         let state = ctx.props().state.borrow();
 

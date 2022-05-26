@@ -1,5 +1,5 @@
 use crate::locale::Locale;
-use crate::tag::{TagKey, Tags};
+use crate::tag::Tags;
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 /// Unsupported
@@ -56,14 +56,11 @@ pub(in crate::transform::tags_to_lanes) fn unsupported(
         "lhv",
         "tank",
     ];
-    if ACCESS_KEYS
-        .iter()
-        .any(|k| tags.get(TagKey::from(*k)).is_some())
-    {
+    if ACCESS_KEYS.into_iter().any(|k| tags.get(k).is_some()) {
         warnings.push(TagsToLanesMsg::unimplemented(
             "access",
             // TODO, TagTree should support subset
-            tags.subset(&ACCESS_KEYS),
+            tags.subset(ACCESS_KEYS),
         ));
     }
     Ok(())

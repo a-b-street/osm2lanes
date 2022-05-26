@@ -12,7 +12,7 @@ use yew::{html, Callback, Component, Context, Properties};
 use crate::{draw, State};
 
 #[derive(Debug)]
-pub enum RenderError {
+pub(crate) enum RenderError {
     Piet(PietError),
     _UnknownLane,
     _UnknownSeparator,
@@ -36,32 +36,33 @@ impl std::fmt::Display for RenderError {
     }
 }
 
-pub enum Msg {}
+pub(crate) enum Msg {}
 
 #[derive(Properties, PartialEq)]
-pub struct Props {
-    pub callback_error: Callback<String>,
-    pub state: Rc<RefCell<State>>,
+pub(crate) struct Props {
+    pub(crate) callback_error: Callback<String>,
+    pub(crate) state: Rc<RefCell<State>>,
 }
 
-pub struct Canvas {}
+// TODO: make this a functional component
+pub(crate) struct Canvas;
 
 impl Component for Canvas {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(_ctx: &yew::Context<Self>) -> Self {
+    fn create(_ctx: &Context<Self>) -> Self {
         Self {}
     }
 
-    fn view(&self, _ctx: &yew::Context<Self>) -> yew::Html {
+    fn view(&self, _ctx: &Context<Self>) -> yew::Html {
         html! {
             <canvas id="canvas" width="960px" height="480px"></canvas>
         }
     }
 
     fn rendered(&mut self, ctx: &Context<Self>, _first_render: bool) {
-        if let Err(e) = self.draw_canvas(
+        if let Err(e) = Self::draw_canvas(
             ctx.props().state.borrow().road.as_ref(),
             &ctx.props().state.borrow().locale,
         ) {
@@ -71,7 +72,10 @@ impl Component for Canvas {
 }
 
 impl Canvas {
-    fn draw_canvas(&self, road: Option<&Road>, locale: &Locale) -> Result<(), RenderError> {
+    #[allow(clippy::as_conversions)]
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_sign_loss)]
+    fn draw_canvas(road: Option<&Road>, locale: &Locale) -> Result<(), RenderError> {
         if let Some(road) = road {
             let window = window().unwrap();
             let canvas = window
@@ -89,8 +93,8 @@ impl Canvas {
                 .unwrap();
 
             let dpr = window.device_pixel_ratio();
-            let canvas_width = (canvas.offset_width() as f64 * dpr) as u32;
-            let canvas_height = (canvas.offset_height() as f64 * dpr) as u32;
+            let canvas_width = (f64::from(canvas.offset_width()) * dpr) as u32;
+            let canvas_height = (f64::from(canvas.offset_height()) * dpr) as u32;
             canvas.set_width(canvas_width);
             canvas.set_height(canvas_height);
             context.scale(dpr, dpr).unwrap();

@@ -1,5 +1,8 @@
 #![allow(clippy::module_name_repetitions)] // TODO: fix upstream
 
+use std::borrow::Borrow;
+use std::hash::Hash;
+
 use crate::locale::Locale;
 use crate::road::Road;
 use crate::tag::Tags;
@@ -15,6 +18,7 @@ use access_by_lane::{Access, LaneDependentAccess};
 mod counts;
 
 mod modes;
+use modes::BuswayScheme;
 
 mod separator;
 
@@ -29,25 +33,27 @@ mod infer;
 pub use infer::Infer;
 
 trait TagsNumeric {
-    fn get_parsed<K, T>(&self, key: K, warnings: &mut RoadWarnings) -> Option<T>
+    fn get_parsed<Q, T, O>(&self, key: &Q, warnings: &mut RoadWarnings) -> Option<T>
     where
-        K: AsRef<str>,
-        TagKey: From<K>,
+        TagKey: Borrow<Q>,
+        Q: Ord + Hash + Eq + ?Sized + ToOwned<Owned = O>,
+        O: Into<TagKey>,
         T: std::str::FromStr;
 }
 
 impl TagsNumeric for Tags {
-    fn get_parsed<K, T>(&self, key: K, warnings: &mut RoadWarnings) -> Option<T>
+    fn get_parsed<Q, T, O>(&self, key: &Q, warnings: &mut RoadWarnings) -> Option<T>
     where
-        K: AsRef<str>,
-        TagKey: From<K>,
+        TagKey: Borrow<Q>,
+        Q: Ord + Hash + Eq + ?Sized + ToOwned<Owned = O>,
+        O: Into<TagKey>,
         T: std::str::FromStr,
     {
-        self.get(&key).and_then(|val| {
+        self.get(key).and_then(|val| {
             if let Ok(w) = val.parse::<T>() {
                 Some(w)
             } else {
-                warnings.push(TagsToLanesMsg::unsupported_tag(key, val));
+                warnings.push(TagsToLanesMsg::unsupported_tag(key.to_owned(), val));
                 None
             }
         })
@@ -117,12 +123,12 @@ mod oneway {
             _warnings: &mut RoadWarnings,
         ) -> Result<Self, TagsToLanesMsg> {
             Ok(
-                match (tags.get(ONEWAY), tags.is("junction", "roundabout")) {
+                match (tags.get(&ONEWAY), tags.is("junction", "roundabout")) {
                     (Some("yes"), _) => Self::Yes,
                     (Some("no"), false) => Self::No,
                     (Some("no"), true) => {
                         return Err(TagsToLanesMsg::ambiguous_tags(
-                            tags.subset(&["oneway", "junction"]),
+                            tags.subset(["oneway", "junction"]),
                         ));
                     },
                     (Some(value), _) => {
@@ -135,6 +141,23 @@ mod oneway {
     }
 }
 use oneway::Oneway;
+
+pub(in crate::transform::tags_to_lanes) struct TagSchemes {
+    oneway: Oneway,
+    busway: BuswayScheme,
+}
+
+impl TagSchemes {
+    pub(crate) fn from_tags(
+        tags: &Tags,
+        locale: &Locale,
+        warnings: &mut RoadWarnings,
+    ) -> Result<Self, TagsToLanesMsg> {
+        let oneway = Oneway::from_tags(tags, locale, warnings)?;
+        let busway = BuswayScheme::from_tags(tags, oneway, locale, warnings)?;
+        Ok(Self { oneway, busway })
+    }
+}
 
 /// From an OpenStreetMap way's tags,
 /// determine the lanes along the road from left to right.
@@ -160,12 +183,15 @@ pub fn tags_to_lanes(
     // Early return if we find unimplemented or unsupported tags.
     unsupported(tags, locale, &mut warnings)?;
 
+    // Parse each scheme independently ahead of time, to simplify the process and ensure local consistency
+    let schemes = TagSchemes::from_tags(tags, locale, &mut warnings)?;
+
     // Create the road builder and start giving it schemes.
-    let mut road: RoadBuilder = RoadBuilder::from(tags, locale, &mut warnings)?;
+    let mut road: RoadBuilder = RoadBuilder::from(&schemes, tags, locale, &mut warnings)?;
 
     modes::non_motorized(tags, locale, &mut road, &mut warnings)?;
 
-    modes::bus(tags, locale, &mut road, &mut warnings)?;
+    modes::bus(&schemes.busway, tags, locale, &mut road, &mut warnings)?;
 
     modes::bicycle(tags, locale, &mut road, &mut warnings)?;
 
