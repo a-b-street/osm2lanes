@@ -16,7 +16,7 @@ use crate::transform::tags_to_lanes::LaneBuilder;
 #[derive(Clone, Debug)]
 pub struct TagsToLanesMsg {
     location: &'static Location<'static>,
-    issue: TagsToLanesIssue,
+    pub(in crate::transform) issue: TagsToLanesIssue,
 }
 
 #[derive(Clone, Debug)]

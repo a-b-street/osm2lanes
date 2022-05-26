@@ -11,7 +11,7 @@
 #![warn(unreachable_pub)]
 #![deny(unsafe_code)]
 #![deny(unsafe_op_in_unsafe_fn)]
-#![warn(unused_crate_dependencies)]
+// #![warn(unused_crate_dependencies)] // TODO: report upstream
 #![warn(unused_lifetimes)]
 #![warn(unused_qualifications)]
 // Clippy

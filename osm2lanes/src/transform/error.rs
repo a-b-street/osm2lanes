@@ -18,6 +18,11 @@ impl RoadWarnings {
         self.0.is_empty()
     }
 
+    #[must_use]
+    pub fn as_slice(&self) -> &[TagsToLanesMsg] {
+        self.0.as_slice()
+    }
+
     pub fn push(&mut self, msg: TagsToLanesMsg) {
         self.0.push(msg);
     }
