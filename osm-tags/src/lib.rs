@@ -62,7 +62,8 @@ pub use osm::{Highway, HighwayImportance, HighwayType, Lifecycle, HIGHWAY, LIFEC
 
 mod access;
 pub use access::Access;
-use serde::Deserialize;
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Debug, Clone)]
 pub struct DuplicateKeyError(TagKey);
@@ -310,11 +311,11 @@ impl TagsVisitor {
     }
 }
 
-/// Trait for Deserializers of Tags.
+/// Visitor to Deserialize of Tags.
 impl<'de> serde::de::Visitor<'de> for TagsVisitor {
     type Value = Tags;
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("OSM Tags")
+        formatter.write_str("OSM Tags as Map")
     }
     fn visit_map<M>(self, mut access: M) -> Result<Self::Value, M::Error>
     where
@@ -345,6 +346,19 @@ impl<'de> Deserialize<'de> for Tags {
     }
 }
 
+impl Serialize for Tags {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(self.map.len()))?;
+        for (k, v) in &self.map {
+            map.serialize_entry(k.as_str(), v.as_str())?;
+        }
+        map.end()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{DuplicateKeyError, TagKey, Tags};
@@ -367,6 +381,12 @@ mod tests {
                 "multivalue=apple;banana;chocolate covered capybara"
             ]
         );
+
+        // Serde
+        let tags_str = "{\"abra\":\"cadabra\",\"foo\":\"bar\",\"foo:multi:key\":\"value\",\"multivalue\":\"apple;banana;chocolate covered capybara\"}";
+        assert_eq!(serde_json::to_string(&tags).unwrap(), tags_str);
+        let de_tags: Tags = serde_json::from_str(tags_str).unwrap();
+        assert_eq!(de_tags.to_str_pairs(), tags.to_str_pairs());
 
         // Misc
         let mut other_tags = tags.clone();
