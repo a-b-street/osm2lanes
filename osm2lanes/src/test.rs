@@ -153,7 +153,7 @@ mod tests {
 
     static LOG_INIT: std::sync::Once = std::sync::Once::new();
 
-    fn approx_eq<T: std::cmp::PartialEq>(actual: &Option<T>, expected: &Option<T>) -> bool {
+    fn approx_eq<T: PartialEq>(actual: &Option<T>, expected: &Option<T>) -> bool {
         match (actual, expected) {
             (None, None) | (Some(_), None) => true,
             (None, Some(_)) => false,
@@ -515,7 +515,7 @@ mod tests {
                 println!("    {}", stringify_lane_types(&input_road));
                 println!("    {}", stringify_directions(&input_road));
                 println!("Normalized OSM tags:");
-                for [k, v] in tags.to_str_pairs() {
+                for (k, v) in tags.to_str_pairs() {
                     println!("    {} = {}", k, v);
                 }
                 println!("Got:");

@@ -1,3 +1,45 @@
+#![warn(explicit_outlives_requirements)]
+#![warn(missing_abi)]
+#![deny(non_ascii_idents)]
+#![warn(trivial_casts)]
+#![warn(unreachable_pub)]
+#![deny(unsafe_code)]
+#![deny(unsafe_op_in_unsafe_fn)]
+// #![warn(unused_crate_dependencies)] // https://github.com/rust-lang/rust/issues/57274
+#![warn(unused_lifetimes)]
+#![warn(unused_qualifications)]
+// Clippy
+#![warn(clippy::pedantic, clippy::cargo)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::cargo_common_metadata)]
+#![warn(
+    clippy::allow_attributes_without_reason,
+    clippy::as_conversions,
+    clippy::clone_on_ref_ptr,
+    clippy::create_dir,
+    clippy::dbg_macro,
+    clippy::decimal_literal_representation,
+    clippy::deref_by_slicing,
+    clippy::empty_structs_with_brackets,
+    clippy::float_cmp_const,
+    clippy::fn_to_numeric_cast_any,
+    clippy::if_then_some_else_none,
+    clippy::indexing_slicing,
+    clippy::let_underscore_must_use,
+    clippy::map_err_ignore,
+    clippy::print_stderr,
+    clippy::print_stdout,
+    clippy::single_char_lifetime_names,
+    clippy::str_to_string,
+    clippy::string_add,
+    clippy::string_slice,
+    clippy::string_to_string,
+    clippy::todo,
+    clippy::try_err,
+    clippy::unseparated_literal_suffix,
+    clippy::use_debug
+)]
+
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -9,6 +51,9 @@ use osm2lanes::transform::{
     lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadFromTags, TagsToLanesConfig,
 };
 use osm_tags::Tags;
+use syntect::highlighting::ThemeSet;
+use syntect::html::highlighted_html_for_string;
+use syntect::parsing::SyntaxSet;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 
@@ -28,6 +73,32 @@ use map::MapComponent;
 // Use `wee_alloc` as the global allocator.
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+#[derive(Properties, PartialEq)]
+pub struct CodeProps {
+    pub code: String,
+}
+
+#[function_component(CodeHtml)]
+pub fn code_html(props: &CodeProps) -> Html {
+    let html = {
+        let ss = SyntaxSet::load_defaults_newlines();
+        let ts = ThemeSet::load_defaults();
+        let syntax = ss
+            .find_syntax_by_token("json")
+            .unwrap_or_else(|| ss.find_syntax_plain_text());
+        highlighted_html_for_string(
+            &props.code,
+            &ss,
+            syntax,
+            ts.themes.get("base16-ocean.dark").unwrap(),
+        )
+        .unwrap()
+    };
+    let div = gloo_utils::document().create_element("code").unwrap();
+    div.set_inner_html(&html);
+    Html::VRef(div.into())
+}
 
 type ShouldRender = bool;
 
@@ -167,7 +238,7 @@ impl Component for App {
         html! {
             <div>
                 <h1>{"osm2lanes"}</h1>
-                <Control callback_msg={callback_msg.clone()} state={self.state.clone()}/>
+                <Control callback_msg={callback_msg.clone()} state={Rc::clone(&self.state)}/>
                 <hr/>
                 {
                     if let Some(message) = &state.message {
@@ -186,6 +257,7 @@ impl Component for App {
                 {
                     if let Some(road) = &state.road {
                         html!{
+                            <>
                             <section>
                                 <div class="lanes">
                                     {
@@ -199,12 +271,23 @@ impl Component for App {
                                 </div>
                                 <hr/>
                             </section>
+                            <section>
+                                <details>
+                                <summary>
+                                    {"JSON Output"}
+                                </summary>
+                                <div class="json">
+                                    <CodeHtml code={serde_json::to_string_pretty(&road).unwrap()}/>
+                                </div>
+                                </details>
+                            </section>
+                            </>
                         }
                     } else {
                         html!{}
                     }
                 }
-                <Canvas callback_error={callback_error} state={self.state.clone()}/>
+                <Canvas callback_error={callback_error} state={Rc::clone(&self.state)}/>
                 <hr/>
                 <MapComponent callback_msg={callback_msg.clone()}/>
             </div>
@@ -258,11 +341,14 @@ impl App {
         };
     }
 
+    #[allow(clippy::unused_self)]
     fn view_lane_type(&self, lane: &Lane) -> Html {
         html! {
             <div class="lane"><span>{lane.as_utf8()}</span></div>
         }
     }
+
+    #[allow(clippy::unused_self)]
     fn view_lane_direction(&self, lane: &Lane) -> Html {
         html! {
             <div class="lane"><span>{if let Lane::Travel {

@@ -6,7 +6,7 @@ use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 /// The number of lanes for motor vehicle traffic
 #[derive(Debug)]
-pub enum Counts {
+pub(crate) enum Counts {
     One, // One bidirectional lane
     Directional {
         forward: Infer<usize>,
@@ -61,7 +61,7 @@ impl Counts {
             // Ignore lanes:{both_ways,backward}=
             // TODO ignore oneway instead?
             if lanes.both_ways.is_some() || lanes.backward.is_some() {
-                warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset([
                     "oneway",
                     "lanes:both_ways",
                     "lanes:backward",
@@ -83,7 +83,7 @@ impl Counts {
                 // TODO, shouldn't we trust the tagged value more?
                 // TODO, what about backward?
                 if lanes.forward.map_or(false, |direct| direct != forward) {
-                    warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                    warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset([
                         "oneway",
                         "lanes",
                         "lanes:forward",
@@ -111,7 +111,7 @@ impl Counts {
             match (lanes.total, lanes.forward, lanes.backward) {
                 (Some(l), Some(f), Some(b)) => {
                     if l != f + b + both_ways {
-                        warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
+                        warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset([
                             "lanes",
                             "lanes:forward",
                             "lanes:backward",
@@ -211,14 +211,14 @@ pub(in crate::transform::tags_to_lanes) struct LanesDirectionScheme {
     both_ways: Option<()>,
 }
 impl LanesDirectionScheme {
-    pub fn from_tags(
+    pub(crate) fn from_tags(
         tags: &Tags,
         _oneway: Oneway,
         _locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Self {
         let both_ways = tags
-            .get_parsed(LANES + "both_ways", warnings)
+            .get_parsed(&(LANES + "both_ways"), warnings)
             .filter(|&v: &usize| {
                 if v == 1 {
                     true
@@ -232,26 +232,26 @@ impl LanesDirectionScheme {
             })
             .map(|_v| {});
         Self {
-            total: tags.get_parsed(LANES, warnings),
-            forward: tags.get_parsed(LANES + "forward", warnings),
-            backward: tags.get_parsed(LANES + "backward", warnings),
+            total: tags.get_parsed(&LANES, warnings),
+            forward: tags.get_parsed(&(LANES + "forward"), warnings),
+            backward: tags.get_parsed(&(LANES + "backward"), warnings),
             both_ways,
         }
     }
 }
 
 const CENTRE_TURN_LANE: TagKey = TagKey::from_static("centre_turn_lane");
-pub(in crate::transform::tags_to_lanes) struct CentreTurnLaneScheme(pub Option<bool>);
+pub(in crate::transform::tags_to_lanes) struct CentreTurnLaneScheme(pub(crate) Option<bool>);
 impl CentreTurnLaneScheme {
     /// Parses and validates the `centre_turn_lane` tag and emits a deprecation warning.
     /// See <https://wiki.openstreetmap.org/wiki/Key:centre_turn_lane>.
-    pub fn from_tags(
+    pub(crate) fn from_tags(
         tags: &Tags,
         _oneway: Oneway,
         _locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Self {
-        if let Some(v) = tags.get(CENTRE_TURN_LANE) {
+        if let Some(v) = tags.get(&CENTRE_TURN_LANE) {
             warnings.push(TagsToLanesMsg::deprecated_tags(
                 tags.subset(&[CENTRE_TURN_LANE]),
             ));
@@ -260,7 +260,7 @@ impl CentreTurnLaneScheme {
                 "no" => Self(Some(false)),
                 _ => {
                     warnings.push(TagsToLanesMsg::unsupported_tags(
-                        tags.subset(&[CENTRE_TURN_LANE]),
+                        tags.subset([&CENTRE_TURN_LANE]),
                     ));
                     Self(None)
                 },
@@ -270,7 +270,7 @@ impl CentreTurnLaneScheme {
         }
     }
 
-    pub fn some(&self) -> Option<bool> {
+    pub(crate) fn some(&self) -> Option<bool> {
         self.0
     }
 }

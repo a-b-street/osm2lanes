@@ -1,3 +1,6 @@
+use std::borrow::Borrow;
+use std::hash::Hash;
+
 use crate::locale::Locale;
 use crate::road::Direction;
 use crate::tag::{TagKey, Tags};
@@ -20,14 +23,14 @@ pub(in crate::transform::tags_to_lanes) enum Variant {
 pub(in crate::transform::tags_to_lanes) struct Scheme(Variant);
 
 impl Scheme {
-    pub fn forward(&self) -> bool {
+    pub(crate) fn forward(&self) -> bool {
         match self.0 {
             Variant::None | Variant::Backward => false,
             Variant::Forward | Variant::Both => true,
         }
     }
 
-    pub fn backward(&self) -> bool {
+    pub(crate) fn backward(&self) -> bool {
         match self.0 {
             Variant::None | Variant::Forward => false,
             Variant::Backward | Variant::Both => true,
@@ -41,17 +44,18 @@ enum Lane {
     Opposite,
 }
 
-fn get_bus_lane<T>(tags: &Tags, key: T, warnings: &mut RoadWarnings) -> Lane
+fn get_bus_lane<Q, O>(tags: &Tags, key: &Q, warnings: &mut RoadWarnings) -> Lane
 where
-    T: AsRef<str>,
-    TagKey: From<T>,
+    TagKey: Borrow<Q>,
+    Q: Ord + Hash + Eq + ?Sized + ToOwned<Owned = O>,
+    O: Into<TagKey>,
 {
-    match tags.get(&key) {
+    match tags.get(key) {
         None => Lane::None,
         Some("lane") => Lane::Lane,
         Some("opposite_lane") => Lane::Opposite,
         Some(v) => {
-            warnings.push(TagsToLanesMsg::unsupported_tag(key, v));
+            warnings.push(TagsToLanesMsg::unsupported_tag(key.to_owned().into(), v));
             Lane::None
         },
     }
@@ -61,11 +65,11 @@ impl Scheme {
     #[allow(clippy::unnecessary_wraps)]
     pub(in crate::transform::tags_to_lanes) fn from_tags(
         tags: &Tags,
-        locale: &Locale,
         road_oneway: Oneway,
+        locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, TagsToLanesMsg> {
-        let bus_oneway: Oneway = match tags.get(ONEWAY + "bus") {
+        let bus_oneway: Oneway = match tags.get(&(ONEWAY + "bus")) {
             Some("yes") => Oneway::Yes,
             Some("no") => Oneway::No,
             None => road_oneway,
@@ -75,7 +79,7 @@ impl Scheme {
             },
         };
 
-        let busway_root: Lane = get_bus_lane(tags, BUSWAY, warnings);
+        let busway_root: Lane = get_bus_lane(tags, &BUSWAY, warnings);
         let busway_root: Variant = match (busway_root, bus_oneway) {
             (Lane::None, _) => Variant::None,
             (Lane::Lane, Oneway::No) => Variant::Both,
@@ -91,27 +95,28 @@ impl Scheme {
             (Lane::Opposite, Oneway::Yes) => Variant::Backward,
         };
 
-        let busway_both: Lane = get_bus_lane(tags, BUSWAY + "both", warnings);
+        let busway_both_key = BUSWAY + "both";
+        let busway_both: Lane = get_bus_lane(tags, &busway_both_key, warnings);
         let busway_both: Variant = match busway_both {
             Lane::None => Variant::None,
             Lane::Lane => Variant::Both,
             Lane::Opposite => {
                 warnings.push(TagsToLanesMsg::unsupported_tags(
-                    tags.subset(&[BUSWAY + "both"]),
+                    tags.subset([&busway_both_key]),
                 ));
                 Variant::None
             },
         };
 
-        let busway_forward_key = || BUSWAY + locale.driving_side.tag();
-        let busway_forward: Lane = get_bus_lane(tags, busway_forward_key(), warnings);
+        let busway_forward_key = BUSWAY + locale.driving_side.tag();
+        let busway_forward: Lane = get_bus_lane(tags, &busway_forward_key, warnings);
         if let Lane::Opposite = busway_forward {
             warnings.push(TagsToLanesMsg::unsupported_tags(
-                tags.subset(&[busway_forward_key()]),
+                tags.subset([&busway_forward_key]),
             ));
         }
-        let busway_backward_key = || BUSWAY + locale.driving_side.opposite().tag();
-        let busway_backward: Lane = get_bus_lane(tags, busway_backward_key(), warnings);
+        let busway_backward_key = BUSWAY + locale.driving_side.opposite().tag();
+        let busway_backward: Lane = get_bus_lane(tags, &busway_backward_key, warnings);
         let busway_forward_backward = match (busway_forward, busway_backward) {
             (Lane::None | Lane::Opposite, Lane::None) => Variant::None,
             (Lane::Lane, Lane::None) => Variant::Forward,
@@ -121,10 +126,10 @@ impl Scheme {
 
         if let Variant::Both = busway_both {
             if let Variant::Forward | Variant::Backward = busway_forward_backward {
-                warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset(&[
-                    BUSWAY + "both",
-                    busway_forward_key(),
-                    busway_backward_key(),
+                warnings.push(TagsToLanesMsg::ambiguous_tags(tags.subset([
+                    &busway_both_key,
+                    &busway_forward_key,
+                    &busway_backward_key,
                 ])));
             }
             if let Variant::Forward | Variant::Backward = busway_root {
@@ -143,8 +148,8 @@ impl Scheme {
                     BUSWAY,
                     ONEWAY,
                     ONEWAY + "bus",
-                    busway_forward_key(),
-                    busway_backward_key(),
+                    busway_forward_key,
+                    busway_backward_key,
                 ])));
             }
             Ok(Scheme(busway_forward_backward))
@@ -154,20 +159,16 @@ impl Scheme {
     }
 }
 
-pub(in crate::transform::tags_to_lanes) fn busway(
-    tags: &Tags,
-    locale: &Locale,
+pub(in crate::transform::tags_to_lanes) fn apply_busway(
     road: &mut RoadBuilder,
-    warnings: &mut RoadWarnings,
+    scheme: &Scheme,
+    locale: &Locale,
 ) -> Result<(), TagsToLanesMsg> {
-    let scheme = Scheme::from_tags(tags, locale, road.oneway, warnings)?;
-
     if let Variant::Forward | Variant::Both = scheme.0 {
         road.forward_outside_mut()
             .ok_or_else(|| TagsToLanesMsg::unsupported_str("no forward lanes for busway"))?
             .set_bus(locale)?;
     }
-
     if let Variant::Backward | Variant::Both = scheme.0 {
         if let Some(backward_outside) = road.backward_outside_mut() {
             backward_outside.set_bus(locale)?;

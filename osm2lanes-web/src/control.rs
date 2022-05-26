@@ -11,7 +11,7 @@ use yew_agent::{Bridge, Bridged};
 use crate::agent::{ExampleLoader, ExampleLoaderOutput};
 use crate::{Msg as AppMsg, State};
 
-pub enum Msg {
+pub(crate) enum Msg {
     /// Pass the message to the parent
     Up(Box<AppMsg>),
     /// Worker's response with examples
@@ -27,12 +27,12 @@ impl From<AppMsg> for Msg {
 }
 
 #[derive(Properties, PartialEq)]
-pub struct Props {
-    pub callback_msg: Callback<AppMsg>,
-    pub state: Rc<RefCell<State>>,
+pub(crate) struct Props {
+    pub(crate) callback_msg: Callback<AppMsg>,
+    pub(crate) state: Rc<RefCell<State>>,
 }
 
-pub struct Control {
+pub(crate) struct Control {
     _worker: Box<dyn Bridge<ExampleLoader>>,
     textarea_input_ref: NodeRef,
     textarea_output_ref: NodeRef,
@@ -71,11 +71,11 @@ impl Component for Control {
                     .0
                     .into_iter()
                     .filter_map(|t| {
-                        let example_name = t.example().map(|e| e.to_owned());
+                        let example_name = t.example().map(std::borrow::ToOwned::to_owned);
                         example_name.map(|e| (e, t))
                     })
                     .collect();
-                let example = examples.iter().next().unwrap().0.to_owned();
+                let example = examples.iter().next().unwrap().0.clone();
                 self.examples = Some(examples);
                 ctx.link().send_message(Msg::Example(example));
             },
@@ -95,13 +95,15 @@ impl Component for Control {
                         .driving_side(test_case.driving_side)
                         .iso_3166_option(test_case.iso_3166_2.as_deref())
                         .build(),
-                }))
+                }));
             },
         }
         // we let the parent do this
         false
     }
 
+    #[allow(clippy::if_then_some_else_none)] // TODO: bug report upstream
+    #[allow(clippy::too_many_lines)]
     fn view(&self, ctx: &Context<Self>) -> Html {
         let state = ctx.props().state.borrow();
 

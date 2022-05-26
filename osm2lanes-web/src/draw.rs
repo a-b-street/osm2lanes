@@ -1,6 +1,6 @@
 use osm2lanes::locale::Locale;
 use osm2lanes::metric::Metre;
-use osm2lanes::road::{Color as MarkingColor, Direction, Lane, Printable, Road, Style};
+use osm2lanes::road::{Color as MarkingColor, Designated, Direction, Lane, Printable, Road, Style};
 use piet::kurbo::{Line, Point, Rect};
 use piet::{
     Color as PietColor, FontFamily, RenderContext, StrokeStyle, Text, TextAttribute,
@@ -27,14 +27,14 @@ impl Scale {
     }
 }
 
-pub fn lanes<R: RenderContext>(
+pub(crate) fn lanes<R: RenderContext>(
     rc: &mut R,
     (canvas_width, canvas_height): (u32, u32),
     road: &Road,
     locale: &Locale,
 ) -> Result<(), RenderError> {
-    let canvas_width = canvas_width as f64;
-    let canvas_height = canvas_height as f64;
+    let canvas_width = f64::from(canvas_width);
+    let canvas_height = f64::from(canvas_height);
     let default_lane_width = Lane::DEFAULT_WIDTH;
 
     let grassy_verge = Metre::new(1.0);
@@ -66,49 +66,18 @@ pub fn lanes<R: RenderContext>(
                 designated,
                 width,
                 ..
-            } => {
-                let width =
-                    width.unwrap_or_else(|| locale.travel_width(designated, road.highway.r#type()));
-                let x = scale.scale(left_edge + (0.5 * width));
-                if let Some(direction) = direction {
-                    draw_arrow(
-                        rc,
-                        Point {
-                            x,
-                            y: 0.3 * canvas_height,
-                        },
-                        *direction,
-                    )?;
-                    draw_arrow(
-                        rc,
-                        Point {
-                            x,
-                            y: 0.7 * canvas_height,
-                        },
-                        *direction,
-                    )?;
-                }
-                if lane.is_foot() {
-                    rc.fill(
-                        Rect::new(
-                            scale.scale(left_edge),
-                            0.0,
-                            scale.scale(left_edge + width),
-                            canvas_height,
-                        ),
-                        &PietColor::GRAY,
-                    );
-                }
-                let font_size = 24.0;
-                let layout = rc
-                    .text()
-                    .new_text_layout(lane.as_utf8().to_string())
-                    .font(FontFamily::SYSTEM_UI, font_size)
-                    .default_attribute(TextAttribute::TextColor(PietColor::WHITE))
-                    .build()?;
-                rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
-                left_edge += width;
-            },
+            } => draw_travel_lane(
+                rc,
+                &mut left_edge,
+                road,
+                locale,
+                *designated,
+                width,
+                &scale,
+                *direction,
+                canvas_height,
+                lane,
+            )?,
             Lane::Parking {
                 designated, width, ..
             } => {
@@ -139,52 +108,7 @@ pub fn lanes<R: RenderContext>(
                 left_edge += width;
             },
             Lane::Separator { markings, .. } => {
-                for marking in markings.iter() {
-                    let width = marking.width.unwrap_or_else(|| Metre::new(0.2));
-                    let x = scale.scale(left_edge + 0.5 * width);
-                    let color = match (marking.style, marking.color) {
-                        (_, Some(c)) => color_into(c),
-                        (Style::KerbUp | Style::KerbDown, None) => PietColor::GRAY,
-                        // Remains for debugging
-                        _ => PietColor::BLUE,
-                        // _ => return Err(RenderError::UnknownSeparator),
-                    };
-                    if let Style::NoFill = marking.style {
-                        // nope
-                    } else {
-                        rc.stroke_styled(
-                            Line::new(
-                                Point { x, y: 0.0 },
-                                Point {
-                                    x,
-                                    y: canvas_height,
-                                },
-                            ),
-                            &color,
-                            scale.scale(width),
-                            &match marking.style {
-                                Style::SolidLine => StrokeStyle::new(),
-                                Style::DottedLine => {
-                                    StrokeStyle::new().dash_pattern(&[50.0, 100.0])
-                                },
-                                Style::DashedLine => {
-                                    StrokeStyle::new().dash_pattern(&[100.0, 100.0])
-                                },
-                                Style::BrokenLine => {
-                                    StrokeStyle::new().dash_pattern(&[100.0, 50.0])
-                                },
-                                Style::KerbUp | Style::KerbDown => StrokeStyle::new(),
-                                // Remains for debugging, SOS
-                                _ => StrokeStyle::new().dash_pattern(&[
-                                    10.0, 10.0, 10.0, 10.0, 10.0, 50.0, 30.0, 30.0, 30.0, 30.0,
-                                    30.0, 50.0,
-                                ]),
-                                // _ => return Err(RenderError::UnknownSeparator),
-                            },
-                        );
-                    }
-                    left_edge += width;
-                }
+                draw_separator(rc, &mut left_edge, markings, &scale, canvas_height);
             },
         }
     }
@@ -193,20 +117,113 @@ pub fn lanes<R: RenderContext>(
     Ok(())
 }
 
-pub fn draw_arrow<R: RenderContext>(
+// TODO: refactor
+#[allow(clippy::too_many_arguments)]
+fn draw_travel_lane<R: RenderContext>(
     rc: &mut R,
-    mid: Point,
-    direction: Direction,
+    left_edge: &mut Metre,
+    road: &Road,
+    locale: &Locale,
+    designated: Designated,
+    width: &Option<Metre>,
+    scale: &Scale,
+    direction: Option<Direction>,
+    canvas_height: f64,
+    lane: &Lane,
 ) -> Result<(), RenderError> {
-    fn draw_point<R: RenderContext>(
-        rc: &mut R,
-        mid: Point,
-        direction: Direction,
-    ) -> Result<(), RenderError> {
+    let width = width.unwrap_or_else(|| locale.travel_width(&designated, road.highway.r#type()));
+    let x = scale.scale(*left_edge + (0.5 * width));
+    if let Some(direction) = direction {
+        draw_arrow(
+            rc,
+            Point {
+                x,
+                y: 0.3 * canvas_height,
+            },
+            direction,
+        );
+        draw_arrow(
+            rc,
+            Point {
+                x,
+                y: 0.7 * canvas_height,
+            },
+            direction,
+        );
+    }
+    if lane.is_foot() {
+        rc.fill(
+            Rect::new(
+                scale.scale(*left_edge),
+                0.0,
+                scale.scale(*left_edge + width),
+                canvas_height,
+            ),
+            &PietColor::GRAY,
+        );
+    }
+    let font_size = 24.0;
+    let layout = rc
+        .text()
+        .new_text_layout(lane.as_utf8().to_string())
+        .font(FontFamily::SYSTEM_UI, font_size)
+        .default_attribute(TextAttribute::TextColor(PietColor::WHITE))
+        .build()?;
+    rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
+    *left_edge += width;
+    Ok(())
+}
+
+fn draw_separator<R: RenderContext>(
+    rc: &mut R,
+    left_edge: &mut Metre,
+    markings: &osm2lanes::road::Markings,
+    scale: &Scale,
+    canvas_height: f64,
+) {
+    for marking in markings.iter() {
+        let width = marking.width.unwrap_or_else(|| Metre::new(0.2));
+        let x = scale.scale(*left_edge + 0.5 * width);
+        let color = match (marking.style, marking.color) {
+            (_, Some(c)) => color_into(c),
+            (Style::KerbUp | Style::KerbDown, None) => PietColor::GRAY,
+            // Remains for debugging
+            _ => PietColor::BLUE,
+            // _ => return Err(RenderError::UnknownSeparator),
+        };
+        if let Style::NoFill = marking.style {
+            // nope
+        } else {
+            rc.stroke_styled(
+                Line::new(
+                    Point { x, y: 0.0 },
+                    Point {
+                        x,
+                        y: canvas_height,
+                    },
+                ),
+                &color,
+                scale.scale(width),
+                &match marking.style {
+                    Style::DottedLine => StrokeStyle::new().dash_pattern(&[50.0, 100.0]),
+                    Style::DashedLine => StrokeStyle::new().dash_pattern(&[100.0, 100.0]),
+                    Style::BrokenLine => StrokeStyle::new().dash_pattern(&[100.0, 50.0]),
+                    Style::SolidLine | Style::KerbUp | Style::KerbDown => StrokeStyle::new(),
+                    Style::NoFill => unreachable!(),
+                    // _ => return Err(RenderError::UnknownSeparator),
+                },
+            );
+        }
+        *left_edge += width;
+    }
+}
+
+fn draw_arrow<R: RenderContext>(rc: &mut R, mid: Point, direction: Direction) {
+    fn draw_point<R: RenderContext>(rc: &mut R, mid: Point, direction: Direction) {
         let dir_sign = match direction {
             Direction::Forward => -1.0,
             Direction::Backward => 1.0,
-            _ => unreachable!(),
+            Direction::Both => unreachable!(),
         };
         for x in [-10.0, 10.0] {
             rc.stroke(
@@ -224,7 +241,6 @@ pub fn draw_arrow<R: RenderContext>(
                 1.0,
             );
         }
-        Ok(())
     }
     // line
     rc.stroke(
@@ -242,11 +258,10 @@ pub fn draw_arrow<R: RenderContext>(
         1.0,
     );
     match direction {
-        Direction::Forward | Direction::Backward => draw_point(rc, mid, direction)?,
+        Direction::Forward | Direction::Backward => draw_point(rc, mid, direction),
         Direction::Both => {
-            draw_point(rc, mid, Direction::Forward)?;
-            draw_point(rc, mid, Direction::Backward)?;
+            draw_point(rc, mid, Direction::Forward);
+            draw_point(rc, mid, Direction::Backward);
         },
     }
-    Ok(())
 }
