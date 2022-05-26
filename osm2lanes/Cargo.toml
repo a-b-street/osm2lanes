@@ -35,6 +35,7 @@ tests = ["serde_yaml"]
 
 [dev-dependencies]
 assert-json-diff = "2.0"
+bincode = "1.3"
 criterion = { version = "0.3", features = ["html_reports"] }
 env_logger = "0.9"
 osm2lanes = { path = ".", features = ["tests"] }

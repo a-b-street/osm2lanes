@@ -407,6 +407,30 @@ mod tests {
     }
 
     #[test]
+    fn test_bincode() {
+        env_logger_init();
+        let tests = get_tests();
+        for test in &tests {
+            bincode::serialize(&test.tags).expect("can't serialize tags");
+            match &test.expected {
+                Expected::Road(expected_road) => {
+                    bincode::serialize(&expected_road.lanes)
+                        .expect("can't serialize expected road lanes");
+                    bincode::serialize(&expected_road.highway)
+                        .expect("can't serialize expected road highway");
+                    bincode::serialize(expected_road).expect("can't serialize expected road");
+                },
+                Expected::Output(expected_output) => {
+                    bincode::serialize(expected_output).expect("can't serialize expected output");
+                },
+            }
+            bincode::serialize(&test.expected).expect("can't serialize expected");
+            bincode::serialize(test).expect("can't serialize test case");
+        }
+        bincode::serialize(&tests).expect("can't serialize test cases");
+    }
+
+    #[test]
     fn test_from_data() {
         env_logger_init();
         let tests = get_tests();
