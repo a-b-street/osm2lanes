@@ -461,7 +461,7 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
                     .bicycle = Infer::Direct(AccessAndDirection {
                     access: Access::Yes,
                     direction: Some(Direction::Both),
-                })
+                });
             },
         },
         Location::Both { forward, backward } => {

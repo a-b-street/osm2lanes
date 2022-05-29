@@ -82,9 +82,11 @@
             },
             "access": {
                 "type": "object",
-                "description": "Access to the lane. Freeform tags matching OSM way access",
-                "additionalProperties": {
-                    "type": "string"
+                "description": "Access by mode.",
+                "properties": {
+                    "bicycle": {
+                        "$ref": "/schemas/access"
+                    }
                 }
             },
             "markings": {
@@ -159,6 +161,47 @@
                     "const": "osm2lanes"
                 }
             ]
+        },
+        "access": {
+            "$id": "/schemas/access",
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "description": "Legal access for a lane. Only populated if different than default",
+            "required": [
+                "access"
+            ],
+            "properties": {
+                "access": {
+                    "type": "string",
+                    "description": "The access value.",
+                    "anyOf": [
+                        {
+                            "const": "yes"
+                        },
+                        {
+                            "const": "no"
+                        },
+                        {
+                            "const": "designated"
+                        }
+                    ]
+                },
+                "direction": {
+                    "type": "string",
+                    "description": "The direction of the access, if applicable.",
+                    "anyOf": [
+                        {
+                            "const": "forward"
+                        },
+                        {
+                            "const": "backward"
+                        },
+                        {
+                            "const": "both"
+                        }
+                    ]
+                }
+            }
         }
     }
 }
