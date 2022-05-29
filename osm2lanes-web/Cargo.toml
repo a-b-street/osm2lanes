@@ -2,7 +2,6 @@
 name = "osm2lanes-web"
 version = "0.1.0"
 description = "Website for osm2lanes"
-readme = true
 repository = "https://github.com/a-b-street/osm2lanes"
 license = "Apache 2.0"
 keywords = ["osm", "lanes", "web"]
@@ -32,7 +31,7 @@ syntect = { version = "5.0", default-features = false, features = [
 wasm-bindgen = "0.2"
 wee_alloc = { version = "0.4", optional = true }
 yew = "0.19"
-yew-agent = "0.1"
+gloo-worker = { git = "https://github.com/droogmic/gloo", branch = "worker-v2" }
 
 [dependencies.web-sys]
 version = "0.3"

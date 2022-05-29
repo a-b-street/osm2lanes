@@ -2,13 +2,13 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
+use gloo_worker::{WorkerBridge, WorkerSpawner};
 use osm2lanes::locale::{Country, DrivingSide, Locale};
 use osm2lanes::test::TestCase;
 use web_sys::{Event, FocusEvent, HtmlInputElement, HtmlSelectElement, KeyboardEvent, MouseEvent};
 use yew::{html, Callback, Component, Context, Html, NodeRef, Properties, TargetCast};
-use yew_agent::{Bridge, Bridged};
 
-use crate::agent::{ExampleLoader, ExampleLoaderOutput};
+use crate::agent::{ExampleLoader, ExampleLoaderOutput, NAME};
 use crate::{Msg as AppMsg, State};
 
 pub(crate) enum Msg {
@@ -33,7 +33,7 @@ pub(crate) struct Props {
 }
 
 pub(crate) struct Control {
-    _worker: Box<dyn Bridge<ExampleLoader>>,
+    _worker: WorkerBridge<ExampleLoader>,
     textarea_input_ref: NodeRef,
     textarea_output_ref: NodeRef,
     example: Option<String>,
@@ -45,11 +45,11 @@ impl Component for Control {
     type Message = Msg;
 
     fn create(ctx: &Context<Self>) -> Self {
-        let cb = {
-            let link = ctx.link().clone();
-            link.callback(Self::Message::WorkerMsg)
-        };
-        let mut worker = ExampleLoader::bridge(cb);
+        let link = ctx.link().clone();
+        let cb = move |output| link.send_message(Self::Message::WorkerMsg(output));
+        let worker = WorkerSpawner::<ExampleLoader>::new()
+            .callback(cb)
+            .spawn(NAME);
 
         // Trigger worker
         worker.send(());
