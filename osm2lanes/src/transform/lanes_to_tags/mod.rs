@@ -356,6 +356,7 @@ fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), Lan
     {
         tags.checked_insert("oneway:bicycle", "no")?;
     }
+
     // indicate cycling traffic direction relative to the direction the osm way is oriented
     // yes: same direction
     // -1: contraflow
@@ -393,6 +394,9 @@ fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), Lan
     {
         tags.checked_insert("cycleway:right:width", width.val().to_string())?;
     }
+
+    // Handle shared lanes
+    if lanes.forward_inside() // TODO: this needs to exist...
 
     Ok(())
 }

@@ -710,10 +710,8 @@
         designated: motor_vehicle
 
 - description: cycleway=opposite oneway=yes oneway:bicycle=no
-  rust: false # https://github.com/a-b-street/osm2lanes/issues/162
   tags:
     highway: "road"
-    lanes: "1"
     oneway: "yes"
     oneway:bicycle: "no"
     cycleway: "opposite"
@@ -724,11 +722,12 @@
     highway: road
     lanes:
       - type: travel
-        direction: backward
-        designated: bicycle
-      - type: travel
         direction: forward
         designated: motor_vehicle
+        access:
+          bicycle:
+            access: "yes"
+            direction: "both"
 
 - description: "cycleway:BACKWARD:lane=advisory oneway=yes oneway:bicycle=no"
   way_id: 25745877

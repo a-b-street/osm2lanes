@@ -2,11 +2,11 @@ use std::borrow::Borrow;
 use std::fmt::Display;
 use std::hash::Hash;
 
-use osm_tags::TagKey;
+use osm_tags::{Access, TagKey};
 
 use crate::locale::Locale;
 use crate::metric::Metre;
-use crate::road::{Designated, Direction};
+use crate::road::{AccessAndDirection, Designated, Direction};
 use crate::tag::Tags;
 use crate::transform::tags::CYCLEWAY;
 use crate::transform::tags_to_lanes::oneway::Oneway;
@@ -150,7 +150,7 @@ impl Scheme {
         road_oneway: Oneway,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, TagsToLanesMsg> {
-        let scheme_cycleway = Self::from_tags_cycleway(tags, locale, road_oneway, warnings);
+        let scheme_cycleway = Self::from_tags_cycleway(tags, locale, road_oneway, warnings)?;
         let scheme_cycleway_both =
             Self::from_tags_cycleway_both(tags, locale, road_oneway, warnings);
         let scheme_cycleway_forward =
@@ -187,16 +187,16 @@ impl Scheme {
         locale: &Locale,
         road_oneway: Oneway,
         warnings: &mut RoadWarnings,
-    ) -> Option<Self> {
+    ) -> Result<Option<Self>, TagsToLanesMsg> {
         match cycleway_variant(tags, None) {
             Ok(OptionNo::Some((variant, opposite))) => {
                 if road_oneway.into() {
                     if opposite.is_none() {
-                        Some(Self(Location::Forward(Way {
+                        Ok(Some(Self(Location::Forward(Way {
                             variant,
                             direction: Direction::Forward,
                             width: None,
-                        })))
+                        }))))
                     } else {
                         if let Variant::Lane | Variant::Track = variant {
                             warnings.push(TagsToLanesMsg::deprecated(
@@ -214,19 +214,19 @@ impl Scheme {
                                 .unwrap(),
                             ));
                         }
-                        Some(Self(Location::Backward(Way {
+                        Ok(Some(Self(Location::Backward(Way {
                             variant,
                             direction: Direction::Backward,
                             width: None,
-                        })))
+                        }))))
                     }
                 } else {
                     if opposite.is_some() {
-                        warnings.push(TagsToLanesMsg::unsupported_tags(
+                        return Err(TagsToLanesMsg::unsupported_tags(
                             tags.subset(["oneway", "cycleway"]),
                         ));
                     }
-                    Some(Self(Location::Both {
+                    Ok(Some(Self(Location::Both {
                         forward: Way {
                             variant,
                             direction: Direction::Forward,
@@ -237,14 +237,14 @@ impl Scheme {
                             direction: Direction::Backward,
                             width: None,
                         },
-                    }))
+                    })))
                 }
             },
-            Ok(OptionNo::No) => Some(Self(Location::None)),
-            Ok(OptionNo::None) => None,
+            Ok(OptionNo::No) => Ok(Some(Self(Location::None))),
+            Ok(OptionNo::None) => Ok(None),
             Err(e) => {
                 warnings.push(e.into());
-                None
+                Ok(None)
             },
         }
     }
@@ -447,10 +447,22 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
     match scheme.0 {
         Location::None => {},
         Location::Forward(way) => {
-            road.push_forward_outside(lane(way));
+            if let Variant::Lane | Variant::Track = way.variant {
+                road.push_forward_outside(lane(way));
+            }
+            // TODO: Do nothing if forward sharing the lane? What if we are on a bus-only road?
         },
-        Location::Backward(way) => {
-            road.push_backward_outside(lane(way));
+        Location::Backward(way) => match way.variant {
+            Variant::Lane | Variant::Track => road.push_backward_outside(lane(way)),
+            Variant::SharedMotor => {
+                road.forward_outside_mut()
+                    .ok_or_else(|| TagsToLanesMsg::unsupported_str("no forward lanes for busway"))?
+                    .access
+                    .bicycle = Infer::Direct(AccessAndDirection {
+                    access: Access::Yes,
+                    direction: Some(Direction::Both),
+                })
+            },
         },
         Location::Both { forward, backward } => {
             road.push_forward_outside(lane(forward));
@@ -605,6 +617,7 @@ mod tests {
         );
     }
 
+    // cycleway=opposite
     #[test]
     fn opposite() {
         let mut warnings = RoadWarnings::default();
@@ -624,6 +637,18 @@ mod tests {
                 width: None,
             }))
         );
+    }
+
+    // cycleway=opposite only applies to oneway
+    #[test]
+    fn err_opposite_twoway() {
+        let scheme = Scheme::from_tags(
+            &Tags::from_pair("cycleway", "opposite"),
+            &Locale::builder().build(),
+            Oneway::No,
+            &mut RoadWarnings::default(),
+        );
+        assert!(scheme.is_err());
     }
 
     #[test]

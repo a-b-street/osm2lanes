@@ -16,7 +16,7 @@ use crate::road::{
     AccessAndDirection as LaneAccessAndDirection, AccessByType as LaneAccessByType, Designated,
     Direction, Lane,
 };
-use crate::tag::{Access as AccessValue, Highway, TagKey, Tags};
+use crate::tag::{Highway, TagKey, Tags};
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::tags_to_lanes::counts::{CentreTurnLaneScheme, Counts};
 use crate::transform::tags_to_lanes::modes::BusLaneCount;
@@ -54,23 +54,15 @@ pub struct Width {
 
 #[derive(Clone, Default, Debug)]
 pub struct Access {
-    pub foot: Infer<AccessValue>,
-    pub bicycle: Infer<AccessValue>,
-    pub taxi: Infer<AccessValue>,
-    pub bus: Infer<AccessValue>,
-    pub motor: Infer<AccessValue>,
+    pub foot: Infer<LaneAccessAndDirection>,
+    pub bicycle: Infer<LaneAccessAndDirection>,
+    pub taxi: Infer<LaneAccessAndDirection>,
+    pub bus: Infer<LaneAccessAndDirection>,
+    pub motor: Infer<LaneAccessAndDirection>,
 }
 
 impl From<Access> for Option<LaneAccessByType> {
     fn from(inferred: Access) -> Self {
-        impl LaneAccessAndDirection {
-            fn from(v: Infer<AccessValue>) -> Option<Self> {
-                v.some().map(|v| Self {
-                    access: v,
-                    direction: None,
-                })
-            }
-        }
         if inferred.foot.is_none()
             && inferred.bicycle.is_none()
             && inferred.taxi.is_none()
@@ -80,11 +72,11 @@ impl From<Access> for Option<LaneAccessByType> {
             return None;
         }
         Some(LaneAccessByType {
-            foot: LaneAccessAndDirection::from(inferred.foot),
-            bicycle: LaneAccessAndDirection::from(inferred.bicycle),
-            taxi: LaneAccessAndDirection::from(inferred.taxi),
-            bus: LaneAccessAndDirection::from(inferred.bus),
-            motor: LaneAccessAndDirection::from(inferred.motor),
+            foot: inferred.foot.some(),
+            bicycle: inferred.bicycle.some(),
+            taxi: inferred.taxi.some(),
+            bus: inferred.bus.some(),
+            motor: inferred.motor.some(),
         })
     }
 }
