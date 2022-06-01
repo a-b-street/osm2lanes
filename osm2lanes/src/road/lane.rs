@@ -175,7 +175,7 @@ impl Printable for Direction {
 // TODO: how to handle the motor_vehicle vs motorcar discussion in https://wiki.openstreetmap.org/wiki/Key:motorcar#Controversy
 // TODO: separating weight class by usage?
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub struct AccessByType {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) foot: Option<AccessAndDirection>,
@@ -191,7 +191,7 @@ pub struct AccessByType {
 
 /// Access for a given user
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub struct AccessAndDirection {
     pub(crate) access: AccessTagValue,
     /// Direction, if different from designated direction

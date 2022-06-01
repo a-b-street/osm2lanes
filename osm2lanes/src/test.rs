@@ -28,11 +28,14 @@ pub struct TestCase {
     // Metadata
     /// The OSM way unique identifier
     pub way_id: Option<i64>,
+    /// Relevant link
     pub link: Option<String>,
+    /// Comment on test case
     pub comment: Option<String>,
+    /// Description of test case
     pub description: Option<String>,
 
-    // List as a named example in the web app
+    /// List as a named example in the web app, with the given name
     example: Option<String>,
 
     // Config and Locale
@@ -196,20 +199,21 @@ mod tests {
                         direction: actual_direction,
                         width: actual_width,
                         max_speed: actual_max_speed,
-                        access: _actual_access,
+                        access: actual_access,
                     },
                     Lane::Travel {
                         designated: expected_designated,
                         direction: expected_direction,
                         width: expected_width,
                         max_speed: expected_max_speed,
-                        access: _expected_access,
+                        access: expected_access,
                     },
                 ) => {
                     actual_designated == expected_designated
                         && actual_direction == expected_direction
                         && approx_eq(actual_width, expected_width)
                         && approx_eq(actual_max_speed, expected_max_speed)
+                        && approx_eq(actual_access, expected_access)
                 },
                 (
                     Lane::Parking {
@@ -242,7 +246,6 @@ mod tests {
 
     impl Marking {
         /// Eq where None is treaty as always equal
-        #[allow(clippy::unnested_or_patterns)]
         fn approx_eq(&self, expected: &Self) -> bool {
             self.style == expected.style
                 && approx_eq(&self.color, &expected.color)
@@ -508,7 +511,7 @@ mod tests {
                 },
             )
             .unwrap();
-            let (output_road, _warnings) = output_lanes.into_filtered_road(test);
+            let (output_road, warnings) = output_lanes.into_filtered_road(test);
             if !output_road.approx_eq(&input_road) {
                 test.print();
                 println!("From:");
@@ -521,6 +524,7 @@ mod tests {
                 println!("Got:");
                 println!("    {}", stringify_lane_types(&output_road));
                 println!("    {}", stringify_directions(&output_road));
+                println!("{}", warnings);
                 if stringify_lane_types(&input_road) == stringify_lane_types(&output_road)
                     || stringify_directions(&input_road) == stringify_directions(&output_road)
                 {
