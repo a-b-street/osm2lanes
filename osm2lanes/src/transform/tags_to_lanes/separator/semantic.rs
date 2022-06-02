@@ -75,7 +75,7 @@ pub enum ParkingCondition {
 /// Semantic lane separator
 #[derive(Debug)]
 pub enum Separator {
-    /// Motorway (or other) shoulder
+    /// Road paint for motorway (or other) shoulder
     Shoulder { speed: Infer<SpeedClass> },
     /// Road paint between same direction
     Lane {
@@ -105,7 +105,7 @@ pub enum Separator {
         parking_condition: Option<ParkingCondition>,
     },
     /// Grassy verge
-    _Verge { width: Metre },
+    Verge { width: Infer<Metre> },
 }
 
 /// Semantic lane edge separator

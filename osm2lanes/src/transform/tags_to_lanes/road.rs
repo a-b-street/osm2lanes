@@ -19,7 +19,7 @@ use crate::road::{
 use crate::tag::{Highway, TagKey, Tags};
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::tags_to_lanes::counts::{CentreTurnLaneScheme, Counts};
-use crate::transform::tags_to_lanes::modes::BusLaneCount;
+use crate::transform::tags_to_lanes::modes::{BusLaneCount, CyclewayVariant};
 
 #[derive(Debug)]
 pub(in crate::transform) struct LaneBuilderError(pub(crate) &'static str);
@@ -90,6 +90,7 @@ pub struct LaneBuilder {
     pub width: Width,
     pub max_speed: Infer<Speed>,
     pub access: Access,
+    pub(super) cycleway_variant: Option<CyclewayVariant>,
 }
 
 impl LaneBuilder {

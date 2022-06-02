@@ -689,13 +689,15 @@
       - type: travel
         designated: foot
 
-- description: cycleway=opposite_lane oneway=yes, deprecated
-  rust: false
+- description: cycleway=opposite_track oneway=yes, deprecated
+  rust:
+    separator: false
+    expect_warnings: true
   tags:
     highway: "road"
     lanes: "1"
     oneway: "yes"
-    cycleway: opposite_lane
+    cycleway: "opposite_track"
     sidewalk: "no"
     shoulder: "no"
   driving_side: right
@@ -705,6 +707,8 @@
       - type: travel
         direction: backward
         designated: bicycle
+      - type: separator
+        semantic: verge
       - type: travel
         direction: forward
         designated: motor_vehicle
