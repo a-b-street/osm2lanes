@@ -1,12 +1,10 @@
+use osm_tags::{TagKey, Tags};
 use serde::{Deserialize, Serialize};
 
-use crate::{TagKey, Tags};
-
-pub const ONEWAY: TagKey = TagKey::from_static("oneway");
-pub const HIGHWAY: TagKey = TagKey::from_static("highway");
+const HIGHWAY: TagKey = TagKey::from_static("highway");
 const CONSTRUCTION: TagKey = TagKey::from_static("construction");
 const PROPOSED: TagKey = TagKey::from_static("proposed");
-pub const LIFECYCLE: [TagKey; 3] = [HIGHWAY, CONSTRUCTION, PROPOSED];
+const LIFECYCLE: [TagKey; 3] = [HIGHWAY, CONSTRUCTION, PROPOSED];
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum HighwayType {
@@ -260,7 +258,7 @@ impl Highway {
 
     /// Is Highway Supported
     #[must_use]
-    pub const fn is_supported(&self) -> bool {
+    pub const fn _is_supported(&self) -> bool {
         self.is_supported_road() || self.is_supported_non_motorized()
     }
 

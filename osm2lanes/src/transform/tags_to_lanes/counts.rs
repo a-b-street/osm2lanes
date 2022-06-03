@@ -1,6 +1,6 @@
 use super::{Infer, Oneway, TagsNumeric};
 use crate::locale::Locale;
-use crate::tag::{Highway, TagKey, Tags};
+use crate::tag_keys::{Highway, TagKey, Tags};
 use crate::transform::tags_to_lanes::modes::BusLaneCount;
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
 

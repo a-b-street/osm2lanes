@@ -9,7 +9,7 @@
 #![warn(unreachable_pub)]
 #![deny(unsafe_code)]
 #![deny(unsafe_op_in_unsafe_fn)]
-#![warn(unused_crate_dependencies)] // TODO: report upstream
+// #![warn(unused_crate_dependencies)] // https://github.com/rust-lang/rust/issues/57274
 #![warn(unused_lifetimes)]
 #![warn(unused_qualifications)]
 // Clippy
@@ -51,19 +51,14 @@ use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::str::FromStr;
 
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Serialize, Serializer};
+
 mod key;
 pub use key::TagKey;
 
 mod val;
 pub use val::TagVal;
-
-mod osm;
-pub use osm::{Highway, HighwayImportance, HighwayType, Lifecycle, HIGHWAY, LIFECYCLE, ONEWAY};
-
-mod access;
-pub use access::Access;
-use serde::ser::SerializeMap;
-use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Debug, Clone)]
 pub struct DuplicateKeyError(TagKey);

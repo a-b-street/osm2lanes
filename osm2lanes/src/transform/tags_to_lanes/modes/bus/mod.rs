@@ -1,6 +1,6 @@
 use crate::locale::Locale;
 use crate::road::Designated;
-use crate::tag::{TagKey, Tags};
+use crate::tag_keys::{TagKey, Tags};
 use crate::transform::tags_to_lanes::{
     Access, Infer, LaneBuilder, LaneBuilderError, LaneDependentAccess, RoadBuilder, TagsNumeric,
     TagsToLanesMsg,

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::locale::Locale;
 use crate::metric::Metre;
-use crate::tag::Highway;
+use crate::tag_keys::Highway;
 
 mod lane;
 pub use lane::{AccessAndDirection, AccessByType, Designated, Direction, Lane, Printable};
@@ -12,9 +12,22 @@ pub use separator::{Color, Marking, Markings, Semantic, Style};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Road {
-    pub lanes: Vec<Lane>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub r#ref: Option<String>,
+
     #[serde(flatten)]
     pub highway: Highway,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lit: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tracktype: Option<TrackType>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub smoothness: Option<Smoothness>,
+
+    pub lanes: Vec<Lane>,
 }
 
 impl Road {

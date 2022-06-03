@@ -2,7 +2,7 @@ use osm_tags::Access;
 
 use crate::locale::Locale;
 use crate::road::{AccessAndDirection, Designated, Direction};
-use crate::tag::{Tags, HIGHWAY};
+use crate::tag_keys::{Tags, HIGHWAY};
 use crate::transform::tags_to_lanes::{RoadBuilder, TagsToLanesMsg};
 use crate::transform::{Infer, RoadWarnings};
 

@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 use crate::locale::Locale;
 use crate::road::Road;
-use crate::tag::Tags;
+use crate::tag_keys::Tags;
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::RoadFromTags;
 
@@ -88,7 +88,7 @@ impl Default for Config {
 mod oneway {
     use super::TagsToLanesMsg;
     use crate::locale::Locale;
-    use crate::tag::{Tags, ONEWAY};
+    use crate::tag_keys::{Tags, ONEWAY};
     use crate::transform::RoadWarnings;
 
     #[derive(Clone, Copy, PartialEq)]

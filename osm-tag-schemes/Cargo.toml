@@ -1,8 +1,8 @@
 [package]
-name = "osm-tags"
+name = "osm-tag-schemes"
 version = "0.1.0"
 edition = "2021"
-description = "OSM Tags Datatype"
+description = "OSM Tag Scheme Definitions"
 repository = "https://github.com/a-b-street/osm2lanes"
 license = "Apache 2.0"
 keywords = ["osm", "tag"]
@@ -12,8 +12,5 @@ authors = [
 ]
 
 [dependencies]
-kstring = "2.0"
+osm-tags = { path = "../osm-tags" }
 serde = { version = "1", features = ["derive"] }
-
-[dev-dependencies]
-serde_json = "1"

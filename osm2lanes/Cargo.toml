@@ -15,6 +15,7 @@ edition = "2021"
 [dependencies]
 log = "0.4"
 osm-tags = { path = "../osm-tags" }
+osm-tag-schemes = { path = "../osm-tag-schemes" }
 celes = "2.1" # For countries, TODO: overlaps with locale-codes
 locale-codes = "0.3" # For continents, TODO: overlaps with celes
 serde = { version = "1", features = [
