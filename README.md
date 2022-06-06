@@ -37,7 +37,7 @@ but these are not necessary for lanes to exist.
 
 Whilst the type of lanes are usually determined from the OSM tags,
 osm2lanes also reports on lane separators and lane widths which are usually assumptions.
-These will be a best guess based on regional, national, or other standards.
+These will be the best guess based on regional, national, or other standards.
 We always assume the lanes are new, with the latest road markings.
 When lane separators may change down a way,
 e.g. a dashed line allowing overtaking on straight sections but a double solid line on curves,
@@ -63,7 +63,7 @@ A road with 5 marked lanes.
     {"type": "separator", "markings": [{"style": "dashed_line"}]},
     {"type": "travel_lane", "direction": "forward"},
     {"type": "separator", "markings": [{"style": "broken_line"}]},
-    {"type": "travel_lane", "direction": "forward"},
+    {"type": "travel_lane", "direction": "forward"}
 ]
 ```
 
@@ -86,7 +86,7 @@ A road with 2 marked lanes.
     {"type": "separator", "markings": [{"style": "dashed_line"}]},
     {"type": "travel_lane", "direction": "backward"},
     {"type": "separator", "markings": [{"style": "solid_line"}]},
-    {"type": "shoulder", "direction": "both"},
+    {"type": "shoulder", "direction": "both"}
 ]
 ```
 
@@ -107,7 +107,7 @@ A narrow road with one lane.
 [
     {"type": "shoulder", "direction": "both"},
     {"type": "travel_lane", "direction": "both"},
-    {"type": "shoulder", "direction": "both"},
+    {"type": "shoulder", "direction": "both"}
 ]
 ```
 
@@ -138,7 +138,7 @@ Rationale:
   vehicles will invert the side they drive on.
 - Rendering or routing clients must decide what to do with this information, as any other representation may be misleading.
 
-Open Issue: The dutch example has paving stone rumble strips at the edges which cannot be faithfully represented (TODO).
+Open Issue: The Dutch example has paving stone rumble strips at the edges which cannot be faithfully represented (TODO).
 
 #### Alternative
 
