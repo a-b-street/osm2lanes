@@ -200,7 +200,7 @@ impl Scheme {
                     } else {
                         if let Variant::Lane | Variant::Track = variant {
                             warnings.push(TagsToLanesMsg::deprecated(
-                                tags.subset(["cyleway"]),
+                                tags.subset(["cycleway"]),
                                 Tags::from_pairs([
                                     (
                                         CYCLEWAY + locale.driving_side.opposite().tag(),
@@ -402,30 +402,13 @@ impl Scheme {
 }
 
 impl LaneBuilder {
-    fn cycle_forward(width: Option<Width>, _locale: &Locale) -> Self {
+    fn cycle(way: Way) -> Self {
         Self {
             r#type: Infer::Direct(LaneType::Travel),
-            direction: Infer::Direct(Direction::Forward),
+            direction: Infer::Direct(way.direction),
             designated: Infer::Direct(Designated::Bicycle),
-            width: width.unwrap_or_default(),
-            ..Default::default()
-        }
-    }
-    fn cycle_backward(width: Option<Width>, _locale: &Locale) -> Self {
-        Self {
-            r#type: Infer::Direct(LaneType::Travel),
-            direction: Infer::Direct(Direction::Backward),
-            designated: Infer::Direct(Designated::Bicycle),
-            width: width.unwrap_or_default(),
-            ..Default::default()
-        }
-    }
-    fn cycle_both(width: Option<Width>, _locale: &Locale) -> Self {
-        Self {
-            r#type: Infer::Direct(LaneType::Travel),
-            direction: Infer::Direct(Direction::Both),
-            designated: Infer::Direct(Designated::Bicycle),
-            width: width.unwrap_or_default(),
+            width: way.width.unwrap_or_default(),
+            cycleway_variant: Some(way.variant),
             ..Default::default()
         }
     }
@@ -439,21 +422,16 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
 ) -> Result<(), TagsToLanesMsg> {
     let scheme = Scheme::from_tags(tags, locale, road.oneway, warnings)?;
     log::trace!("cycleway scheme: {scheme:?}");
-    let lane = |way: Way| match way.direction {
-        Direction::Forward => LaneBuilder::cycle_forward(way.width, locale),
-        Direction::Backward => LaneBuilder::cycle_backward(way.width, locale),
-        Direction::Both => LaneBuilder::cycle_both(way.width, locale),
-    };
     match scheme.0 {
         Location::None => {},
         Location::Forward(way) => {
             if let Variant::Lane | Variant::Track = way.variant {
-                road.push_forward_outside(lane(way));
+                road.push_forward_outside(LaneBuilder::cycle(way));
             }
             // TODO: Do nothing if forward sharing the lane? What if we are on a bus-only road?
         },
         Location::Backward(way) => match way.variant {
-            Variant::Lane | Variant::Track => road.push_backward_outside(lane(way)),
+            Variant::Lane | Variant::Track => road.push_backward_outside(LaneBuilder::cycle(way)),
             Variant::SharedMotor => {
                 road.forward_outside_mut()
                     .ok_or_else(|| TagsToLanesMsg::unsupported_str("no forward lanes for busway"))?
@@ -465,8 +443,8 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
             },
         },
         Location::Both { forward, backward } => {
-            road.push_forward_outside(lane(forward));
-            road.push_backward_outside(lane(backward));
+            road.push_forward_outside(LaneBuilder::cycle(forward));
+            road.push_backward_outside(LaneBuilder::cycle(backward));
         },
     }
     Ok(())

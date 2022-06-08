@@ -1,6 +1,8 @@
 use osm2lanes::locale::Locale;
 use osm2lanes::metric::Metre;
-use osm2lanes::road::{Color as MarkingColor, Designated, Direction, Lane, Printable, Road, Style};
+use osm2lanes::road::{
+    Color as MarkingColor, Designated, Direction, Lane, Printable, Road, Semantic, Style,
+};
 use piet::kurbo::{Line, Point, Rect};
 use piet::{
     Color as PietColor, FontFamily, RenderContext, StrokeStyle, Text, TextAttribute,
@@ -107,8 +109,29 @@ pub(crate) fn lanes<R: RenderContext>(
                 rc.draw_text(&layout, (x - (0.5 * font_size), 0.5 * canvas_height));
                 left_edge += width;
             },
-            Lane::Separator { markings, .. } => {
+            Lane::Separator {
+                markings: Some(markings),
+                ..
+            } => {
                 draw_separator(rc, &mut left_edge, markings, &scale, canvas_height);
+            },
+            Lane::Separator {
+                markings: None,
+                semantic,
+            } => {
+                if let Some(Semantic::Verge) = semantic {
+                    let width = Metre::new(0.5_f64); // TODO
+                    rc.fill(
+                        Rect::new(
+                            scale.scale(left_edge),
+                            0.0,
+                            scale.scale(left_edge + width),
+                            canvas_height,
+                        ),
+                        &PietColor::GREEN,
+                    );
+                    left_edge += width;
+                }
             },
         }
     }

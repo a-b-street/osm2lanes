@@ -34,7 +34,8 @@ pub enum Lane {
     Separator {
         #[serde(skip_serializing_if = "Option::is_none")]
         semantic: Option<Semantic>,
-        markings: Markings,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        markings: Option<Markings>,
     },
 }
 
@@ -47,7 +48,10 @@ impl Lane {
     #[must_use]
     pub fn width(&self, locale: &Locale, highway: HighwayType) -> Metre {
         match self {
-            Lane::Separator { markings, .. } => markings.width(locale),
+            Lane::Separator { markings, .. } => markings
+                .as_ref()
+                .map(|m| m.width(locale))
+                .unwrap_or_default(),
             Lane::Travel {
                 width, designated, ..
             } => width.unwrap_or_else(|| locale.travel_width(designated, highway)),
@@ -67,7 +71,9 @@ impl Lane {
                 mut markings,
                 semantic,
             } => {
-                markings.flip();
+                if let Some(ref mut markings) = markings {
+                    markings.flip();
+                }
                 Self::Separator { markings, semantic }
             },
             _ => self,
