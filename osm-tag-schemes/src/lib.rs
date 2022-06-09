@@ -165,7 +165,8 @@ pub struct Schemes {
 }
 
 impl Schemes {
-    #[must_use] pub fn from_tags(tags: &Tags) -> (Self, Option<Tags>) {
+    #[must_use]
+    pub fn from_tags(tags: &Tags) -> (Self, Option<Tags>) {
         let mut unknown_tags = Tags::default();
         let schemes = Self {
             name: tags.get(&keys::NAME).map(std::borrow::ToOwned::to_owned),
