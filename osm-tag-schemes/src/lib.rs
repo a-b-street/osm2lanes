@@ -107,7 +107,7 @@ trait FromTags: FromStr {
         TagKey: Borrow<Q>,
         Q: Ord + Hash + Eq + ?Sized,
     {
-        match tags.get(&key) {
+        match tags.get(key) {
             Some(s) => match s.parse() {
                 Ok(val) => Tagged::Some(val),
                 Err(_) => Tagged::Unknown(keys::TRACK_TYPE, s),
@@ -165,15 +165,15 @@ pub struct Schemes {
 }
 
 impl Schemes {
-    pub fn from_tags(tags: &Tags) -> (Self, Option<Tags>) {
+    #[must_use] pub fn from_tags(tags: &Tags) -> (Self, Option<Tags>) {
         let mut unknown_tags = Tags::default();
         let schemes = Self {
-            name: tags.get(&keys::NAME).map(|s| s.to_owned()),
+            name: tags.get(&keys::NAME).map(std::borrow::ToOwned::to_owned),
             r#ref: tags.get(&keys::REF).map(ToOwned::to_owned),
-            highway: Highway::from_tags(&tags).or_insert(&mut unknown_tags),
-            lit: Lit::from_tags_default(&tags).or_insert(&mut unknown_tags),
-            tracktype: TrackType::from_tags_default(&tags).or_insert(&mut unknown_tags),
-            smoothness: Smoothness::from_tags_default(&tags).or_insert(&mut unknown_tags),
+            highway: Highway::from_tags(tags).or_insert(&mut unknown_tags),
+            lit: Lit::from_tags_default(tags).or_insert(&mut unknown_tags),
+            tracktype: TrackType::from_tags_default(tags).or_insert(&mut unknown_tags),
+            smoothness: Smoothness::from_tags_default(tags).or_insert(&mut unknown_tags),
         };
         (
             schemes,

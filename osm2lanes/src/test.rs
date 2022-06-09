@@ -163,7 +163,7 @@ mod tests {
 
     fn approx_eq<T: PartialEq>(actual: &Option<T>, expected: &Option<T>) -> bool {
         match (actual, expected) {
-            (None, None) | (Some(_), None) => true,
+            (None | Some(_), None) => true,
             (None, Some(_)) => false,
             (Some(actual), Some(expected)) => actual == expected,
         }

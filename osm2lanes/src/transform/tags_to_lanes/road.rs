@@ -200,7 +200,7 @@ impl RoadBuilder {
         let lane_counts = Counts::new(
             tags,
             oneway,
-            &highway,
+            highway,
             &centre_turn_lanes,
             &bus_lane_counts,
             locale,
