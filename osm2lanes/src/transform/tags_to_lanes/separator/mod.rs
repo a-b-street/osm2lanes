@@ -11,7 +11,9 @@ mod semantic;
 use semantic::{Overtake, Separator, SpeedClass};
 
 use self::semantic::{EdgeSeparator, LaneChange, ParkingCondition};
+use super::modes::CyclewayVariant;
 use super::{LaneBuilder, LaneType, RoadBuilder};
+use crate::transform::tags_to_lanes::Infer;
 
 impl From<&Separator> for crate::road::Semantic {
     fn from(internal: &Separator) -> Self {
@@ -22,7 +24,7 @@ impl From<&Separator> for crate::road::Semantic {
             Separator::Modal { .. } => Self::Modal,
             Separator::_Buffer { .. } => Self::Buffer,
             Separator::Kerb { .. } => Self::Kerb,
-            Separator::_Verge { .. } => Self::Verge,
+            Separator::Verge { .. } => Self::Verge,
         }
     }
 }
@@ -93,6 +95,9 @@ pub(in crate::transform::tags_to_lanes) fn lane_pair_to_semantic_separator(
         ([(_, Some(inside_designated)), (_, Some(outside_designated))], _)
             if inside_designated != outside_designated =>
         {
+            if let Some(CyclewayVariant::Track) = outside.cycleway_variant {
+                return Some(Separator::Verge { width: Infer::None });
+            }
             Some(Separator::Modal {
                 speed: inside.max_speed.map(SpeedClass::from),
                 change: LaneChange::default(),
@@ -165,11 +170,11 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
         // Foot
         Separator::Kerb { .. } => Some(Lane::Separator {
             semantic: Some(separator.into()),
-            markings: Markings::new(vec![Marking {
+            markings: Some(Markings::new(vec![Marking {
                 style: Style::KerbUp,
                 color: None,
                 width: Some(Marking::DEFAULT_WIDTH),
-            }]),
+            }])),
         }),
         // Shoulder
         Separator::Shoulder { .. } => {
@@ -180,22 +185,22 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                             semantic: Some(separator.into()),
                             // https://puc.overheid.nl/rijkswaterstaat/doc/PUC_125514_31/
                             // 4.2.5 and 4.2.6
-                            markings: Markings::new(vec![Marking {
+                            markings: Some(Markings::new(vec![Marking {
                                 style: Style::SolidLine,
                                 color: Some(Color::White),
                                 width: Some(Marking::DEFAULT_WIDTH),
-                            }]),
+                            }])),
                         });
                     }
                 }
             }
             Some(Lane::Separator {
                 semantic: Some(separator.into()),
-                markings: Markings::new(vec![Marking {
+                markings: Some(Markings::new(vec![Marking {
                     style: Style::SolidLine,
                     color: Some(Color::White),
                     width: Some(Marking::DEFAULT_WIDTH),
-                }]),
+                }])),
             })
         },
         Separator::Centre {
@@ -208,7 +213,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                             semantic: Some(separator.into()),
                             // https://puc.overheid.nl/rijkswaterstaat/doc/PUC_125514_31/
                             // 4.2.5 and 4.2.6
-                            markings: Markings::new(vec![
+                            markings: Some(Markings::new(vec![
                                 Marking {
                                     style: Style::BrokenLine,
                                     color: Some(Color::White),
@@ -224,7 +229,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                                     color: Some(Color::White),
                                     width: Some(Metre::new(0.15_f64)),
                                 },
-                            ]),
+                            ])),
                         });
                     }
                 }
@@ -236,11 +241,11 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                         // https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/782724/traffic-signs-manual-chapter-03.pdf
                         // Traffic Signs Manual, Chapter 3
                         // Page 90, 9.3.3
-                        markings: Markings::new(vec![Marking {
+                        markings: Some(Markings::new(vec![Marking {
                             style: Style::BrokenLine,
                             color: Some(Color::White),
                             width: Some(Metre::new(0.100_f64)),
-                        }]),
+                        }])),
                     });
                 }
             }
@@ -251,7 +256,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
             Some(Lane::Separator {
                 semantic: Some(separator.into()),
                 markings: if *more_than_2_lanes {
-                    Markings::new(vec![
+                    Some(Markings::new(vec![
                         Marking {
                             style: Style::SolidLine,
                             color: Some(Color::White),
@@ -267,23 +272,23 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                             color: Some(Color::White),
                             width: Some(Marking::DEFAULT_WIDTH),
                         },
-                    ])
+                    ]))
                 } else {
-                    Markings::new(vec![Marking {
+                    Some(Markings::new(vec![Marking {
                         style: Style::DottedLine,
                         color: Some(locale.separator_motor_color()),
                         width: Some(locale.separator_motor_width()),
-                    }])
+                    }]))
                 },
             })
         },
         Separator::Lane { .. } => Some(Lane::Separator {
             semantic: Some(separator.into()),
-            markings: Markings::new(vec![Marking {
+            markings: Some(Markings::new(vec![Marking {
                 style: Style::DottedLine,
                 color: Some(Color::White),
                 width: Some(Marking::DEFAULT_WIDTH),
-            }]),
+            }])),
         }),
         // Modal separation
         Separator::Modal {
@@ -298,11 +303,11 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                             // https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/782724/traffic-signs-manual-chapter-03.pdf
                             // Traffic Signs Manual, Chapter 3
                             // Page 90, 9.3.3
-                            markings: Markings::new(vec![Marking {
+                            markings: Some(Markings::new(vec![Marking {
                                 style: Style::SolidLine,
                                 color: Some(Color::White),
                                 width: Some(Metre::new(0.250_f64)),
-                            }]),
+                            }])),
                         });
                     }
                     if designated == &Designated::Bicycle {
@@ -311,11 +316,11 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
                             // https://assets.publishing.service.gov.uk/government/uploads/system/uploads/attachment_data/file/782724/traffic-signs-manual-chapter-03.pdf
                             // Traffic Signs Manual, Chapter 3
                             // Page 90, 9.3.3
-                            markings: Markings::new(vec![Marking {
+                            markings: Some(Markings::new(vec![Marking {
                                 style: Style::SolidLine,
                                 color: Some(Color::White),
                                 width: Some(Metre::new(0.150_f64)),
-                            }]),
+                            }])),
                         });
                     }
                 }
@@ -326,26 +331,30 @@ pub(in crate::transform::tags_to_lanes) fn semantic_separator_to_lane(
             ));
             Some(Lane::Separator {
                 semantic: Some(separator.into()),
-                markings: Markings::new(vec![Marking {
+                markings: Some(Markings::new(vec![Marking {
                     style: Style::SolidLine,
                     color: Some(Color::White),
                     width: Some(Marking::DEFAULT_WIDTH),
-                }]),
+                }])),
             })
         },
-        // TODO: error return
-        _ => {
+        Separator::Verge { width: _width } => Some(Lane::Separator {
+            semantic: Some(separator.into()),
+            markings: None,
+        }),
+        // TODO
+        Separator::_Buffer { .. } => {
             warnings.push(TagsToLanesMsg::separator_unknown(
                 inside.clone(),
                 outside.clone(),
             ));
             Some(Lane::Separator {
                 semantic: Some(separator.into()),
-                markings: Markings::new(vec![Marking {
+                markings: Some(Markings::new(vec![Marking {
                     style: Style::BrokenLine,
                     color: Some(Color::Red),
                     width: Some(Marking::DEFAULT_WIDTH),
-                }]),
+                }])),
             })
         },
     }
@@ -387,7 +396,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_edge_separator_to_lane(
     match separator {
         EdgeSeparator::Hard { .. } => Some(Lane::Separator {
             semantic: Some(separator.into()),
-            markings: Markings::new(vec![
+            markings: Some(Markings::new(vec![
                 Marking {
                     style: Style::SolidLine,
                     color: Some(Color::Red),
@@ -403,7 +412,7 @@ pub(in crate::transform::tags_to_lanes) fn semantic_edge_separator_to_lane(
                     color: Some(Color::Red),
                     width: Some(Metre::new(0.100)),
                 },
-            ]),
+            ])),
         }),
     }
 }
@@ -416,10 +425,10 @@ pub(super) fn lane_to_inner_edge_separator(_lane: &LaneBuilder) -> Option<Lane> 
     Some(Lane::Separator {
         // TODO, semantic separator
         semantic: None,
-        markings: Markings::new(vec![Marking {
+        markings: Some(Markings::new(vec![Marking {
             style: Style::SolidLine,
             color: Some(Color::White),
             width: Some(Marking::DEFAULT_WIDTH),
-        }]),
+        }])),
     })
 }

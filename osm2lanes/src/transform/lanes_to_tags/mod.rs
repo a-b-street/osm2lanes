@@ -326,7 +326,7 @@ fn set_parking(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
         if let Some(Marking {
             color: Some(Color::Red),
             ..
-        }) = markings.first()
+        }) = markings.as_ref().and_then(|m| m.first())
         {
             tags.checked_insert("parking:condition:both", "no_stopping")?;
         }

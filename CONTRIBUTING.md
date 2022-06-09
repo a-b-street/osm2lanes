@@ -41,4 +41,4 @@ trunk serve
 ```
 
 - The web demo is updated with every push on `main`, [see Workflow](./.github/workflows/web.yml)
-- The html website is part of the rest implementation at [`/rust/osm2lanes-web` ](./rust/osm2lanes-web)
+- The html website is part of the rest implementation at [`/osm2lanes-web` ](./osm2lanes-web)

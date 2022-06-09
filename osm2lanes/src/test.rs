@@ -153,7 +153,8 @@ mod tests {
 
     use super::*;
     use crate::locale::{DrivingSide, Locale};
-    use crate::road::{Lane, Marking, Printable, Road};
+    use crate::metric::{Metre, Speed};
+    use crate::road::{AccessByType, Color, Lane, Marking, Markings, Printable, Road, Semantic};
     use crate::transform::{
         lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadError, RoadFromTags, RoadWarnings,
         TagsToLanesConfig,
@@ -161,43 +162,49 @@ mod tests {
 
     static LOG_INIT: std::sync::Once = std::sync::Once::new();
 
-    fn approx_eq<T: PartialEq>(actual: &Option<T>, expected: &Option<T>) -> bool {
-        match (actual, expected) {
-            (None | Some(_), None) => true,
-            (None, Some(_)) => false,
-            (Some(actual), Some(expected)) => actual == expected,
+    trait EqExpected<Exp: ?Sized = Self> {
+        fn eq_exp(&self, expected: &Exp) -> bool;
+    }
+
+    impl<T: EqExpected> EqExpected for Option<T> {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            match (self, expected) {
+                (None, None) | (Some(_), None) => true,
+                (None, Some(_)) => false,
+                (Some(actual), Some(expected)) => actual.eq_exp(expected),
+            }
         }
     }
 
-    impl Road {
-        /// Eq where None is treaty as always equal
-        fn approx_eq(&self, expected: &Self) -> bool {
+    impl EqExpected for Road {
+        fn eq_exp(&self, expected: &Self) -> bool {
             if self.lanes.len() != expected.lanes.len() {
                 return false;
             }
             self.lanes
                 .iter()
                 .zip(expected.lanes.iter())
-                .all(|(actual, expected)| actual.approx_eq(expected))
+                .all(|(actual, expected)| actual.eq_exp(expected))
         }
     }
 
-    impl Lane {
-        /// Eq where None is treaty as always equal
-        fn approx_eq(&self, expected: &Self) -> bool {
+    impl EqExpected for Lane {
+        fn eq_exp(&self, expected: &Self) -> bool {
             #[allow(clippy::unnested_or_patterns)]
             match (self, expected) {
                 (
                     Lane::Separator {
-                        markings: actual, ..
+                        markings: markings_actual,
+                        semantic: semantic_actual,
                     },
                     Lane::Separator {
-                        markings: expected, ..
+                        markings: markings_expected,
+                        semantic: semantic_expected,
                     },
-                ) => actual
-                    .iter()
-                    .zip(expected.iter())
-                    .all(|(actual, expected)| actual.approx_eq(expected)),
+                ) => {
+                    markings_actual.eq_exp(&markings_expected)
+                        && semantic_actual.eq_exp(&semantic_expected)
+                },
                 (
                     Lane::Travel {
                         designated: actual_designated,
@@ -216,9 +223,9 @@ mod tests {
                 ) => {
                     actual_designated == expected_designated
                         && actual_direction == expected_direction
-                        && approx_eq(actual_width, expected_width)
-                        && approx_eq(actual_max_speed, expected_max_speed)
-                        && approx_eq(actual_access, expected_access)
+                        && actual_width.eq_exp(&expected_width)
+                        && actual_max_speed.eq_exp(&expected_max_speed)
+                        && actual_access.eq_exp(&expected_access)
                 },
                 (
                     Lane::Parking {
@@ -234,7 +241,7 @@ mod tests {
                 ) => {
                     actual_designated == expected_designated
                         && actual_direction == expected_direction
-                        && approx_eq(actual_width, expected_width)
+                        && actual_width.eq_exp(&expected_width)
                 },
                 (
                     Lane::Shoulder {
@@ -243,18 +250,55 @@ mod tests {
                     Lane::Shoulder {
                         width: expected_width,
                     },
-                ) => approx_eq(actual_width, expected_width),
+                ) => actual_width.eq_exp(&expected_width),
                 (actual, expected) => actual == expected,
             }
         }
     }
 
-    impl Marking {
-        /// Eq where None is treaty as always equal
-        fn approx_eq(&self, expected: &Self) -> bool {
+    impl EqExpected for Markings {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self.iter()
+                .zip(expected.iter())
+                .all(|(actual, expected)| actual.eq_exp(expected))
+        }
+    }
+
+    impl EqExpected for Marking {
+        fn eq_exp(&self, expected: &Self) -> bool {
             self.style == expected.style
-                && approx_eq(&self.color, &expected.color)
-                && approx_eq(&self.width, &expected.width)
+                && self.color.eq_exp(&expected.color)
+                && self.width.eq_exp(&expected.width)
+        }
+    }
+
+    impl EqExpected for Semantic {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self == expected
+        }
+    }
+
+    impl EqExpected for Metre {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self == expected
+        }
+    }
+
+    impl EqExpected for Speed {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self == expected
+        }
+    }
+
+    impl EqExpected for AccessByType {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self == expected
+        }
+    }
+
+    impl EqExpected for Color {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self == expected
         }
     }
 
@@ -354,7 +398,11 @@ mod tests {
                 .lanes
                 .iter()
                 .filter_map(|lane| {
-                    if let Lane::Separator { markings, .. } = lane {
+                    if let Lane::Separator {
+                        markings: Some(markings),
+                        ..
+                    } = lane
+                    {
                         Some(
                             markings
                                 .iter()
@@ -398,7 +446,11 @@ mod tests {
                 .lanes
                 .iter()
                 .filter_map(|lane| {
-                    if let Lane::Separator { markings, .. } = lane {
+                    if let Lane::Separator {
+                        markings: Some(markings),
+                        ..
+                    } = lane
+                    {
                         Some(
                             markings
                                 .iter()
@@ -447,7 +499,7 @@ mod tests {
             match road_from_tags {
                 Ok(road_from_tags) => {
                     let (actual_road, warnings) = road_from_tags.into_filtered_road(test);
-                    if actual_road.approx_eq(&expected_road) {
+                    if actual_road.eq_exp(&expected_road) {
                         if test.test_expects_warnings() && warnings.is_empty() {
                             test.print();
                             println!("Expected warnings. Try removing `expect_warnings`.");
@@ -527,7 +579,7 @@ mod tests {
             )
             .unwrap();
             let (output_road, warnings) = output_lanes.into_filtered_road(test);
-            if !output_road.approx_eq(&input_road) {
+            if !output_road.eq_exp(&input_road) {
                 test.print();
                 println!("From:");
                 println!("    {}", stringify_lane_types(&input_road));
