@@ -30,6 +30,7 @@ pub enum HighwayType {
     Steps,
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub enum HighwayImportance {
     Motorway,

@@ -189,7 +189,7 @@ pub fn tags_to_lanes(
 
     let (generic_schemes, remainder_tags) = Schemes::from_tags(tags);
     if let Some(error_tags) = remainder_tags {
-        warnings.push(TagsToLanesMsg::unsupported_tags(error_tags))
+        warnings.push(TagsToLanesMsg::unsupported_tags(error_tags));
     }
 
     // Parse each scheme independently ahead of time, to simplify the process and ensure local consistency

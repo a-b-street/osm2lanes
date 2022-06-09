@@ -76,9 +76,8 @@ impl<'tag, T> Tagged<'tag, T> {
     /// Panics
     pub fn unwrap(self) -> T {
         match self {
-            Tagged::None => panic!(),
+            Tagged::None | Tagged::Unknown(_, _) => panic!(),
             Tagged::Some(v) => v,
-            Tagged::Unknown(_, _) => panic!(),
         }
     }
     pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Tagged<'tag, U> {
@@ -88,12 +87,13 @@ impl<'tag, T> Tagged<'tag, T> {
             Tagged::Unknown(k, v) => Tagged::Unknown(k, v),
         }
     }
+    // TODO: panics
     pub fn or_insert(self, tags: &mut Tags) -> Option<T> {
         match self {
             Tagged::None => None,
             Tagged::Some(val) => Some(val),
             Tagged::Unknown(key, val) => {
-                let _ = tags.checked_insert(key, val);
+                tags.checked_insert(key, val).unwrap();
                 None
             },
         }
