@@ -208,7 +208,7 @@ impl Highway {
         }
     }
 
-    /// Active Highway
+    /// Highway under Construction
     #[must_use]
     pub fn construction(r#type: HighwayType) -> Self {
         Self {
@@ -217,7 +217,7 @@ impl Highway {
         }
     }
 
-    /// Active Highway
+    /// Highway Proposed
     #[must_use]
     pub fn proposed(r#type: HighwayType) -> Self {
         Self {
@@ -226,7 +226,7 @@ impl Highway {
         }
     }
 
-    /// Is Highway Construction
+    /// Is Highway under Construction
     #[must_use]
     pub fn is_construction(&self) -> bool {
         matches!(
