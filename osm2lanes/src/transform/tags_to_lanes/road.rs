@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::iter;
 
-use osm_tag_schemes::{Highway, HighwayType, Lifecycle, Schemes};
+use osm_tag_schemes::{Highway, Schemes};
 use osm_tags::{TagKey, Tags};
 
 use super::infer::Infer;
@@ -156,31 +156,6 @@ impl RoadBuilder {
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
         let oneway = crate_schemes.oneway;
-
-        fn is_supported_road(highway: &Highway) -> bool {
-            matches!(
-                highway.r#type(),
-                HighwayType::Classified(_)
-                    | HighwayType::Link(_)
-                    | HighwayType::Residential
-                    | HighwayType::Service
-                    | HighwayType::Unclassified
-                    | HighwayType::UnknownRoad,
-            ) && !highway.is_proposed()
-        }
-
-        fn is_supported_non_motorized(highway: &Highway) -> bool {
-            matches!(
-                highway.r#type(),
-                HighwayType::Cycleway
-                    | HighwayType::Footway
-                    | HighwayType::Path
-                    | HighwayType::Pedestrian
-                    | HighwayType::Steps
-                    | HighwayType::Track
-            ) && !highway.is_construction()
-                && !highway.is_proposed()
-        }
 
         let highway = match &generic_schemes.highway {
             Some(highway) => highway,

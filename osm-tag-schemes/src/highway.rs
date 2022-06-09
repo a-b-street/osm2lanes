@@ -4,6 +4,7 @@ use strum::ParseError;
 
 use crate::{keys, FromTags, Tagged};
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum HighwayType {
     Classified(HighwayImportance),
@@ -182,6 +183,7 @@ impl Highway {
     ///
     /// If highway missing return None
     /// If highway unknown return the unknown value
+    #[must_use]
     pub fn from_tags(tags: &Tags) -> Tagged<Self> {
         match HighwayType::from_tags(tags, &keys::HIGHWAY) {
             Tagged::None => Tagged::None,
