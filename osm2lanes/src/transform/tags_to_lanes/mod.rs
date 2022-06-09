@@ -3,9 +3,11 @@
 use std::borrow::Borrow;
 use std::hash::Hash;
 
+use osm_tag_schemes::Schemes;
+use osm_tags::Tags;
+
 use crate::locale::Locale;
 use crate::road::Road;
-use crate::tag_keys::Tags;
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::RoadFromTags;
 
@@ -86,9 +88,11 @@ impl Default for Config {
 }
 
 mod oneway {
+    use osm_tag_schemes::keys::ONEWAY;
+    use osm_tags::Tags;
+
     use super::TagsToLanesMsg;
     use crate::locale::Locale;
-    use crate::tag_keys::{Tags, ONEWAY};
     use crate::transform::RoadWarnings;
 
     #[derive(Clone, Copy, PartialEq)]
@@ -183,15 +187,32 @@ pub fn tags_to_lanes(
     // Early return if we find unimplemented or unsupported tags.
     unsupported(tags, locale, &mut warnings)?;
 
+    let (generic_schemes, remainder_tags) = Schemes::from_tags(tags);
+    if let Some(error_tags) = remainder_tags {
+        warnings.push(TagsToLanesMsg::unsupported_tags(error_tags))
+    }
+
     // Parse each scheme independently ahead of time, to simplify the process and ensure local consistency
-    let schemes = TagSchemes::from_tags(tags, locale, &mut warnings)?;
+    let crate_schemes = TagSchemes::from_tags(tags, locale, &mut warnings)?;
 
     // Create the road builder and start giving it schemes.
-    let mut road: RoadBuilder = RoadBuilder::from(&schemes, tags, locale, &mut warnings)?;
+    let mut road: RoadBuilder = RoadBuilder::from(
+        &generic_schemes,
+        &crate_schemes,
+        tags,
+        locale,
+        &mut warnings,
+    )?;
 
     modes::non_motorized(tags, locale, &mut road, &mut warnings)?;
 
-    modes::bus(&schemes.busway, tags, locale, &mut road, &mut warnings)?;
+    modes::bus(
+        &crate_schemes.busway,
+        tags,
+        locale,
+        &mut road,
+        &mut warnings,
+    )?;
 
     modes::bicycle(tags, locale, &mut road, &mut warnings)?;
 
@@ -203,7 +224,15 @@ pub fn tags_to_lanes(
         road.into_ltr(tags, locale, config.include_separators, &mut warnings)?;
 
     let road_from_tags = RoadFromTags {
-        road: Road { lanes, highway },
+        road: Road {
+            name: generic_schemes.name,
+            r#ref: generic_schemes.r#ref,
+            highway,
+            lit: generic_schemes.lit,
+            tracktype: generic_schemes.tracktype,
+            smoothness: generic_schemes.smoothness,
+            lanes,
+        },
         warnings,
     };
 

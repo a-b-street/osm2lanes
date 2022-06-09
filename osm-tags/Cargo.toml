@@ -5,7 +5,7 @@ edition = "2021"
 description = "OSM Tags Datatype"
 repository = "https://github.com/a-b-street/osm2lanes"
 license = "Apache 2.0"
-keywords = ["osm", "tag"]
+keywords = ["openstreetmap", "osm", "tag"]
 authors = [
     "Dustin Carlino <dabreegster@gmail.com>",
     "Michael Droogleever Fortuyn <droogmic@gmail.com>",

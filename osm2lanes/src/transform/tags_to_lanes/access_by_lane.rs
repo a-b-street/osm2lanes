@@ -1,9 +1,10 @@
 use std::borrow::Borrow;
 use std::hash::Hash;
 
+use osm_tags::{TagKey, Tags};
+
 use super::road::RoadBuilder;
 use crate::locale::Locale;
-use crate::tag::{TagKey, Tags};
 use crate::transform::tags_to_lanes::TagsToLanesMsg;
 use crate::transform::RoadWarnings;
 

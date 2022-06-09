@@ -1,8 +1,9 @@
+use osm_tag_schemes::{Highway, HighwayType};
+use osm_tags::Tags;
 use serde::Deserialize;
 
 use crate::locale::DrivingSide;
 use crate::road::{Lane, Road};
-use crate::tag::{Highway, HighwayType, Tags};
 
 #[derive(Clone, Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
@@ -65,7 +66,12 @@ impl TestCase {
         match &self.expected {
             Expected::Road(road) => road.clone(),
             Expected::Output(lanes) => Road {
+                name: None,
+                r#ref: None,
                 highway: Highway::active(HighwayType::UnknownRoad),
+                lit: None,
+                tracktype: None,
+                smoothness: None,
                 lanes: lanes.clone(),
             },
         }
@@ -148,7 +154,6 @@ mod tests {
     use super::*;
     use crate::locale::{DrivingSide, Locale};
     use crate::road::{Lane, Marking, Printable, Road};
-    use crate::tag::Highway;
     use crate::transform::{
         lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadError, RoadFromTags, RoadWarnings,
         TagsToLanesConfig,
@@ -299,13 +304,18 @@ mod tests {
 
         fn expected_road(&self) -> Road {
             Road {
+                name: None,
+                r#ref: None,
+                highway: Highway::from_tags(&self.tags).unwrap(),
+                lit: None,
+                tracktype: None,
+                smoothness: None,
                 lanes: self
                     .lanes()
                     .iter()
                     .filter(|lane| self.is_lane_enabled(lane))
                     .cloned()
                     .collect(),
-                highway: Highway::from_tags(&self.tags).unwrap(),
             }
         }
     }
@@ -315,13 +325,18 @@ mod tests {
         fn into_filtered_road(self, test: &TestCase) -> (Road, RoadWarnings) {
             (
                 Road {
+                    name: None,
+                    r#ref: None,
+                    highway: self.road.highway,
+                    lit: None,
+                    tracktype: None,
+                    smoothness: None,
                     lanes: self
                         .road
                         .lanes
                         .into_iter()
                         .filter(|lane| test.is_lane_enabled(lane))
                         .collect(),
-                    highway: self.road.highway,
                 },
                 self.warnings,
             )

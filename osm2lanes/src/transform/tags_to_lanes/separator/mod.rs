@@ -1,9 +1,9 @@
 use celes::Country;
+use osm_tags::Tags;
 
 use crate::locale::Locale;
 use crate::metric::Metre;
 use crate::road::{Color, Designated, Direction, Lane, Marking, Markings, Style};
-use crate::tag::Tags;
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 mod semantic;

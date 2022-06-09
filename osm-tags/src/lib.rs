@@ -130,6 +130,12 @@ impl Tags {
 
     /// Expose data as vector of pairs
     #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
+
+    /// Expose data as vector of pairs
+    #[must_use]
     pub fn to_str_pairs(&self) -> Vec<(&str, &str)> {
         self.map
             .iter()

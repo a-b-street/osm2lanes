@@ -5,7 +5,7 @@ edition = "2021"
 description = "OSM Tag Scheme Definitions"
 repository = "https://github.com/a-b-street/osm2lanes"
 license = "Apache 2.0"
-keywords = ["osm", "tag"]
+keywords = ["openstreetmap", "osm", "tag"]
 authors = [
     "Dustin Carlino <dabreegster@gmail.com>",
     "Michael Droogleever Fortuyn <droogmic@gmail.com>",
@@ -14,3 +14,4 @@ authors = [
 [dependencies]
 osm-tags = { path = "../osm-tags" }
 serde = { version = "1", features = ["derive"] }
+strum = { version = "0.24", features = ["derive"] }

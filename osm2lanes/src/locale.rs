@@ -1,9 +1,9 @@
 pub use celes::Country;
+use osm_tag_schemes::{HighwayImportance, HighwayType};
 use serde::{Deserialize, Serialize};
 
 use crate::metric::Metre;
 use crate::road::{Color, Designated};
-use crate::tag::{HighwayImportance, HighwayType};
 
 /// Context about the place where an OSM way exists.
 #[derive(Debug, PartialEq, Serialize, Deserialize)]

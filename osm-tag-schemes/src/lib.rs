@@ -45,44 +45,143 @@
     clippy::use_debug
 )]
 
+use std::borrow::Borrow;
+use std::hash::Hash;
+use std::str::FromStr;
+
+use osm_tags::{TagKey, Tags};
+
+pub mod keys;
+
 mod highway;
 pub use highway::{Highway, HighwayImportance, HighwayType, Lifecycle};
-use serde::{Deserialize, Serialize};
 
-/// Access variants from <https://wiki.openstreetmap.org/wiki/Key:access#List_of_possible_values>
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Access {
-    Yes,
-    No,
-    Private,
-    Permissive,
-    Permit,
-    Destination,
-    Delivery,
-    Customers,
-    Designated,
+mod track_type;
+pub use track_type::TrackType;
+
+mod smoothness;
+pub use smoothness::Smoothness;
+
+mod access;
+pub use access::Access;
+
+pub enum Tagged<'tag, T> {
+    /// Untagged
+    None,
+    Some(T),
+    Unknown(TagKey, &'tag str),
 }
 
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TrackType {
-    Grade1,
-    Grade2,
-    Grade3,
-    Grade4,
-    Grade5,
+impl<'tag, T> Tagged<'tag, T> {
+    /// Panics
+    pub fn unwrap(self) -> T {
+        match self {
+            Tagged::None => panic!(),
+            Tagged::Some(v) => v,
+            Tagged::Unknown(_, _) => panic!(),
+        }
+    }
+    pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Tagged<'tag, U> {
+        match self {
+            Tagged::None => Tagged::None,
+            Tagged::Some(t) => Tagged::Some(f(t)),
+            Tagged::Unknown(k, v) => Tagged::Unknown(k, v),
+        }
+    }
+    pub fn or_insert(self, tags: &mut Tags) -> Option<T> {
+        match self {
+            Tagged::None => None,
+            Tagged::Some(val) => Some(val),
+            Tagged::Unknown(key, val) => {
+                let _ = tags.checked_insert(key, val);
+                None
+            },
+        }
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Smoothness {
-    Impassable,
-    VeryHorrible,
-    Horrible,
-    VeryBad,
-    Bad,
-    Intermediate,
-    Good,
-    Excellent,
+trait FromTags: FromStr {
+    /// From tags given key
+    fn from_tags<'tag, Q>(tags: &'tag Tags, key: &Q) -> Tagged<'tag, Self>
+    where
+        TagKey: Borrow<Q>,
+        Q: Ord + Hash + Eq + ?Sized,
+    {
+        match tags.get(&key) {
+            Some(s) => match s.parse() {
+                Ok(val) => Tagged::Some(val),
+                Err(_) => Tagged::Unknown(keys::TRACK_TYPE, s),
+            },
+            None => Tagged::None,
+        }
+    }
+}
+
+// Blanket impl
+impl<T: FromStr> FromTags for T {}
+
+trait FromTagsDefault: FromTags {
+    const KEY: TagKey;
+
+    /// From tags with default key
+    fn from_tags_default(tags: &Tags) -> Tagged<Self> {
+        Self::from_tags(tags, &Self::KEY)
+    }
+}
+
+mod lit {
+    use serde::{Deserialize, Serialize};
+    use strum::{EnumString, IntoStaticStr};
+
+    use crate::{keys, FromTagsDefault};
+
+    #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, Serialize, Deserialize)]
+    #[serde(rename_all = "snake_case")]
+    #[derive(IntoStaticStr, EnumString)]
+    #[strum(serialize_all = "kebab-case")]
+    pub enum Lit {
+        Yes,
+        No,
+        SunsetSunrise,
+        Automatic,
+    }
+
+    impl FromTagsDefault for Lit {
+        const KEY: osm_tags::TagKey = keys::LIT;
+    }
+}
+pub use lit::Lit;
+
+pub struct Schemes {
+    // Generic
+    pub name: Option<String>,
+    pub r#ref: Option<String>,
+
+    // Ways
+    pub highway: Option<Highway>,
+    pub lit: Option<Lit>,
+    pub tracktype: Option<TrackType>,
+    pub smoothness: Option<Smoothness>,
+}
+
+impl Schemes {
+    pub fn from_tags(tags: &Tags) -> (Self, Option<Tags>) {
+        let mut unknown_tags = Tags::default();
+        let schemes = Self {
+            name: tags.get(&keys::NAME).map(|s| s.to_owned()),
+            r#ref: tags.get(&keys::REF).map(ToOwned::to_owned),
+            highway: Highway::from_tags(&tags).or_insert(&mut unknown_tags),
+            lit: Lit::from_tags_default(&tags).or_insert(&mut unknown_tags),
+            tracktype: TrackType::from_tags_default(&tags).or_insert(&mut unknown_tags),
+            smoothness: Smoothness::from_tags_default(&tags).or_insert(&mut unknown_tags),
+        };
+        (
+            schemes,
+            if unknown_tags.is_empty() {
+                None
+            } else {
+                Some(unknown_tags)
+            },
+        )
+    }
 }

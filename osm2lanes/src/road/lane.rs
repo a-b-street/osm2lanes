@@ -1,9 +1,9 @@
+use osm_tag_schemes::{Access as AccessTagValue, HighwayType};
 use serde::{Deserialize, Serialize};
 
 use crate::locale::Locale;
 use crate::metric::{Metre, Speed};
 use crate::road::separator::{Markings, Semantic};
-use crate::tag::{Access as AccessTagValue, HighwayType};
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
