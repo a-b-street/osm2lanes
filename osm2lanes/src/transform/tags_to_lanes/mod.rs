@@ -95,7 +95,7 @@ mod oneway {
     use crate::locale::Locale;
     use crate::transform::RoadWarnings;
 
-    #[derive(Clone, Copy, PartialEq)]
+    #[derive(Clone, Copy, PartialEq, Eq)]
     pub enum Oneway {
         Yes,
         No,

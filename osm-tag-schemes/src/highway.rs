@@ -5,7 +5,7 @@ use strum::ParseError;
 use crate::{keys, FromTags, Tagged};
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum HighwayType {
     Classified(HighwayImportance),
     Link(HighwayImportance),
@@ -31,7 +31,7 @@ pub enum HighwayType {
 }
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd)]
 pub enum HighwayImportance {
     Motorway,
     Trunk,
@@ -52,7 +52,7 @@ impl std::fmt::Display for HighwayImportance {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum NonTravel {
     Escape,
     Raceway,
@@ -126,7 +126,7 @@ impl std::fmt::Display for HighwayType {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Lifecycle {
     Active,
     Construction,
@@ -144,7 +144,7 @@ where
     T::default().eq(v)
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Highway {
     #[serde(
         serialize_with = "serialize_display",

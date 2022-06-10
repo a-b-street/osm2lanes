@@ -33,7 +33,7 @@ impl From<VariantError> for TagsToLanesMsg {
 
 struct Opposite;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(in crate::transform::tags_to_lanes) enum Variant {
     SharedMotor,
     // SharedBus,

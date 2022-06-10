@@ -158,7 +158,7 @@ mod speed {
         value: f64,
     }
 
-    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
     #[serde(rename_all = "snake_case")]
     enum SpeedUnit {
         Kph,
