@@ -58,7 +58,7 @@ pub(in crate::transform::tags_to_lanes) fn unsupported(
     ];
     if ACCESS_KEYS.into_iter().any(|k| tags.get(k).is_some()) {
         warnings.push(TagsToLanesMsg::unimplemented(
-            "access",
+            String::from("access"),
             // TODO, TagTree should support subset
             tags.subset(ACCESS_KEYS),
         ));

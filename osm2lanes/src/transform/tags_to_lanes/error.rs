@@ -11,7 +11,7 @@ use crate::transform::tags_to_lanes::LaneBuilder;
 /// use osm2lanes::transform::TagsToLanesMsg;
 /// let _ = TagsToLanesMsg::deprecated_tag("foo", "bar");
 /// let _ = TagsToLanesMsg::unsupported_tag("foo", "bar");
-/// let _ = TagsToLanesMsg::unsupported_str("foo=bar because x and y");
+/// let _ = TagsToLanesMsg::unsupported_str(String::from("foo=bar because x and y"));
 /// ```
 #[derive(Clone, Debug)]
 pub struct TagsToLanesMsg {
@@ -95,11 +95,11 @@ impl TagsToLanesMsg {
 
     #[must_use]
     #[track_caller]
-    pub fn unsupported(description: &str, tags: Tags) -> Self {
+    pub fn unsupported(description: String, tags: Tags) -> Self {
         TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Unsupported {
-                description: Some(description.to_owned()),
+                description: Some(description),
                 tags: Some(tags),
             },
         }
@@ -131,11 +131,11 @@ impl TagsToLanesMsg {
 
     #[must_use]
     #[track_caller]
-    pub fn unsupported_str(description: &str) -> Self {
+    pub fn unsupported_str(description: String) -> Self {
         TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Unsupported {
-                description: Some(description.to_owned()),
+                description: Some(description),
                 tags: None,
             },
         }
@@ -143,11 +143,11 @@ impl TagsToLanesMsg {
 
     #[must_use]
     #[track_caller]
-    pub fn unimplemented(description: &str, tags: Tags) -> Self {
+    pub fn unimplemented(description: String, tags: Tags) -> Self {
         TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Unimplemented {
-                description: Some(description.to_owned()),
+                description: Some(description),
                 tags: Some(tags),
             },
         }
@@ -203,11 +203,11 @@ impl TagsToLanesMsg {
 
     #[must_use]
     #[track_caller]
-    pub fn ambiguous_str(description: &str) -> Self {
+    pub fn ambiguous_str(description: String) -> Self {
         TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Ambiguous {
-                description: Some(description.to_owned()),
+                description: Some(description),
                 tags: None,
             },
         }

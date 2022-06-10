@@ -36,7 +36,7 @@ pub(in crate::transform::tags_to_lanes) fn non_motorized(
         }))?;
         if v == "steps" {
             warnings.push(TagsToLanesMsg::unimplemented(
-                "steps becomes sidewalk",
+                String::from("steps becomes sidewalk"),
                 tags.subset(&[HIGHWAY]),
             ));
         }

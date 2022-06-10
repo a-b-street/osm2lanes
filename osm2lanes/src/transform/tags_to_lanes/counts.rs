@@ -155,7 +155,7 @@ impl Counts {
                         // Distribute normal lanes evenly.
                         let remaining_lanes = l - both_ways - bus.forward - bus.backward;
                         if remaining_lanes % 2 != 0 {
-                            warnings.push(TagsToLanesMsg::ambiguous_str("Total lane count cannot be evenly divided between the forward and backward"));
+                            warnings.push(TagsToLanesMsg::ambiguous_str(String::from("Total lane count cannot be evenly divided between the forward and backward")));
                         }
                         let half = (remaining_lanes + 1) / 2; // usize division rounded up.
                         Self::Directional {
@@ -224,7 +224,7 @@ impl LanesDirectionScheme {
                     true
                 } else {
                     warnings.push(TagsToLanesMsg::unsupported(
-                        "lanes:both_ways must be 1",
+                        String::from("lanes:both_ways must be 1"),
                         tags.subset(&[LANES + "both_ways"]),
                     ));
                     false

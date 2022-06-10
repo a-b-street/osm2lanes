@@ -60,7 +60,7 @@ where
     tags.get(k)
         .map(|a| {
             Access::split(a).map_err(|a| {
-                TagsToLanesMsg::unsupported(&format!("lanes access {}", a), tags.subset([k]))
+                TagsToLanesMsg::unsupported(format!("lanes access {}", a), tags.subset([k]))
             })
         })
         .transpose()
@@ -92,7 +92,7 @@ impl LaneDependentAccess {
                 (Some(lanes), (None, None)) => {
                     if lanes.len() != road.len() {
                         return Err(TagsToLanesMsg::unsupported(
-                            "lane count mismatch",
+                            String::from("lane count mismatch"),
                             tags.subset([key, &LANES, &(LANES + "forward"), &(LANES + "backward")]),
                         ));
                     }
@@ -103,7 +103,7 @@ impl LaneDependentAccess {
                 (total, (Some(forward), Some(backward))) => {
                     if forward.len().checked_add(backward.len()) != Some(road.len()) {
                         return Err(TagsToLanesMsg::unsupported(
-                            "lane count mismatch",
+                            String::from("lane count mismatch"),
                             tags.subset([
                                 &key_forward,
                                 &key_backward,

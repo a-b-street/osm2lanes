@@ -434,7 +434,9 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
             Variant::Lane | Variant::Track => road.push_backward_outside(LaneBuilder::cycle(way)),
             Variant::SharedMotor => {
                 road.forward_outside_mut()
-                    .ok_or_else(|| TagsToLanesMsg::unsupported_str("no forward lanes for busway"))?
+                    .ok_or_else(|| {
+                        TagsToLanesMsg::unsupported_str(String::from("no forward lanes for busway"))
+                    })?
                     .access
                     .bicycle = Infer::Direct(AccessAndDirection {
                     access: Access::Yes,

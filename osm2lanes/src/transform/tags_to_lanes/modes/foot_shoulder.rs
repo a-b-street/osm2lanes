@@ -204,7 +204,7 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
                 },
                 (Sidewalk::Yes, Shoulder::Yes) => {
                     return Err(TagsToLanesMsg::unsupported(
-                        "shoulder and sidewalk on same side",
+                        String::from("shoulder and sidewalk on same side"),
                         tags.subset(&[SIDEWALK, SHOULDER]),
                     )
                     .into());
