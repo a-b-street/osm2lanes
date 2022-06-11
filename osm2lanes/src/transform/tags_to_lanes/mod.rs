@@ -89,7 +89,7 @@ impl Default for Config {
 
 mod oneway {
     use osm_tag_schemes::keys::ONEWAY;
-    use osm_tags::Tags;
+    use osm_tags::{TagKey, Tags};
 
     use super::TagsToLanesMsg;
     use crate::locale::Locale;
@@ -121,6 +121,8 @@ mod oneway {
     }
 
     impl Oneway {
+        pub const KEY: TagKey = TagKey::from_static("oneway");
+
         pub fn from_tags(
             tags: &Tags,
             _locale: &Locale,
