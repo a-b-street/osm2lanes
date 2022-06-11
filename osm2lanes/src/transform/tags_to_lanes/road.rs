@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
 use std::iter;
 
-use osm_tags::{HIGHWAY, LIFECYCLE};
+use osm_tag_schemes::{Highway, Schemes};
+use osm_tags::{TagKey, Tags};
 
 use super::infer::Infer;
 use super::oneway::Oneway;
@@ -16,7 +17,6 @@ use crate::road::{
     AccessAndDirection as LaneAccessAndDirection, AccessByType as LaneAccessByType, Designated,
     Direction, Lane,
 };
-use crate::tag::{Highway, TagKey, Tags};
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::tags_to_lanes::counts::{CentreTurnLaneScheme, Counts};
 use crate::transform::tags_to_lanes::modes::{BusLaneCount, CyclewayVariant};
@@ -150,22 +150,17 @@ pub(in crate::transform::tags_to_lanes) struct RoadBuilder {
 impl RoadBuilder {
     #[allow(clippy::items_after_statements, clippy::too_many_lines)]
     pub(crate) fn from(
-        schemes: &TagSchemes,
+        generic_schemes: &Schemes,
+        crate_schemes: &TagSchemes,
         tags: &Tags,
         locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
-        let oneway = schemes.oneway;
+        let oneway = crate_schemes.oneway;
 
-        let highway = match Highway::from_tags(tags) {
-            Err(None) => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
-            Err(Some(s)) => return Err(TagsToLanesMsg::unsupported_tag(HIGHWAY, &s).into()),
-            Ok(highway) => match highway {
-                highway if highway.is_supported() => highway,
-                _ => {
-                    return Err(TagsToLanesMsg::unimplemented_tags(tags.subset(&LIFECYCLE)).into());
-                },
-            },
+        let highway = match &generic_schemes.highway {
+            Some(highway) => highway,
+            None => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
         };
 
         let designated = if tags.is("access", "no")
@@ -200,12 +195,13 @@ impl RoadBuilder {
             max: Infer::None,
         };
 
-        let bus_lane_counts = BusLaneCount::from_tags(&schemes.busway, tags, locale, warnings);
+        let bus_lane_counts =
+            BusLaneCount::from_tags(&crate_schemes.busway, tags, locale, warnings);
         let centre_turn_lanes = CentreTurnLaneScheme::from_tags(tags, oneway, locale, warnings);
         let lane_counts = Counts::new(
             tags,
             oneway,
-            &highway,
+            highway,
             &centre_turn_lanes,
             &bus_lane_counts,
             locale,
@@ -255,7 +251,7 @@ impl RoadBuilder {
             RoadBuilder {
                 forward_lanes,
                 backward_lanes,
-                highway,
+                highway: highway.clone(),
                 oneway,
             }
         } else {
@@ -268,7 +264,7 @@ impl RoadBuilder {
                     ..Default::default()
                 }]),
                 backward_lanes: VecDeque::new(),
-                highway,
+                highway: highway.clone(),
                 oneway,
             }
         };

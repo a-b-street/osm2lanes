@@ -2,6 +2,7 @@
 members = [
     "osm2lanes",
     "osm-tags",
+    "osm-tag-schemes",
     "osm2lanes-web",
     "osm2lanes-bin",
     "osm2lanes-npm",

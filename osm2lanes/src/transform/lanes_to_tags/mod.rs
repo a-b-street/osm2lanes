@@ -1,14 +1,14 @@
 #![allow(clippy::module_name_repetitions)] // TODO: fix upstream
 
 use celes::Country;
-use osm_tags::Access;
+use osm_tag_schemes::Access;
+use osm_tags::Tags;
 
 pub use self::error::LanesToTagsMsg;
 use super::{tags_to_lanes, TagsToLanesConfig};
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::Speed;
 use crate::road::{AccessByType, Color, Designated, Direction, Lane, Marking, Road};
-use crate::tag::Tags;
 
 #[non_exhaustive]
 pub struct Config {
@@ -46,7 +46,8 @@ impl Lane {
 mod error {
     use std::panic::Location;
 
-    use crate::tag::DuplicateKeyError;
+    use osm_tags::DuplicateKeyError;
+
     use crate::transform::RoadError;
 
     /// Lanes To Tags Transformation Logic Issue

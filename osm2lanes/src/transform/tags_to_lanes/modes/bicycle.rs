@@ -2,12 +2,12 @@ use std::borrow::Borrow;
 use std::fmt::Display;
 use std::hash::Hash;
 
-use osm_tags::{Access, TagKey};
+use osm_tag_schemes::Access;
+use osm_tags::{TagKey, Tags};
 
 use crate::locale::Locale;
 use crate::metric::Metre;
 use crate::road::{AccessAndDirection, Designated, Direction};
-use crate::tag::Tags;
 use crate::transform::tags::CYCLEWAY;
 use crate::transform::tags_to_lanes::oneway::Oneway;
 use crate::transform::tags_to_lanes::road::{LaneType, Width};
@@ -452,10 +452,11 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
 
 #[cfg(test)]
 mod tests {
+    use osm_tags::Tags;
+
     use super::Scheme;
     use crate::locale::Locale;
     use crate::road::Direction;
-    use crate::tag::Tags;
     use crate::transform::tags_to_lanes::error::TagsToLanesIssue;
     use crate::transform::tags_to_lanes::modes::bicycle::{Location, Variant, Way};
     use crate::transform::tags_to_lanes::oneway::Oneway;

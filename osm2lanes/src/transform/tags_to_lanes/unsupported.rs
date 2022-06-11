@@ -1,5 +1,6 @@
+use osm_tags::Tags;
+
 use crate::locale::Locale;
-use crate::tag::Tags;
 use crate::transform::{RoadWarnings, TagsToLanesMsg};
 
 /// Unsupported

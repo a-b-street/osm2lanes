@@ -1,8 +1,8 @@
 use std::panic::Location;
 
+use osm_tags::{DuplicateKeyError, TagKey, Tags};
 use serde::Serialize;
 
-use crate::tag::{DuplicateKeyError, TagKey, Tags};
 use crate::transform::tags_to_lanes::LaneBuilder;
 
 /// Tags to Lanes Transformation Logic Issue

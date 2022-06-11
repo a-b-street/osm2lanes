@@ -1,13 +1,10 @@
+use osm_tags::Tags;
 use serde::{Deserialize, Serialize};
+use strum::ParseError;
 
-use crate::{TagKey, Tags};
+use crate::{keys, FromTags, Tagged};
 
-pub const ONEWAY: TagKey = TagKey::from_static("oneway");
-pub const HIGHWAY: TagKey = TagKey::from_static("highway");
-const CONSTRUCTION: TagKey = TagKey::from_static("construction");
-const PROPOSED: TagKey = TagKey::from_static("proposed");
-pub const LIFECYCLE: [TagKey; 3] = [HIGHWAY, CONSTRUCTION, PROPOSED];
-
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum HighwayType {
     Classified(HighwayImportance),
@@ -33,6 +30,7 @@ pub enum HighwayType {
     Steps,
 }
 
+#[allow(clippy::module_name_repetitions)]
 #[derive(PartialEq, PartialOrd, Clone, Copy, Debug)]
 pub enum HighwayImportance {
     Motorway,
@@ -70,8 +68,7 @@ impl std::fmt::Display for NonTravel {
 }
 
 impl std::str::FromStr for HighwayType {
-    type Err = String;
-
+    type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             "motorway" => Self::Classified(HighwayImportance::Motorway),
@@ -100,7 +97,7 @@ impl std::str::FromStr for HighwayType {
             "steps" => Self::Steps,
             "track" => Self::Track,
             "unclassified" => Self::Unclassified,
-            _ => return Err(s.to_owned()),
+            _ => return Err(ParseError::VariantNotFound),
         })
     }
 }
@@ -187,36 +184,19 @@ impl Highway {
     ///
     /// If highway missing return None
     /// If highway unknown return the unknown value
-    pub fn from_tags(tags: &Tags) -> Result<Self, Option<String>> {
-        tags.get(&HIGHWAY).ok_or(None).and_then(|s| match s {
-            "construction" => {
-                let highway = tags
-                    .get(&CONSTRUCTION)
-                    .map_or(Ok(HighwayType::UnknownRoad), str::parse)
-                    .map_err(Some)?;
-                Ok(Self {
-                    highway,
-                    lifecycle: Lifecycle::Construction,
-                })
+    #[must_use]
+    pub fn from_tags(tags: &Tags) -> Tagged<Self> {
+        match HighwayType::from_tags(tags, &keys::HIGHWAY) {
+            Tagged::None => Tagged::None,
+            Tagged::Some(val) => Tagged::Some(Highway::active(val)),
+            Tagged::Unknown(key, val) => match val {
+                "construction" => {
+                    HighwayType::from_tags(tags, &keys::CONSTRUCTION).map(Highway::construction)
+                },
+                "proposed" => HighwayType::from_tags(tags, &keys::PROPOSED).map(Highway::proposed),
+                val => Tagged::Unknown(key, val),
             },
-            "proposed" => {
-                let highway = tags
-                    .get(&PROPOSED)
-                    .map_or(Ok(HighwayType::UnknownRoad), str::parse)
-                    .map_err(Some)?;
-                Ok(Self {
-                    highway,
-                    lifecycle: Lifecycle::Proposed,
-                })
-            },
-            s => {
-                let highway = s.parse().map_err(Some)?;
-                Ok(Self {
-                    highway,
-                    lifecycle: Lifecycle::Active,
-                })
-            },
-        })
+        }
     }
 
     /// Active Highway
@@ -228,7 +208,25 @@ impl Highway {
         }
     }
 
-    /// Is Highway Construction
+    /// Highway under Construction
+    #[must_use]
+    pub fn construction(r#type: HighwayType) -> Self {
+        Self {
+            highway: r#type,
+            lifecycle: Lifecycle::Construction,
+        }
+    }
+
+    /// Highway Proposed
+    #[must_use]
+    pub fn proposed(r#type: HighwayType) -> Self {
+        Self {
+            highway: r#type,
+            lifecycle: Lifecycle::Proposed,
+        }
+    }
+
+    /// Is Highway under Construction
     #[must_use]
     pub fn is_construction(&self) -> bool {
         matches!(
@@ -256,45 +254,5 @@ impl Highway {
     #[must_use]
     pub fn r#type(&self) -> HighwayType {
         self.highway
-    }
-
-    /// Is Highway Supported
-    #[must_use]
-    pub const fn is_supported(&self) -> bool {
-        self.is_supported_road() || self.is_supported_non_motorized()
-    }
-
-    /// Is Highway Supported and Predominantly Motorized
-    #[must_use]
-    pub const fn is_supported_road(&self) -> bool {
-        matches!(
-            self,
-            Highway {
-                highway: HighwayType::Classified(_)
-                    | HighwayType::Link(_)
-                    | HighwayType::Residential
-                    | HighwayType::Service
-                    | HighwayType::Unclassified
-                    | HighwayType::UnknownRoad,
-                lifecycle: Lifecycle::Active | Lifecycle::Construction,
-            }
-        )
-    }
-
-    /// Is Highway Supported and Predominantly Non-Motorized
-    #[must_use]
-    pub const fn is_supported_non_motorized(&self) -> bool {
-        matches!(
-            self,
-            Highway {
-                highway: HighwayType::Cycleway
-                    | HighwayType::Footway
-                    | HighwayType::Path
-                    | HighwayType::Pedestrian
-                    | HighwayType::Steps
-                    | HighwayType::Track,
-                lifecycle: Lifecycle::Active,
-            }
-        )
     }
 }

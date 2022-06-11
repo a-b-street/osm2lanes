@@ -1,8 +1,8 @@
+use osm_tags::DuplicateKeyError;
 use serde::Serialize;
 
 use super::TagsToLanesMsg;
 use crate::road::Road;
-use crate::tag::DuplicateKeyError;
 
 #[derive(Clone, Debug, Default, Serialize)]
 pub struct RoadWarnings(Vec<TagsToLanesMsg>);
