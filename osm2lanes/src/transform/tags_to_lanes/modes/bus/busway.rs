@@ -166,18 +166,16 @@ pub(in crate::transform::tags_to_lanes) fn apply_busway(
 ) -> Result<(), TagsToLanesMsg> {
     if let Variant::Forward | Variant::Both = scheme.0 {
         road.forward_outside_mut()
-            .ok_or_else(|| {
-                TagsToLanesMsg::unsupported_str(String::from("no forward lanes for busway"))
-            })?
+            .ok_or_else(|| TagsToLanesMsg::unsupported_str("no forward lanes for busway"))?
             .set_bus(locale)?;
     }
     if let Variant::Backward | Variant::Both = scheme.0 {
         if let Some(backward_outside) = road.backward_outside_mut() {
             backward_outside.set_bus(locale)?;
         } else {
-            let forward_inside = road.forward_inside_mut().ok_or_else(|| {
-                TagsToLanesMsg::unsupported_str(String::from("no forward lanes for busway"))
-            })?;
+            let forward_inside = road
+                .forward_inside_mut()
+                .ok_or_else(|| TagsToLanesMsg::unsupported_str("no forward lanes for busway"))?;
             forward_inside.set_bus(locale)?;
             forward_inside.direction = Infer::Direct(Direction::Backward);
         }
