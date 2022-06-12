@@ -323,14 +323,10 @@ impl<'de> serde::de::Visitor<'de> for TagsVisitor {
         M: serde::de::MapAccess<'de>,
     {
         let mut tags = Tags::default();
-        // For when this becomes important:
-        //let mut map = Tags::with_capacity(access.size_hint().unwrap_or(0));
-
         while let Some((key, value)) = access.next_entry::<String, String>()? {
-            // TODO
-            tags.checked_insert(&key, value).unwrap();
+            // Overpass sometimes returns duplicate tags
+            let _ignored = tags.checked_insert(&key, value);
         }
-
         Ok(tags)
     }
 }
