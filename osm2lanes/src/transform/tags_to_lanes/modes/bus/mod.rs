@@ -73,7 +73,7 @@ pub(in crate::transform::tags_to_lanes) fn bus(
         (false, false, true) => bus_lanes(tags, locale, road, warnings)?,
         _ => {
             return Err(TagsToLanesMsg::unsupported(
-                String::from("more than one bus lanes scheme used"),
+                "more than one bus lanes scheme used",
                 tags.subset(["busway", "lanes:bus", "lanes:psv", "bus:lanes", "psv:lanes"]),
             ))
         },
@@ -167,7 +167,7 @@ fn bus_lanes(
         (None, None) => {},
         (Some(_), Some(_)) => {
             return Err(TagsToLanesMsg::unsupported(
-                String::from("more than one bus:lanes used"),
+                "more than one bus:lanes used",
                 tags.subset([
                     "bus:lanes",
                     "bus:lanes:forward",

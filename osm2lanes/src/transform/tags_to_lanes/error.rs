@@ -12,6 +12,7 @@ use crate::transform::tags_to_lanes::LaneBuilder;
 /// let _ = TagsToLanesMsg::deprecated_tag("foo", "bar");
 /// let _ = TagsToLanesMsg::unsupported_tag("foo", "bar");
 /// let _ = TagsToLanesMsg::unsupported_str(String::from("foo=bar because x and y"));
+/// let _ = TagsToLanesMsg::ambiguous_str("foo=bar because x and y");
 /// ```
 #[derive(Clone, Debug)]
 pub struct TagsToLanesMsg {
@@ -95,11 +96,11 @@ impl TagsToLanesMsg {
 
     #[must_use]
     #[track_caller]
-    pub fn unsupported(description: String, tags: Tags) -> Self {
+    pub fn unsupported(description: impl Into<String>, tags: Tags) -> Self {
         TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Unsupported {
-                description: Some(description),
+                description: Some(description.into()),
                 tags: Some(tags),
             },
         }
@@ -131,11 +132,11 @@ impl TagsToLanesMsg {
 
     #[must_use]
     #[track_caller]
-    pub fn unsupported_str(description: String) -> Self {
+    pub fn unsupported_str(description: impl Into<String>) -> Self {
         TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Unsupported {
-                description: Some(description),
+                description: Some(description.into()),
                 tags: None,
             },
         }
@@ -143,11 +144,11 @@ impl TagsToLanesMsg {
 
     #[must_use]
     #[track_caller]
-    pub fn unimplemented(description: String, tags: Tags) -> Self {
+    pub fn unimplemented(description: impl Into<String>, tags: Tags) -> Self {
         TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Unimplemented {
-                description: Some(description),
+                description: Some(description.into()),
                 tags: Some(tags),
             },
         }
@@ -203,11 +204,11 @@ impl TagsToLanesMsg {
 
     #[must_use]
     #[track_caller]
-    pub fn ambiguous_str(description: String) -> Self {
+    pub fn ambiguous_str(description: impl Into<String>) -> Self {
         TagsToLanesMsg {
             location: Location::caller(),
             issue: TagsToLanesIssue::Ambiguous {
-                description: Some(description),
+                description: Some(description.into()),
                 tags: None,
             },
         }

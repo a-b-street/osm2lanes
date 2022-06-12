@@ -158,11 +158,7 @@ impl RoadBuilder {
         let oneway = schemes.oneway;
 
         let highway = match Highway::from_tags(tags) {
-            Err(None) => {
-                return Err(
-                    TagsToLanesMsg::unsupported_str(String::from("way is not highway")).into(),
-                )
-            },
+            Err(None) => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
             Err(Some(s)) => return Err(TagsToLanesMsg::unsupported_tag(HIGHWAY, &s).into()),
             Ok(highway) => match highway {
                 highway if highway.is_supported() => highway,
