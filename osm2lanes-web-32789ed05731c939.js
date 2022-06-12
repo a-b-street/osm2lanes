@@ -306,7 +306,7 @@ async function load(module, imports) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('osm2lanes-web-3e6448c0efadf30a_bg.wasm', import.meta.url);
+        input = new URL('osm2lanes-web-32789ed05731c939_bg.wasm', import.meta.url);
     }
     const imports = {};
     imports.wbg = {};
