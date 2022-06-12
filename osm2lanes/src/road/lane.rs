@@ -81,7 +81,7 @@ impl Lane {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Direction {
     Forward,
@@ -89,7 +89,7 @@ pub enum Direction {
     Both,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Designated {
     // #[serde(rename = "any")]
     // Any,
@@ -180,7 +180,7 @@ impl Printable for Direction {
 /// Types as defined in <https://wiki.openstreetmap.org/wiki/Key:access#Land-based_transportation>
 // TODO: how to handle the motor_vehicle vs motorcar discussion in https://wiki.openstreetmap.org/wiki/Key:motorcar#Controversy
 // TODO: separating weight class by usage?
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct AccessByType {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -196,7 +196,7 @@ pub struct AccessByType {
 }
 
 /// Access for a given user
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct AccessAndDirection {
     pub(crate) access: AccessTagValue,

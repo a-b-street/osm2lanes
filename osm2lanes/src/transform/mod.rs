@@ -20,7 +20,7 @@ pub mod tags {
     pub const SHOULDER: TagKey = TagKey::from_static("shoulder");
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 enum WaySide {
     Both,
     Right,

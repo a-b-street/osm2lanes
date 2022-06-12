@@ -11,7 +11,7 @@ use crate::transform::{RoadWarnings, TagsToLanesMsg};
 const BUSWAY: TagKey = TagKey::from_static("busway");
 const ONEWAY: TagKey = TagKey::from_static("oneway");
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub(in crate::transform::tags_to_lanes) enum Variant {
     None,
     Forward,

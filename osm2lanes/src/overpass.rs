@@ -62,7 +62,7 @@ struct Element {
     geometry: Option<Vec<LatLon>>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 enum ElementType {
     #[serde(rename = "node")]
     Node,
