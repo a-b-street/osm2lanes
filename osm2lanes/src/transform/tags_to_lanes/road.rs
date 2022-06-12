@@ -181,7 +181,7 @@ impl RoadBuilder {
             Ok(max_speed) => max_speed,
             Err(e) => {
                 warnings.push(TagsToLanesMsg::unsupported(
-                    &e.to_string(),
+                    e.to_string(),
                     tags.subset(&[MAXSPEED]),
                 ));
                 None

@@ -61,7 +61,7 @@ where
     tags.get(k)
         .map(|a| {
             Access::split(a).map_err(|a| {
-                TagsToLanesMsg::unsupported(&format!("lanes access {}", a), tags.subset([k]))
+                TagsToLanesMsg::unsupported(format!("lanes access {}", a), tags.subset([k]))
             })
         })
         .transpose()
