@@ -1,7 +1,6 @@
 use std::panic::Location;
 
 use osm_tags::{DuplicateKeyError, TagKey, Tags};
-use serde::Serialize;
 
 use crate::transform::tags_to_lanes::LaneBuilder;
 
@@ -331,7 +330,8 @@ impl std::fmt::Display for TagsToLanesMsg {
 
 impl std::error::Error for TagsToLanesMsg {}
 
-impl Serialize for TagsToLanesMsg {
+#[cfg(feature = "serde")]
+impl serde::Serialize for TagsToLanesMsg {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,

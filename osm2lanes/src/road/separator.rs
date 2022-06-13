@@ -1,12 +1,11 @@
-use serde::{Deserialize, Serialize};
-
 use super::Printable;
 use crate::locale::Locale;
 use crate::metric::Metre;
 
 #[non_exhaustive]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum Semantic {
     Buffer,
     Centre,
@@ -18,7 +17,8 @@ pub enum Semantic {
     Verge,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Markings(Vec<Marking>);
 
 impl Markings {
@@ -52,7 +52,8 @@ impl std::ops::Deref for Markings {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Marking {
     pub style: Style,
     pub width: Option<Metre>,
@@ -68,15 +69,15 @@ impl Marking {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// Road Pain Style
+// TODO: deprecated, use repeating pattern definition instead
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum Style {
-    #[serde(rename = "solid_line")]
     SolidLine,
-    #[serde(rename = "broken_line")]
     BrokenLine,
-    #[serde(rename = "dashed_line")]
     DashedLine,
-    #[serde(rename = "dotted_line")]
     DottedLine,
     // #[serde(rename = "gore_chevron")]
     // GoreChevron,
@@ -86,12 +87,9 @@ pub enum Style {
     // CrissCross,
     // #[serde(rename = "solid_fill")]
     // SolidFill,
-    #[serde(rename = "no_fill")]
     NoFill,
     // up and down are left to right
-    #[serde(rename = "kerb_up")]
     KerbUp,
-    #[serde(rename = "kerb_down")]
     KerbDown,
 }
 
@@ -124,7 +122,8 @@ impl Style {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Color {
     #[serde(rename = "white")]
     White,

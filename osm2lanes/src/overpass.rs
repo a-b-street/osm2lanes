@@ -1,11 +1,11 @@
 use geo::algorithm::euclidean_distance::EuclideanDistance;
 use geo::{LineString, Point};
 use osm_tags::Tags;
-use serde::Deserialize;
 
 use crate::locale::{DrivingSide, Locale};
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 struct OverpassResponse {
     // version: f32,
     // osm3s: Osm3s
@@ -39,7 +39,8 @@ impl OverpassResponse {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub struct LatLon {
     pub lat: f64,
     pub lon: f64,
@@ -54,7 +55,8 @@ fn convert(vec: &[LatLon]) -> LineString<f64> {
         .collect()
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 struct Element {
     r#type: ElementType,
     id: ElementId,
@@ -62,7 +64,8 @@ struct Element {
     geometry: Option<Vec<LatLon>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 enum ElementType {
     #[serde(rename = "node")]
     Node,

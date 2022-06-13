@@ -1,5 +1,4 @@
 use osm_tag_schemes::{Highway, Lit, Smoothness, TrackType};
-use serde::{Deserialize, Serialize};
 
 use crate::locale::Locale;
 use crate::metric::Metre;
@@ -10,21 +9,22 @@ pub use lane::{AccessAndDirection, AccessByType, Designated, Direction, Lane, Pr
 mod separator;
 pub use separator::{Color, Marking, Markings, Semantic, Style};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Road {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub r#ref: Option<String>,
 
-    #[serde(flatten)]
+    #[cfg_attr(feature = "serde", serde(flatten))]
     pub highway: Highway,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub lit: Option<Lit>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub tracktype: Option<TrackType>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub smoothness: Option<Smoothness>,
 
     pub lanes: Vec<Lane>,

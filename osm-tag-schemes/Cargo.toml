@@ -13,5 +13,8 @@ authors = [
 
 [dependencies]
 osm-tags = { path = "../osm-tags" }
-serde = { version = "1", features = ["derive"] }
 strum = { version = "0.24", features = ["derive"] }
+serde = { version = "1", features = ["derive"], optional = true }
+
+[features]
+serde = ["dep:serde", "osm-tags/serde"]
