@@ -53,12 +53,11 @@ impl std::fmt::Display for RoadWarnings {
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum RoadError {
-    #[serde(rename = "error")]
+    #[cfg_attr(feature = "serde", serde(rename = "error"))]
     Msg(TagsToLanesMsg),
-    #[serde(rename = "warnings")]
     Warnings(RoadWarnings),
-    #[serde(rename = "round_trip")]
     RoundTrip,
 }
 

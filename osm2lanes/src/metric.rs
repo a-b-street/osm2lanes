@@ -149,8 +149,6 @@ impl<'de> serde::Deserialize<'de> for Speed {
 mod speed {
     use std::num::ParseFloatError;
 
-    use super::Speed;
-
     #[derive(Debug, PartialEq)]
     #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     struct SpeedStruct {
@@ -163,7 +161,9 @@ mod speed {
     #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
     enum SpeedUnit {
         Kph,
+        #[cfg(feature = "serde")]
         Mph,
+        #[cfg(feature = "serde")]
         Knots,
     }
 
@@ -178,11 +178,13 @@ mod speed {
     }
 
     #[cfg(feature = "serde")]
-    pub(crate) fn serialize<S>(speed: &Speed, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn serialize<S>(speed: &super::Speed, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         use serde::Serialize;
+
+        use super::Speed;
         match speed {
             Speed::Kph(v) => serializer.serialize_f64(*v),
             Speed::Mph(v) => SpeedStruct {
@@ -200,6 +202,7 @@ mod speed {
 
     // https://serde.rs/string-or-struct.html
 
+    #[cfg(feature = "serde")]
     struct FloatOrStruct;
 
     #[cfg(feature = "serde")]
@@ -275,7 +278,7 @@ mod speed {
     }
 
     #[cfg(feature = "serde")]
-    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Speed, D::Error>
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<super::Speed, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
@@ -284,15 +287,15 @@ mod speed {
             SpeedStruct {
                 unit: SpeedUnit::Kph,
                 value,
-            } => Speed::Kph(value),
+            } => super::Speed::Kph(value),
             SpeedStruct {
                 unit: SpeedUnit::Mph,
                 value,
-            } => Speed::Mph(value),
+            } => super::Speed::Mph(value),
             SpeedStruct {
                 unit: SpeedUnit::Knots,
                 value,
-            } => Speed::Knots(value),
+            } => super::Speed::Knots(value),
         })
     }
 

@@ -184,15 +184,15 @@ impl Printable for Direction {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub struct AccessByType {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub(crate) foot: Option<AccessAndDirection>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub(crate) bicycle: Option<AccessAndDirection>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub(crate) taxi: Option<AccessAndDirection>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub(crate) bus: Option<AccessAndDirection>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub(crate) motor: Option<AccessAndDirection>,
 }
 
@@ -202,6 +202,6 @@ pub struct AccessByType {
 pub struct AccessAndDirection {
     pub(crate) access: AccessTagValue,
     /// Direction, if different from designated direction
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub(crate) direction: Option<Direction>,
 }
