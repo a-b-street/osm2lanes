@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: "Rustup"
+      - name: "publish osm2lanes"
         run: |
           rustup toolchain install stable
           rustup override set stable
