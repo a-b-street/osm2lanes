@@ -1,9 +1,9 @@
+use osm_tag_schemes::{Access as AccessTagValue, HighwayType};
 use serde::{Deserialize, Serialize};
 
 use crate::locale::Locale;
 use crate::metric::{Metre, Speed};
 use crate::road::separator::{Markings, Semantic};
-use crate::tag::{Access as AccessTagValue, HighwayType};
 
 /// A single lane
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -34,7 +34,8 @@ pub enum Lane {
     Separator {
         #[serde(skip_serializing_if = "Option::is_none")]
         semantic: Option<Semantic>,
-        markings: Markings,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        markings: Option<Markings>,
     },
 }
 
@@ -47,7 +48,10 @@ impl Lane {
     #[must_use]
     pub fn width(&self, locale: &Locale, highway: HighwayType) -> Metre {
         match self {
-            Lane::Separator { markings, .. } => markings.width(locale),
+            Lane::Separator { markings, .. } => markings
+                .as_ref()
+                .map(|m| m.width(locale))
+                .unwrap_or_default(),
             Lane::Travel {
                 width, designated, ..
             } => width.unwrap_or_else(|| locale.travel_width(designated, highway)),
@@ -67,7 +71,9 @@ impl Lane {
                 mut markings,
                 semantic,
             } => {
-                markings.flip();
+                if let Some(ref mut markings) = markings {
+                    markings.flip();
+                }
                 Self::Separator { markings, semantic }
             },
             _ => self,
@@ -75,7 +81,7 @@ impl Lane {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Direction {
     Forward,
@@ -83,7 +89,7 @@ pub enum Direction {
     Both,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Designated {
     // #[serde(rename = "any")]
     // Any,
@@ -174,8 +180,8 @@ impl Printable for Direction {
 /// Types as defined in <https://wiki.openstreetmap.org/wiki/Key:access#Land-based_transportation>
 // TODO: how to handle the motor_vehicle vs motorcar discussion in https://wiki.openstreetmap.org/wiki/Key:motorcar#Controversy
 // TODO: separating weight class by usage?
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct AccessByType {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) foot: Option<AccessAndDirection>,
@@ -190,8 +196,8 @@ pub struct AccessByType {
 }
 
 /// Access for a given user
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct AccessAndDirection {
     pub(crate) access: AccessTagValue,
     /// Direction, if different from designated direction

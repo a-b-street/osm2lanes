@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
 use std::iter;
 
-use osm_tags::{HIGHWAY, LIFECYCLE};
+use osm_tag_schemes::{Highway, Schemes};
+use osm_tags::{TagKey, Tags};
 
 use super::infer::Infer;
 use super::oneway::Oneway;
@@ -16,10 +17,9 @@ use crate::road::{
     AccessAndDirection as LaneAccessAndDirection, AccessByType as LaneAccessByType, Designated,
     Direction, Lane,
 };
-use crate::tag::{Access as AccessValue, Highway, TagKey, Tags};
 use crate::transform::error::{RoadError, RoadWarnings};
 use crate::transform::tags_to_lanes::counts::{CentreTurnLaneScheme, Counts};
-use crate::transform::tags_to_lanes::modes::BusLaneCount;
+use crate::transform::tags_to_lanes::modes::{BusLaneCount, CyclewayVariant};
 
 #[derive(Debug)]
 pub(in crate::transform) struct LaneBuilderError(pub(crate) &'static str);
@@ -38,7 +38,7 @@ impl From<LaneBuilderError> for RoadError {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LaneType {
     Travel,
     Parking,
@@ -54,23 +54,15 @@ pub struct Width {
 
 #[derive(Clone, Default, Debug)]
 pub struct Access {
-    pub foot: Infer<AccessValue>,
-    pub bicycle: Infer<AccessValue>,
-    pub taxi: Infer<AccessValue>,
-    pub bus: Infer<AccessValue>,
-    pub motor: Infer<AccessValue>,
+    pub foot: Infer<LaneAccessAndDirection>,
+    pub bicycle: Infer<LaneAccessAndDirection>,
+    pub taxi: Infer<LaneAccessAndDirection>,
+    pub bus: Infer<LaneAccessAndDirection>,
+    pub motor: Infer<LaneAccessAndDirection>,
 }
 
 impl From<Access> for Option<LaneAccessByType> {
     fn from(inferred: Access) -> Self {
-        impl LaneAccessAndDirection {
-            fn from(v: Infer<AccessValue>) -> Option<Self> {
-                v.some().map(|v| Self {
-                    access: v,
-                    direction: None,
-                })
-            }
-        }
         if inferred.foot.is_none()
             && inferred.bicycle.is_none()
             && inferred.taxi.is_none()
@@ -80,11 +72,11 @@ impl From<Access> for Option<LaneAccessByType> {
             return None;
         }
         Some(LaneAccessByType {
-            foot: LaneAccessAndDirection::from(inferred.foot),
-            bicycle: LaneAccessAndDirection::from(inferred.bicycle),
-            taxi: LaneAccessAndDirection::from(inferred.taxi),
-            bus: LaneAccessAndDirection::from(inferred.bus),
-            motor: LaneAccessAndDirection::from(inferred.motor),
+            foot: inferred.foot.some(),
+            bicycle: inferred.bicycle.some(),
+            taxi: inferred.taxi.some(),
+            bus: inferred.bus.some(),
+            motor: inferred.motor.some(),
         })
     }
 }
@@ -98,6 +90,7 @@ pub struct LaneBuilder {
     pub width: Width,
     pub max_speed: Infer<Speed>,
     pub access: Access,
+    pub(super) cycleway_variant: Option<CyclewayVariant>,
 }
 
 impl LaneBuilder {
@@ -157,22 +150,17 @@ pub(in crate::transform::tags_to_lanes) struct RoadBuilder {
 impl RoadBuilder {
     #[allow(clippy::items_after_statements, clippy::too_many_lines)]
     pub(crate) fn from(
-        schemes: &TagSchemes,
+        generic_schemes: &Schemes,
+        crate_schemes: &TagSchemes,
         tags: &Tags,
         locale: &Locale,
         warnings: &mut RoadWarnings,
     ) -> Result<Self, RoadError> {
-        let oneway = schemes.oneway;
+        let oneway = crate_schemes.oneway;
 
-        let highway = match Highway::from_tags(tags) {
-            Err(None) => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
-            Err(Some(s)) => return Err(TagsToLanesMsg::unsupported_tag(HIGHWAY, &s).into()),
-            Ok(highway) => match highway {
-                highway if highway.is_supported() => highway,
-                _ => {
-                    return Err(TagsToLanesMsg::unimplemented_tags(tags.subset(&LIFECYCLE)).into());
-                },
-            },
+        let highway = match &generic_schemes.highway {
+            Some(highway) => highway,
+            None => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
         };
 
         let designated = if tags.is("access", "no")
@@ -193,7 +181,7 @@ impl RoadBuilder {
             Ok(max_speed) => max_speed,
             Err(e) => {
                 warnings.push(TagsToLanesMsg::unsupported(
-                    &e.to_string(),
+                    e.to_string(),
                     tags.subset(&[MAXSPEED]),
                 ));
                 None
@@ -207,12 +195,13 @@ impl RoadBuilder {
             max: Infer::None,
         };
 
-        let bus_lane_counts = BusLaneCount::from_tags(&schemes.busway, tags, locale, warnings);
+        let bus_lane_counts =
+            BusLaneCount::from_tags(&crate_schemes.busway, tags, locale, warnings);
         let centre_turn_lanes = CentreTurnLaneScheme::from_tags(tags, oneway, locale, warnings);
         let lane_counts = Counts::new(
             tags,
             oneway,
-            &highway,
+            highway,
             &centre_turn_lanes,
             &bus_lane_counts,
             locale,
@@ -262,7 +251,7 @@ impl RoadBuilder {
             RoadBuilder {
                 forward_lanes,
                 backward_lanes,
-                highway,
+                highway: highway.clone(),
                 oneway,
             }
         } else {
@@ -275,7 +264,7 @@ impl RoadBuilder {
                     ..Default::default()
                 }]),
                 backward_lanes: VecDeque::new(),
-                highway,
+                highway: highway.clone(),
                 oneway,
             }
         };

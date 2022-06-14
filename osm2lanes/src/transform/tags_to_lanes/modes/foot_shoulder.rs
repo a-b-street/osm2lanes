@@ -1,9 +1,9 @@
 use celes::Country;
+use osm_tags::Tags;
 
 use crate::locale::Locale;
 use crate::metric::Metre;
 use crate::road::Designated;
-use crate::tag::Tags;
 use crate::transform::tags::{SHOULDER, SIDEWALK};
 use crate::transform::tags_to_lanes::road::Width;
 use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder, TagsToLanesMsg};

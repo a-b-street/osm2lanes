@@ -1,13 +1,14 @@
 #![allow(clippy::module_name_repetitions)] // TODO: fix upstream
 
 use celes::Country;
+use osm_tag_schemes::Access;
+use osm_tags::Tags;
 
 pub use self::error::LanesToTagsMsg;
 use super::{tags_to_lanes, TagsToLanesConfig};
-use crate::locale::Locale;
+use crate::locale::{DrivingSide, Locale};
 use crate::metric::Speed;
-use crate::road::{Color, Designated, Direction, Lane, Marking, Road};
-use crate::tag::Tags;
+use crate::road::{AccessByType, Color, Designated, Direction, Lane, Marking, Road};
 
 #[non_exhaustive]
 pub struct Config {
@@ -33,12 +34,20 @@ impl Lane {
     fn is_shoulder(&self) -> bool {
         matches!(self, Lane::Shoulder { .. })
     }
+
+    fn access(&self) -> Option<&AccessByType> {
+        match self {
+            Self::Travel { access, .. } => access.as_ref(),
+            _ => None,
+        }
+    }
 }
 
 mod error {
     use std::panic::Location;
 
-    use crate::tag::DuplicateKeyError;
+    use osm_tags::DuplicateKeyError;
+
     use crate::transform::RoadError;
 
     /// Lanes To Tags Transformation Logic Issue
@@ -159,7 +168,7 @@ pub fn lanes_to_tags(
     set_shoulder(lanes, &mut tags)?;
     set_pedestrian(lanes, &mut tags)?;
     set_parking(lanes, &mut tags)?;
-    set_cycleway(lanes, &mut tags, oneway)?;
+    set_cycleway(lanes, &mut tags, oneway, locale)?;
     set_busway(lanes, &mut tags, oneway)?;
 
     let max_speed = get_max_speed(lanes, &mut tags)?;
@@ -317,7 +326,7 @@ fn set_parking(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
         if let Some(Marking {
             color: Some(Color::Red),
             ..
-        }) = markings.first()
+        }) = markings.as_ref().and_then(|m| m.first())
         {
             tags.checked_insert("parking:condition:both", "no_stopping")?;
         }
@@ -326,7 +335,12 @@ fn set_parking(lanes: &[Lane], tags: &mut Tags) -> Result<(), LanesToTagsMsg> {
     Ok(())
 }
 
-fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), LanesToTagsMsg> {
+fn set_cycleway(
+    lanes: &[Lane],
+    tags: &mut Tags,
+    oneway: bool,
+    locale: &Locale,
+) -> Result<(), LanesToTagsMsg> {
     let left_cycle_lane: Option<&Lane> = lanes
         .iter()
         .take_while(|lane| !lane.is_motor())
@@ -356,6 +370,7 @@ fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), Lan
     {
         tags.checked_insert("oneway:bicycle", "no")?;
     }
+
     // indicate cycling traffic direction relative to the direction the osm way is oriented
     // yes: same direction
     // -1: contraflow
@@ -392,6 +407,21 @@ fn set_cycleway(lanes: &[Lane], tags: &mut Tags, oneway: bool) -> Result<(), Lan
     }) = right_cycle_lane
     {
         tags.checked_insert("cycleway:right:width", width.val().to_string())?;
+    }
+
+    // Handle shared lanes
+    //if lanes.forward_inside() // TODO: this needs to exist...
+    if lanes.len() == 1 {
+        let lane = match locale.driving_side {
+            DrivingSide::Right => lanes.last(),
+            DrivingSide::Left => lanes.first(),
+        };
+        if let Some(bicycle) = lane.and_then(Lane::access).and_then(|a| a.bicycle.as_ref()) {
+            if oneway && bicycle.access == Access::Yes && bicycle.direction == Some(Direction::Both)
+            {
+                tags.checked_insert("cycleway", "opposite")?;
+            }
+        }
     }
 
     Ok(())

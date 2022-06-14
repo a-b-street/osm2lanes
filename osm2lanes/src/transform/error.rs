@@ -1,8 +1,8 @@
+use osm_tags::DuplicateKeyError;
 use serde::Serialize;
 
 use super::TagsToLanesMsg;
 use crate::road::Road;
-use crate::tag::DuplicateKeyError;
 
 #[derive(Clone, Debug, Default, Serialize)]
 pub struct RoadWarnings(Vec<TagsToLanesMsg>);
@@ -16,6 +16,11 @@ impl RoadWarnings {
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
+    }
+
+    #[must_use]
+    pub fn as_slice(&self) -> &[TagsToLanesMsg] {
+        self.0.as_slice()
     }
 
     pub fn push(&mut self, msg: TagsToLanesMsg) {

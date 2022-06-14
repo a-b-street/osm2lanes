@@ -1,6 +1,7 @@
+use osm_tags::TagKey;
+
 use crate::locale::DrivingSide;
 use crate::road::{Designated, Direction, Lane};
-use crate::tag::TagKey;
 
 mod error;
 pub use error::{RoadError, RoadFromTags, RoadWarnings};
@@ -12,14 +13,14 @@ mod lanes_to_tags;
 pub use lanes_to_tags::{lanes_to_tags, Config as LanesToTagsConfig, LanesToTagsMsg};
 
 pub mod tags {
-    use crate::tag::TagKey;
+    use osm_tags::TagKey;
 
     pub const CYCLEWAY: TagKey = TagKey::from_static("cycleway");
     pub const SIDEWALK: TagKey = TagKey::from_static("sidewalk");
     pub const SHOULDER: TagKey = TagKey::from_static("shoulder");
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 enum WaySide {
     Both,
     Right,

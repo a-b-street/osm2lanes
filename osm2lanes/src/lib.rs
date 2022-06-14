@@ -51,7 +51,6 @@
 pub mod locale;
 pub mod metric;
 pub mod road;
-pub mod tag;
 
 #[cfg(feature = "overpass")]
 pub mod overpass;

@@ -51,19 +51,14 @@ use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::str::FromStr;
 
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Serialize, Serializer};
+
 mod key;
 pub use key::TagKey;
 
 mod val;
 pub use val::TagVal;
-
-mod osm;
-pub use osm::{Highway, HighwayImportance, HighwayType, Lifecycle, HIGHWAY, LIFECYCLE, ONEWAY};
-
-mod access;
-pub use access::Access;
-use serde::ser::SerializeMap;
-use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Debug, Clone)]
 pub struct DuplicateKeyError(TagKey);
@@ -131,6 +126,12 @@ impl Tags {
         let duplicate_val = map.insert(key.into(), val.into());
         debug_assert!(duplicate_val.is_none());
         Self { map }
+    }
+
+    /// Expose data as vector of pairs
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
     }
 
     /// Expose data as vector of pairs
@@ -322,14 +323,10 @@ impl<'de> serde::de::Visitor<'de> for TagsVisitor {
         M: serde::de::MapAccess<'de>,
     {
         let mut tags = Tags::default();
-        // For when this becomes important:
-        //let mut map = Tags::with_capacity(access.size_hint().unwrap_or(0));
-
         while let Some((key, value)) = access.next_entry::<String, String>()? {
-            // TODO
-            tags.checked_insert(&key, value).unwrap();
+            // Overpass sometimes returns duplicate tags
+            let _ignored = tags.checked_insert(&key, value);
         }
-
         Ok(tags)
     }
 }

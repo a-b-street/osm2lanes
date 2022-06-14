@@ -1,6 +1,7 @@
+use osm_tags::Tags;
+
 use crate::locale::Locale;
 use crate::road::{Designated, Direction};
-use crate::tag::Tags;
 use crate::transform::tags_to_lanes::{Infer, LaneBuilder, LaneType, RoadBuilder};
 use crate::transform::RoadError;
 

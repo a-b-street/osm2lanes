@@ -1,9 +1,9 @@
 use geo::algorithm::euclidean_distance::EuclideanDistance;
 use geo::{LineString, Point};
+use osm_tags::Tags;
 use serde::Deserialize;
 
 use crate::locale::{DrivingSide, Locale};
-use crate::tag::Tags;
 
 #[derive(Debug, Clone, Deserialize)]
 struct OverpassResponse {
@@ -62,7 +62,7 @@ struct Element {
     geometry: Option<Vec<LatLon>>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 enum ElementType {
     #[serde(rename = "node")]
     Node,

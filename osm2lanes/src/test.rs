@@ -1,8 +1,9 @@
+use osm_tag_schemes::{Highway, HighwayType};
+use osm_tags::Tags;
 use serde::{Deserialize, Serialize};
 
 use crate::locale::DrivingSide;
 use crate::road::{Lane, Road};
-use crate::tag::{Highway, HighwayType, Tags};
 
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(untagged, deny_unknown_fields)]
@@ -28,11 +29,14 @@ pub struct TestCase {
     // Metadata
     /// The OSM way unique identifier
     pub way_id: Option<i64>,
+    /// Relevant link
     pub link: Option<String>,
+    /// Comment on test case
     pub comment: Option<String>,
+    /// Description of test case
     pub description: Option<String>,
 
-    // List as a named example in the web app
+    /// List as a named example in the web app, with the given name
     example: Option<String>,
 
     // Config and Locale
@@ -62,7 +66,12 @@ impl TestCase {
         match &self.expected {
             Expected::Road(road) => road.clone(),
             Expected::Output(lanes) => Road {
+                name: None,
+                r#ref: None,
                 highway: Highway::active(HighwayType::UnknownRoad),
+                lit: None,
+                tracktype: None,
+                smoothness: None,
                 lanes: lanes.clone(),
             },
         }
@@ -144,8 +153,8 @@ mod tests {
 
     use super::*;
     use crate::locale::{DrivingSide, Locale};
-    use crate::road::{Lane, Marking, Printable, Road};
-    use crate::tag::Highway;
+    use crate::metric::{Metre, Speed};
+    use crate::road::{AccessByType, Color, Lane, Marking, Markings, Printable, Road, Semantic};
     use crate::transform::{
         lanes_to_tags, tags_to_lanes, LanesToTagsConfig, RoadError, RoadFromTags, RoadWarnings,
         TagsToLanesConfig,
@@ -153,63 +162,70 @@ mod tests {
 
     static LOG_INIT: std::sync::Once = std::sync::Once::new();
 
-    fn approx_eq<T: PartialEq>(actual: &Option<T>, expected: &Option<T>) -> bool {
-        match (actual, expected) {
-            (None, None) | (Some(_), None) => true,
-            (None, Some(_)) => false,
-            (Some(actual), Some(expected)) => actual == expected,
+    trait EqExpected<Exp: ?Sized = Self> {
+        fn eq_exp(&self, expected: &Exp) -> bool;
+    }
+
+    impl<T: EqExpected> EqExpected for Option<T> {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            match (self, expected) {
+                (None, None) | (Some(_), None) => true,
+                (None, Some(_)) => false,
+                (Some(actual), Some(expected)) => actual.eq_exp(expected),
+            }
         }
     }
 
-    impl Road {
-        /// Eq where None is treaty as always equal
-        fn approx_eq(&self, expected: &Self) -> bool {
+    impl EqExpected for Road {
+        fn eq_exp(&self, expected: &Self) -> bool {
             if self.lanes.len() != expected.lanes.len() {
                 return false;
             }
             self.lanes
                 .iter()
                 .zip(expected.lanes.iter())
-                .all(|(actual, expected)| actual.approx_eq(expected))
+                .all(|(actual, expected)| actual.eq_exp(expected))
         }
     }
 
-    impl Lane {
-        /// Eq where None is treaty as always equal
-        fn approx_eq(&self, expected: &Self) -> bool {
+    impl EqExpected for Lane {
+        fn eq_exp(&self, expected: &Self) -> bool {
             #[allow(clippy::unnested_or_patterns)]
             match (self, expected) {
                 (
                     Lane::Separator {
-                        markings: actual, ..
+                        markings: markings_actual,
+                        semantic: semantic_actual,
                     },
                     Lane::Separator {
-                        markings: expected, ..
+                        markings: markings_expected,
+                        semantic: semantic_expected,
                     },
-                ) => actual
-                    .iter()
-                    .zip(expected.iter())
-                    .all(|(actual, expected)| actual.approx_eq(expected)),
+                ) => {
+                    markings_actual.eq_exp(&markings_expected)
+                        && semantic_actual.eq_exp(&semantic_expected)
+                },
                 (
                     Lane::Travel {
                         designated: actual_designated,
                         direction: actual_direction,
                         width: actual_width,
                         max_speed: actual_max_speed,
-                        access: _actual_access,
+                        access: actual_access,
                     },
                     Lane::Travel {
                         designated: expected_designated,
                         direction: expected_direction,
                         width: expected_width,
                         max_speed: expected_max_speed,
-                        access: _expected_access,
+                        access: expected_access,
                     },
                 ) => {
                     actual_designated == expected_designated
                         && actual_direction == expected_direction
-                        && approx_eq(actual_width, expected_width)
-                        && approx_eq(actual_max_speed, expected_max_speed)
+                        && actual_width.eq_exp(&expected_width)
+                        && actual_max_speed.eq_exp(&expected_max_speed)
+                        && actual_access.eq_exp(&expected_access)
                 },
                 (
                     Lane::Parking {
@@ -225,7 +241,7 @@ mod tests {
                 ) => {
                     actual_designated == expected_designated
                         && actual_direction == expected_direction
-                        && approx_eq(actual_width, expected_width)
+                        && actual_width.eq_exp(&expected_width)
                 },
                 (
                     Lane::Shoulder {
@@ -234,19 +250,55 @@ mod tests {
                     Lane::Shoulder {
                         width: expected_width,
                     },
-                ) => approx_eq(actual_width, expected_width),
+                ) => actual_width.eq_exp(&expected_width),
                 (actual, expected) => actual == expected,
             }
         }
     }
 
-    impl Marking {
-        /// Eq where None is treaty as always equal
-        #[allow(clippy::unnested_or_patterns)]
-        fn approx_eq(&self, expected: &Self) -> bool {
+    impl EqExpected for Markings {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self.iter()
+                .zip(expected.iter())
+                .all(|(actual, expected)| actual.eq_exp(expected))
+        }
+    }
+
+    impl EqExpected for Marking {
+        fn eq_exp(&self, expected: &Self) -> bool {
             self.style == expected.style
-                && approx_eq(&self.color, &expected.color)
-                && approx_eq(&self.width, &expected.width)
+                && self.color.eq_exp(&expected.color)
+                && self.width.eq_exp(&expected.width)
+        }
+    }
+
+    impl EqExpected for Semantic {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self == expected
+        }
+    }
+
+    impl EqExpected for Metre {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self == expected
+        }
+    }
+
+    impl EqExpected for Speed {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self == expected
+        }
+    }
+
+    impl EqExpected for AccessByType {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self == expected
+        }
+    }
+
+    impl EqExpected for Color {
+        fn eq_exp(&self, expected: &Self) -> bool {
+            self == expected
         }
     }
 
@@ -296,13 +348,18 @@ mod tests {
 
         fn expected_road(&self) -> Road {
             Road {
+                name: None,
+                r#ref: None,
+                highway: Highway::from_tags(&self.tags).unwrap(),
+                lit: None,
+                tracktype: None,
+                smoothness: None,
                 lanes: self
                     .lanes()
                     .iter()
                     .filter(|lane| self.is_lane_enabled(lane))
                     .cloned()
                     .collect(),
-                highway: Highway::from_tags(&self.tags).unwrap(),
             }
         }
     }
@@ -312,13 +369,18 @@ mod tests {
         fn into_filtered_road(self, test: &TestCase) -> (Road, RoadWarnings) {
             (
                 Road {
+                    name: None,
+                    r#ref: None,
+                    highway: self.road.highway,
+                    lit: None,
+                    tracktype: None,
+                    smoothness: None,
                     lanes: self
                         .road
                         .lanes
                         .into_iter()
                         .filter(|lane| test.is_lane_enabled(lane))
                         .collect(),
-                    highway: self.road.highway,
                 },
                 self.warnings,
             )
@@ -336,7 +398,11 @@ mod tests {
                 .lanes
                 .iter()
                 .filter_map(|lane| {
-                    if let Lane::Separator { markings, .. } = lane {
+                    if let Lane::Separator {
+                        markings: Some(markings),
+                        ..
+                    } = lane
+                    {
                         Some(
                             markings
                                 .iter()
@@ -380,7 +446,11 @@ mod tests {
                 .lanes
                 .iter()
                 .filter_map(|lane| {
-                    if let Lane::Separator { markings, .. } = lane {
+                    if let Lane::Separator {
+                        markings: Some(markings),
+                        ..
+                    } = lane
+                    {
                         Some(
                             markings
                                 .iter()
@@ -453,7 +523,7 @@ mod tests {
             match road_from_tags {
                 Ok(road_from_tags) => {
                     let (actual_road, warnings) = road_from_tags.into_filtered_road(test);
-                    if actual_road.approx_eq(&expected_road) {
+                    if actual_road.eq_exp(&expected_road) {
                         if test.test_expects_warnings() && warnings.is_empty() {
                             test.print();
                             println!("Expected warnings. Try removing `expect_warnings`.");
@@ -532,8 +602,8 @@ mod tests {
                 },
             )
             .unwrap();
-            let (output_road, _warnings) = output_lanes.into_filtered_road(test);
-            if !output_road.approx_eq(&input_road) {
+            let (output_road, warnings) = output_lanes.into_filtered_road(test);
+            if !output_road.eq_exp(&input_road) {
                 test.print();
                 println!("From:");
                 println!("    {}", stringify_lane_types(&input_road));
@@ -545,6 +615,7 @@ mod tests {
                 println!("Got:");
                 println!("    {}", stringify_lane_types(&output_road));
                 println!("    {}", stringify_directions(&output_road));
+                println!("{}", warnings);
                 if stringify_lane_types(&input_road) == stringify_lane_types(&output_road)
                     || stringify_directions(&input_road) == stringify_directions(&output_road)
                 {

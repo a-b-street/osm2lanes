@@ -5,7 +5,7 @@ use crate::locale::Locale;
 use crate::metric::Metre;
 
 #[non_exhaustive]
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Semantic {
     Buffer,
@@ -18,7 +18,7 @@ pub enum Semantic {
     Verge,
 }
 
-#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Markings(Vec<Marking>);
 
 impl Markings {
@@ -68,7 +68,7 @@ impl Marking {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Style {
     #[serde(rename = "solid_line")]
     SolidLine,
@@ -124,7 +124,7 @@ impl Style {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Color {
     #[serde(rename = "white")]
     White,
