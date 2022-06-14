@@ -31,7 +31,7 @@ syntect = { version = "5.0", default-features = false, features = [
 wasm-bindgen = "0.2"
 wee_alloc = { version = "0.4", optional = true }
 yew = "0.19"
-gloo-worker = { git = "https://github.com/droogmic/gloo", branch = "worker-v2" }
+gloo-worker = { git = "https://github.com/futursolo/gloo", branch = "worker-v2" }
 
 [dependencies.web-sys]
 version = "0.3"
