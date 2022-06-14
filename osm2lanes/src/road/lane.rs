@@ -96,13 +96,10 @@ pub enum Direction {
 pub enum Designated {
     // #[serde(rename = "any")]
     // Any,
-    #[serde(rename = "foot")]
     Foot,
-    #[serde(rename = "bicycle")]
     Bicycle,
-    #[serde(rename = "motor_vehicle")]
+    #[cfg_attr(feature = "serde", serde(rename = "motor_vehicle"))]
     Motor,
-    #[serde(rename = "bus")]
     Bus,
 }
 
@@ -202,7 +199,6 @@ pub struct AccessByType {
 /// Access for a given user
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub struct AccessAndDirection {
     pub(crate) access: AccessTagValue,
     /// Direction, if different from designated direction

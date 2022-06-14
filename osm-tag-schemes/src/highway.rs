@@ -140,6 +140,8 @@ impl Default for Lifecycle {
         Self::Active
     }
 }
+
+#[cfg(feature = "serde")]
 fn is_default<T>(v: &T) -> bool
 where
     T: PartialEq + Default,

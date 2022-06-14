@@ -215,9 +215,7 @@ impl Config {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum DrivingSide {
-    #[serde(rename = "right")]
     Right,
-    #[serde(rename = "left")]
     Left,
 }
 
