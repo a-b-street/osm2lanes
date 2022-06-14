@@ -1,10 +1,10 @@
 use osm_tags::DuplicateKeyError;
-use serde::Serialize;
 
 use super::TagsToLanesMsg;
 use crate::road::Road;
 
-#[derive(Clone, Debug, Default, Serialize)]
+#[derive(Clone, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct RoadWarnings(Vec<TagsToLanesMsg>);
 
 impl RoadWarnings {
@@ -51,7 +51,8 @@ impl std::fmt::Display for RoadWarnings {
 /// assert_eq!("{\"error\":\"deprecated: 'foo=bar' - src/transform/error.rs:5:27\"}", serde_json::to_string(&err).unwrap());
 /// ```
 #[allow(clippy::module_name_repetitions)]
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum RoadError {
     #[serde(rename = "error")]
     Msg(TagsToLanesMsg),
@@ -92,7 +93,8 @@ impl From<RoadWarnings> for RoadError {
     }
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct RoadFromTags {
     pub road: Road,
     pub warnings: RoadWarnings,
