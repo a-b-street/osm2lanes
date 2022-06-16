@@ -8,7 +8,7 @@ use osm2lanes::test::TestCase;
 use web_sys::{Event, FocusEvent, HtmlInputElement, HtmlSelectElement, KeyboardEvent, MouseEvent};
 use yew::{html, Callback, Component, Context, Html, NodeRef, Properties, TargetCast};
 
-use crate::agent::{ExampleLoader, ExampleLoaderOutput, NAME};
+use crate::agent::{ExampleLoader, ExampleLoaderOutput, SerdeWasmBindgen, NAME};
 use crate::{Msg as AppMsg, State};
 
 pub(crate) enum Msg {
@@ -48,6 +48,7 @@ impl Component for Control {
         let link = ctx.link().clone();
         let cb = move |output| link.send_message(Self::Message::WorkerMsg(output));
         let worker = WorkerSpawner::<ExampleLoader>::new()
+            .encoding::<SerdeWasmBindgen>()
             .callback(cb)
             .spawn(NAME);
 
@@ -56,10 +57,10 @@ impl Component for Control {
 
         Self {
             _worker: worker,
-            textarea_input_ref: Default::default(),
-            textarea_output_ref: Default::default(),
-            example: Default::default(),
-            examples: Default::default(),
+            textarea_input_ref: NodeRef::default(),
+            textarea_output_ref: NodeRef::default(),
+            example: Option::default(),
+            examples: Option::default(),
         }
     }
 
