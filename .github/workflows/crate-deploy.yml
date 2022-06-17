@@ -1,4 +1,4 @@
-name: 'deploy osm-tags crate'
+name: "Deploy osm-tags Crate"
 
 on:
   push:
@@ -7,12 +7,14 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        crate: ["osm-tags"]
     steps:
       - uses: actions/checkout@v2
-
-      - name: "publish osm-tags"
+      - name: "Publish ${{ matrix.crate }}"
         run: |
           rustup toolchain install stable
           rustup override set stable
-          cd osm-tags/
-          cargo publish --dry-run
+          cd ${{ matrix.crate }}
+          cargo publish
