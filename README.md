@@ -11,10 +11,20 @@ Please get in touch before taking a dependency on it; we will clearly communicat
 - `data`
   - `tests.yml` - Test cases.
     `spec-lanes.json` - JSON specification.
-- `osm2lanes` - Core library
+- `osm-tags` - Tags datatype library
+- `osm-tag-schemes` - Tagging schemes library
+- `osm2lanes` - Tags to lanes library
 - `osm2lanes-web` - Website with lane viewer
 - `osm2lanes-npm` - NPM package
 - `osm2lanes-cli` - CLI tool
+
+## Design
+
+The primary input is a `Tags` map data structure.
+`osm-tag-schemes` and `osm2lanes` are aware of many tagging schemes, so these are parsed from the Tags.
+The schemes may be mutually compatible or incompatible, so this must be reconciled.
+A road is then built up with lanes, inside-out.
+Separators are added once all the lanes are added.
 
 ## Contributing
 
