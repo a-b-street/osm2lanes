@@ -1,4 +1,4 @@
-name: Deploy crate
+name: 'deploy osm-tags crate'
 
 on:
   push:
@@ -10,9 +10,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: "publish osm2lanes"
+      - name: "publish osm-tags"
         run: |
           rustup toolchain install stable
           rustup override set stable
-          cd osm2lanes/
+          cd osm-tags/
           cargo publish --dry-run
