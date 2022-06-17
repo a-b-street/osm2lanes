@@ -10,65 +10,80 @@ jobs:
   python:
     runs-on: ubuntu-latest
     steps:
-    - name: "Checkout"
-      uses: actions/checkout@v3
-    - name: "Setup Python 3.9"
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-        cache: pip
-    - name: "Install Dependencies"
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install --requirement requirements.txt
-    - name: "Test Schema"
-      run: sh .githooks/test_schema
+      - name: "Checkout"
+        uses: actions/checkout@v3
+      - name: "Setup Python 3.9"
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+          cache: pip
+      - name: "Install Dependencies"
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --requirement requirements.txt
+      - name: "Test Schema"
+        run: sh .githooks/test_schema
 
   # Moved away from actions-rs because of
   # https://github.com/actions-rs/cargo/pull/59#issuecomment-1012974186
   rust:
     runs-on: ubuntu-latest
     steps:
-    - name: "Checkout"
-      uses: actions/checkout@v3
-    - name: "Cache"
-      uses: Swatinem/rust-cache@v1
-    - name: "Install trunk"
-      uses: jetli/trunk-action@v0.1.0
-    - name: "Test"
-      run: |
-        sh .githooks/test_rust
-  
+      - name: "Checkout"
+        uses: actions/checkout@v3
+      - name: "Cache"
+        uses: Swatinem/rust-cache@v1
+      - name: "Install trunk"
+        uses: jetli/trunk-action@v0.1.0
+      - name: "Test"
+        run: |
+          sh .githooks/test_rust
+
+          cd osm-tags/
+          cargo --color=always check --color=always
+          cargo --color=always check --color=always --all-features
+          cd ../
+
+          cd osm-tag-schemes/
+          cargo --color=always check --color=always
+          cargo --color=always check --color=always --all-features
+          cd ../
+
+          cd osm2lanes/
+          cargo --color=always check --color=always
+          cargo --color=always check --color=always --all-features
+          cd ../
+
   rust-stable:
     runs-on: ubuntu-latest
     steps:
-    - name: "Checkout"
-      uses: actions/checkout@v3
-    - name: "Rustup"
-      run: |
-        rustup toolchain install stable
-        rustup override set stable
-    - name: "Cache"
-      uses: Swatinem/rust-cache@v1
-    - name: "Test"
-      run: |
-        rustup show
-        cargo test
+      - name: "Checkout"
+        uses: actions/checkout@v3
+      - name: "Rustup"
+        run: |
+          rustup toolchain install stable
+          rustup override set stable
+      - name: "Cache"
+        uses: Swatinem/rust-cache@v1
+      - name: "Test"
+        run: |
+          rustup show
+          cargo test
 
   rust-benchmark:
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-    - name: "Checkout"
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-    - name: "Cache"
-      uses: Swatinem/rust-cache@v1
-    - name: "Benchmark"
-      uses: boa-dev/criterion-compare-action@main
-      with:
-        benchName: "benchmark_tests_sample"
-        branchName: ${{ github.base_ref || 'HEAD~' }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: "Cache"
+        uses: Swatinem/rust-cache@v1
+      - name: "Benchmark"
+        uses: boa-dev/criterion-compare-action@main
+        with:
+          benchName: "benchmark_tests_sample"
+          branchName: ${{ github.base_ref || 'HEAD~' }}
+          token: ${{ secrets.GITHUB_TOKEN }}

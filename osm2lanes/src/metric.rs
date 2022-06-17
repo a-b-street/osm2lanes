@@ -1,6 +1,6 @@
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub struct Metre(f64);
 
 impl Metre {
@@ -126,19 +126,21 @@ impl std::fmt::Display for Speed {
     }
 }
 
-impl Serialize for Speed {
+#[cfg(feature = "serde")]
+impl serde::Serialize for Speed {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: serde::Serializer,
     {
         speed::serialize(self, serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for Speed {
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Speed {
     fn deserialize<D>(deserializer: D) -> Result<Speed, D::Error>
     where
-        D: Deserializer<'de>,
+        D: serde::Deserializer<'de>,
     {
         speed::deserialize(deserializer)
     }
@@ -147,22 +149,21 @@ impl<'de> Deserialize<'de> for Speed {
 mod speed {
     use std::num::ParseFloatError;
 
-    use serde::de::{self, Visitor};
-    use serde::{self, Deserialize, Deserializer, Serialize, Serializer};
-
-    use super::Speed;
-
-    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    #[derive(Debug, PartialEq)]
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     struct SpeedStruct {
         unit: SpeedUnit,
         value: f64,
     }
 
-    #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-    #[serde(rename_all = "snake_case")]
+    #[derive(Debug, PartialEq, Eq)]
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
     enum SpeedUnit {
         Kph,
+        #[cfg(feature = "serde")]
         Mph,
+        #[cfg(feature = "serde")]
         Knots,
     }
 
@@ -176,10 +177,14 @@ mod speed {
         }
     }
 
-    pub(crate) fn serialize<S>(speed: &Speed, serializer: S) -> Result<S::Ok, S::Error>
+    #[cfg(feature = "serde")]
+    pub(crate) fn serialize<S>(speed: &super::Speed, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: serde::Serializer,
     {
+        use serde::Serialize;
+
+        use super::Speed;
         match speed {
             Speed::Kph(v) => serializer.serialize_f64(*v),
             Speed::Mph(v) => SpeedStruct {
@@ -197,9 +202,11 @@ mod speed {
 
     // https://serde.rs/string-or-struct.html
 
+    #[cfg(feature = "serde")]
     struct FloatOrStruct;
 
-    impl<'de> Visitor<'de> for FloatOrStruct {
+    #[cfg(feature = "serde")]
+    impl<'de> serde::de::Visitor<'de> for FloatOrStruct {
         type Value = SpeedStruct;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -266,28 +273,29 @@ mod speed {
         where
             M: serde::de::MapAccess<'de>,
         {
-            Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
+            serde::Deserialize::deserialize(serde::de::value::MapAccessDeserializer::new(map))
         }
     }
 
-    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<Speed, D::Error>
+    #[cfg(feature = "serde")]
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<super::Speed, D::Error>
     where
-        D: Deserializer<'de>,
+        D: serde::Deserializer<'de>,
     {
         let s: SpeedStruct = deserializer.deserialize_any(FloatOrStruct)?;
         Ok(match s {
             SpeedStruct {
                 unit: SpeedUnit::Kph,
                 value,
-            } => Speed::Kph(value),
+            } => super::Speed::Kph(value),
             SpeedStruct {
                 unit: SpeedUnit::Mph,
                 value,
-            } => Speed::Mph(value),
+            } => super::Speed::Mph(value),
             SpeedStruct {
                 unit: SpeedUnit::Knots,
                 value,
-            } => Speed::Knots(value),
+            } => super::Speed::Knots(value),
         })
     }
 

@@ -1,12 +1,12 @@
 pub use celes::Country;
 use osm_tag_schemes::{HighwayImportance, HighwayType};
-use serde::{Deserialize, Serialize};
 
 use crate::metric::Metre;
 use crate::road::{Color, Designated};
 
 /// Context about the place where an OSM way exists.
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Locale {
     /// The ISO 3166 Country
     pub country: Option<Country>,
@@ -211,11 +211,11 @@ impl Config {
 }
 
 /// Do vehicles travel on the right or left side of a road?
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum DrivingSide {
-    #[serde(rename = "right")]
     Right,
-    #[serde(rename = "left")]
     Left,
 }
 

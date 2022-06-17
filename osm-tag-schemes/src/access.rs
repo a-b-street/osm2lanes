@@ -1,11 +1,10 @@
-use serde::{Deserialize, Serialize};
 use strum::{EnumString, IntoStaticStr};
 
 /// Access variants from <https://wiki.openstreetmap.org/wiki/Key:access#List_of_possible_values>
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-#[derive(IntoStaticStr, EnumString)]
+#[derive(Clone, Debug, PartialEq, Eq, EnumString, IntoStaticStr)]
 #[strum(serialize_all = "snake_case")]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum Access {
     Yes,
     No,

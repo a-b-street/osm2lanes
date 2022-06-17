@@ -1,5 +1,4 @@
 use osm_tags::Tags;
-use serde::{Deserialize, Serialize};
 use strum::ParseError;
 
 use crate::{keys, FromTags, Tagged};
@@ -52,7 +51,9 @@ impl std::fmt::Display for HighwayImportance {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum NonTravel {
     Escape,
     Raceway,
@@ -126,7 +127,9 @@ impl std::fmt::Display for HighwayType {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum Lifecycle {
     Active,
     Construction,
@@ -137,6 +140,8 @@ impl Default for Lifecycle {
         Self::Active
     }
 }
+
+#[cfg(feature = "serde")]
 fn is_default<T>(v: &T) -> bool
 where
     T: PartialEq + Default,
@@ -144,16 +149,23 @@ where
     T::default().eq(v)
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub struct Highway {
-    #[serde(
-        serialize_with = "serialize_display",
-        deserialize_with = "deserialize_from_str"
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            serialize_with = "serialize_display",
+            deserialize_with = "deserialize_from_str"
+        )
     )]
     highway: HighwayType,
-    #[serde(default, skip_serializing_if = "is_default")]
+    #[cfg_attr(feature = "serde", serde(default, skip_serializing_if = "is_default"))]
     lifecycle: Lifecycle,
 }
+
+#[cfg(feature = "serde")]
 fn serialize_display<T, S>(value: &T, serializer: S) -> Result<S::Ok, S::Error>
 where
     T: std::fmt::Display,
@@ -161,12 +173,15 @@ where
 {
     serializer.collect_str(value)
 }
+
+#[cfg(feature = "serde")]
 fn deserialize_from_str<'de, T, D>(deserializer: D) -> Result<T, D::Error>
 where
     D: serde::Deserializer<'de>,
     T: std::str::FromStr,
     <T as std::str::FromStr>::Err: std::fmt::Display,
 {
+    use serde::Deserialize;
     let s = String::deserialize(deserializer)?;
     std::str::FromStr::from_str(&s).map_err(serde::de::Error::custom)
 }
