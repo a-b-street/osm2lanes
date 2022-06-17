@@ -4,7 +4,7 @@ members = [
     "osm-tags",
     "osm-tag-schemes",
     "osm2lanes-web",
-    "osm2lanes-bin",
+    "osm2lanes-cli",
     "osm2lanes-npm",
 ]
 resolver = "2"

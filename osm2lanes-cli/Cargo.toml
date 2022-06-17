@@ -1,11 +1,10 @@
 [package]
-name = "osm2lanes-bin"
+name = "osm2lanes-cli"
 version = "0.1.0"
 description = "CLI tool for osm2lanes"
-readme = true
 repository = "https://github.com/a-b-street/osm2lanes"
 license = "Apache 2.0"
-keywords = ["osm", "lanes", "cli"]
+keywords = ["openstreetmap", "osm", "lanes", "cli"]
 categories = []
 authors = [
     "Dustin Carlino <dabreegster@gmail.com>",
