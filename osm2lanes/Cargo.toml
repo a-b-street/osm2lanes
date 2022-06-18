@@ -13,14 +13,15 @@ authors = [
 edition = "2021"
 
 [dependencies]
+
+# Mandatory
 log = "0.4"
 osm-tags = { path = "../osm-tags" }
 osm-tag-schemes = { path = "../osm-tag-schemes" }
 celes = "2.1" # For countries, TODO: overlaps with locale-codes
 locale-codes = "0.3" # For continents, TODO: overlaps with celes
-serde = { version = "1", features = [
-    "derive",
-] } # Crate interface is serde compatible
+
+# Optional
 geo = { version = "0.20", optional = true, features = [
     "use-serde",
 ] } # Geo utilities for Overpass
@@ -28,11 +29,21 @@ reqwest = { version = "0.11", optional = true, features = [
     "blocking",
     "json",
 ] } # Requests to Overpass
+serde = { version = "1", optional = true, features = [
+    "derive",
+] } # Crate interface is serde compatible
 serde_yaml = { version = "0.8", optional = true } # Parsing test data
 
 [features]
-overpass = ["geo", "reqwest", "reqwest/blocking", "reqwest/json"]
-tests = ["serde_yaml"]
+serde = ["dep:serde", "osm-tags/serde", "osm-tag-schemes/serde"]
+overpass = [
+    "serde",
+    "dep:geo",
+    "dep:reqwest",
+    "reqwest?/blocking",
+    "reqwest?/json",
+]
+tests = ["serde", "dep:serde_yaml"]
 
 [dev-dependencies]
 assert-json-diff = "2.0"

@@ -51,9 +51,6 @@ use std::collections::BTreeMap;
 use std::hash::Hash;
 use std::str::FromStr;
 
-use serde::ser::SerializeMap;
-use serde::{Deserialize, Serialize, Serializer};
-
 mod key;
 pub use key::TagKey;
 
@@ -300,10 +297,12 @@ impl ToString for Tags {
 }
 
 /// A Visitor holds methods that a Deserializer can drive
+#[cfg(feature = "serde")]
 struct TagsVisitor {
     marker: std::marker::PhantomData<fn() -> Tags>,
 }
 
+#[cfg(feature = "serde")]
 impl TagsVisitor {
     fn new() -> Self {
         TagsVisitor {
@@ -312,7 +311,8 @@ impl TagsVisitor {
     }
 }
 
-/// Visitor to Deserialize of Tags.
+/// Visitor to Deserialize of Tags
+#[cfg(feature = "serde")]
 impl<'de> serde::de::Visitor<'de> for TagsVisitor {
     type Value = Tags;
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -331,8 +331,9 @@ impl<'de> serde::de::Visitor<'de> for TagsVisitor {
     }
 }
 
-/// Informs Serde how to deserialize Tags.
-impl<'de> Deserialize<'de> for Tags {
+/// Informs Serde how to deserialize Tags
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Tags {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::de::Deserializer<'de>,
@@ -343,11 +344,13 @@ impl<'de> Deserialize<'de> for Tags {
     }
 }
 
-impl Serialize for Tags {
+#[cfg(feature = "serde")]
+impl serde::Serialize for Tags {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: Serializer,
+        S: serde::Serializer,
     {
+        use serde::ser::SerializeMap;
         let mut map = serializer.serialize_map(Some(self.map.len()))?;
         for (k, v) in &self.map {
             map.serialize_entry(k.as_str(), v.as_str())?;
