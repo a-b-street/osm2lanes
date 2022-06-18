@@ -7,6 +7,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: CARGO_REGISTRY_TOKEN
+      url: https://crates.io/
     strategy:
       matrix:
         crate: ["osm-tags"]
@@ -17,4 +20,5 @@ jobs:
           rustup toolchain install stable
           rustup override set stable
           cd ${{ matrix.crate }}
+          cargo publish --list
           cargo publish
