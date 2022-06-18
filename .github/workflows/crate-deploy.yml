@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
-      name: CARGO_REGISTRY_TOKEN
+      name: crates.io
       url: https://crates.io/
     strategy:
       matrix:
@@ -16,9 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: "Publish ${{ matrix.crate }}"
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
           rustup toolchain install stable
           rustup override set stable
           cd ${{ matrix.crate }}
           cargo package --list
-          cargo publish
+          cargo publish -- token ${{ secrets.CARGO_REGISTRY_TOKEN }}
