@@ -20,5 +20,5 @@ jobs:
           rustup toolchain install stable
           rustup override set stable
           cd ${{ matrix.crate }}
-          cargo publish --list
+          cargo package --list
           cargo publish
