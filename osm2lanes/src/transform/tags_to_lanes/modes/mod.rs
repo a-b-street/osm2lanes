@@ -1,7 +1,8 @@
 /// Modes of travel
 ///
 mod bicycle;
-pub(super) use bicycle::{bicycle, Variant as CyclewayVariant};
+pub(super) use bicycle::bicycle;
+pub(super) use bicycle::cycleway::Variant as CyclewayVariant;
 
 mod bus;
 pub(super) use bus::{bus, BusLaneCount, BuswayScheme};

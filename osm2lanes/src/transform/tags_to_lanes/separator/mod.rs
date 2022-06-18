@@ -11,8 +11,8 @@ mod semantic;
 use semantic::{Overtake, Separator, SpeedClass};
 
 use self::semantic::{EdgeSeparator, LaneChange, ParkingCondition};
-use super::modes::CyclewayVariant;
-use super::{LaneBuilder, LaneType, RoadBuilder};
+use super::road::{LaneBuilder, LaneType, RoadBuilder};
+use crate::transform::tags_to_lanes::modes::CyclewayVariant;
 use crate::transform::tags_to_lanes::Infer;
 
 impl From<&Separator> for crate::road::Semantic {
