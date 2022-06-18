@@ -805,8 +805,7 @@
 
 - description: "Neukölln Cycle Path"
   way_id: 276795234
-  rust:
-    separator: false
+  rust: false
   tags:
     highway: "secondary"
     lanes: "3"

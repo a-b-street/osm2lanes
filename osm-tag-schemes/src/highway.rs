@@ -192,24 +192,57 @@ impl std::fmt::Display for Highway {
     }
 }
 
+#[derive(Debug)]
+pub enum Error<'tag> {
+    /// highway=* has unknown value
+    Highway(&'tag str),
+    /// construction=* has missing value
+    ConstructionNone,
+    /// construction=* has unknown value
+    Construction(&'tag str),
+    /// proposed=* has missing value
+    ProposedNone,
+    /// proposed=* has unknown value
+    Proposed(&'tag str),
+}
+
+impl std::fmt::Display for Error<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::Highway(s) => write!(f, "highway={s}"),
+            Error::ConstructionNone => write!(f, "construction missing"),
+            Error::Construction(s) => write!(f, "construction={s}"),
+            Error::ProposedNone => write!(f, "proposed missing"),
+            Error::Proposed(s) => write!(f, "proposed={s}"),
+        }
+    }
+}
+
+impl std::error::Error for Error<'_> {}
+
 impl Highway {
     /// Get Highway From Tags
     ///
     /// # Errors
     ///
     /// If highway missing return None
-    /// If highway unknown return the unknown value
-    #[must_use]
-    pub fn from_tags(tags: &Tags) -> Tagged<Self> {
+    /// If highway tag value unknown, `Err`
+    pub fn from_tags(tags: &Tags) -> Result<Option<Self>, Error<'_>> {
         match HighwayType::from_tags(tags, &keys::HIGHWAY) {
-            Tagged::None => Tagged::None,
-            Tagged::Some(val) => Tagged::Some(Highway::active(val)),
-            Tagged::Unknown(key, val) => match val {
-                "construction" => {
-                    HighwayType::from_tags(tags, &keys::CONSTRUCTION).map(Highway::construction)
+            Tagged::None => Ok(None),
+            Tagged::Some(t) => Ok(Some(Highway::active(t))),
+            Tagged::Unknown(s) => match s {
+                "construction" => match HighwayType::from_tags(tags, &keys::CONSTRUCTION) {
+                    Tagged::None => Err(Error::ConstructionNone),
+                    Tagged::Some(t) => Ok(Some(Highway::construction(t))),
+                    Tagged::Unknown(s) => Err(Error::Construction(s)),
                 },
-                "proposed" => HighwayType::from_tags(tags, &keys::PROPOSED).map(Highway::proposed),
-                val => Tagged::Unknown(key, val),
+                "proposed" => match HighwayType::from_tags(tags, &keys::PROPOSED) {
+                    Tagged::None => Err(Error::ProposedNone),
+                    Tagged::Some(t) => Ok(Some(Highway::construction(t))),
+                    Tagged::Unknown(s) => Err(Error::Construction(s)),
+                },
+                val => Err(Error::Highway(val)),
             },
         }
     }

@@ -14,3 +14,8 @@ pub const LIT: TagKey = TagKey::from_static("lit");
 
 pub const TRACK_TYPE: TagKey = TagKey::from_static("tracktype");
 pub const SMOOTHNESS: TagKey = TagKey::from_static("smoothness");
+
+pub const LANES: TagKey = TagKey::from_static("lanes");
+// Unstable: const evaluation https://github.com/rust-lang/rust/issues/90080
+pub const LANES_FORWARD: TagKey = TagKey::from_static("lanes:forward");
+pub const LANES_BACKWARD: TagKey = TagKey::from_static("lanes:backward");

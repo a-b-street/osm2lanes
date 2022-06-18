@@ -14,9 +14,6 @@ use crate::transform::RoadFromTags;
 mod error;
 pub use error::TagsToLanesMsg;
 
-mod access_by_lane;
-use access_by_lane::{Access, LaneDependentAccess};
-
 mod counts;
 
 mod modes;
@@ -131,10 +128,7 @@ pub fn tags_to_lanes(
     // Early return if we find unimplemented or unsupported tags.
     unsupported(tags, locale, &mut warnings)?;
 
-    let (generic_schemes, remainder_tags) = Schemes::from_tags(tags);
-    if let Some(error_tags) = remainder_tags {
-        warnings.push(TagsToLanesMsg::unsupported_tags(error_tags));
-    }
+    let generic_schemes = Schemes::from_tags(tags);
 
     // Parse each scheme independently ahead of time, to simplify the process and ensure local consistency
     let crate_schemes = TagSchemes::from_tags(tags, locale, &mut warnings)?;
@@ -172,9 +166,9 @@ pub fn tags_to_lanes(
             name: generic_schemes.name,
             r#ref: generic_schemes.r#ref,
             highway,
-            lit: generic_schemes.lit,
-            tracktype: generic_schemes.tracktype,
-            smoothness: generic_schemes.smoothness,
+            lit: generic_schemes.lit.unwrap_or(None),
+            tracktype: generic_schemes.tracktype.unwrap_or(None),
+            smoothness: generic_schemes.smoothness.unwrap_or(None),
             lanes,
         },
         warnings,

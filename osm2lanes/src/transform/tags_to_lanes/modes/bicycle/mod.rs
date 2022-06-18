@@ -9,6 +9,8 @@ use crate::transform::RoadWarnings;
 
 pub(in crate::transform::tags_to_lanes) mod cycleway;
 
+mod cycleway_lanes;
+
 impl LaneBuilder {
     fn cycle(way: cycleway::Way) -> Self {
         Self {
@@ -28,9 +30,11 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
     road: &mut RoadBuilder,
     warnings: &mut RoadWarnings,
 ) -> Result<(), TagsToLanesMsg> {
-    let scheme = cycleway::Scheme::from_tags(tags, locale, road.oneway, warnings)?;
-    log::trace!("cycleway scheme: {scheme:?}");
-    match scheme.location {
+    let cycleway_scheme = cycleway::Scheme::from_tags(tags, locale, road.oneway, warnings)?;
+    log::trace!("cycleway=* scheme: {cycleway_scheme:?}");
+    let _cycleway_lanes_scheme = cycleway_lanes::Scheme::from_tags(tags, locale, warnings)?;
+    log::trace!("cycleway:lanes=* scheme: {cycleway_scheme:?}");
+    match cycleway_scheme.location {
         cycleway::Location::None => {},
         cycleway::Location::Forward(way) => {
             if let cycleway::Variant::Lane | cycleway::Variant::Track = way.variant {
@@ -40,7 +44,7 @@ pub(in crate::transform::tags_to_lanes) fn bicycle(
         },
         cycleway::Location::Backward(way) => match way.variant {
             cycleway::Variant::Lane | cycleway::Variant::Track => {
-                road.push_backward_outside(LaneBuilder::cycle(way))
+                road.push_backward_outside(LaneBuilder::cycle(way));
             },
             cycleway::Variant::SharedMotor => {
                 road.forward_outside_mut()

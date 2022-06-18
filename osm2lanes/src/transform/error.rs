@@ -55,6 +55,7 @@ impl std::fmt::Display for RoadWarnings {
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 pub enum RoadError {
+    WayNotRoad,
     #[cfg_attr(feature = "serde", serde(rename = "error"))]
     Msg(TagsToLanesMsg),
     Warnings(RoadWarnings),
@@ -66,9 +67,10 @@ impl std::error::Error for RoadError {}
 impl std::fmt::Display for RoadError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Self::Msg(msg) => msg.fmt(f),
-            Self::Warnings(warnings) => write!(f, "{} warnings", warnings.0.len()),
-            Self::RoundTrip => write!(f, "lanes to tags cannot roundtrip"),
+            RoadError::WayNotRoad => write!(f, "way is not road"),
+            RoadError::Msg(msg) => msg.fmt(f),
+            RoadError::Warnings(warnings) => write!(f, "{} warnings", warnings.0.len()),
+            RoadError::RoundTrip => write!(f, "lanes to tags cannot roundtrip"),
         }
     }
 }
