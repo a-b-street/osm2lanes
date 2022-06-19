@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use std::iter;
 
-use osm_tag_schemes::{Highway, Schemes};
+use osm_tag_schemes::{keys, Highway, HighwayError, Schemes};
 use osm_tags::{TagKey, Tags};
 
 use super::infer::Infer;
@@ -159,8 +159,26 @@ impl RoadBuilder {
         let oneway = crate_schemes.oneway;
 
         let highway = match &generic_schemes.highway {
-            Some(highway) => highway,
-            None => return Err(TagsToLanesMsg::unsupported_str("way is not highway").into()),
+            Ok(Some(highway)) => highway,
+            Ok(None) => return Err(RoadError::WayNotRoad),
+            Err(highway_error) => {
+                let tags = match &highway_error {
+                    HighwayError::Highway(s) => Tags::from_pair(keys::HIGHWAY, *s),
+                    HighwayError::ConstructionNone => {
+                        Tags::from_pair(keys::HIGHWAY, "construction")
+                    },
+                    HighwayError::Construction(s) => {
+                        Tags::from_pairs([(keys::HIGHWAY, "construction"), (keys::CONSTRUCTION, s)])
+                            .unwrap()
+                    },
+                    HighwayError::ProposedNone => Tags::from_pair(keys::HIGHWAY, "proposed"),
+                    HighwayError::Proposed(s) => {
+                        Tags::from_pairs([(keys::HIGHWAY, "proposed"), (keys::PROPOSED, s)])
+                            .unwrap()
+                    },
+                };
+                return Err(TagsToLanesMsg::unsupported(highway_error.to_string(), tags).into());
+            },
         };
 
         let designated = if tags.is("access", "no")

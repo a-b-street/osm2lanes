@@ -54,7 +54,10 @@ use osm_tags::{TagKey, Tags};
 pub mod keys;
 
 mod highway;
-pub use highway::{Highway, HighwayImportance, HighwayType, Lifecycle};
+pub use highway::{Error as HighwayError, Highway, HighwayImportance, HighwayType, Lifecycle};
+
+mod lit;
+pub use lit::Lit;
 
 mod track_type;
 pub use track_type::TrackType;
@@ -65,37 +68,64 @@ pub use smoothness::Smoothness;
 mod access;
 pub use access::Access;
 
+mod access_by_lane;
+pub use access_by_lane::{Access as LaneAccess, LaneDependentAccess, LaneDependentAccessError};
+
+#[derive(Debug)]
+pub struct TagError<'tag>(TagKey, &'tag str);
+
+impl std::fmt::Display for TagError<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}={}", self.0, self.1)
+    }
+}
+
+impl std::error::Error for TagError<'_> {}
+
+/// A single tagged key value pair
+///
+/// Either it is left untagged,
+/// the tagged value is known,
+/// or the tagged value is unknown.
 pub enum Tagged<'tag, T> {
     /// Untagged
     None,
     Some(T),
-    Unknown(TagKey, &'tag str),
+    Unknown(&'tag str),
 }
 
 impl<'tag, T> Tagged<'tag, T> {
     /// Panics
     pub fn unwrap(self) -> T {
         match self {
-            Tagged::None | Tagged::Unknown(_, _) => panic!(),
+            Tagged::None | Tagged::Unknown(_) => panic!(),
             Tagged::Some(v) => v,
+        }
+    }
+    pub fn ok(self) -> Option<T> {
+        match self {
+            Tagged::None | Tagged::Unknown(_) => None,
+            Tagged::Some(v) => Some(v),
         }
     }
     pub fn map<U, F: FnOnce(T) -> U>(self, f: F) -> Tagged<'tag, U> {
         match self {
             Tagged::None => Tagged::None,
             Tagged::Some(t) => Tagged::Some(f(t)),
-            Tagged::Unknown(k, v) => Tagged::Unknown(k, v),
+            Tagged::Unknown(s) => Tagged::Unknown(s),
         }
     }
-    // TODO: panics
-    pub fn or_insert(self, tags: &mut Tags) -> Option<T> {
+
+    /// `Result<Option>`
+    ///
+    /// # Errors
+    ///
+    /// From `Tagged::Unknown`.
+    pub fn ok_with(self, key: TagKey) -> Result<Option<T>, TagError<'tag>> {
         match self {
-            Tagged::None => None,
-            Tagged::Some(val) => Some(val),
-            Tagged::Unknown(key, val) => {
-                tags.checked_insert(key, val).unwrap();
-                None
-            },
+            Tagged::None => Ok(None),
+            Tagged::Some(val) => Ok(Some(val)),
+            Tagged::Unknown(s) => Err(TagError(key, s)),
         }
     }
 }
@@ -110,7 +140,7 @@ trait FromTags: FromStr {
         match tags.get(key) {
             Some(s) => match s.parse() {
                 Ok(val) => Tagged::Some(val),
-                Err(_) => Tagged::Unknown(keys::TRACK_TYPE, s),
+                Err(_) => Tagged::Unknown(s),
             },
             None => Tagged::None,
         }
@@ -129,59 +159,28 @@ trait FromTagsDefault: FromTags {
     }
 }
 
-mod lit {
-    use strum::{EnumString, IntoStaticStr};
-
-    use crate::{keys, FromTagsDefault};
-
-    #[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq, EnumString, IntoStaticStr)]
-    #[strum(serialize_all = "kebab-case")]
-    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-    #[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
-    pub enum Lit {
-        Yes,
-        No,
-        SunsetSunrise,
-        Automatic,
-    }
-
-    impl FromTagsDefault for Lit {
-        const KEY: osm_tags::TagKey = keys::LIT;
-    }
-}
-pub use lit::Lit;
-
-pub struct Schemes {
+pub struct Schemes<'tag> {
     // Generic
     pub name: Option<String>,
     pub r#ref: Option<String>,
 
     // Ways
-    pub highway: Option<Highway>,
-    pub lit: Option<Lit>,
-    pub tracktype: Option<TrackType>,
-    pub smoothness: Option<Smoothness>,
+    pub highway: Result<Option<Highway>, HighwayError<'tag>>,
+    pub lit: Result<Option<Lit>, TagError<'tag>>,
+    pub tracktype: Result<Option<TrackType>, TagError<'tag>>,
+    pub smoothness: Result<Option<Smoothness>, TagError<'tag>>,
 }
 
-impl Schemes {
+impl<'tag> Schemes<'tag> {
     #[must_use]
-    pub fn from_tags(tags: &Tags) -> (Self, Option<Tags>) {
-        let mut unknown_tags = Tags::default();
-        let schemes = Self {
-            name: tags.get(&keys::NAME).map(std::borrow::ToOwned::to_owned),
+    pub fn from_tags(tags: &'tag Tags) -> Self {
+        Self {
+            name: tags.get(&keys::NAME).map(ToOwned::to_owned),
             r#ref: tags.get(&keys::REF).map(ToOwned::to_owned),
-            highway: Highway::from_tags(tags).or_insert(&mut unknown_tags),
-            lit: Lit::from_tags_default(tags).or_insert(&mut unknown_tags),
-            tracktype: TrackType::from_tags_default(tags).or_insert(&mut unknown_tags),
-            smoothness: Smoothness::from_tags_default(tags).or_insert(&mut unknown_tags),
-        };
-        (
-            schemes,
-            if unknown_tags.is_empty() {
-                None
-            } else {
-                Some(unknown_tags)
-            },
-        )
+            highway: Highway::from_tags(tags),
+            lit: Lit::from_tags_default(tags).ok_with(Lit::KEY),
+            tracktype: TrackType::from_tags_default(tags).ok_with(TrackType::KEY),
+            smoothness: Smoothness::from_tags_default(tags).ok_with(Smoothness::KEY),
+        }
     }
 }

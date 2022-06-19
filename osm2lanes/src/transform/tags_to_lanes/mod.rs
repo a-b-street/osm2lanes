@@ -14,9 +14,6 @@ use crate::transform::RoadFromTags;
 mod error;
 pub use error::TagsToLanesMsg;
 
-mod access_by_lane;
-use access_by_lane::{Access, LaneDependentAccess};
-
 mod counts;
 
 mod modes;
@@ -33,6 +30,9 @@ use unsupported::unsupported;
 
 mod infer;
 pub use infer::Infer;
+
+mod oneway;
+use oneway::Oneway;
 
 trait TagsNumeric {
     fn get_parsed<Q, T, O>(&self, key: &Q, warnings: &mut RoadWarnings) -> Option<T>
@@ -87,67 +87,6 @@ impl Default for Config {
     }
 }
 
-mod oneway {
-    use osm_tag_schemes::keys::ONEWAY;
-    use osm_tags::{TagKey, Tags};
-
-    use super::TagsToLanesMsg;
-    use crate::locale::Locale;
-    use crate::transform::RoadWarnings;
-
-    #[derive(Clone, Copy, PartialEq, Eq)]
-    pub enum Oneway {
-        Yes,
-        No,
-    }
-
-    impl From<bool> for Oneway {
-        fn from(oneway: bool) -> Self {
-            if oneway {
-                Oneway::Yes
-            } else {
-                Oneway::No
-            }
-        }
-    }
-
-    impl From<Oneway> for bool {
-        fn from(oneway: Oneway) -> Self {
-            match oneway {
-                Oneway::Yes => true,
-                Oneway::No => false,
-            }
-        }
-    }
-
-    impl Oneway {
-        pub const KEY: TagKey = TagKey::from_static("oneway");
-
-        pub fn from_tags(
-            tags: &Tags,
-            _locale: &Locale,
-            _warnings: &mut RoadWarnings,
-        ) -> Result<Self, TagsToLanesMsg> {
-            Ok(
-                match (tags.get(&ONEWAY), tags.is("junction", "roundabout")) {
-                    (Some("yes"), _) => Self::Yes,
-                    (Some("no"), false) => Self::No,
-                    (Some("no"), true) => {
-                        return Err(TagsToLanesMsg::ambiguous_tags(
-                            tags.subset(["oneway", "junction"]),
-                        ));
-                    },
-                    (Some(value), _) => {
-                        return Err(TagsToLanesMsg::unimplemented_tag(ONEWAY, value));
-                    },
-                    (None, roundabout) => Self::from(roundabout),
-                },
-            )
-        }
-    }
-}
-use oneway::Oneway;
-
 pub(in crate::transform::tags_to_lanes) struct TagSchemes {
     oneway: Oneway,
     busway: BuswayScheme,
@@ -189,10 +128,7 @@ pub fn tags_to_lanes(
     // Early return if we find unimplemented or unsupported tags.
     unsupported(tags, locale, &mut warnings)?;
 
-    let (generic_schemes, remainder_tags) = Schemes::from_tags(tags);
-    if let Some(error_tags) = remainder_tags {
-        warnings.push(TagsToLanesMsg::unsupported_tags(error_tags));
-    }
+    let generic_schemes = Schemes::from_tags(tags);
 
     // Parse each scheme independently ahead of time, to simplify the process and ensure local consistency
     let crate_schemes = TagSchemes::from_tags(tags, locale, &mut warnings)?;
@@ -230,9 +166,9 @@ pub fn tags_to_lanes(
             name: generic_schemes.name,
             r#ref: generic_schemes.r#ref,
             highway,
-            lit: generic_schemes.lit,
-            tracktype: generic_schemes.tracktype,
-            smoothness: generic_schemes.smoothness,
+            lit: generic_schemes.lit.unwrap_or(None),
+            tracktype: generic_schemes.tracktype.unwrap_or(None),
+            smoothness: generic_schemes.smoothness.unwrap_or(None),
             lanes,
         },
         warnings,

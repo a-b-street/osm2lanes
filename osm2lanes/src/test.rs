@@ -352,7 +352,7 @@ mod tests {
             Road {
                 name: None,
                 r#ref: None,
-                highway: Highway::from_tags(&self.tags).unwrap(),
+                highway: Highway::from_tags(&self.tags).unwrap().unwrap(),
                 lit: None,
                 tracktype: None,
                 smoothness: None,

@@ -2,22 +2,19 @@ use std::borrow::Borrow;
 use std::fmt::Display;
 use std::hash::Hash;
 
-use osm_tag_schemes::Access;
 use osm_tags::{TagKey, Tags};
 
 use crate::locale::Locale;
 use crate::metric::Metre;
-use crate::road::{AccessAndDirection, Designated, Direction};
+use crate::road::Direction;
 use crate::transform::tags::CYCLEWAY;
 use crate::transform::tags_to_lanes::oneway::Oneway;
-use crate::transform::tags_to_lanes::road::{LaneType, Width};
-use crate::transform::tags_to_lanes::{
-    Infer, LaneBuilder, RoadBuilder, TagsNumeric, TagsToLanesMsg,
-};
+use crate::transform::tags_to_lanes::road::Width;
+use crate::transform::tags_to_lanes::{Infer, TagsNumeric, TagsToLanesMsg};
 use crate::transform::{RoadWarnings, WaySide};
 
 #[derive(Debug)]
-enum VariantError {
+pub(crate) enum VariantError {
     UnknownVariant(TagKey, String),
     UnimplementedVariant(TagKey, String),
 }
@@ -71,9 +68,9 @@ impl<T> OptionNo<T> {
     }
 }
 
-struct Opposite;
+pub(in crate::transform::tags_to_lanes) struct Opposite;
 
-fn get_variant<Q, O>(
+pub(in crate::transform::tags_to_lanes) fn get_variant<Q, O>(
     tags: &Tags,
     k: &Q,
 ) -> Result<OptionNo<(Variant, Option<Opposite>)>, VariantError>
@@ -116,6 +113,7 @@ where
 ///         - The key used
 ///     `Err` if the variant is not known
 type VariantWithMetadata = Result<(OptionNo<(Variant, Option<Opposite>)>, TagKey), VariantError>;
+
 fn cycleway_variant(tags: &Tags, side: Option<WaySide>) -> VariantWithMetadata {
     let key = if let Some(side) = side {
         CYCLEWAY + side.as_str()
@@ -128,9 +126,9 @@ fn cycleway_variant(tags: &Tags, side: Option<WaySide>) -> VariantWithMetadata {
 
 #[derive(Debug, PartialEq)]
 pub(in crate::transform::tags_to_lanes) struct Way {
-    variant: Variant,
-    direction: Direction,
-    width: Option<Width>,
+    pub(crate) variant: Variant,
+    pub(crate) direction: Direction,
+    pub(crate) width: Option<Width>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -144,8 +142,8 @@ pub(in crate::transform::tags_to_lanes) enum Location {
 /// Bicycle lane or track scheme
 #[derive(Debug, PartialEq)]
 pub(in crate::transform::tags_to_lanes) struct Scheme {
-    location: Location,
-    keys: Vec<TagKey>,
+    pub(crate) location: Location,
+    pub(crate) keys: Vec<TagKey>,
 }
 
 impl Scheme {
@@ -516,57 +514,6 @@ impl Scheme {
     }
 }
 
-impl LaneBuilder {
-    fn cycle(way: Way) -> Self {
-        Self {
-            r#type: Infer::Direct(LaneType::Travel),
-            direction: Infer::Direct(way.direction),
-            designated: Infer::Direct(Designated::Bicycle),
-            width: way.width.unwrap_or_default(),
-            cycleway_variant: Some(way.variant),
-            ..Default::default()
-        }
-    }
-}
-
-pub(in crate::transform::tags_to_lanes) fn bicycle(
-    tags: &Tags,
-    locale: &Locale,
-    road: &mut RoadBuilder,
-    warnings: &mut RoadWarnings,
-) -> Result<(), TagsToLanesMsg> {
-    let scheme = Scheme::from_tags(tags, locale, road.oneway, warnings)?;
-    log::trace!("cycleway scheme: {scheme:?}");
-    match scheme.location {
-        Location::None => {},
-        Location::Forward(way) => {
-            if let Variant::Lane | Variant::Track = way.variant {
-                road.push_forward_outside(LaneBuilder::cycle(way));
-            }
-            // TODO: Do nothing if forward sharing the lane? What if we are on a bus-only road?
-        },
-        Location::Backward(way) => match way.variant {
-            Variant::Lane | Variant::Track => road.push_backward_outside(LaneBuilder::cycle(way)),
-            Variant::SharedMotor => {
-                road.forward_outside_mut()
-                    .ok_or_else(|| {
-                        TagsToLanesMsg::unsupported_str("no forward lanes for cycleway")
-                    })?
-                    .access
-                    .bicycle = Infer::Direct(AccessAndDirection {
-                    access: Access::Yes,
-                    direction: Some(Direction::Both),
-                });
-            },
-        },
-        Location::Both { forward, backward } => {
-            road.push_forward_outside(LaneBuilder::cycle(forward));
-            road.push_backward_outside(LaneBuilder::cycle(backward));
-        },
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use osm_tags::Tags;
@@ -575,7 +522,7 @@ mod tests {
     use crate::locale::Locale;
     use crate::road::Direction;
     use crate::transform::tags_to_lanes::error::TagsToLanesIssue;
-    use crate::transform::tags_to_lanes::modes::bicycle::{Location, Variant, Way};
+    use crate::transform::tags_to_lanes::modes::bicycle::cycleway::{Location, Variant, Way};
     use crate::transform::tags_to_lanes::oneway::Oneway;
     use crate::transform::RoadWarnings;
 

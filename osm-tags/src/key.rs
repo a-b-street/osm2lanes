@@ -1,4 +1,5 @@
 use std::borrow::Borrow;
+use std::fmt::Display;
 use std::ops::Deref;
 
 use kstring::KString;
@@ -14,6 +15,12 @@ use kstring::KString;
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TagKey(KString);
+
+impl Display for TagKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl TagKey {
     #[must_use]

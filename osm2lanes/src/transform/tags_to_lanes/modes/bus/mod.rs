@@ -1,10 +1,10 @@
+use osm_tag_schemes::{LaneAccess, LaneDependentAccess};
 use osm_tags::{TagKey, Tags};
 
 use crate::locale::Locale;
 use crate::road::Designated;
 use crate::transform::tags_to_lanes::{
-    Access, Infer, LaneBuilder, LaneBuilderError, LaneDependentAccess, RoadBuilder, TagsNumeric,
-    TagsToLanesMsg,
+    Infer, LaneBuilder, LaneBuilderError, RoadBuilder, TagsNumeric, TagsToLanesMsg,
 };
 use crate::transform::RoadWarnings;
 
@@ -108,29 +108,25 @@ fn bus_lanes(
     tags: &Tags,
     locale: &Locale,
     road: &mut RoadBuilder,
-    warnings: &mut RoadWarnings,
+    _warnings: &mut RoadWarnings,
 ) -> Result<(), TagsToLanesMsg> {
+    let bus_lanes = TagKey::from_static("bus:lanes");
+    let psv_lanes = TagKey::from_static("psv:lanes");
     match (
-        LaneDependentAccess::from_tags(
-            &TagKey::from_static("bus:lanes"),
-            tags,
-            locale,
-            road,
-            warnings,
-        )?,
-        LaneDependentAccess::from_tags(
-            &TagKey::from_static("psv:lanes"),
-            tags,
-            locale,
-            road,
-            warnings,
-        )?,
+        LaneDependentAccess::from_tags(tags, &bus_lanes)?,
+        LaneDependentAccess::from_tags(tags, &psv_lanes)?,
     ) {
         // lanes:bus or lanes:psv
         (Some(LaneDependentAccess::LeftToRight(lanes)), None)
         | (None, Some(LaneDependentAccess::LeftToRight(lanes))) => {
+            if lanes.len() != road.len() {
+                return Err(TagsToLanesMsg::unsupported(
+                    "lane count mismatch",
+                    tags.subset([&bus_lanes, &psv_lanes]),
+                ));
+            }
             for (lane, access) in road.lanes_ltr_mut(locale).zip(lanes.iter()) {
-                if let Access::Designated = access {
+                if let LaneAccess::Designated = access {
                     lane.set_bus(locale)?;
                 }
             }
@@ -139,7 +135,7 @@ fn bus_lanes(
         (Some(LaneDependentAccess::Forward(lanes)), None)
         | (None, Some(LaneDependentAccess::Forward(lanes))) => {
             for (lane, access) in road.forward_ltr_mut(locale).zip(lanes.iter()) {
-                if let Access::Designated = access {
+                if let LaneAccess::Designated = access {
                     lane.set_bus(locale)?;
                 }
             }
@@ -147,20 +143,26 @@ fn bus_lanes(
         (Some(LaneDependentAccess::Backward(lanes)), None)
         | (None, Some(LaneDependentAccess::Backward(lanes))) => {
             for (lane, access) in road.backward_ltr_mut(locale).zip(lanes.iter()) {
-                if let Access::Designated = access {
+                if let LaneAccess::Designated = access {
                     lane.set_bus(locale)?;
                 }
             }
         },
         (Some(LaneDependentAccess::ForwardBackward { forward, backward }), None)
         | (None, Some(LaneDependentAccess::ForwardBackward { forward, backward })) => {
+            if forward.len().checked_add(backward.len()) != Some(road.len()) {
+                return Err(TagsToLanesMsg::unsupported(
+                    "lane count mismatch",
+                    tags.subset([&bus_lanes, &psv_lanes]),
+                ));
+            }
             for (lane, access) in road.forward_ltr_mut(locale).zip(forward.iter()) {
-                if let Access::Designated = access {
+                if let LaneAccess::Designated = access {
                     lane.set_bus(locale)?;
                 }
             }
             for (lane, access) in road.backward_ltr_mut(locale).zip(backward.iter()) {
-                if let Access::Designated = access {
+                if let LaneAccess::Designated = access {
                     lane.set_bus(locale)?;
                 }
             }
@@ -177,7 +179,7 @@ fn bus_lanes(
                     "psv:lanes:forward",
                     "psv:lanes:backward",
                 ]),
-            ))
+            ));
         },
     }
     Ok(())
