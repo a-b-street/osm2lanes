@@ -2,17 +2,21 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use gloo_timers::callback::Timeout;
+use gloo_worker::{WorkerBridge, WorkerSpawner};
 use osm2lanes::locale::{Country, DrivingSide, Locale};
-use osm2lanes::test::{get_tests, TestCase};
+use osm2lanes::test::TestCase;
 use web_sys::{Event, FocusEvent, HtmlInputElement, HtmlSelectElement, KeyboardEvent, MouseEvent};
 use yew::{html, Callback, Component, Context, Html, NodeRef, Properties, TargetCast};
 
+use crate::agent::{ExampleLoader, ExampleLoaderOutput, JsonCodec, NAME};
 use crate::{Msg as AppMsg, State};
 
 pub(crate) enum Msg {
+    /// Pass the message to the parent
     Up(Box<AppMsg>),
-    FirstLazy,
+    /// Worker's response with examples
+    WorkerMsg(ExampleLoaderOutput),
+    /// Select example given name
     Example(String),
 }
 
@@ -28,8 +32,8 @@ pub(crate) struct Props {
     pub(crate) state: Rc<RefCell<State>>,
 }
 
-#[derive(Default)]
 pub(crate) struct Control {
+    _worker: WorkerBridge<ExampleLoader>,
     textarea_input_ref: NodeRef,
     textarea_output_ref: NodeRef,
     example: Option<String>,
@@ -40,16 +44,32 @@ impl Component for Control {
     type Properties = Props;
     type Message = Msg;
 
-    fn create(_ctx: &Context<Self>) -> Self {
-        Self::default()
+    fn create(ctx: &Context<Self>) -> Self {
+        let link = ctx.link().clone();
+        let cb = move |output| link.send_message(Self::Message::WorkerMsg(output));
+        let worker = WorkerSpawner::<ExampleLoader>::new()
+            .encoding::<JsonCodec>()
+            .callback(cb)
+            .spawn(NAME);
+
+        // Trigger worker
+        worker.send(());
+
+        Self {
+            _worker: worker,
+            textarea_input_ref: NodeRef::default(),
+            textarea_output_ref: NodeRef::default(),
+            example: Option::default(),
+            examples: Option::default(),
+        }
     }
 
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Up(msg) => ctx.props().callback_msg.emit(*msg),
-            Msg::FirstLazy => {
-                let tests = get_tests();
-                let examples: BTreeMap<_, _> = tests
+            Msg::WorkerMsg(examples) => {
+                let examples: BTreeMap<String, TestCase> = examples
+                    .0
                     .into_iter()
                     .filter_map(|t| {
                         let example_name = t.example().map(std::borrow::ToOwned::to_owned);
@@ -254,16 +274,6 @@ impl Component for Control {
                     </div>
                 </section>
             </>
-        }
-    }
-
-    fn rendered(&mut self, ctx: &Context<Self>, first_render: bool) {
-        if first_render {
-            let handle = {
-                let link = ctx.link().clone();
-                Timeout::new(1, move || link.send_message(Msg::FirstLazy))
-            };
-            handle.forget();
         }
     }
 }

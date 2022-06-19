@@ -5,7 +5,7 @@
 #![warn(unreachable_pub)]
 #![deny(unsafe_code)]
 #![deny(unsafe_op_in_unsafe_fn)]
-#![warn(unused_crate_dependencies)]
+// #![warn(unused_crate_dependencies)] // https://github.com/rust-lang/rust/issues/57274
 #![warn(unused_lifetimes)]
 #![warn(unused_qualifications)]
 // Clippy
@@ -56,6 +56,8 @@ use syntect::html::highlighted_html_for_string;
 use syntect::parsing::SyntaxSet;
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
+
+pub mod agent;
 
 mod control;
 use control::Control;
@@ -360,10 +362,4 @@ impl App {
             }}</span></div>
         }
     }
-}
-
-fn main() {
-    console_log::init_with_level(log::Level::Debug).expect("logging failed");
-    log::trace!("Initializing yew...");
-    yew::start_app::<App>();
 }

@@ -2,7 +2,6 @@
 name = "osm2lanes-web"
 version = "0.1.0"
 description = "Website for osm2lanes"
-readme = true
 repository = "https://github.com/a-b-street/osm2lanes"
 license = "Apache-2.0"
 keywords = ["osm", "lanes", "web"]
@@ -15,9 +14,9 @@ edition = "2021"
 
 [dependencies]
 console_log = { version = "0.2", optional = true, features = ["color"] }
+console_error_panic_hook = "0.1"
 geo = { version = "0.20" }
 gloo-utils = "0.1"
-gloo-timers = "0.2"
 leaflet = { git = "https://github.com/droogmic/leaflet-rs", branch = "polyline_get_bounds" }
 log = "0.4"
 osm-tags = { path = "../osm-tags" }
@@ -28,10 +27,11 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 syntect = { version = "5.0", default-features = false, features = [
     "default-fancy",
-] } # TODO: https://github.com/trishume/syntect/issues/135#issuecomment-700306068, webwroker + create json bundle
+] } # TODO: https://github.com/trishume/syntect/issues/135#issuecomment-700306068, webworker + create json bundle
 wasm-bindgen = "0.2"
 wee_alloc = { version = "0.4", optional = true }
 yew = "0.19"
+gloo-worker = { git = "https://github.com/futursolo/gloo", rev = "a2101e166260294292c8121fdb8ed883dae62ed8" }
 
 [dependencies.web-sys]
 version = "0.3"
