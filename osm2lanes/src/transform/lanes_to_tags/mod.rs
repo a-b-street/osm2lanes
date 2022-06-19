@@ -4,11 +4,13 @@ use celes::Country;
 use osm_tag_schemes::Access;
 use osm_tags::Tags;
 
-pub use self::error::LanesToTagsMsg;
 use super::{tags_to_lanes, TagsToLanesConfig};
 use crate::locale::{DrivingSide, Locale};
 use crate::metric::Speed;
 use crate::road::{AccessByType, Color, Designated, Direction, Lane, Marking, Road};
+
+mod error;
+pub use error::LanesToTagsMsg;
 
 #[non_exhaustive]
 pub struct Config {
@@ -43,88 +45,72 @@ impl Lane {
     }
 }
 
-mod error {
-    use std::panic::Location;
-
-    use osm_tags::DuplicateKeyError;
-
-    use crate::transform::RoadError;
-
-    /// Lanes To Tags Transformation Logic Issue
-    ///
-    /// ```
-    /// use osm2lanes::transform::LanesToTagsMsg;
-    /// let _ = LanesToTagsMsg::unimplemented("foobar");
-    /// ```
-    #[derive(Clone, Debug)]
-    pub struct LanesToTagsMsg {
-        location: &'static Location<'static>,
-        issue: LanesToTagsIssue,
-    }
-
-    #[derive(Clone, Debug)]
-    pub(in crate::transform::lanes_to_tags) enum LanesToTagsIssue {
-        Unimplemented(String),
-        TagsDuplicateKey(DuplicateKeyError),
-        Roundtrip(Option<RoadError>),
-    }
-
-    impl std::fmt::Display for LanesToTagsMsg {
-        #[allow(clippy::panic_in_result_fn)]
-        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-            match &self.issue {
-                LanesToTagsIssue::Unimplemented(description) => {
-                    write!(f, "unimplemented: '{}' - {}", description, self.location)
-                },
-                LanesToTagsIssue::TagsDuplicateKey(e) => write!(f, "{} - {}", e, self.location),
-                LanesToTagsIssue::Roundtrip(None) => write!(f, "roundtrip - {}", self.location),
-                LanesToTagsIssue::Roundtrip(Some(e)) => {
-                    write!(f, "roundtrip: {} - {}", e, self.location)
-                },
-            }
+impl Road {
+    /// Find the lanes going forward on the main continuous road surface
+    fn travel_lanes<'this>(
+        &'this self,
+        direction: Direction,
+        locale: &Locale,
+    ) -> Box<dyn Iterator<Item = &Lane> + 'this> {
+        if let Direction::Both = direction {
+            unreachable!();
+        }
+        let skip_while = move |lane: &&Lane| {
+            !matches!(
+                lane,
+                Lane::Travel {
+                    designated: Designated::Motor,
+                    direction: Some(travel_direction),
+                    ..
+                } if direction == *travel_direction
+            )
+        };
+        let take_while = move |lane: &&Lane| {
+            matches!(
+                lane,
+                Lane::Travel {
+                    direction: Some(travel_direction),
+                    ..
+                } if direction == *travel_direction
+            )
+        };
+        let left_to_right = match (direction, locale.driving_side) {
+            (Direction::Forward, DrivingSide::Right) => true,
+            (Direction::Forward, DrivingSide::Left) => false,
+            (Direction::Backward, DrivingSide::Right) => false,
+            (Direction::Backward, DrivingSide::Left) => true,
+            (Direction::Both, _) => unreachable!(),
+        };
+        if left_to_right {
+            Box::new(
+                self.lanes
+                    .iter()
+                    .skip_while(skip_while)
+                    .take_while(take_while),
+            )
+        } else {
+            Box::new(
+                self.lanes
+                    .iter()
+                    .rev()
+                    .skip_while(skip_while)
+                    .take_while(take_while),
+            )
         }
     }
-
-    impl std::error::Error for LanesToTagsMsg {}
-
-    impl LanesToTagsMsg {
-        #[must_use]
-        #[track_caller]
-        pub fn unimplemented(description: &str) -> Self {
-            LanesToTagsMsg {
-                location: Location::caller(),
-                issue: LanesToTagsIssue::Unimplemented(description.to_owned()),
-            }
-        }
-
-        #[must_use]
-        #[track_caller]
-        pub fn roundtrip() -> Self {
-            LanesToTagsMsg {
-                location: Location::caller(),
-                issue: LanesToTagsIssue::Roundtrip(None),
-            }
-        }
+    /// Find the lanes going forward on the main continuous road surface
+    fn forward_travel_lanes<'this>(
+        &'this self,
+        locale: &Locale,
+    ) -> Box<dyn Iterator<Item = &Lane> + 'this> {
+        self.travel_lanes(Direction::Forward, locale)
     }
-
-    impl From<DuplicateKeyError> for LanesToTagsMsg {
-        #[track_caller]
-        fn from(e: DuplicateKeyError) -> Self {
-            LanesToTagsMsg {
-                location: Location::caller(),
-                issue: LanesToTagsIssue::TagsDuplicateKey(e),
-            }
-        }
-    }
-
-    impl From<RoadError> for LanesToTagsMsg {
-        #[track_caller]
-        fn from(e: RoadError) -> Self {
-            LanesToTagsMsg {
-                location: Location::caller(),
-                issue: LanesToTagsIssue::Roundtrip(Some(e)),
-            }
-        }
+    /// Find the lanes going backward on the main continuous road surface
+    fn backward_travel_lanes<'this>(
+        &'this self,
+        locale: &Locale,
+    ) -> Box<dyn Iterator<Item = &Lane> + 'this> {
+        self.travel_lanes(Direction::Backward, locale)
     }
 }
 
@@ -157,7 +143,7 @@ pub fn lanes_to_tags(
         return Err(LanesToTagsMsg::unimplemented("construction=*"));
     }
     if road.highway.is_proposed() {
-        return Err(LanesToTagsMsg::unimplemented("construction=*"));
+        return Err(LanesToTagsMsg::unimplemented("proposed=*"));
     }
 
     let lanes = &road.lanes;
