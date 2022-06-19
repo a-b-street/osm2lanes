@@ -188,7 +188,6 @@ impl MapComponent {
         if let Some(search_circle) = self.search_circle.take() {
             search_circle.remove();
         }
-        self.search_circle = None;
     }
 }
 
