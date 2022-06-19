@@ -3,9 +3,9 @@ use osm2lanes::test::{get_tests, TestCase};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::JsValue;
 
-pub struct SerdeWasmBindgen;
+pub struct JsonCodec;
 
-impl Codec for SerdeWasmBindgen {
+impl Codec for JsonCodec {
     fn encode<I>(input: I) -> JsValue
     where
         I: Serialize,

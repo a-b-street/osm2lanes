@@ -8,7 +8,7 @@ use osm2lanes::test::TestCase;
 use web_sys::{Event, FocusEvent, HtmlInputElement, HtmlSelectElement, KeyboardEvent, MouseEvent};
 use yew::{html, Callback, Component, Context, Html, NodeRef, Properties, TargetCast};
 
-use crate::agent::{ExampleLoader, ExampleLoaderOutput, SerdeWasmBindgen, NAME};
+use crate::agent::{ExampleLoader, ExampleLoaderOutput, JsonCodec, NAME};
 use crate::{Msg as AppMsg, State};
 
 pub(crate) enum Msg {
@@ -48,7 +48,7 @@ impl Component for Control {
         let link = ctx.link().clone();
         let cb = move |output| link.send_message(Self::Message::WorkerMsg(output));
         let worker = WorkerSpawner::<ExampleLoader>::new()
-            .encoding::<SerdeWasmBindgen>()
+            .encoding::<JsonCodec>()
             .callback(cb)
             .spawn(NAME);
 

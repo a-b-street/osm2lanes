@@ -27,11 +27,11 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 syntect = { version = "5.0", default-features = false, features = [
     "default-fancy",
-] } # TODO: https://github.com/trishume/syntect/issues/135#issuecomment-700306068, webwroker + create json bundle
+] } # TODO: https://github.com/trishume/syntect/issues/135#issuecomment-700306068, webworker + create json bundle
 wasm-bindgen = "0.2"
 wee_alloc = { version = "0.4", optional = true }
 yew = "0.19"
-gloo-worker = { git = "https://github.com/futursolo/gloo", branch = "worker-v2" }
+gloo-worker = { git = "https://github.com/futursolo/gloo", rev = "a2101e166260294292c8121fdb8ed883dae62ed8" }
 
 [dependencies.web-sys]
 version = "0.3"
