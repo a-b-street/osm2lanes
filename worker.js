@@ -332,11 +332,11 @@ async function init(input) {
     imports.wbg.__wbg_warn_c1cc594c33944c11 = function(arg0, arg1, arg2, arg3) {
         console.warn(getObject(arg0), getObject(arg1), getObject(arg2), getObject(arg3));
     };
-    imports.wbg.__wbindgen_closure_wrapper180 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper179 = function(arg0, arg1, arg2) {
         var ret = makeClosure(arg0, arg1, 55, __wbg_adapter_16);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper1995 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper1998 = function(arg0, arg1, arg2) {
         var ret = makeMutClosure(arg0, arg1, 68, __wbg_adapter_19);
         return addHeapObject(ret);
     };
