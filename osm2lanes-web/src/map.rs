@@ -1,5 +1,5 @@
 use geo::{LineString, Point};
-use leaflet::{LatLng, Map, MouseEvent, Path, Polyline, TileLayer};
+use leaflet::{Circle, LatLng, Map, MouseEvent, Path, Polyline, TileLayer};
 use osm2lanes::locale::Locale;
 use osm2lanes::overpass::{get_nearby, Error as OverpassError};
 use osm_tags::Tags;
@@ -30,7 +30,7 @@ pub(crate) struct MapComponent {
     point: Point<f64>,
     path: Option<Path>,
     _map_click_closure: Closure<dyn Fn(MouseEvent)>,
-    is_searching: bool,
+    search_circle: Option<Circle>,
 }
 
 impl MapComponent {
@@ -54,6 +54,16 @@ struct MapOptions {
 const MAP_OPTIONS: MapOptions = MapOptions {
     scroll_wheel_zoom: false,
     gesture_handling: true,
+};
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CircleOptions {
+    radius: f64,
+}
+const SEARCH_RADIUS: f64 = 100.0;
+const CIRCLE_OPTIONS: CircleOptions = CircleOptions {
+    radius: SEARCH_RADIUS,
 };
 
 impl Component for MapComponent {
@@ -81,7 +91,7 @@ impl Component for MapComponent {
             path: None,
             // to avoid dropping the closure and invalidating the callback
             _map_click_closure: map_click_closure,
-            is_searching: false,
+            search_circle: None,
         }
     }
 
@@ -96,16 +106,15 @@ impl Component for MapComponent {
 
     #[allow(clippy::todo)]
     fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
-        self.is_searching = false;
         match msg {
             Msg::MapClick(point) => {
-                if self.is_searching {
+                if self.search_circle.is_some() {
                     log::debug!("map search click ignored, search ongoing");
                     false
                 } else {
                     log::debug!("map search click");
                     ctx.link().send_future(async move {
-                        match get_nearby(point).await {
+                        match get_nearby(point, SEARCH_RADIUS).await {
                             Ok((id, tags, geometry, locale)) => {
                                 Msg::MapUpdate(id.to_string(), tags, locale, geometry)
                             },
@@ -113,15 +122,18 @@ impl Component for MapComponent {
                             Err(e) => Msg::Error(e.to_string()),
                         }
                     });
-                    self.is_searching = true;
+                    self.start_search(point);
                     true
                 }
             },
             Msg::MapUpdate(id, tags, locale, geometry) => {
                 log::debug!("map search complete");
+
+                // Remove previous path, search circle
                 if let Some(path) = self.path.take() {
                     path.remove();
                 }
+                self.stop_search();
 
                 let polyline = Polyline::new(
                     geometry
@@ -141,6 +153,7 @@ impl Component for MapComponent {
             },
             Msg::Error(e) => {
                 log::debug!("map error: {e}");
+                self.stop_search();
                 ctx.props().callback_msg.emit(WebMsg::Error(e));
                 true
             },
@@ -157,6 +170,23 @@ impl Component for MapComponent {
             <section class="map">
                 {self.render_map()}
             </section>
+        }
+    }
+}
+
+impl MapComponent {
+    fn start_search(&mut self, point: Point<f64>) {
+        let search_circle = Circle::new_with_options(
+            &LatLng::new(point.x(), point.y()),
+            &JsValue::from_serde(&CIRCLE_OPTIONS).unwrap(),
+        );
+        search_circle.addTo(&self.map);
+        self.search_circle = Some(search_circle);
+    }
+
+    fn stop_search(&mut self) {
+        if let Some(search_circle) = self.search_circle.take() {
+            search_circle.remove();
         }
     }
 }

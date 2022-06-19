@@ -192,15 +192,15 @@ pub async fn get_way(id: &ElementId) -> Result<(Tags, LineString<f64>, Locale), 
 ///
 pub async fn get_nearby(
     point: Point<f64>,
+    radius: f64,
 ) -> Result<(ElementId, Tags, LineString<f64>, Locale), Error> {
-    const RADIUS: f64 = 100.0_f64;
     let lat = point.x();
     let lon = point.y();
     let resp = reqwest::Client::new()
         .get(format!(
             r#"https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];
             way
-                (around:{RADIUS},{lat},{lon})
+                (around:{radius},{lat},{lon})
                 ["highway"];
             out tags geom;
             >;
