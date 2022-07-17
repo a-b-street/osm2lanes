@@ -109,6 +109,7 @@ impl<'any> std::ops::Add for &'any TagKey {
 
 // To satisfy the `+` API
 
+#[allow(clippy::needless_borrow)] // https://github.com/rust-lang/rust-clippy/issues/9111
 impl std::ops::Add<&str> for TagKey {
     type Output = Self;
     fn add(self, other: &str) -> Self::Output {
@@ -116,6 +117,7 @@ impl std::ops::Add<&str> for TagKey {
     }
 }
 
+#[allow(clippy::needless_borrow)] // https://github.com/rust-lang/rust-clippy/issues/9111
 impl std::ops::Add for TagKey {
     type Output = Self;
     fn add(self, other: Self) -> Self::Output {
