@@ -16,6 +16,10 @@ jobs:
     name: "Rust Dagger"
     runs-on: ubuntu-latest
     steps:
+
+      - name: "Checkout"
+        uses: actions/checkout@v3
+
       - name: Sets env vars on push to main
         run: |
           echo "DAGGER_CACHE_TO=type=gha,mode=max,scope=${{env.DAGGER_CACHE_BASE}}-main" >> $GITHUB_ENV
