@@ -44,6 +44,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::str::FromStr;
 
+use geo::LineString;
 use osm2lanes::locale::{Country, Locale};
 use osm2lanes::overpass::get_way;
 use osm2lanes::road::{Lane, Printable, Road};
@@ -104,7 +105,9 @@ type ShouldRender = bool;
 
 #[derive(Debug, PartialEq)]
 pub struct State {
+    /// Way locale
     pub locale: Locale,
+    /// Way id
     pub id: Option<String>,
     /// The editable input, line and equal separated tags
     pub edit_tags: String,
@@ -116,14 +119,17 @@ pub struct State {
     pub message: Option<String>,
     /// Ref to input for way id
     pub way_ref: NodeRef,
+    /// Way geometry
+    pub way_geometry: Option<LineString<f64>>,
 }
 
 #[derive(Debug)]
 pub enum Msg {
     TagsSet(String),
-    TagsLocaleSet {
+    TagsLocaleGeoSet {
         id: String,
         tags: Tags,
+        geometry: Option<LineString<f64>>,
         locale: Locale,
     },
     ToggleDrivingSide,
@@ -133,6 +139,7 @@ pub enum Msg {
 }
 
 pub struct App {
+    // TODO: maybe use Context instead of Props?
     state: Rc<RefCell<State>>,
 }
 
@@ -151,6 +158,7 @@ impl Component for App {
             road: None,
             message: None,
             way_ref: NodeRef::default(),
+            way_geometry: None,
         }));
         Self { state }
     }
@@ -166,12 +174,18 @@ impl Component for App {
                 self.update_tags();
                 true
             },
-            Msg::TagsLocaleSet { id, tags, locale } => {
+            Msg::TagsLocaleGeoSet {
+                id,
+                tags,
+                geometry,
+                locale,
+            } => {
                 {
                     let mut state = self.state.borrow_mut();
                     state.edit_tags = tags.to_string();
                     state.locale = locale;
                     state.id = Some(id);
+                    state.way_geometry = geometry;
                 }
                 self.update_tags();
                 true
@@ -208,9 +222,10 @@ impl Component for App {
                     Ok(way_id) => {
                         ctx.link().send_future(async move {
                             match get_way(&way_id).await {
-                                Ok((tags, _geom, locale)) => Msg::TagsLocaleSet {
+                                Ok((tags, geometry, locale)) => Msg::TagsLocaleGeoSet {
                                     id: way_id.to_string(),
                                     tags,
+                                    geometry: Some(geometry),
                                     locale,
                                 },
                                 Err(e) => Msg::Error(e.to_string()),
@@ -289,7 +304,7 @@ impl Component for App {
                 }
                 <Canvas callback_error={callback_error} state={Rc::clone(&self.state)}/>
                 <hr/>
-                <MapComponent callback_msg={callback_msg.clone()}/>
+                <MapComponent callback_msg={callback_msg.clone()} state={Rc::clone(&self.state)}/>
             </div>
         }
     }

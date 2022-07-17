@@ -72,7 +72,7 @@ impl Component for Control {
                     .0
                     .into_iter()
                     .filter_map(|t| {
-                        let example_name = t.example().map(std::borrow::ToOwned::to_owned);
+                        let example_name = t.example().map(ToOwned::to_owned);
                         example_name.map(|e| (e, t))
                     })
                     .collect();
@@ -89,9 +89,10 @@ impl Component for Control {
                     .unwrap()
                     .clone();
                 self.example = Some(example);
-                ctx.link().send_message(Msg::from(AppMsg::TagsLocaleSet {
+                ctx.link().send_message(Msg::from(AppMsg::TagsLocaleGeoSet {
                     id: test_case.way_id.unwrap().to_string(),
                     tags: test_case.tags,
+                    geometry: None,
                     locale: Locale::builder()
                         .driving_side(test_case.driving_side)
                         .iso_3166_option(test_case.iso_3166_2.as_deref())

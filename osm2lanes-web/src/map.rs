@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use geo::{LineString, Point};
 use leaflet::{Circle, LatLng, Map, MouseEvent, Path, Polyline, TileLayer};
 use osm2lanes::locale::Locale;
@@ -10,7 +13,7 @@ use web_sys::{Element, HtmlElement};
 use yew::prelude::*;
 use yew::Html;
 
-use crate::Msg as WebMsg;
+use crate::{Msg as WebMsg, State};
 
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum Msg {
@@ -22,6 +25,7 @@ pub(crate) enum Msg {
 #[derive(Properties, Clone, PartialEq)]
 pub(crate) struct Props {
     pub(crate) callback_msg: Callback<WebMsg>,
+    pub(crate) state: Rc<RefCell<State>>,
 }
 
 pub(crate) struct MapComponent {
@@ -137,6 +141,7 @@ impl Component for MapComponent {
 
                 let polyline = Polyline::new(
                     geometry
+                        .clone()
                         .into_iter()
                         .map(|coordinate| LatLng::new(coordinate.x, coordinate.y).into())
                         .collect(),
@@ -146,9 +151,12 @@ impl Component for MapComponent {
                 path.addTo(&self.map);
                 self.path = Some(path);
                 self.map.fitBounds(&bounds);
-                ctx.props()
-                    .callback_msg
-                    .emit(WebMsg::TagsLocaleSet { id, tags, locale });
+                ctx.props().callback_msg.emit(WebMsg::TagsLocaleGeoSet {
+                    id,
+                    tags,
+                    geometry: Some(geometry),
+                    locale,
+                });
                 true
             },
             Msg::Error(e) => {
