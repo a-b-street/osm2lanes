@@ -40,7 +40,9 @@ import (
 
 	planner: docker.#Build & {
 		steps: [
-			chef,
+			docker.#Step & {
+				output: chef.output
+			},
 			docker.#Copy & {
 				contents: projectDirectory
 				dest:     "."
@@ -56,7 +58,9 @@ import (
 
 	builder: docker.#Build & {
 		steps: [
-			chef,
+			docker.#Step & {
+				output: chef.output
+			},
 			docker.#Copy & {
 				contents: planner.output.rootfs
 				source:   "\(_workdir)/recipe.json"
