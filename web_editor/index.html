@@ -17,6 +17,8 @@
         background-color: #c8ebfb;
       }
     </style>
+
+    <link data-trunk rel="rust" href="../osm2lanes-npm/Cargo.toml" />
   </head>
   <body>
     <div id="cards" class="cards-row">
@@ -28,11 +30,26 @@
       <div class="card">Item 6</div>
     </div>
 
-    <script>
+    <script type="module">
+      import init, {
+        js_tags_to_lanes,
+      } from "./osm2lanes-npm-b4e403ffa0956efb.js";
+      await init();
+
       new Sortable(document.getElementById("cards"), {
         animation: 150,
         ghostClass: "card-being-dragged",
       });
+
+      const input = {
+        key_values: {
+          highway: "residential",
+          lanes: "4",
+        },
+        drive_on_right: true,
+      };
+      let lanes = js_tags_to_lanes(input);
+      window.alert(JSON.stringify(lanes, null, 2));
     </script>
   </body>
 </html>

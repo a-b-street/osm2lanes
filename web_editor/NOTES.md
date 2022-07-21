@@ -13,3 +13,7 @@
 	- deleting lanes (drag to trash?)
 	- adjusting width, color, properties of each one
 	- flipping direction when you cross the road center line?
+
+# Dev
+
+`trunk serve`
