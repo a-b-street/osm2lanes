@@ -1,0 +1,38 @@
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+    <style>
+      .cards-row {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .card {
+        background-color: red;
+        margin-left: 15px;
+      }
+
+      .card-being-dragged {
+        background-color: #c8ebfb;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="cards" class="cards-row">
+      <div class="card">Item 1</div>
+      <div class="card">Item 2</div>
+      <div class="card">Item 3</div>
+      <div class="card">Item 4</div>
+      <div class="card">Item 5</div>
+      <div class="card">Item 6</div>
+    </div>
+
+    <script>
+      new Sortable(document.getElementById("cards"), {
+        animation: 150,
+        ghostClass: "card-being-dragged",
+      });
+    </script>
+  </body>
+</html>
