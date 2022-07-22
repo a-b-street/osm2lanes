@@ -21,6 +21,12 @@
     <link data-trunk rel="rust" href="../osm2lanes-npm/Cargo.toml" />
   </head>
   <body>
+    <fieldset>
+      <legend>OSM way ID</legend>
+      <input type="text" id="osm_way_id" value="804788513" />
+    </fieldset>
+    <input type="button" value="Edit" onclick="window.start_editing();" />
+
     <div id="cards" class="cards-row">
       <div class="card">Item 1</div>
       <div class="card">Item 2</div>
@@ -31,9 +37,10 @@
     </div>
 
     <script type="module">
+      // TODO THe hash changes, this is very brittle. See https://github.com/thedodd/trunk/issues/230 or stop using trunk.
       import init, {
-        js_tags_to_lanes,
-      } from "./osm2lanes-npm-b4e403ffa0956efb.js";
+        js_way_to_lanes,
+      } from "./osm2lanes-npm-f84a742dc46ad4d0.js";
       await init();
 
       new Sortable(document.getElementById("cards"), {
@@ -41,15 +48,13 @@
         ghostClass: "card-being-dragged",
       });
 
-      const input = {
-        key_values: {
-          highway: "residential",
-          lanes: "4",
-        },
-        drive_on_right: true,
-      };
-      let lanes = js_tags_to_lanes(input);
-      window.alert(JSON.stringify(lanes, null, 2));
+      async function start_editing() {
+        const way = BigInt(document.getElementById("osm_way_id").value);
+        console.log(`Fetching ${way}...`);
+        let lanes = await js_way_to_lanes(way);
+        window.alert(JSON.stringify(lanes, null, 2));
+      }
+      window.start_editing = start_editing;
     </script>
   </body>
 </html>
