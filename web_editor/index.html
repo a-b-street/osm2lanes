@@ -37,22 +37,184 @@
     </div>
 
     <script type="module">
-      // TODO THe hash changes, this is very brittle. See https://github.com/thedodd/trunk/issues/230 or stop using trunk.
+      // TODO The hash changes, this is very brittle. See https://github.com/thedodd/trunk/issues/230 or stop using trunk.
       import init, {
         js_way_to_lanes,
       } from "./osm2lanes-npm-f84a742dc46ad4d0.js";
       await init();
 
-      new Sortable(document.getElementById("cards"), {
-        animation: 150,
-        ghostClass: "card-being-dragged",
-      });
-
       async function start_editing() {
         const way = BigInt(document.getElementById("osm_way_id").value);
         console.log(`Fetching ${way}...`);
-        let lanes = await js_way_to_lanes(way);
-        window.alert(JSON.stringify(lanes, null, 2));
+        //let lanes = await js_way_to_lanes(way);
+        let lanes = dummyData();
+        console.log(`Got osm2lanes output, creating cards`);
+
+        // TODO Fully clean up the old cards, including whatever sortable thing is attached there
+        const cards = document.getElementById("cards");
+        cards.replaceChildren();
+
+        // Create a card per lane
+        for (const lane of lanes["Ok"]["road"]["lanes"]) {
+          if (lane["type"] == "separator") {
+            continue;
+          }
+          cards.appendChild(make_lane_card(lane));
+        }
+
+        new Sortable(cards, {
+          animation: 150,
+          ghostClass: "card-being-dragged",
+        });
+      }
+
+      function make_lane_card(lane) {
+        var node = document.createElement("div");
+        node.setAttribute("class", "card");
+        node.setAttribute("title", JSON.stringify(lane, null, 2));
+        node.innerHTML = lane["type"];
+        return node;
+      }
+
+      // Fetching from overpass is slow; to speed up development, use hardcoded output
+      function dummyData() {
+        return {
+          Ok: {
+            road: {
+              name: "24th Avenue East",
+              highway: "secondary",
+              lanes: [
+                {
+                  type: "shoulder",
+                },
+                {
+                  type: "separator",
+                  semantic: "shoulder",
+                  markings: [
+                    {
+                      style: "solid_line",
+                      width: 0.2,
+                      color: "white",
+                    },
+                  ],
+                },
+                {
+                  type: "travel",
+                  direction: "backward",
+                  designated: "motor_vehicle",
+                  width: 3.5,
+                  max_speed: {
+                    unit: "mph",
+                    value: 25.0,
+                  },
+                },
+                {
+                  type: "separator",
+                  semantic: "lane",
+                  markings: [
+                    {
+                      style: "dotted_line",
+                      width: 0.2,
+                      color: "white",
+                    },
+                  ],
+                },
+                {
+                  type: "travel",
+                  direction: "backward",
+                  designated: "motor_vehicle",
+                  width: 3.5,
+                  max_speed: {
+                    unit: "mph",
+                    value: 25.0,
+                  },
+                },
+                {
+                  type: "separator",
+                  semantic: "centre",
+                  markings: [
+                    {
+                      style: "solid_line",
+                      width: 0.2,
+                      color: "white",
+                    },
+                    {
+                      style: "no_fill",
+                      width: 0.1,
+                      color: null,
+                    },
+                    {
+                      style: "solid_line",
+                      width: 0.2,
+                      color: "white",
+                    },
+                  ],
+                },
+                {
+                  type: "travel",
+                  direction: "forward",
+                  designated: "motor_vehicle",
+                  width: 3.5,
+                  max_speed: {
+                    unit: "mph",
+                    value: 25.0,
+                  },
+                },
+                {
+                  type: "separator",
+                  semantic: "lane",
+                  markings: [
+                    {
+                      style: "dotted_line",
+                      width: 0.2,
+                      color: "white",
+                    },
+                  ],
+                },
+                {
+                  type: "travel",
+                  direction: "forward",
+                  designated: "motor_vehicle",
+                  width: 3.5,
+                  max_speed: {
+                    unit: "mph",
+                    value: 25.0,
+                  },
+                },
+                {
+                  type: "separator",
+                  semantic: "lane",
+                  markings: [
+                    {
+                      style: "dotted_line",
+                      width: 0.2,
+                      color: "white",
+                    },
+                  ],
+                },
+                {
+                  type: "parking",
+                  direction: "forward",
+                  designated: "motor_vehicle",
+                },
+                {
+                  type: "separator",
+                  semantic: "shoulder",
+                  markings: [
+                    {
+                      style: "solid_line",
+                      width: 0.2,
+                      color: "white",
+                    },
+                  ],
+                },
+                {
+                  type: "shoulder",
+                },
+              ],
+            },
+          },
+        };
       }
       window.start_editing = start_editing;
     </script>
