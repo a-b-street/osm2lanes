@@ -9,8 +9,8 @@
       }
 
       .card {
-        background-color: red;
-        margin-left: 15px;
+        outline: solid;
+        padding: 15px;
       }
 
       .card-being-dragged {
@@ -33,6 +33,13 @@
       <div class="card">Item 1</div>
     </div>
 
+    <div id="toolbox" class="cards-row" style="margin-top: 30px">
+      <!-- TODO Can I just make up / overload the value attribute here? -->
+      <div class="card" value="driving">New driving lane</div>
+      <div class="card" value="bike">New bike lane</div>
+      <div class="card" value="parking">New parking lane</div>
+    </div>
+
     <script type="module">
       // TODO The hash changes, this is very brittle. See https://github.com/thedodd/trunk/issues/230 or stop using trunk.
       import { dummyData } from "./js/dummy_data.js";
@@ -40,6 +47,17 @@
         js_way_to_lanes,
       } from "./osm2lanes-npm-f84a742dc46ad4d0.js";
       await init();
+
+      // Setup the toolbox controls
+      new Sortable(document.getElementById("toolbox"), {
+        group: {
+          name: "toolbox",
+          pull: "clone",
+        },
+        sort: false,
+        animation: 150,
+        ghostClass: "card-being-dragged",
+      });
 
       async function start_editing() {
         const way = BigInt(document.getElementById("osm_way_id").value);
@@ -61,8 +79,32 @@
         }
 
         new Sortable(cards, {
+          group: {
+            name: "lanes",
+            put: ["toolbox"],
+          },
           animation: 150,
           ghostClass: "card-being-dragged",
+          onAdd: function (evt) {
+            const type = evt.item.getAttribute("value");
+            // TODO switch case but without break?
+            // TODO Figure out based on center line position
+            if (type == "driving") {
+              console.log(`just added driving lane, transforming`);
+              console.log(`before ${evt.item}`);
+              // TODO This creates a nested div; I want to replace it
+              evt.item.replaceChildren();
+              evt.item.appendChild(
+                make_lane_card({
+                  type: "travel",
+                  direction: "backward",
+                  designated: "motor_vehicle",
+                })
+              );
+            } else if (type == "bike") {
+            } else if (type == "parking") {
+            }
+          },
         });
       }
 
