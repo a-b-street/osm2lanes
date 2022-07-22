@@ -70,7 +70,35 @@
         var node = document.createElement("div");
         node.setAttribute("class", "card");
         node.setAttribute("title", JSON.stringify(lane, null, 2));
+
         node.innerHTML = lane["type"];
+
+        // TODO I want if-let
+        {
+          let x = lane["designated"];
+          if (x) {
+            node.innerHTML += `, ${x}`;
+          }
+        }
+
+        {
+          let x = lane["direction"];
+          if (x == "forward") {
+            node.innerHTML += ", ^";
+          } else if (x == "backward") {
+            node.innerHTML += ", v";
+          } else if (x == "both") {
+            node.innerHTML += ", |";
+          }
+        }
+
+        {
+          let x = lane["width"];
+          if (x) {
+            node.innerHTML += `, width = ${x}m`;
+          }
+        }
+
         return node;
       }
 
