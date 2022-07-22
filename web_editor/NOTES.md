@@ -14,6 +14,8 @@
 	- adjusting width, color, properties of each one
 	- flipping direction when you cross the road center line?
 
+	- refer to https://github.com/openstreetmap/iD/issues/387
+
 # Dev
 
 `trunk serve`
