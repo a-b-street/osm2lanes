@@ -40,12 +40,22 @@
       <div class="card" value="parking">New parking lane</div>
     </div>
 
+    <div style="margin-top: 30px">
+      <input
+        type="button"
+        value="Generate output"
+        onclick="window.generate_tags();"
+      />
+      <textarea id="output_tags" rows="10" cols="50">Output tags</textarea>
+    </div>
+
     <script type="module">
       // TODO The hash changes, this is very brittle. See https://github.com/thedodd/trunk/issues/230 or stop using trunk.
       import { dummyData } from "./js/dummy_data.js";
       import init, {
         js_way_to_lanes,
-      } from "./osm2lanes-npm-f84a742dc46ad4d0.js";
+        js_lanes_to_tags,
+      } from "./osm2lanes-npm-34a13471983c341c.js";
       await init();
 
       // Setup the toolbox controls
@@ -59,19 +69,27 @@
         ghostClass: "card-being-dragged",
       });
 
+      // This state is set up by start_editing
+      var current_road = null;
+      var current_locale = null;
+
       async function start_editing() {
         const way = BigInt(document.getElementById("osm_way_id").value);
         console.log(`Fetching ${way}...`);
-        //let lanes = await js_way_to_lanes(way);
-        let lanes = dummyData();
+        //const [road_wrapper, locale] = await js_way_to_lanes(way);
+        const [road_wrapper, locale] = dummyData();
+        const road = road_wrapper["Ok"]["road"];
         console.log(`Got osm2lanes output, creating cards`);
+
+        current_road = JSON.parse(JSON.stringify(road));
+        current_locale = JSON.parse(JSON.stringify(locale));
 
         // TODO Fully clean up the old cards, including whatever sortable thing is attached there
         const cards = document.getElementById("cards");
         cards.replaceChildren();
 
         // Create a card per lane
-        for (const lane of lanes["Ok"]["road"]["lanes"]) {
+        for (const lane of road["lanes"]) {
           if (lane["type"] == "separator") {
             continue;
           }
@@ -90,11 +108,7 @@
             // TODO switch case but without break?
             // TODO Figure out based on center line position
             if (type == "driving") {
-              console.log(`just added driving lane, transforming`);
-              console.log(`before ${evt.item}`);
-              // TODO This creates a nested div; I want to replace it
-              evt.item.replaceChildren();
-              evt.item.appendChild(
+              evt.item.replaceWith(
                 make_lane_card({
                   type: "travel",
                   direction: "backward",
@@ -107,11 +121,13 @@
           },
         });
       }
+      window.start_editing = start_editing;
 
       function make_lane_card(lane) {
         var node = document.createElement("div");
         node.setAttribute("class", "card");
         node.setAttribute("title", JSON.stringify(lane, null, 2));
+        node.laneJSON = lane;
 
         node.innerHTML = lane["type"];
 
@@ -144,7 +160,18 @@
         return node;
       }
 
-      window.start_editing = start_editing;
+      function generate_tags() {
+        // Mutate the shared state
+        current_road["lanes"] = [];
+        for (const card of document.getElementById("cards").children) {
+          current_road["lanes"].push(card.laneJSON);
+        }
+        const tags = js_lanes_to_tags(current_road, current_locale);
+
+        const output = document.getElementById("output_tags");
+        output.value = tags;
+      }
+      window.generate_tags = generate_tags;
     </script>
   </body>
 </html>

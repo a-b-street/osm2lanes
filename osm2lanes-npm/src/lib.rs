@@ -3,8 +3,9 @@ mod utils;
 use std::collections::HashMap;
 
 use osm2lanes::locale::{DrivingSide, Locale};
-use osm2lanes::transform::{tags_to_lanes, TagsToLanesConfig};
+use osm2lanes::transform::{tags_to_lanes, TagsToLanesConfig, lanes_to_tags, LanesToTagsConfig};
 use osm2lanes::overpass::get_way;
+use osm2lanes::road::Road;
 use osm_tags::Tags;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
@@ -54,5 +55,16 @@ pub async fn js_way_to_lanes(osm_way_id: u64) -> JsValue {
     // TODO Fix get_way's API
     let (tags, _geom, locale) = get_way(&osm_way_id).await.unwrap();
     let lanes = tags_to_lanes(&tags, &locale, &TagsToLanesConfig::default());
-    JsValue::from_serde(&lanes).unwrap()
+    // Also return the locale
+    JsValue::from_serde(&(lanes, locale)).unwrap()
+}
+
+#[wasm_bindgen]
+pub fn js_lanes_to_tags(road: &JsValue, locale: &JsValue) -> String {
+    utils::set_panic_hook();
+
+    let road: Road = road.into_serde().unwrap();
+    let locale: Locale = locale.into_serde().unwrap();
+    let tags = lanes_to_tags(&road, &locale, &LanesToTagsConfig::new(false)).unwrap();
+    tags.to_string()
 }
