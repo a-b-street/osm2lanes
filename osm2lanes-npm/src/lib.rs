@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use osm2lanes::locale::{DrivingSide, Locale};
 use osm2lanes::transform::{tags_to_lanes, TagsToLanesConfig};
+use osm2lanes::overpass::get_way;
 use osm_tags::Tags;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
@@ -11,6 +12,8 @@ use wasm_bindgen::prelude::*;
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
+
+// TODO Rename and document things.
 
 #[derive(Serialize, Deserialize)]
 pub struct Input {
@@ -41,5 +44,15 @@ pub fn js_tags_to_lanes(val: &JsValue) -> JsValue {
         tags.checked_insert(key, value).unwrap();
     }
     let lanes = tags_to_lanes(&tags, &locale, &config).unwrap();
+    JsValue::from_serde(&lanes).unwrap()
+}
+
+#[wasm_bindgen]
+pub async fn js_way_to_lanes(osm_way_id: u64) -> JsValue {
+    utils::set_panic_hook();
+
+    // TODO Fix get_way's API
+    let (tags, _geom, locale) = get_way(&osm_way_id).await.unwrap();
+    let lanes = tags_to_lanes(&tags, &locale, &TagsToLanesConfig::default());
     JsValue::from_serde(&lanes).unwrap()
 }
