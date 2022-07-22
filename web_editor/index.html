@@ -19,6 +19,8 @@
     </style>
 
     <link data-trunk rel="rust" href="../osm2lanes-npm/Cargo.toml" />
+    <link data-trunk rel="copy-dir" href="./js" />
+    <script type="module" src="js/dummy_data.js"></script>
   </head>
   <body>
     <fieldset>
@@ -29,15 +31,11 @@
 
     <div id="cards" class="cards-row">
       <div class="card">Item 1</div>
-      <div class="card">Item 2</div>
-      <div class="card">Item 3</div>
-      <div class="card">Item 4</div>
-      <div class="card">Item 5</div>
-      <div class="card">Item 6</div>
     </div>
 
     <script type="module">
       // TODO The hash changes, this is very brittle. See https://github.com/thedodd/trunk/issues/230 or stop using trunk.
+      import { dummyData } from "./js/dummy_data.js";
       import init, {
         js_way_to_lanes,
       } from "./osm2lanes-npm-f84a742dc46ad4d0.js";
@@ -76,146 +74,6 @@
         return node;
       }
 
-      // Fetching from overpass is slow; to speed up development, use hardcoded output
-      function dummyData() {
-        return {
-          Ok: {
-            road: {
-              name: "24th Avenue East",
-              highway: "secondary",
-              lanes: [
-                {
-                  type: "shoulder",
-                },
-                {
-                  type: "separator",
-                  semantic: "shoulder",
-                  markings: [
-                    {
-                      style: "solid_line",
-                      width: 0.2,
-                      color: "white",
-                    },
-                  ],
-                },
-                {
-                  type: "travel",
-                  direction: "backward",
-                  designated: "motor_vehicle",
-                  width: 3.5,
-                  max_speed: {
-                    unit: "mph",
-                    value: 25.0,
-                  },
-                },
-                {
-                  type: "separator",
-                  semantic: "lane",
-                  markings: [
-                    {
-                      style: "dotted_line",
-                      width: 0.2,
-                      color: "white",
-                    },
-                  ],
-                },
-                {
-                  type: "travel",
-                  direction: "backward",
-                  designated: "motor_vehicle",
-                  width: 3.5,
-                  max_speed: {
-                    unit: "mph",
-                    value: 25.0,
-                  },
-                },
-                {
-                  type: "separator",
-                  semantic: "centre",
-                  markings: [
-                    {
-                      style: "solid_line",
-                      width: 0.2,
-                      color: "white",
-                    },
-                    {
-                      style: "no_fill",
-                      width: 0.1,
-                      color: null,
-                    },
-                    {
-                      style: "solid_line",
-                      width: 0.2,
-                      color: "white",
-                    },
-                  ],
-                },
-                {
-                  type: "travel",
-                  direction: "forward",
-                  designated: "motor_vehicle",
-                  width: 3.5,
-                  max_speed: {
-                    unit: "mph",
-                    value: 25.0,
-                  },
-                },
-                {
-                  type: "separator",
-                  semantic: "lane",
-                  markings: [
-                    {
-                      style: "dotted_line",
-                      width: 0.2,
-                      color: "white",
-                    },
-                  ],
-                },
-                {
-                  type: "travel",
-                  direction: "forward",
-                  designated: "motor_vehicle",
-                  width: 3.5,
-                  max_speed: {
-                    unit: "mph",
-                    value: 25.0,
-                  },
-                },
-                {
-                  type: "separator",
-                  semantic: "lane",
-                  markings: [
-                    {
-                      style: "dotted_line",
-                      width: 0.2,
-                      color: "white",
-                    },
-                  ],
-                },
-                {
-                  type: "parking",
-                  direction: "forward",
-                  designated: "motor_vehicle",
-                },
-                {
-                  type: "separator",
-                  semantic: "shoulder",
-                  markings: [
-                    {
-                      style: "solid_line",
-                      width: 0.2,
-                      color: "white",
-                    },
-                  ],
-                },
-                {
-                  type: "shoulder",
-                },
-              ],
-            },
-          },
-        };
-      }
       window.start_editing = start_editing;
     </script>
   </body>
