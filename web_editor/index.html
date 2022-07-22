@@ -33,14 +33,30 @@
       <div class="card">Item 1</div>
     </div>
 
-    <div id="toolbox" class="cards-row" style="margin-top: 30px">
-      <!-- TODO Can I just make up / overload the value attribute here? -->
-      <div class="card" value="driving">New driving lane</div>
-      <div class="card" value="bike">New bike lane</div>
-      <div class="card" value="parking">New parking lane</div>
+    <div style="border: 3px solid; padding 20px; margin-top: 30px">
+      <div
+        id="delete"
+        class="cards-row"
+        style="
+          float: left;
+          margin-right: 50px;
+          border: 2px dashed red;
+          min-height: 100px;
+          padding: 30px;
+        "
+      >
+        Delete lane
+      </div>
+
+      <div id="toolbox" class="cards-row" style="float: left">
+        <!-- TODO Can I just make up / overload the value attribute here? -->
+        <div class="card" value="driving">New driving lane</div>
+        <div class="card" value="bike">New bike lane</div>
+        <div class="card" value="parking">New parking lane</div>
+      </div>
     </div>
 
-    <div style="margin-top: 30px">
+    <div style="margin-top: 90px">
       <input
         type="button"
         value="Generate output"
@@ -67,6 +83,15 @@
         sort: false,
         animation: 150,
         ghostClass: "card-being-dragged",
+      });
+
+      // TODO Disable the ghostClass of lanes when going here
+      new Sortable(document.getElementById("delete"), {
+        group: "lanes",
+        onAdd: function (evt) {
+          var el = evt.item;
+          el.parentNode.removeChild(el);
+        },
       });
 
       // This state is set up by start_editing
