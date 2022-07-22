@@ -1,6 +1,6 @@
 // Fetching from overpass is slow; to speed up development, use hardcoded output
 export function dummyData() {
-  return {
+  const road = {
     Ok: {
       road: {
         name: "24th Avenue East",
@@ -137,4 +137,10 @@ export function dummyData() {
       },
     },
   };
+  const locale = {
+    country: "US",
+    iso_3166_2_subdivision: "WA",
+    driving_side: "right",
+  };
+  return [road, locale];
 }
