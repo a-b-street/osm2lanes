@@ -4,7 +4,7 @@ import { dummyData } from "./dummy_data.js";
 import init, {
   js_way_to_lanes,
   js_lanes_to_tags,
-} from "../osm2lanes-npm-34a13471983c341c.js";
+} from "./osm2lanes-npm/osm2lanes_npm.js";
 await init();
 
 // Setup the toolbox controls
