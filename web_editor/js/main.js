@@ -33,16 +33,21 @@ var current_locale = null;
 
 async function start_editing() {
   const way = BigInt(document.getElementById("osm_way_id").value);
-  console.log(`Fetching ${way}...`);
-  //const [road_wrapper, locale] = await js_way_to_lanes(way);
-  const [road_wrapper, locale] = dummyData();
+  // Faster dev workflow: if the way ID is the default, use baked-in data instead of waiting on Overpass.
+  var road_wrapper, locale;
+  if (way == 804788513) {
+    [road_wrapper, locale] = dummyData();
+  } else {
+    console.log(`Fetching ${way}...`);
+    [road_wrapper, locale] = await js_way_to_lanes(way);
+  }
   const road = road_wrapper["Ok"]["road"];
   console.log(`Got osm2lanes output, creating cards`);
 
   current_road = JSON.parse(JSON.stringify(road));
   current_locale = JSON.parse(JSON.stringify(locale));
 
-  // TODO Fully clean up the old cards, including whatever sortable thing is attached there
+  // TODO Fully clean up the old cards, including whatever sortable thing is attached there?
   const cards = document.getElementById("cards");
   cards.replaceChildren();
 
@@ -64,18 +69,28 @@ async function start_editing() {
     onAdd: function (evt) {
       const type = evt.item.getAttribute("value");
       // TODO switch case but without break?
-      // TODO Figure out based on center line position
+      // TODO Figure out direction based on center line position
+      var card;
       if (type == "driving") {
-        evt.item.replaceWith(
-          make_lane_card({
-            type: "travel",
-            direction: "backward",
-            designated: "motor_vehicle",
-          })
-        );
-      } else if (type == "bike") {
+        card = make_lane_card({
+          type: "travel",
+          direction: "backward",
+          designated: "motor_vehicle",
+        });
+      } else if (type == "bicycle") {
+        card = make_lane_card({
+          type: "travel",
+          direction: "backward",
+          designated: "bicycle",
+        });
       } else if (type == "parking") {
+        card = make_lane_card({
+          type: "parking",
+          direction: "backward",
+          designated: "motor_vehicle",
+        });
       }
+      evt.item.replaceWith(card);
     },
   });
 }
