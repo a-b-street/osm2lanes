@@ -1,5 +1,3 @@
-// TODO The hash changes, this is very brittle. See
-// https://github.com/thedodd/trunk/issues/230 or stop using trunk.
 import { dummyData } from "./dummy_data.js";
 import init, {
   js_way_to_lanes,
