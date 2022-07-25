@@ -3,9 +3,9 @@ mod utils;
 use std::collections::HashMap;
 
 use osm2lanes::locale::{DrivingSide, Locale};
-use osm2lanes::transform::{tags_to_lanes, TagsToLanesConfig, lanes_to_tags, LanesToTagsConfig};
 use osm2lanes::overpass::get_way;
 use osm2lanes::road::Road;
+use osm2lanes::transform::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, TagsToLanesConfig};
 use osm_tags::Tags;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
