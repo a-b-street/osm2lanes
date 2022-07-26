@@ -19,7 +19,7 @@ impl From<InferConflict> for TagsToLanesMsg {
 
 // TODO: implement try when this is closed: https://github.com/rust-lang/rust/issues/84277
 /// A value with various levels of inference
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Infer<T> {
     None,
     Default(T),
