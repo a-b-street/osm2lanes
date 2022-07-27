@@ -25,11 +25,9 @@
       <legend>OSM way ID</legend>
       <input type="text" id="osm_way_id" value="804788513" />
     </fieldset>
-    <input type="button" value="Edit" onclick="window.startEditing();" />
+    <input type="button" value="Edit" onclick="window.LaneEditor.create()" />
 
-    <div id="cards" class="cards-row">
-      <div class="card">Item 1</div>
-    </div>
+    <div id="cards" class="cards-row"></div>
 
     <div style="border: 3px solid; padding 20px; margin-top: 30px">
       <div
@@ -47,7 +45,6 @@
       </div>
 
       <div id="toolbox" class="cards-row" style="float: left">
-        <!-- TODO Can I just make up / overload the value attribute here? -->
         <div class="card" value="driving">New driving lane</div>
         <div class="card" value="bicycle">New bike lane</div>
         <div class="card" value="parking">New parking lane</div>
@@ -58,7 +55,7 @@
       <input
         type="button"
         value="Generate output"
-        onclick="window.generateTags();"
+        onclick="if (window.editor) { window.editor.generateTags(); }"
       />
       <textarea id="output_tags" rows="10" cols="50">Output tags</textarea>
     </div>
