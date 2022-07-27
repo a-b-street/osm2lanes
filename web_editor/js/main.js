@@ -25,11 +25,11 @@ new Sortable(document.getElementById("delete"), {
   },
 });
 
-// This state is set up by start_editing
+// This state is set up by startEditing
 var current_road = null;
 var current_locale = null;
 
-async function start_editing() {
+async function startEditing() {
   const way = BigInt(document.getElementById("osm_way_id").value);
   // Faster dev workflow: if the way ID is the default, use baked-in data instead of waiting on Overpass.
   var road_wrapper, locale;
@@ -54,7 +54,7 @@ async function start_editing() {
     if (lane["type"] == "separator") {
       continue;
     }
-    cards.appendChild(make_lane_card(lane));
+    cards.appendChild(makeLaneCard(lane));
   }
 
   new Sortable(cards, {
@@ -70,19 +70,19 @@ async function start_editing() {
       // TODO Figure out direction based on center line position
       var card;
       if (type == "driving") {
-        card = make_lane_card({
+        card = makeLaneCard({
           type: "travel",
           direction: "backward",
           designated: "motor_vehicle",
         });
       } else if (type == "bicycle") {
-        card = make_lane_card({
+        card = makeLaneCard({
           type: "travel",
           direction: "backward",
           designated: "bicycle",
         });
       } else if (type == "parking") {
-        card = make_lane_card({
+        card = makeLaneCard({
           type: "parking",
           direction: "backward",
           designated: "motor_vehicle",
@@ -92,9 +92,9 @@ async function start_editing() {
     },
   });
 }
-window.start_editing = start_editing;
+window.startEditing = startEditing;
 
-function make_lane_card(lane) {
+function makeLaneCard(lane) {
   var node = document.createElement("div");
   node.setAttribute("class", "card");
   node.setAttribute("title", JSON.stringify(lane, null, 2));
@@ -131,7 +131,7 @@ function make_lane_card(lane) {
   return node;
 }
 
-function generate_tags() {
+function generateTags() {
   // Mutate the shared state
   current_road["lanes"] = [];
   for (const card of document.getElementById("cards").children) {
@@ -142,4 +142,4 @@ function generate_tags() {
   const output = document.getElementById("output_tags");
   output.value = tags;
 }
-window.generate_tags = generate_tags;
+window.generateTags = generateTags;
