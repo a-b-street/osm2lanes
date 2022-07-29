@@ -87,9 +87,6 @@ export class LaneEditor {
   }
 
   static async create() {
-    var current_road = null;
-    var current_locale = null;
-
     const way = BigInt(document.getElementById("osm_way_id").value);
     // Faster dev workflow: if the way ID is the default, use baked-in data instead of waiting on Overpass.
     var road_wrapper, locale;
