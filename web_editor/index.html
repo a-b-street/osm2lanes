@@ -18,14 +18,17 @@
       }
     </style>
 
-    <script type="module" src="js/main.js"></script>
+    <script type="module">
+        import { LaneEditor } from "./js/main.js"
+        window.editor = await LaneEditor.create();
+    </script>
   </head>
   <body>
     <fieldset>
       <legend>OSM way ID</legend>
       <input type="text" id="osm_way_id" value="804788513" />
     </fieldset>
-    <input type="button" value="Edit" onclick="window.LaneEditor.create()" />
+    <input type="button" value="Edit" onclick="window.editor.render()" />
 
     <div id="cards" class="cards-row"></div>
 

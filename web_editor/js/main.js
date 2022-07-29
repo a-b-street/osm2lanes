@@ -25,7 +25,7 @@ new Sortable(document.getElementById("delete"), {
   },
 });
 
-class LaneEditor {
+export class LaneEditor {
   constructor(way, road_wrapper, locale) {
     const road = road_wrapper["Ok"]["road"];
 
@@ -33,15 +33,17 @@ class LaneEditor {
     // Clone these
     this.current_road = JSON.parse(JSON.stringify(road));
     this.current_locale = JSON.parse(JSON.stringify(locale));
+    console.log('LaneEditor got osm2lanes output');
+  }
 
-    console.log(`Got osm2lanes output, creating cards`);
-
+  render() {
+    console.log('LaneEditor rendering');
     // TODO Fully clean up the old cards, including whatever sortable thing is attached there?
     const cards = document.getElementById("cards");
     cards.replaceChildren();
 
     // Create a card per lane
-    for (const lane of road["lanes"]) {
+    for (const lane of this.current_road["lanes"]) {
       if (lane["type"] == "separator") {
         continue;
       }
@@ -97,9 +99,7 @@ class LaneEditor {
       console.log(`Fetching ${way}...`);
       [road_wrapper, locale] = await js_way_to_lanes(way);
     }
-
-    window.editor = new LaneEditor(way, road_wrapper, locale);
-    return window.editor;
+    return new LaneEditor(way, road_wrapper, locale);
   }
 
   generateTags() {
@@ -152,7 +152,3 @@ function makeLaneCard(lane) {
   return node;
 }
 
-// Global state representing the currently edited way
-window.editor = null;
-// TODO I'm not sure how to make this visible to index.html otherwise
-window.LaneEditor = LaneEditor;
