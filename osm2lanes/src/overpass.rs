@@ -141,7 +141,7 @@ pub async fn get_tags(id: &ElementId) -> Result<Tags, Error> {
 ///
 /// Unexpected data from overpass and/or openstreetmap.
 ///
-pub async fn get_way(id: &ElementId) -> Result<(Tags, LineString<f64>, Locale), Error> {
+pub async fn get_way(id: ElementId) -> Result<(Tags, LineString<f64>, Locale), Error> {
     let resp = reqwest::Client::new()
         .get(format!(
             r#"https://overpass-api.de/api/interpreter?data=[out:json][timeout:25];
@@ -169,7 +169,7 @@ pub async fn get_way(id: &ElementId) -> Result<(Tags, LineString<f64>, Locale), 
         elements.pop().ok_or(Error::Empty)?
     };
 
-    if way_element.r#type != ElementType::Way || &way_element.id != id {
+    if way_element.r#type != ElementType::Way || way_element.id != id {
         return Err(Error::Malformed);
     }
     Ok((

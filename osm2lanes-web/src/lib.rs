@@ -207,7 +207,7 @@ impl Component for App {
                 match way_id.parse() {
                     Ok(way_id) => {
                         ctx.link().send_future(async move {
-                            match get_way(&way_id).await {
+                            match get_way(way_id).await {
                                 Ok((tags, _geom, locale)) => Msg::TagsLocaleSet {
                                     id: way_id.to_string(),
                                     tags,
