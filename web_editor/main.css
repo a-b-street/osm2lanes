@@ -8,6 +8,13 @@
   padding: 15px;
 }
 
+.new-lane-card {
+  background: grey;
+  color: white;
+  outline: solid;
+  padding: 15px;
+}
+
 .card-being-dragged {
   background-color: #c8ebfb;
 }
@@ -18,4 +25,8 @@
   border: 2px dashed red;
   min-height: 100px;
   padding: 30px;
+}
+
+.icon {
+  width: 50px;
 }

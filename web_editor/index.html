@@ -7,21 +7,29 @@
     </script>
   </head>
   <body>
-    <fieldset>
-      <legend>OSM way ID</legend>
+    <div style="outline: solid; padding: 15px; margin-bottom: 30px">
+      OSM way id:
       <input type="text" id="osm_way_id" value="427757048" />
-    </fieldset>
-    <input type="button" value="Edit" id="start-editing" />
+      <input type="button" value="Edit" id="start-editing" />
+    </div>
 
     <div id="cards" class="cards-row"></div>
 
     <div style="border: 3px solid; padding 20px; margin-top: 30px">
-      <div id="delete" class="cards-row">Delete lane</div>
+      <div id="delete" class="cards-row">
+        <img src="assets/delete.svg" class="icon" />
+      </div>
 
       <div id="toolbox" class="cards-row" style="float: left">
-        <div class="card" value="driving">New driving lane</div>
-        <div class="card" value="bicycle">New bike lane</div>
-        <div class="card" value="parking">New parking lane</div>
+        <div class="new-lane-card" value="driving">
+          New <img src="assets/car.svg" class="icon" />
+        </div>
+        <div class="new-lane-card" value="bicycle">
+          New <img src="assets/bicycle.svg" class="icon" />
+        </div>
+        <div class="new-lane-card" value="parking">
+          New <img src="assets/parking.svg" class="icon" />
+        </div>
       </div>
     </div>
 

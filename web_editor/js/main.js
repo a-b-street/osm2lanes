@@ -1,3 +1,4 @@
+import { makeLaneCard } from "./cards.js";
 import { dummyData } from "./dummy_data.js";
 import init, {
   js_way_to_lanes,
@@ -91,43 +92,6 @@ export class LaneEditor {
     const output = document.getElementById("output_tags");
     output.value = tags;
   }
-}
-
-function makeLaneCard(lane) {
-  var node = document.createElement("div");
-  node.setAttribute("class", "card");
-  node.setAttribute("title", JSON.stringify(lane, null, 2));
-  node.laneJSON = lane;
-
-  node.innerHTML = lane.type;
-
-  // TODO I want if-let
-  {
-    let x = lane.designated;
-    if (x) {
-      node.innerHTML += `, ${x}`;
-    }
-  }
-
-  {
-    let x = lane.direction;
-    if (x == "forward") {
-      node.innerHTML += ", ^";
-    } else if (x == "backward") {
-      node.innerHTML += ", v";
-    } else if (x == "both") {
-      node.innerHTML += ", |";
-    }
-  }
-
-  {
-    let x = lane.width;
-    if (x) {
-      node.innerHTML += `, width = ${x}m`;
-    }
-  }
-
-  return node;
 }
 
 function setupOnce() {
