@@ -123,5 +123,24 @@ export function dummyData() {
     iso_3166_2_subdivision: "WA",
     driving_side: "right",
   };
-  return [road, locale];
+  const tags = {
+    bicycle: "designated",
+    "cycleway:left": "lane",
+    "cycleway:right": "shared_lane",
+    highway: "secondary",
+    lanes: "2",
+    lit: "yes",
+    maxspeed: "25 mph",
+    name: "10th Avenue East",
+    "old_name:1875-1895": "St Lawrence Main St",
+    "parking:lane:both": "parallel",
+    "tiger:cfcc": "A41",
+    "tiger:county": "King, WA",
+    "tiger:name_base": "10th",
+    "tiger:name_direction_suffix": "E",
+    "tiger:name_type": "Ave",
+    "tiger:reviewed": "yes",
+    trolley_wire: "yes",
+  };
+  return [road, locale, tags];
 }

@@ -49,19 +49,19 @@ pub async fn js_way_to_lanes(osm_way_id: u64) -> Result<JsValue, JsValue> {
 
     let (tags, _geom, locale) = get_way(osm_way_id).await.map_err(err_to_string)?;
     let lanes = tags_to_lanes(&tags, &locale, &TagsToLanesConfig::default());
-    // Also return the locale
-    JsValue::from_serde(&(lanes, locale)).map_err(err_to_string)
+    // Also return the tags and locale
+    JsValue::from_serde(&(lanes, locale, tags)).map_err(err_to_string)
 }
 
 #[wasm_bindgen]
-pub fn js_lanes_to_tags(road: &JsValue, locale: &JsValue) -> Result<String, JsValue> {
+pub fn js_lanes_to_tags(road: &JsValue, locale: &JsValue) -> Result<JsValue, JsValue> {
     console_error_panic_hook::set_once();
 
     let road: Road = road.into_serde().map_err(err_to_string)?;
     let locale: Locale = locale.into_serde().map_err(err_to_string)?;
     let tags =
         lanes_to_tags(&road, &locale, &LanesToTagsConfig::new(false)).map_err(err_to_string)?;
-    Ok(tags.to_string())
+    JsValue::from_serde(&tags).map_err(err_to_string)
 }
 
 fn err_to_string<T: std::fmt::Display>(err: T) -> JsValue {

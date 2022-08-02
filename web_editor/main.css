@@ -30,3 +30,15 @@
 .icon {
   width: 50px;
 }
+
+.clickable-icon {
+  width: 50px;
+}
+.clickable-icon:hover {
+  opacity: 50%;
+}
+
+table,
+td {
+  border: 1px solid black;
+}

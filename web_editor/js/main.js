@@ -9,27 +9,28 @@ await init();
 setupOnce();
 
 export class LaneEditor {
-  constructor(way, road_wrapper, locale) {
+  constructor(way, road_wrapper, locale, tags) {
     const road = road_wrapper.Ok.road;
 
     this.way = way;
     // Clone these
-    this.current_road = JSON.parse(JSON.stringify(road));
-    this.current_locale = JSON.parse(JSON.stringify(locale));
+    this.currentRoad = JSON.parse(JSON.stringify(road));
+    this.currentLocale = JSON.parse(JSON.stringify(locale));
+    this.originalTags = tags;
   }
 
   static async create() {
     const way = BigInt(document.getElementById("osm_way_id").value);
     // Faster dev workflow: if the way ID is the default, use baked-in data instead of waiting on Overpass.
-    var road_wrapper, locale;
+    var road_wrapper, locale, tags;
     if (way == 427757048) {
-      [road_wrapper, locale] = dummyData();
+      [road_wrapper, locale, tags] = dummyData();
     } else {
       // TODO Disable the button, show status
       console.log(`Fetching ${way}...`);
-      [road_wrapper, locale] = await js_way_to_lanes(way);
+      [road_wrapper, locale, tags] = await js_way_to_lanes(way);
     }
-    return new LaneEditor(way, road_wrapper, locale);
+    return new LaneEditor(way, road_wrapper, locale, tags);
   }
 
   render() {
@@ -38,7 +39,7 @@ export class LaneEditor {
     cards.replaceChildren();
 
     // Create a card per lane
-    for (const lane of this.current_road.lanes) {
+    for (const lane of this.currentRoad.lanes) {
       if (lane.type == "separator") {
         continue;
       }
@@ -81,16 +82,35 @@ export class LaneEditor {
     });
   }
 
-  generateTags() {
+  diffTags() {
     // Mutate the shared state
-    this.current_road.lanes = [];
+    this.currentRoad.lanes = [];
     for (const card of document.getElementById("cards").children) {
-      this.current_road.lanes.push(card.laneJSON);
+      this.currentRoad.lanes.push(card.laneJSON);
     }
-    const tags = js_lanes_to_tags(this.current_road, this.current_locale);
+    const currentTags = js_lanes_to_tags(this.currentRoad, this.currentLocale);
 
-    const output = document.getElementById("output_tags");
-    output.value = tags;
+    var output = "<table>";
+    for (const [key, origValue] of Object.entries(this.originalTags)) {
+      const newValue = currentTags[key];
+      var color = "";
+      if (newValue == null) {
+        color = "background: red";
+      } else if (origValue != newValue) {
+        color = "background: yellow;";
+      }
+      output += `<tr style="${color}"><td>${key}</td><td>${origValue}</td><td>${
+        newValue || ""
+      }</td></tr>`;
+    }
+    for (const [key, newValue] of Object.entries(currentTags)) {
+      if (!this.originalTags[key]) {
+        output += `<tr style="background: green"><td>${key}</td><td></td><td>${newValue}</td></tr>`;
+      }
+    }
+    output += "</table>";
+
+    document.getElementById("diff-tags-table").innerHTML = output;
   }
 }
 
@@ -123,10 +143,10 @@ function setupOnce() {
       window.alert(`Error: ${err}`);
     }
   };
-  document.getElementById("generate-output").onclick = function () {
+  document.getElementById("diff-tags").onclick = function () {
     if (window.app) {
       try {
-        window.app.generateTags();
+        window.app.diffTags();
       } catch (err) {
         window.alert(`Error: ${err}`);
       }

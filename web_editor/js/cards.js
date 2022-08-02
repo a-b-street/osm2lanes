@@ -30,11 +30,12 @@ function typeIcon(lane) {
 }
 
 function directionIcon(lane) {
+	// TODO Attach an onclick handler. Probably create the below using the DOM instead of innerHTML.
 	if (lane.direction == "forward") {
-		return icon("forwards");
+		return `<img src="assets/forwards.svg" class="clickable-icon" />`;
 	}
 	if (lane.direction == "backward") {
-		return icon("backwards");
+		return `<img src="assets/backwards.svg" class="clickable-icon" />`;
 	}
 	if (lane.direction == "both") {
 		return icon("both_ways");
