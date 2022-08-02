@@ -33,11 +33,11 @@ export class LaneEditor {
     // Clone these
     this.current_road = JSON.parse(JSON.stringify(road));
     this.current_locale = JSON.parse(JSON.stringify(locale));
-    console.log('LaneEditor got osm2lanes output');
+    console.log("LaneEditor got osm2lanes output");
   }
 
   render() {
-    console.log('LaneEditor rendering');
+    console.log("LaneEditor rendering");
     // TODO Fully clean up the old cards, including whatever sortable thing is attached there?
     const cards = document.getElementById("cards");
     cards.replaceChildren();
@@ -90,7 +90,7 @@ export class LaneEditor {
     const way = BigInt(document.getElementById("osm_way_id").value);
     // Faster dev workflow: if the way ID is the default, use baked-in data instead of waiting on Overpass.
     var road_wrapper, locale;
-    if (way == 804788513) {
+    if (way == 427757048) {
       [road_wrapper, locale] = dummyData();
     } else {
       console.log(`Fetching ${way}...`);
@@ -148,4 +148,3 @@ function makeLaneCard(lane) {
 
   return node;
 }
-
