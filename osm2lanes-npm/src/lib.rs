@@ -1,5 +1,3 @@
-mod utils;
-
 use std::collections::HashMap;
 
 use osm2lanes::locale::{DrivingSide, Locale};
@@ -9,10 +7,6 @@ use osm2lanes::transform::{lanes_to_tags, tags_to_lanes, LanesToTagsConfig, Tags
 use osm_tags::Tags;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-
-#[cfg(feature = "wee_alloc")]
-#[global_allocator]
-static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 // TODO Rename and document things.
 
@@ -24,7 +18,8 @@ pub struct Input {
 
 #[wasm_bindgen]
 pub fn js_tags_to_lanes(val: &JsValue) -> Result<JsValue, JsValue> {
-    utils::set_panic_hook();
+    // Panics shouldn't happen, but if they do, console.log them.
+    console_error_panic_hook::set_once();
 
     let input: Input = val.into_serde().map_err(err_to_string)?;
 
@@ -50,7 +45,7 @@ pub fn js_tags_to_lanes(val: &JsValue) -> Result<JsValue, JsValue> {
 
 #[wasm_bindgen]
 pub async fn js_way_to_lanes(osm_way_id: u64) -> Result<JsValue, JsValue> {
-    utils::set_panic_hook();
+    console_error_panic_hook::set_once();
 
     let (tags, _geom, locale) = get_way(osm_way_id).await.map_err(err_to_string)?;
     let lanes = tags_to_lanes(&tags, &locale, &TagsToLanesConfig::default());
@@ -60,7 +55,7 @@ pub async fn js_way_to_lanes(osm_way_id: u64) -> Result<JsValue, JsValue> {
 
 #[wasm_bindgen]
 pub fn js_lanes_to_tags(road: &JsValue, locale: &JsValue) -> Result<String, JsValue> {
-    utils::set_panic_hook();
+    console_error_panic_hook::set_once();
 
     let road: Road = road.into_serde().map_err(err_to_string)?;
     let locale: Locale = locale.into_serde().map_err(err_to_string)?;

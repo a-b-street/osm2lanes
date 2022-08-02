@@ -2,7 +2,6 @@
 name = "osm2lanes-npm"
 version = "0.1.0"
 description = "NPM package for osm2lanes"
-readme = true
 repository = "https://github.com/a-b-street/osm2lanes"
 license = "Apache-2.0"
 keywords = ["osm", "lanes", "npm"]
@@ -16,11 +15,8 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[features]
-default = ["console_error_panic_hook"]
-
 [dependencies]
-console_error_panic_hook = { version = "0.1.6", optional = true }
+console_error_panic_hook = "0.1.6"
 osm-tags = { path = "../osm-tags" }
 osm2lanes = { path = "../osm2lanes", features = ["overpass", "serde"] }
 serde = { version = "1", features = ["derive"] }
@@ -28,7 +24,3 @@ wasm-bindgen = { version = "=0.2.81", features = [
     "serde-serialize",
 ] } # loosen after https://github.com/rustwasm/wasm-bindgen/issues/2774
 wasm-bindgen-futures = "0.4.31"
-wee_alloc = { version = "0.4", optional = true }
-
-[dev-dependencies]
-wasm-bindgen-test = "0.3"
