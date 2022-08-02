@@ -52,8 +52,7 @@ pub fn js_tags_to_lanes(val: &JsValue) -> Result<JsValue, JsValue> {
 pub async fn js_way_to_lanes(osm_way_id: u64) -> Result<JsValue, JsValue> {
     utils::set_panic_hook();
 
-    // TODO Fix get_way's API
-    let (tags, _geom, locale) = get_way(&osm_way_id).await.map_err(err_to_string)?;
+    let (tags, _geom, locale) = get_way(osm_way_id).await.map_err(err_to_string)?;
     let lanes = tags_to_lanes(&tags, &locale, &TagsToLanesConfig::default());
     // Also return the locale
     JsValue::from_serde(&(lanes, locale)).map_err(err_to_string)

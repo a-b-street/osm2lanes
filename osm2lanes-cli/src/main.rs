@@ -44,7 +44,7 @@ async fn main() {
         .start()
         .unwrap();
     let args = Cli::parse();
-    match &args.command {
+    match args.command {
         Command::Way { id } => {
             let (tags, _geom, locale) = block_on(get_way(id)).unwrap();
             log::info!("{:#?}", tags);
