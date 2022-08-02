@@ -4,7 +4,6 @@
     <script src="./js/deps/Sortable.min.js"></script>
     <script type="module">
       import { LaneEditor } from "./js/main.js";
-      window.editor = await LaneEditor.create();
     </script>
   </head>
   <body>
@@ -12,24 +11,12 @@
       <legend>OSM way ID</legend>
       <input type="text" id="osm_way_id" value="427757048" />
     </fieldset>
-    <input type="button" value="Edit" onclick="window.editor.render()" />
+    <input type="button" value="Edit" id="start-editing" />
 
     <div id="cards" class="cards-row"></div>
 
     <div style="border: 3px solid; padding 20px; margin-top: 30px">
-      <div
-        id="delete"
-        class="cards-row"
-        style="
-          float: left;
-          margin-right: 50px;
-          border: 2px dashed red;
-          min-height: 100px;
-          padding: 30px;
-        "
-      >
-        Delete lane
-      </div>
+      <div id="delete" class="cards-row">Delete lane</div>
 
       <div id="toolbox" class="cards-row" style="float: left">
         <div class="card" value="driving">New driving lane</div>
@@ -39,11 +26,7 @@
     </div>
 
     <div style="margin-top: 90px">
-      <input
-        type="button"
-        value="Generate output"
-        onclick="if (window.editor) { window.editor.generateTags(); }"
-      />
+      <input type="button" value="Generate output" id="generate-output" />
       <textarea id="output_tags" rows="10" cols="50">Output tags</textarea>
     </div>
   </body>
