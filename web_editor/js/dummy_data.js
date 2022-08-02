@@ -3,8 +3,9 @@ export function dummyData() {
   const road = {
     Ok: {
       road: {
-        name: "24th Avenue East",
+        name: "10th Avenue East",
         highway: "secondary",
+        lit: "yes",
         lanes: [
           {
             type: "shoulder",
@@ -21,21 +22,32 @@ export function dummyData() {
             ],
           },
           {
-            type: "travel",
+            type: "parking",
             direction: "backward",
             designated: "motor_vehicle",
-            width: 3.5,
-            max_speed: {
-              unit: "mph",
-              value: 25.0,
-            },
           },
           {
             type: "separator",
-            semantic: "lane",
+            semantic: "modal",
             markings: [
               {
-                style: "dotted_line",
+                style: "solid_line",
+                width: 0.2,
+                color: "white",
+              },
+            ],
+          },
+          {
+            type: "travel",
+            direction: "backward",
+            designated: "bicycle",
+          },
+          {
+            type: "separator",
+            semantic: "modal",
+            markings: [
+              {
+                style: "solid_line",
                 width: 0.2,
                 color: "white",
               },
@@ -56,19 +68,9 @@ export function dummyData() {
             semantic: "centre",
             markings: [
               {
-                style: "solid_line",
+                style: "dotted_line",
                 width: 0.2,
-                color: "white",
-              },
-              {
-                style: "no_fill",
-                width: 0.1,
-                color: null,
-              },
-              {
-                style: "solid_line",
-                width: 0.2,
-                color: "white",
+                color: "yellow",
               },
             ],
           },
@@ -84,33 +86,12 @@ export function dummyData() {
           },
           {
             type: "separator",
-            semantic: "lane",
+            semantic: "centre",
             markings: [
               {
                 style: "dotted_line",
                 width: 0.2,
-                color: "white",
-              },
-            ],
-          },
-          {
-            type: "travel",
-            direction: "forward",
-            designated: "motor_vehicle",
-            width: 3.5,
-            max_speed: {
-              unit: "mph",
-              value: 25.0,
-            },
-          },
-          {
-            type: "separator",
-            semantic: "lane",
-            markings: [
-              {
-                style: "dotted_line",
-                width: 0.2,
-                color: "white",
+                color: "yellow",
               },
             ],
           },
