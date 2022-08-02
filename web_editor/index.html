@@ -1,23 +1,7 @@
 <html>
   <head>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-
-    <style>
-      .cards-row {
-        display: flex;
-        flex-direction: row;
-      }
-
-      .card {
-        outline: solid;
-        padding: 15px;
-      }
-
-      .card-being-dragged {
-        background-color: #c8ebfb;
-      }
-    </style>
-
+    <link rel="stylesheet" href="./main.css" />
+    <script src="./js/deps/Sortable.min.js"></script>
     <script type="module">
       import { LaneEditor } from "./js/main.js";
       window.editor = await LaneEditor.create();

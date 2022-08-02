@@ -1,0 +1,13 @@
+.cards-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.card {
+  outline: solid;
+  padding: 15px;
+}
+
+.card-being-dragged {
+  background-color: #c8ebfb;
+}
