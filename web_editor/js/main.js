@@ -3,27 +3,9 @@ import init, {
   js_way_to_lanes,
   js_lanes_to_tags,
 } from "./osm2lanes-npm/osm2lanes_npm.js";
+
 await init();
-
-// Setup the toolbox controls
-new Sortable(document.getElementById("toolbox"), {
-  group: {
-    name: "toolbox",
-    pull: "clone",
-  },
-  sort: false,
-  animation: 150,
-  ghostClass: "card-being-dragged",
-});
-
-// TODO Disable the ghostClass of lanes when going here
-new Sortable(document.getElementById("delete"), {
-  group: "lanes",
-  onAdd: function (evt) {
-    var el = evt.item;
-    el.parentNode.removeChild(el);
-  },
-});
+setupOnce();
 
 export class LaneEditor {
   constructor(way, road_wrapper, locale) {
@@ -33,7 +15,6 @@ export class LaneEditor {
     // Clone these
     this.current_road = JSON.parse(JSON.stringify(road));
     this.current_locale = JSON.parse(JSON.stringify(locale));
-    console.log("LaneEditor got osm2lanes output");
   }
 
   static async create() {
@@ -43,6 +24,7 @@ export class LaneEditor {
     if (way == 427757048) {
       [road_wrapper, locale] = dummyData();
     } else {
+      // TODO Disable the button, show status
       console.log(`Fetching ${way}...`);
       [road_wrapper, locale] = await js_way_to_lanes(way);
     }
@@ -50,7 +32,6 @@ export class LaneEditor {
   }
 
   render() {
-    console.log("LaneEditor rendering");
     // TODO Fully clean up the old cards, including whatever sortable thing is attached there?
     const cards = document.getElementById("cards");
     cards.replaceChildren();
@@ -147,4 +128,40 @@ function makeLaneCard(lane) {
   }
 
   return node;
+}
+
+function setupOnce() {
+  // Setup the toolbox controls
+  new Sortable(document.getElementById("toolbox"), {
+    group: {
+      name: "toolbox",
+      pull: "clone",
+    },
+    sort: false,
+    animation: 150,
+    ghostClass: "card-being-dragged",
+  });
+
+  // TODO Disable the ghostClass of lanes when going here
+  new Sortable(document.getElementById("delete"), {
+    group: "lanes",
+    onAdd: function (evt) {
+      var el = evt.item;
+      el.parentNode.removeChild(el);
+    },
+  });
+
+  document.getElementById("start-editing").onclick = async function () {
+    try {
+      window.app = await LaneEditor.create();
+      window.app.render();
+    } catch (err) {
+      window.alert(`Error: ${err}`);
+    }
+  };
+  document.getElementById("generate-output").onclick = function () {
+    if (window.app) {
+      window.app.generateTags();
+    }
+  };
 }
