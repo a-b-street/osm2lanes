@@ -161,7 +161,11 @@ function setupOnce() {
   };
   document.getElementById("generate-output").onclick = function () {
     if (window.app) {
-      window.app.generateTags();
+      try {
+        window.app.generateTags();
+      } catch (err) {
+        window.alert(`Error: ${err}`);
+      }
     }
   };
 }
