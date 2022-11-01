@@ -198,7 +198,7 @@ impl Config {
             (None, None, _, None) => None,
             (Some(c), None, _, None) => Country::from_alpha2(&c).ok(),
             (None, Some(c), _, None) => Country::from_alpha3(&c).ok(),
-            (None, None, _, Some(c)) => Some(c.clone()),
+            (None, None, _, Some(c)) => Some(*c),
             (None | Some(_), None | Some(_), _, Some(_c)) => unimplemented!(),
             (Some(_), Some(_), _, None) => unimplemented!(),
         };
