@@ -1299,7 +1299,6 @@
     shoulder: "no"
     sidewalk: "no"
   driving_side: left
-  # TODO: nest this so we can check highway type
   road:
     highway: road
     lanes:
@@ -1323,17 +1322,19 @@
     oneway:bicycle: "no"
   driving_side: right
   ISO 3166-2: US-WA
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: both
-      designated: bicycle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: tertiary
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: both
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 # A slight variation of the above, using cycleway:left:oneway:no, which should be equivalent
 - way_id: 8591383
@@ -1348,17 +1349,19 @@
     cycleway:left:oneway: "no"
   driving_side: right
   ISO 3166-2: US-WA
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: both
-      designated: bicycle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: tertiary
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: both
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - way_id: 353690151
   mapillary: https://www.mapillary.com/app/?pKey=814030435898295
@@ -1373,32 +1376,34 @@
     cycleway:right:oneway: "no"
   driving_side: right
   ISO 3166-2: US-WA
-  output:
-    - type: travel
-      designated: foot
-    - type: parking
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: both
-      designated: bicycle
-    - type: parking
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: secondary
+    lanes:
+      - type: travel
+        designated: foot
+      - type: parking
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: both
+        designated: bicycle
+      - type: parking
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - way_id: 389654080
   mapillary: https://www.mapillary.com/app/?pKey=331760328316020
@@ -1417,26 +1422,28 @@
     cycleway:right:oneway: "no"
   driving_side: right
   ISO 3166-2: US-WA
-  output:
-    - type: travel
-      designated: foot
-    - type: parking
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: both
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: both
-      designated: bicycle
-    - type: travel
-      designated: foot
+  road:
+    highway: secondary
+    lanes:
+      - type: travel
+        designated: foot
+      - type: parking
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: both
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: both
+        designated: bicycle
+      - type: travel
+        designated: foot
 
 - way_id: 369623526
   # OSM Version #9
@@ -1454,20 +1461,22 @@
     oneway:bicycle: "no"
   driving_side: right
   ISO 3166-2: US-WA
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: both
-      designated: bicycle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: parking
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: residential
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: both
+        designated: bicycle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: parking
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - way_id: 777565028
   comment: "TODO: image; TODO: example with oneway assumed to be no"
@@ -1476,17 +1485,19 @@
     oneway: "no"
     sidewalk: both
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: residential
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - way_id: 224637155
   mapillary: https://www.mapillary.com/app/?pKey=3687326814728481
@@ -1497,15 +1508,17 @@
     oneway: "yes"
     sidewalk: left
   driving_side: left
-  output:
-    - type: travel
-      designated: foot
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
+  road:
+    highway: primary
+    lanes:
+      - type: travel
+        designated: foot
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
 
 - description: "3 lanes"
   way_id: 898731283
@@ -1614,19 +1627,21 @@
     ref: D 986
     surface: asphalt
   driving_side: right
-  output:
-    - type: travel
-      direction: backward
-      designated: bus
-    - type: travel
-      direction: backward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: bus
+  road:
+    highway: "secondary"
+    lanes:
+      - type: travel
+        direction: backward
+        designated: bus
+      - type: travel
+        direction: backward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: bus
 
 - way_id: 84867915
   rust: false
@@ -1640,13 +1655,15 @@
     oneway: "yes"
     surface: asphalt
   driving_side: right
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: bus
+  road:
+    highway: "secondary"
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: bus
 
 - way_id: 323605308
   rust: false
@@ -1665,17 +1682,19 @@
     surface: "asphalt"
     taxi:lanes: "yes|yes|designated"
   driving_side: right
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      # TODO: psv?
-      designated: bus
+  road:
+    highway: "primary"
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        # TODO: psv?
+        designated: bus
 
 - way_id: 490351863
   rust: false
@@ -1698,39 +1717,44 @@
     wikidata: Q160272
     wikipedia: de:Kurfürstendamm
   driving_side: right
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: bus
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      designated: foot
+  road:
+    highway: secondary
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: bus
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        designated: foot
 
 - link: https://wiki.openstreetmap.org/wiki/Lanes
   rust: false
   tags:
+    highway: "road"
     lanes: "3"
     oneway: "yes"
     maxspeed:lanes: 100|100|80
   driving_side: right
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-      max_speed: 100
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-      max_speed: 100
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-      max_speed: 80
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+        max_speed: 100
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+        max_speed: 100
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+        max_speed: 80
 
 - link: https://wiki.openstreetmap.org/wiki/Bus_lanes
   rust: false
@@ -1741,13 +1765,15 @@
     busway:right: lane
     cycleway: share_busway
   driving_side: right
-  output:
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: motor_vehicle
-    - type: travel
-      direction: forward
-      designated: bus
+  road:
+    highway: secondary
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+      - type: travel
+        direction: forward
+        designated: bus

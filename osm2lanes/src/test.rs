@@ -1,4 +1,3 @@
-use osm_tag_schemes::{Highway, HighwayType};
 use osm_tags::Tags;
 use serde::{Deserialize, Serialize};
 
@@ -19,8 +18,6 @@ pub enum RustTesting {
 #[serde(rename_all = "snake_case")]
 pub enum Expected {
     Road(Road),
-    // TODO: deprecated
-    Output(Vec<Lane>),
 }
 
 #[allow(clippy::module_name_repetitions)]
@@ -57,7 +54,6 @@ impl TestCase {
     fn lanes(&self) -> &Vec<Lane> {
         match &self.expected {
             Expected::Road(road) => &road.lanes,
-            Expected::Output(lanes) => lanes,
         }
     }
     /// Road of expected output
@@ -65,15 +61,6 @@ impl TestCase {
     pub fn road(&self) -> Road {
         match &self.expected {
             Expected::Road(road) => road.clone(),
-            Expected::Output(lanes) => Road {
-                name: None,
-                r#ref: None,
-                highway: Highway::active(HighwayType::UnknownRoad),
-                lit: None,
-                tracktype: None,
-                smoothness: None,
-                lanes: lanes.clone(),
-            },
         }
     }
     /// Test case is enabled, true by default
@@ -350,7 +337,9 @@ mod tests {
             Road {
                 name: None,
                 r#ref: None,
-                highway: Highway::from_tags(&self.tags).unwrap().unwrap(),
+                highway: osm_tag_schemes::Highway::from_tags(&self.tags)
+                    .unwrap()
+                    .unwrap(),
                 lit: None,
                 tracktype: None,
                 smoothness: None,
@@ -489,10 +478,6 @@ mod tests {
                     serde_json::to_string(&expected_road.highway)
                         .expect("can't serialize expected road highway");
                     serde_json::to_string(&expected_road).expect("can't serialize expected road");
-                },
-                Expected::Output(expected_output) => {
-                    serde_json::to_string(expected_output)
-                        .expect("can't serialize expected output");
                 },
             }
             serde_json::to_string(&test.expected).expect("can't serialize expected");
