@@ -14,12 +14,6 @@ pub enum RustTesting {
     },
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Expected {
-    Road(Road),
-}
-
 #[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TestCase {
@@ -41,28 +35,15 @@ pub struct TestCase {
     #[serde(rename = "ISO 3166-2")]
     pub iso_3166_2: Option<String>,
 
-    /// Data
+    /// Input tags
     pub tags: Tags,
-    #[serde(flatten)]
-    pub expected: Expected,
+    /// Expected output
+    pub road: Road,
 
     pub rust: Option<RustTesting>,
 }
 
 impl TestCase {
-    /// Lanes of expected output
-    fn lanes(&self) -> &Vec<Lane> {
-        match &self.expected {
-            Expected::Road(road) => &road.lanes,
-        }
-    }
-    /// Road of expected output
-    #[must_use]
-    pub fn road(&self) -> Road {
-        match &self.expected {
-            Expected::Road(road) => road.clone(),
-        }
-    }
     /// Test case is enabled, true by default
     fn test_enabled(&self) -> bool {
         match self.rust {
@@ -92,7 +73,7 @@ impl TestCase {
     /// Expected lanes include separator
     #[must_use]
     pub fn expected_has_separators(&self) -> bool {
-        self.lanes().iter().any(Lane::is_separator)
+        self.road.lanes.iter().any(Lane::is_separator)
     }
     /// Exemplary
     #[must_use]
@@ -344,7 +325,8 @@ mod tests {
                 tracktype: None,
                 smoothness: None,
                 lanes: self
-                    .lanes()
+                    .road
+                    .lanes
                     .iter()
                     .filter(|lane| self.is_lane_enabled(lane))
                     .cloned()
@@ -471,16 +453,10 @@ mod tests {
         let tests = get_tests();
         for test in &tests {
             serde_json::to_string(&test.tags).expect("can't serialize tags");
-            match &test.expected {
-                Expected::Road(expected_road) => {
-                    serde_json::to_string(&expected_road.lanes)
-                        .expect("can't serialize expected road lanes");
-                    serde_json::to_string(&expected_road.highway)
-                        .expect("can't serialize expected road highway");
-                    serde_json::to_string(&expected_road).expect("can't serialize expected road");
-                },
-            }
-            serde_json::to_string(&test.expected).expect("can't serialize expected");
+            serde_json::to_string(&test.road.lanes).expect("can't serialize expected road lanes");
+            serde_json::to_string(&test.road.highway)
+                .expect("can't serialize expected road highway");
+            serde_json::to_string(&test.road).expect("can't serialize expected road");
             serde_json::to_string(&test).expect("can't serialize test case");
         }
         serde_json::to_string(&tests).expect("can't serialize test cases");
@@ -570,7 +546,7 @@ mod tests {
                 .build();
             let input_road = test.expected_road();
             let tags = lanes_to_tags(
-                &test.road(),
+                &test.road,
                 &locale,
                 &LanesToTagsConfig {
                     check_roundtrip: false,
