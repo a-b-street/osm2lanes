@@ -1,12 +1,12 @@
 use osm_tag_schemes::{Highway, HighwayType};
 use osm_tags::Tags;
+use serde::{Deserialize, Serialize};
 
 use crate::locale::DrivingSide;
 use crate::road::{Lane, Road};
 
-#[derive(Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(untagged, deny_unknown_fields))]
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(untagged, deny_unknown_fields)]
 pub enum RustTesting {
     Enabled(bool),
     WithOptions {
@@ -15,9 +15,8 @@ pub enum RustTesting {
     },
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Expected {
     Road(Road),
     // TODO: deprecated
@@ -25,8 +24,7 @@ pub enum Expected {
 }
 
 #[allow(clippy::module_name_repetitions)]
-#[derive(Clone)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TestCase {
     // Metadata
     /// The OSM way unique identifier
