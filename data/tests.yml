@@ -385,6 +385,36 @@
         direction: forward
         designated: motor_vehicle
 
+- description: sidewalk=none
+  tags:
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    sidewalk: "none"
+  driving_side: left
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+  rust:
+    expect_warnings: true
+
+- description: sidewalk=separate
+  tags:
+    highway: "road"
+    lanes: "1"
+    oneway: "yes"
+    sidewalk: "separate"
+  driving_side: left
+  road:
+    highway: road
+    lanes:
+      - type: travel
+        direction: forward
+        designated: motor_vehicle
+
 - description: sidewalk=both
   tags:
     highway: "road"
