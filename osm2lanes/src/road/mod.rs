@@ -1,4 +1,4 @@
-use osm_tag_schemes::{Highway, Lit, Smoothness, TrackType};
+use osm_tag_schemes::{Highway, HighwayType, Lit, Smoothness, TrackType};
 
 use crate::locale::Locale;
 use crate::metric::Metre;
@@ -31,13 +31,25 @@ pub struct Road {
 }
 
 impl Road {
+    /// A road without any metadata or lanes filled out
+    #[must_use]
+    pub fn empty() -> Self {
+        Self {
+            name: None,
+            r#ref: None,
+            highway: Highway::active(HighwayType::UnknownRoad),
+            lit: None,
+            tracktype: None,
+            smoothness: None,
+            lanes: Vec::new(),
+        }
+    }
+
     #[must_use]
     pub fn has_separators(&self) -> bool {
         self.lanes.iter().any(Lane::is_separator)
     }
-}
 
-impl Road {
     /// Width in metres
     #[must_use]
     pub fn width(&self, locale: &Locale) -> Metre {

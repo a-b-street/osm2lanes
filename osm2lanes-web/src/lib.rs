@@ -256,8 +256,6 @@ impl Component for App {
                 }
                 {
                     if let Some(road) = &state.road {
-                        let way_id = state.way_ref.cast::<HtmlInputElement>().unwrap().value().parse::<i64>().ok();
-
                         html!{
                             <>
                             <section>
@@ -283,23 +281,31 @@ impl Component for App {
                                 </div>
                                 </details>
                             </section>
-                            <section>
-                                <details>
-                                <summary>
-                                    {"Test case YAML"}
-                                </summary>
-                                <div class="json">
-                                    <p>{"You probably need to modify the expected output manually."}</p>
-                                    <CodeHtml code={generate_test_yaml(&road, state.normalized_tags.as_ref().unwrap(), &state.locale, way_id)}/>
-                                </div>
-                                </details>
-                            </section>
                             </>
                         }
                     } else {
                         html!{}
                     }
                 }
+                <>
+                <section>
+                    <details>
+                    <summary>
+                        {"Test case YAML"}
+                    </summary>
+                    <div class="json">
+                        <p>{"You probably need to modify the expected output manually."}</p>
+                        <CodeHtml code={
+                            let way_id = state
+                                .way_ref
+                                .cast::<HtmlInputElement>()
+                                .and_then(|elem| elem.value().parse::<i64>().ok());
+                            generate_test_yaml(state.road.clone(), &state.edit_tags, &state.locale, way_id)
+                        }/>
+                    </div>
+                    </details>
+                </section>
+                </>
                 <Canvas callback_error={callback_error} state={Rc::clone(&self.state)}/>
                 <hr/>
                 <MapComponent callback_msg={callback_msg.clone()}/>
@@ -377,7 +383,12 @@ impl App {
     }
 }
 
-fn generate_test_yaml(road: &Road, tags: &str, locale: &Locale, way_id: Option<i64>) -> String {
+fn generate_test_yaml(
+    road: Option<Road>,
+    tags: &str,
+    locale: &Locale,
+    way_id: Option<i64>,
+) -> String {
     use osm2lanes::test::{Expected, TestCase};
 
     let test = TestCase {
@@ -388,8 +399,8 @@ fn generate_test_yaml(road: &Road, tags: &str, locale: &Locale, way_id: Option<i
         example: None,
         driving_side: locale.driving_side,
         iso_3166_2: locale.iso_3166_2_subdivision.clone(),
-        tags: Tags::from_str(tags).unwrap(),
-        expected: Expected::Road(road.clone()),
+        tags: Tags::from_str(tags).unwrap_or_else(|_| Tags::default()),
+        expected: Expected::Road(road.unwrap_or_else(|| Road::empty())),
         rust: None,
     };
     // TODO Strip out road's name, ref, and other things we don't test for?
