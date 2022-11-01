@@ -165,6 +165,10 @@ TODO:
 - More bus and taxi lane examples
 - Trunk/Motorway/Highway
 
+### Parallel ways
+
+Sidewalks, cyclepaths, and roads split into dual carriageways are some examples in OSM where there are multiple parallel ways close together. Human judgment may be to group them into one logical road. `osm2lanes` does not attempt to do this; it just parses one OSM way at a time. See [osm2streets](https://github.com/a-b-street/osm2streets) for higher-level grouping.
+
 ## Web demo
 
 The web demo at https://a-b-street.github.io/osm2lanes provides an easy way to test OSM tags and see the generated results.

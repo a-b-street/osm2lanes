@@ -38,7 +38,9 @@ impl LaneBuilder {
 }
 
 enum Sidewalk {
-    None,
+    /// No information. This variant isn't called `None`, because that could be confused with
+    /// `sidewalk=none`.
+    Unknown,
     No,
     Yes,
     Separate,
@@ -71,7 +73,10 @@ impl Sidewalk {
             ),
         ) {
             (Some(v), None, (None, None)) => match v {
-                "none" => return Err(TagsToLanesMsg::deprecated_tag("sidewalk", "none")),
+                "none" => {
+                    warnings.push(TagsToLanesMsg::deprecated_tags(tags.subset(&[SIDEWALK])));
+                    (Sidewalk::No, Sidewalk::No)
+                },
                 "no" => (Sidewalk::No, Sidewalk::No),
                 "yes" => {
                     warnings.push(TagsToLanesMsg::ambiguous_tags(
@@ -97,7 +102,7 @@ impl Sidewalk {
             // sidewalk:left= and/or sidewalk:right=
             (None, None, (forward, backward)) => match (forward, backward) {
                 // no scheme
-                (None, None) => (Sidewalk::None, Sidewalk::None),
+                (None, None) => (Sidewalk::Unknown, Sidewalk::Unknown),
 
                 (Some("yes"), Some("yes")) => (Sidewalk::Yes, Sidewalk::Yes),
 
@@ -121,7 +126,9 @@ impl Sidewalk {
 }
 
 enum Shoulder {
-    None,
+    /// No information. This variant isn't called `None`, because that could be confused with
+    /// `shoulder=none`.
+    Unknown,
     Yes,
     No,
 }
@@ -133,7 +140,7 @@ impl Shoulder {
         _warnings: &mut RoadWarnings,
     ) -> Result<(Self, Self), TagsToLanesMsg> {
         Ok(match tags.get(&SHOULDER) {
-            None => (Shoulder::None, Shoulder::None),
+            None => (Shoulder::Unknown, Shoulder::Unknown),
             Some("no") => (Shoulder::No, Shoulder::No),
             Some("yes" | "both") => (Shoulder::Yes, Shoulder::Yes),
             Some(s) if s == locale.driving_side.tag().as_str() => (Shoulder::Yes, Shoulder::No),
@@ -181,7 +188,7 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
             locale: &Locale,
         ) -> Result<(), RoadError> {
             match (sidewalk, shoulder) {
-                (Sidewalk::No | Sidewalk::None, Shoulder::None) => {
+                (Sidewalk::No | Sidewalk::Unknown, Shoulder::Unknown) => {
                     // We assume a shoulder if there is no bike lane.
                     // This assumes bicycle lanes are just glorified shoulders...
                     let has_bicycle_lane = self
@@ -195,11 +202,11 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
                         self.push_outside(LaneBuilder::shoulder(locale), forward);
                     }
                 },
-                (Sidewalk::No | Sidewalk::None, Shoulder::No) => {},
-                (Sidewalk::Yes, Shoulder::No | Shoulder::None) => {
+                (Sidewalk::No | Sidewalk::Unknown, Shoulder::No) => {},
+                (Sidewalk::Yes, Shoulder::No | Shoulder::Unknown) => {
                     self.push_outside(LaneBuilder::foot(locale), forward);
                 },
-                (Sidewalk::No | Sidewalk::None, Shoulder::Yes) => {
+                (Sidewalk::No | Sidewalk::Unknown, Shoulder::Yes) => {
                     self.push_outside(LaneBuilder::shoulder(locale), forward);
                 },
                 (Sidewalk::Yes, Shoulder::Yes) => {
@@ -209,9 +216,8 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
                     )
                     .into());
                 },
-                (Sidewalk::Separate, _) => {
-                    return Err(TagsToLanesMsg::unsupported_tag(SIDEWALK, "separate").into())
-                },
+                // Treat the same as Sidewalk::No
+                (Sidewalk::Separate, _) => {},
             }
             Ok(())
         }
