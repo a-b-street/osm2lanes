@@ -32,6 +32,7 @@ wasm-bindgen = "0.2"
 wee_alloc = { version = "0.4", optional = true }
 yew = "0.19"
 gloo-worker = { git = "https://github.com/futursolo/gloo", rev = "a2101e166260294292c8121fdb8ed883dae62ed8" }
+serde_yaml = "0.9"
 
 [dependencies.web-sys]
 version = "0.3"

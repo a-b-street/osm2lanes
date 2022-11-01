@@ -32,7 +32,7 @@ reqwest = { version = "0.11", optional = true, features = [
 serde = { version = "1", optional = true, features = [
     "derive",
 ] } # Crate interface is serde compatible
-serde_yaml = { version = "0.8", optional = true } # Parsing test data
+serde_yaml = { version = "0.9", optional = true } # Parsing test data
 
 [features]
 serde = ["dep:serde", "osm-tags/serde", "osm-tag-schemes/serde"]

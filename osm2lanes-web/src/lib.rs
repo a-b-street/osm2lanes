@@ -256,6 +256,8 @@ impl Component for App {
                 }
                 {
                     if let Some(road) = &state.road {
+                        let way_id = state.way_ref.cast::<HtmlInputElement>().unwrap().value().parse::<i64>().ok();
+
                         html!{
                             <>
                             <section>
@@ -278,6 +280,17 @@ impl Component for App {
                                 </summary>
                                 <div class="json">
                                     <CodeHtml code={serde_json::to_string_pretty(&road).unwrap()}/>
+                                </div>
+                                </details>
+                            </section>
+                            <section>
+                                <details>
+                                <summary>
+                                    {"Test case YAML"}
+                                </summary>
+                                <div class="json">
+                                    <p>{"You probably need to modify the expected output manually."}</p>
+                                    <CodeHtml code={generate_test_yaml(&road, state.normalized_tags.as_ref().unwrap(), &state.locale, way_id)}/>
                                 </div>
                                 </details>
                             </section>
@@ -362,4 +375,35 @@ impl App {
             }}</span></div>
         }
     }
+}
+
+fn generate_test_yaml(road: &Road, tags: &str, locale: &Locale, way_id: Option<i64>) -> String {
+    use osm2lanes::test::{Expected, TestCase};
+
+    let test = TestCase {
+        way_id,
+        link: None,
+        comment: None,
+        description: Some("fill me out".to_string()),
+        example: None,
+        driving_side: locale.driving_side,
+        iso_3166_2: locale.iso_3166_2_subdivision.clone(),
+        tags: Tags::from_str(tags).unwrap(),
+        expected: Expected::Road(road.clone()),
+        rust: None,
+    };
+    // TODO Strip out road's name, ref, and other things we don't test for?
+    // TODO Based on checkboxes, strip out separators
+    let raw = serde_yaml::to_string(&test).unwrap();
+
+    // serde_yaml explicitly lists "field: null" for None values. Filter these out, to match the
+    // style of the test YAML.
+    let mut output = String::new();
+    for line in raw.lines() {
+        if !line.ends_with(": null") {
+            output.push_str(line);
+            output.push_str("\n");
+        }
+    }
+    output
 }
