@@ -28,7 +28,7 @@ pub struct TestCase {
     pub description: Option<String>,
 
     /// List as a named example in the web app, with the given name
-    example: Option<String>,
+    pub example: Option<String>,
 
     // Config and Locale
     pub driving_side: DrivingSide,
