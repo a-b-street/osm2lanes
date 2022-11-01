@@ -168,4 +168,3 @@ TODO:
 ## Web demo
 
 The web demo at https://a-b-street.github.io/osm2lanes provides an easy way to test OSM tags and see the generated results.
-
