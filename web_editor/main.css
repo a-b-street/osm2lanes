@@ -15,26 +15,11 @@
   padding: 15px;
 }
 
-.card-being-dragged {
-  background-color: #c8ebfb;
-}
-
-#delete {
-  float: left;
-  margin-right: 50px;
-  border: 2px dashed red;
-  min-height: 100px;
-  padding: 30px;
-}
-
 .icon {
   width: 50px;
 }
 
-.clickable-icon {
-  width: 50px;
-}
-.clickable-icon:hover {
+.clickable:hover {
   opacity: 50%;
 }
 

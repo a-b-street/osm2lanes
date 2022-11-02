@@ -22,7 +22,14 @@ export class LaneEditor {
     this.locale = locale;
     this.originalTags = tags;
 
-    // All of the state is immutable, except for road. The source of truth for the current lanes is there; the rendered DOM view is a function of it.
+    // Remove these immediately. If they're rendered invisibly, they mess up indices.
+    this.road.lanes = this.road.lanes.filter(
+      (lane) => lane.type != "separator"
+    );
+
+    // All of the state is immutable, except for road. The source of truth for
+    // the current lanes is there; the rendered DOM view is a function of
+    // it.
 
     this.#setupButtons();
   }
@@ -46,11 +53,10 @@ export class LaneEditor {
     cards.replaceChildren();
 
     // Create a card per lane
+    var i = 0;
     for (const lane of this.road.lanes) {
-      if (lane.type == "separator") {
-        continue;
-      }
-      cards.appendChild(makeLaneCard(lane));
+      cards.appendChild(makeLaneCard(lane, i, this));
+      i += 1;
     }
   }
 
