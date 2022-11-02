@@ -389,7 +389,7 @@ fn generate_test_yaml(
     locale: &Locale,
     way_id: Option<i64>,
 ) -> String {
-    use osm2lanes::test::{Expected, TestCase};
+    use osm2lanes::test::TestCase;
 
     let test = TestCase {
         way_id,
@@ -400,7 +400,7 @@ fn generate_test_yaml(
         driving_side: locale.driving_side,
         iso_3166_2: locale.iso_3166_2_subdivision.clone(),
         tags: Tags::from_str(tags).unwrap_or_else(|_| Tags::default()),
-        expected: Expected::Road(road.unwrap_or_else(|| Road::empty())),
+        road: road.unwrap_or_else(|| Road::empty()),
         rust: None,
     };
     // TODO Strip out road's name, ref, and other things we don't test for?
