@@ -3,11 +3,10 @@ export function makeLaneCard(lane) {
   node.setAttribute("class", "card");
   node.setAttribute("title", JSON.stringify(lane, null, 2));
   node.setAttribute("style", `background: ${backgroundColor(lane)};`);
-  node.laneJSON = lane;
 
-  node.innerHTML = `<div align="center">` + typeIcon(lane) + `</div>`;
-  node.innerHTML += `<div align="center">` + directionIcon(lane) + `</div>`;
-  node.innerHTML += `<div align="center">` + width(lane) + `</div>`;
+  node.innerHTML = `<div align="center">${typeIcon(lane)}</div>`;
+  node.innerHTML += `<div align="center">${directionIcon(lane)}</div>`;
+  node.innerHTML += `<div align="center">${width(lane)}</div>`;
 
   return node;
 }
