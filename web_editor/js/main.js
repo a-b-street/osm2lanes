@@ -6,16 +6,25 @@ import init, {
 } from "./osm2lanes-npm/osm2lanes_npm.js";
 
 await init();
-setupOnce();
+document.getElementById("start-editing").onclick = async function () {
+  try {
+    window.app = await LaneEditor.create();
+    window.app.render();
+  } catch (err) {
+    window.alert(`Error: ${err}`);
+  }
+};
 
 export class LaneEditor {
-  constructor(way, road_wrapper, locale, tags) {
-    const road = road_wrapper.Ok.road;
-
+  constructor(way, road, locale, tags) {
     this.way = way;
-    this.currentRoad = clone(road);
-    this.currentLocale = clone(locale);
+    this.road = road;
+    this.locale = locale;
     this.originalTags = tags;
+
+    // All of the state is immutable, except for road. The source of truth for the current lanes is there; the rendered DOM view is a function of it.
+
+    this.#setupButtons();
   }
 
   static async create() {
@@ -29,7 +38,7 @@ export class LaneEditor {
       console.log(`Fetching ${way}...`);
       [road_wrapper, locale, tags] = await js_way_to_lanes(way);
     }
-    return new LaneEditor(way, road_wrapper, locale, tags);
+    return new LaneEditor(way, road_wrapper.Ok.road, locale, tags);
   }
 
   render() {
@@ -37,45 +46,16 @@ export class LaneEditor {
     cards.replaceChildren();
 
     // Create a card per lane
-    for (const lane of this.currentRoad.lanes) {
+    for (const lane of this.road.lanes) {
       if (lane.type == "separator") {
         continue;
       }
       cards.appendChild(makeLaneCard(lane));
     }
-
-    /*const type = evt.item.getAttribute("value");
-        // TODO switch case but without break?
-        // TODO Figure out direction based on center line position
-        var card;
-        if (type == "driving") {
-          card = makeLaneCard({
-            type: "travel",
-            direction: "backward",
-            designated: "motor_vehicle",
-          });
-        } else if (type == "bicycle") {
-          card = makeLaneCard({
-            type: "travel",
-            direction: "backward",
-            designated: "bicycle",
-          });
-        } else if (type == "parking") {
-          card = makeLaneCard({
-            type: "parking",
-            direction: "backward",
-            designated: "motor_vehicle",
-          });
-        }*/
   }
 
-  diffTags() {
-    // Mutate the shared state
-    this.currentRoad.lanes = [];
-    for (const card of document.getElementById("cards").children) {
-      this.currentRoad.lanes.push(card.laneJSON);
-    }
-    const currentTags = js_lanes_to_tags(this.currentRoad, this.currentLocale);
+  #diffTags() {
+    const currentTags = js_lanes_to_tags(this.road, this.locale);
 
     var output = "<table>";
     for (const [key, origValue] of Object.entries(this.originalTags)) {
@@ -99,28 +79,47 @@ export class LaneEditor {
 
     document.getElementById("diff-tags-table").innerHTML = output;
   }
-}
 
-function setupOnce() {
-  document.getElementById("start-editing").onclick = async function () {
-    try {
-      window.app = await LaneEditor.create();
-      window.app.render();
-    } catch (err) {
-      window.alert(`Error: ${err}`);
-    }
-  };
-  document.getElementById("diff-tags").onclick = function () {
-    if (window.app) {
+  #setupButtons() {
+    document.getElementById("diff-tags").onclick = () => {
       try {
-        window.app.diffTags();
+        this.#diffTags();
       } catch (err) {
         window.alert(`Error: ${err}`);
       }
-    }
-  };
-}
+    };
 
-function clone(obj) {
-  return JSON.parse(JSON.stringify(obj));
+    document.getElementById("new-driving").onclick = () => {
+      this.road.lanes.push({
+        type: "travel",
+        direction: "backward",
+        designated: "motor_vehicle",
+      });
+      this.render();
+    };
+    document.getElementById("new-bicycle").onclick = () => {
+      this.road.lanes.push({
+        type: "travel",
+        direction: "backward",
+        designated: "bicycle",
+      });
+      this.render();
+    };
+    document.getElementById("new-parking").onclick = () => {
+      this.road.lanes.push({
+        type: "parking",
+        direction: "backward",
+        designated: "motor_vehicle",
+      });
+      this.render();
+    };
+    document.getElementById("new-bus").onclick = () => {
+      this.road.lanes.push({
+        type: "travel",
+        direction: "backward",
+        designated: "bus",
+      });
+      this.render();
+    };
+  }
 }
