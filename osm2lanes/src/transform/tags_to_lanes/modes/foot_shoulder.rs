@@ -180,6 +180,7 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
                 self.push_backward_outside(lane);
             }
         }
+        #[allow(clippy::match_same_arms)]
         fn add_sidewalk_shoulder(
             &mut self,
             (sidewalk, shoulder): (Sidewalk, Shoulder),
@@ -202,7 +203,6 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
                         self.push_outside(LaneBuilder::shoulder(locale), forward);
                     }
                 },
-                (Sidewalk::No | Sidewalk::Unknown, Shoulder::No) => {},
                 (Sidewalk::Yes, Shoulder::No | Shoulder::Unknown) => {
                     self.push_outside(LaneBuilder::foot(locale), forward);
                 },
@@ -216,6 +216,7 @@ pub(in crate::transform::tags_to_lanes) fn foot_and_shoulder(
                     )
                     .into());
                 },
+                (Sidewalk::No | Sidewalk::Unknown, Shoulder::No) => {},
                 // Treat the same as Sidewalk::No
                 (Sidewalk::Separate, _) => {},
             }
