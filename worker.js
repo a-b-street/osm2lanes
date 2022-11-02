@@ -323,11 +323,11 @@ function getImports() {
     imports.wbg.__wbg_warn_022e4f61a9c7964f = function(arg0, arg1, arg2, arg3) {
         console.warn(getObject(arg0), getObject(arg1), getObject(arg2), getObject(arg3));
     };
-    imports.wbg.__wbindgen_closure_wrapper179 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper178 = function(arg0, arg1, arg2) {
         const ret = makeClosure(arg0, arg1, 57, __wbg_adapter_16);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper2036 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper2034 = function(arg0, arg1, arg2) {
         const ret = makeMutClosure(arg0, arg1, 70, __wbg_adapter_19);
         return addHeapObject(ret);
     };
