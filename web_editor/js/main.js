@@ -13,9 +13,8 @@ export class LaneEditor {
     const road = road_wrapper.Ok.road;
 
     this.way = way;
-    // Clone these
-    this.currentRoad = JSON.parse(JSON.stringify(road));
-    this.currentLocale = JSON.parse(JSON.stringify(locale));
+    this.currentRoad = clone(road);
+    this.currentLocale = clone(locale);
     this.originalTags = tags;
   }
 
@@ -34,7 +33,6 @@ export class LaneEditor {
   }
 
   render() {
-    // TODO Fully clean up the old cards, including whatever sortable thing is attached there?
     const cards = document.getElementById("cards");
     cards.replaceChildren();
 
@@ -46,15 +44,7 @@ export class LaneEditor {
       cards.appendChild(makeLaneCard(lane));
     }
 
-    new Sortable(cards, {
-      group: {
-        name: "lanes",
-        put: ["toolbox"],
-      },
-      animation: 150,
-      ghostClass: "card-being-dragged",
-      onAdd: function (evt) {
-        const type = evt.item.getAttribute("value");
+    /*const type = evt.item.getAttribute("value");
         // TODO switch case but without break?
         // TODO Figure out direction based on center line position
         var card;
@@ -76,10 +66,7 @@ export class LaneEditor {
             direction: "backward",
             designated: "motor_vehicle",
           });
-        }
-        evt.item.replaceWith(card);
-      },
-    });
+        }*/
   }
 
   diffTags() {
@@ -115,26 +102,6 @@ export class LaneEditor {
 }
 
 function setupOnce() {
-  // Setup the toolbox controls
-  new Sortable(document.getElementById("toolbox"), {
-    group: {
-      name: "toolbox",
-      pull: "clone",
-    },
-    sort: false,
-    animation: 150,
-    ghostClass: "card-being-dragged",
-  });
-
-  // TODO Disable the ghostClass of lanes when going here
-  new Sortable(document.getElementById("delete"), {
-    group: "lanes",
-    onAdd: function (evt) {
-      var el = evt.item;
-      el.parentNode.removeChild(el);
-    },
-  });
-
   document.getElementById("start-editing").onclick = async function () {
     try {
       window.app = await LaneEditor.create();
@@ -152,4 +119,8 @@ function setupOnce() {
       }
     }
   };
+}
+
+function clone(obj) {
+  return JSON.parse(JSON.stringify(obj));
 }
