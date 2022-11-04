@@ -4,9 +4,12 @@ export function makeLaneCard(lane, idx, app) {
   node.title = JSON.stringify(lane, null, 2);
   node.style = `background: ${backgroundColor(lane)};`;
 
-  node.innerHTML = `<div align="center">${typeIcon(lane)}</div>`;
-  node.innerHTML += `<div align="center">${directionIcon(lane)}</div>`;
-  node.innerHTML += `<div align="center">${width(lane)}</div>`;
+  node.appendChild(wrapInCenterDiv(typeIcon(lane)));
+  const dir = directionIcon(lane);
+  if (dir) {
+    node.appendChild(wrapInCenterDiv(dir));
+  }
+  node.appendChild(wrapInCenterDiv(width(lane)));
 
   var finalRow = document.createElement("div");
 
@@ -18,9 +21,10 @@ export function makeLaneCard(lane, idx, app) {
       app.render();
     };
   } else {
-    // TODO Show greyed out
+    left.disabled = true;
   }
   finalRow.appendChild(left);
+  finalRow.align = "center";
 
   var trash = iconObj("delete");
   trash.onclick = () => {
@@ -37,7 +41,7 @@ export function makeLaneCard(lane, idx, app) {
       app.render();
     };
   } else {
-    // TODO Show greyed out
+    right.disabled = true;
   }
   finalRow.appendChild(right);
 
@@ -60,21 +64,22 @@ function typeIcon(lane) {
     return icon("parking");
   }
 
-  return `<b>${lane.type}, ${lane.designated}</b>`;
+  var text = document.createElement("b");
+  text.innerText = `${lane.type}, ${lane.designated}`;
+  return text;
 }
 
 function directionIcon(lane) {
   if (lane.direction == "forward") {
-    return `<img src="assets/forwards.svg" />`;
+    return icon("forwards");
   }
   if (lane.direction == "backward") {
-    return `<img src="assets/backwards.svg" />`;
+    return icon("backwards");
   }
   if (lane.direction == "both") {
     return icon("both_ways");
   }
-  // Just an empty space
-  return "";
+  return null;
 }
 
 function backgroundColor(lane) {
@@ -85,18 +90,35 @@ function backgroundColor(lane) {
 }
 
 function width(lane) {
+  var div = document.createElement("div");
+  div.align = "center";
   if (lane.width) {
-    return `${lane.width}m`;
+    div.innerText = `${lane.width}m`;
   }
-  return "";
+  return div;
 }
 
 function icon(name) {
-  return `<img src="assets/${name}.svg" class="icon" />`;
+  var img = document.createElement("img");
+  img.src = `assets/${name}.svg`;
+  img.className = "icon";
+  return img;
 }
 function iconObj(name) {
-  var obj = document.createElement("img");
-  obj.src = `assets/${name}.svg`;
-  obj.className = "clickable";
-  return obj;
+  var btn = document.createElement("button");
+  btn.type = "button";
+
+  var img = document.createElement("img");
+  img.src = `assets/${name}.svg`;
+
+  btn.appendChild(img);
+
+  return btn;
+}
+
+function wrapInCenterDiv(obj) {
+  var div = document.createElement("div");
+  div.align = "center";
+  div.appendChild(obj);
+  return div;
 }

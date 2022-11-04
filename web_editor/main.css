@@ -8,19 +8,26 @@
   padding: 15px;
 }
 
+.card button {
+  background: none;
+  border: none;
+}
+.card button:hover:enabled {
+  opacity: 50%;
+}
+
 .new-lane-card {
   background: grey;
   color: white;
   outline: solid;
   padding: 15px;
 }
+.new-lane-card:hover {
+  opacity: 50%;
+}
 
 .icon {
   width: 50px;
-}
-
-.clickable:hover {
-  opacity: 50%;
 }
 
 table,
