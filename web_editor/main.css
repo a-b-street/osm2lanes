@@ -15,6 +15,9 @@
 .card button:hover:enabled {
   opacity: 50%;
 }
+.card button:disabled {
+  opacity: 25%;
+}
 
 .new-lane-card {
   background: grey;
