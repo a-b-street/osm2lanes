@@ -12,7 +12,7 @@ export function makeLaneCard(lane, idx, app) {
   node.appendChild(wrapInCenterDiv(width(lane)));
 
   var editRow = document.createElement("div");
-  editRow.align = "center";
+  editRow.style = "text-align: center";
 
   var left = iconObj("left");
   if (idx != 0) {
@@ -118,7 +118,7 @@ function backgroundColor(lane) {
 
 function width(lane) {
   var div = document.createElement("div");
-  div.align = "center";
+  div.style = "text-align: center";
   if (lane.width) {
     div.innerText = `${lane.width}m`;
   }
@@ -145,7 +145,7 @@ function iconObj(name) {
 
 function wrapInCenterDiv(obj) {
   var div = document.createElement("div");
-  div.align = "center";
+  div.style = "text-align: center";
   div.appendChild(obj);
   return div;
 }
