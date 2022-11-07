@@ -11,7 +11,8 @@ export function makeLaneCard(lane, idx, app) {
   }
   node.appendChild(wrapInCenterDiv(width(lane)));
 
-  var finalRow = document.createElement("div");
+  var editRow = document.createElement("div");
+  editRow.align = "center";
 
   var left = iconObj("left");
   if (idx != 0) {
@@ -23,15 +24,14 @@ export function makeLaneCard(lane, idx, app) {
   } else {
     left.disabled = true;
   }
-  finalRow.appendChild(left);
-  finalRow.align = "center";
+  editRow.appendChild(left);
 
   var trash = iconObj("delete");
   trash.onclick = () => {
     app.road.lanes.splice(idx, 1);
     app.render();
   };
-  finalRow.appendChild(trash);
+  editRow.appendChild(trash);
 
   var right = iconObj("right");
   if (idx != app.road.lanes.length - 1) {
@@ -43,9 +43,23 @@ export function makeLaneCard(lane, idx, app) {
   } else {
     right.disabled = true;
   }
-  finalRow.appendChild(right);
+  editRow.appendChild(right);
 
-  node.append(finalRow);
+  node.append(editRow);
+
+  if (idx != app.road.lanes.length - 1) {
+    var add = iconObj("add");
+    add.className = "insert-lane";
+    add.onclick = () => {
+      app.road.lanes.splice(idx + 1, 0, {
+        type: "travel",
+        direction: "backward",
+        designated: "motor_vehicle",
+      });
+      app.render();
+    };
+    node.append(add);
+  }
 
   return node;
 }

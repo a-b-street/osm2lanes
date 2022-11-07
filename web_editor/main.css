@@ -6,6 +6,8 @@
 .card {
   outline: solid;
   padding: 15px;
+  /* So child elements can use position=absolute */
+  position: relative;
 }
 
 .card button {
@@ -31,6 +33,12 @@
 
 .icon {
   width: 50px;
+}
+
+.insert-lane {
+  position: absolute;
+  right: 0px;
+  bottom: 0px;
 }
 
 table,
