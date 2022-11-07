@@ -60,6 +60,9 @@ function typeIcon(lane) {
   if (lane.type == "travel" && lane.designated == "motor_vehicle") {
     return icon("car");
   }
+  if (lane.type == "travel" && lane.designated == "foot") {
+    return icon("pedestrian");
+  }
   if (lane.type == "parking" && lane.designated == "motor_vehicle") {
     return icon("parking");
   }
