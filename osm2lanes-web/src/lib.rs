@@ -395,12 +395,12 @@ fn generate_test_yaml(
         way_id,
         link: None,
         comment: None,
-        description: Some("fill me out".to_string()),
+        description: Some("fill me out".to_owned()),
         example: None,
         driving_side: locale.driving_side,
         iso_3166_2: locale.iso_3166_2_subdivision.clone(),
         tags: Tags::from_str(tags).unwrap_or_else(|_| Tags::default()),
-        road: road.unwrap_or_else(|| Road::empty()),
+        road: road.unwrap_or_else(Road::empty),
         rust: None,
     };
     // TODO Strip out road's name, ref, and other things we don't test for?
@@ -413,7 +413,7 @@ fn generate_test_yaml(
         // style of the test YAML.
         if !line.ends_with(": null") {
             output.push_str(line);
-            output.push_str("\n");
+            output.push('\n');
         }
     }
 
