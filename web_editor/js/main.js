@@ -127,5 +127,12 @@ export class LaneEditor {
       });
       this.render();
     };
+    document.getElementById("new-sidewalk").onclick = () => {
+      this.road.lanes.push({
+        type: "travel",
+        designated: "foot",
+      });
+      this.render();
+    };
   }
 }
