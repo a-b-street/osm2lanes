@@ -71,10 +71,20 @@ function typeIcon(lane) {
 
 function directionIcon(lane) {
   if (lane.direction == "forward") {
-    return icon("forwards");
+    var obj = iconObj("forwards");
+    obj.onclick = () => {
+      lane.direction = "backward";
+      app.render();
+    };
+    return obj;
   }
   if (lane.direction == "backward") {
-    return icon("backwards");
+    var obj = iconObj("backwards");
+    obj.onclick = () => {
+      lane.direction = "forward";
+      app.render();
+    };
+    return obj;
   }
   if (lane.direction == "both") {
     return icon("both_ways");
