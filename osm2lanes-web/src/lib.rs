@@ -405,16 +405,21 @@ fn generate_test_yaml(
     };
     // TODO Strip out road's name, ref, and other things we don't test for?
     // TODO Based on checkboxes, strip out separators
-    let raw = serde_yaml::to_string(&test).unwrap();
+    let raw = serde_yaml::to_string(&vec![test]).unwrap();
 
-    // serde_yaml explicitly lists "field: null" for None values. Filter these out, to match the
-    // style of the test YAML.
     let mut output = String::new();
     for line in raw.lines() {
+        // serde_yaml explicitly lists "field: null" for None values. Filter these out, to match the
+        // style of the test YAML.
         if !line.ends_with(": null") {
             output.push_str(line);
             output.push_str("\n");
         }
     }
+
+    // Valid YAML in the test needs the item to start with a '-'. Serializing vec![test] indents,
+    // but doesn't add the hyphen. Do that manually.
+    output.replace_range(0..1, "-");
+
     output
 }
