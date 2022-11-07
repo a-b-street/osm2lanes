@@ -37,8 +37,9 @@
 
 .insert-lane {
   position: absolute;
-  right: 0px;
+  right: -15px;
   bottom: 0px;
+  z-index: 1;
 }
 
 table,
