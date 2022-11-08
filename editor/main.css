@@ -1,0 +1,48 @@
+.cards-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.card {
+  outline: solid;
+  padding: 15px;
+  /* So child elements can use position=absolute */
+  position: relative;
+}
+
+.card button {
+  background: none;
+  border: none;
+}
+.card button:hover:enabled {
+  opacity: 50%;
+}
+.card button:disabled {
+  opacity: 25%;
+}
+
+.new-lane-card {
+  background: grey;
+  color: white;
+  outline: solid;
+  padding: 15px;
+}
+.new-lane-card:hover {
+  opacity: 50%;
+}
+
+.icon {
+  width: 50px;
+}
+
+.insert-lane {
+  position: absolute;
+  right: -15px;
+  bottom: 0px;
+  z-index: 1;
+}
+
+table,
+td {
+  border: 1px solid black;
+}

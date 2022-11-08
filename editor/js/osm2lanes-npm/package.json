@@ -1,0 +1,27 @@
+{
+  "name": "osm2lanes-npm",
+  "collaborators": [
+    "Dustin Carlino <dabreegster@gmail.com>",
+    "Michael Droogleever Fortuyn <droogmic@gmail.com>"
+  ],
+  "description": "NPM package for osm2lanes",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/a-b-street/osm2lanes"
+  },
+  "files": [
+    "osm2lanes_npm_bg.wasm",
+    "osm2lanes_npm.js",
+    "osm2lanes_npm.d.ts"
+  ],
+  "module": "osm2lanes_npm.js",
+  "types": "osm2lanes_npm.d.ts",
+  "sideEffects": false,
+  "keywords": [
+    "osm",
+    "lanes",
+    "npm"
+  ]
+}

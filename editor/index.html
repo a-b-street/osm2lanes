@@ -1,0 +1,42 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="./main.css" />
+    <script type="module">
+      import { LaneEditor } from "./js/main.js";
+    </script>
+  </head>
+  <body>
+    <div style="outline: solid; padding: 15px; margin-bottom: 30px">
+      OSM way id:
+      <input type="text" id="osm_way_id" value="427757048" />
+      <input type="button" value="Edit" id="start-editing" />
+    </div>
+
+    <div id="cards" class="cards-row"></div>
+
+    <div style="margin-top: 30px">
+      <div class="cards-row">
+        <button type="button" class="new-lane-card" id="new-driving">
+          New <img src="assets/car.svg" class="icon" />
+        </button>
+        <button type="button" class="new-lane-card" id="new-bicycle">
+          New <img src="assets/bicycle.svg" class="icon" />
+        </button>
+        <button type="button" class="new-lane-card" id="new-parking">
+          New <img src="assets/parking.svg" type="button" class="icon" />
+        </button>
+        <button type="button" class="new-lane-card" id="new-bus">
+          New <img src="assets/bus.svg" class="icon" />
+        </button>
+        <button type="button" class="new-lane-card" id="new-sidewalk">
+          New <img src="assets/pedestrian.svg" class="icon" />
+        </button>
+      </div>
+    </div>
+
+    <div style="margin-top: 30px">
+      <input type="button" value="Diff OSM tags" id="diff-tags" />
+      <div id="diff-tags-table"></div>
+    </div>
+  </body>
+</html>
