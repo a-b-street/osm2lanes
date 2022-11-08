@@ -171,4 +171,4 @@ Sidewalks, cyclepaths, and roads split into dual carriageways are some examples 
 
 ## Web demo
 
-The web demo at https://a-b-street.github.io/osm2lanes provides an easy way to test OSM tags and see the generated results.
+The web demo at <https://a-b-street.github.io/osm2lanes> provides an easy way to test OSM tags and see the generated results. <https://a-b-street.github.io/osm2lanes/editor/> is a prototype tool to edit the resulting lanes.
