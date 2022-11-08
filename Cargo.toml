@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "driving-side",
     "osm2lanes",
     "osm-tags",
     "osm-tag-schemes",
