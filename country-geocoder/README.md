@@ -1,8 +1,9 @@
-# driving-side
+# country-geocoder
 
-This crate takes a WGS84 coordinate and determines if it's located in a country
-that drives on the left or right. It does this by offline geocoding -- just
-checking if the point is inside any polygon of a left-sided country or not. 
+This crate takes a WGS84 coordinate and determines the [two-letter ISO country
+code](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) where it exists. It
+also determines if that country drives on the left or right. It does this by
+offline geocoding, using a bundled file.
 
 `data.geojson` is produced by `generate_data.py`. Thanks to
 <http://geojson.xyz> for preprocessing public domain Natural Earth data of
