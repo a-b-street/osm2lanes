@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "driving-side",
+    "country-geocoder",
     "osm2lanes",
     "osm-tags",
     "osm-tag-schemes",
