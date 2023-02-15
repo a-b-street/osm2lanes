@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "country-geocoder",
     "osm2lanes",
     "osm-tags",
     "osm-tag-schemes",
