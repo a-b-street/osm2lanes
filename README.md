@@ -1,5 +1,7 @@
 # osm2lanes
 
+**Important**: This repository is archived and unmaintained. Work continues instead with [osm2streets](https://github.com/a-b-street/osm2streets). Please file issues there. (This repository was an experimental rewrite of the lane parsing logic, but we never successfully cutover higher-level projects to using it. The [lane parsing](https://github.com/a-b-street/osm2streets/tree/main/osm2streets/src/lanes/classic.rs) logic lives on in osm2streets.)
+
 This project transforms OpenStreetMap tags to a specification of lanes on a
 street. Start with the [web demo](https://a-b-street.github.io/osm2lanes) ([Source](#web-demo)).
 
